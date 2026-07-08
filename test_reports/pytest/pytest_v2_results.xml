@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="13" time="214.887" timestamp="2026-07-08T21:41:02.936975+00:00" hostname="agent-env-16e04512-0955-489e-a065-bd4609bd8718"><testcase classname="tests.test_sapiens_v2.TestPasteAnswerKey" name="test_unauth" time="0.234" /><testcase classname="tests.test_sapiens_v2.TestExams" name="test_list_exams_metadata_only" time="0.224" /><testcase classname="tests.test_sapiens_v2.TestExams" name="test_seeded_exams_present" time="0.411" /><testcase classname="tests.test_sapiens_v2.TestExams" name="test_get_exam_english" time="0.280" /><testcase classname="tests.test_sapiens_v2.TestPasteAnswerKey" name="test_paste_creates_exam" time="0.959" /><testcase classname="tests.test_sapiens_v2.TestExams" name="test_get_exam_spanish_when_available" time="0.223" /><testcase classname="tests.test_sapiens_v2.TestExams" name="test_get_exam_not_found" time="0.108" /><testcase classname="tests.test_sapiens_v2.TestPasteAnswerKey" name="test_paste_upsert_same_key" time="0.166" /><testcase classname="tests.test_sapiens_v2.TestAnalyses" name="test_submit_requires_auth" time="0.238" /><testcase classname="tests.test_sapiens_v2.TestPasteAnswerKey" name="test_paste_invalid_returns_400" time="0.105" /><testcase classname="tests.test_sapiens_v2.TestAnalyses" name="test_two_submissions_create_independent_attempts" time="93.621" /><testcase classname="tests.test_sapiens_v2.TestAnalyses" name="test_rename_trash_restore_delete_flow" time="60.335"><failure message="requests.exceptions.JSONDecodeError: Expecting value: line 1 column 1 (char 0)">/root/.venv/lib/python3.11/site-packages/requests/models.py:1116: in json
+    return complexjson.loads(self.text, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/json/__init__.py:346: in loads
+    return _default_decoder.decode(s)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/json/decoder.py:337: in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/json/decoder.py:355: in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+E   json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+
+During handling of the above exception, another exception occurred:
+tests/test_sapiens_v2.py:252: in test_rename_trash_restore_delete_flow
+    aid = _submit_answers(auth_client, exam_id, answers).json()["analysis_id"]
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/root/.venv/lib/python3.11/site-packages/requests/models.py:1120: in json
+    raise RequestsJSONDecodeError(e.msg, e.doc, e.pos)
+E   requests.exceptions.JSONDecodeError: Expecting value: line 1 column 1 (char 0)</failure></testcase><testcase classname="tests.test_sapiens_v2.TestAnalyses" name="test_ownership_and_missing_ids" time="58.866" /></testsuite></testsuites>

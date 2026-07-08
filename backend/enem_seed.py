@@ -1,163 +1,315 @@
-"""Seed data for ENEM exams (2022-2024). Curated representative questions with rich tags.
+"""Parser + seed helpers for ENEM answer keys pasted from INEP.
 
-Each exam has ~10 questions across areas, enough to demonstrate diagnostic flows end-to-end.
-The database architecture supports any provider (ENEM/FUVEST/etc.) and any year.
+The paste typically looks like:
+
+    QUESTÃO GABARITO
+    INGLÊS ESPANHOL
+    1 D B
+    2 D A
+    3 D D
+    ...
+    6 C
+    7 E
+    ...
+
+Rules:
+- Lines starting with a number followed by 1 or 2 letters (A-E or *) are parsed.
+- Header lines and blank lines are ignored.
+- If a line has 2 letters, first is English, second is Spanish.
+- If only 1 letter, both languages share it (common for non-language questions).
+- Duplicate numbers keep the last occurrence.
 """
 from __future__ import annotations
 
-from models import Alternative, Exam, Question
+import re
 
-# Compact tag builders
-def _tags(**kwargs):
-    base = {
-        "interpretacao_textual": False,
-        "interpretacao_grafico": False,
-        "interpretacao_tabela": False,
-        "visualizacao_espacial": False,
-        "algebra": False,
-        "geometria": False,
-        "funcoes": False,
-        "estatistica": False,
-        "probabilidade": False,
-        "proporcionalidade": False,
-        "modelagem": False,
-        "raciocinio_logico": False,
-        "pegadinha": False,
-        "tempo_medio_segundos": 180,
-        "carga_cognitiva": 5,
-        "complexidade_textual": 5,
-        "complexidade_matematica": 5,
-        "nivel_bloom": "aplicar",
-        "probabilidade_acerto": 0.5,
-    }
-    base.update(kwargs)
-    return base
+from models import AnswerKey, AnswerKeyItem, Exam
+
+LINE_RE = re.compile(
+    r"^\s*(\d{1,3})\s+([A-Ea-e\*])(?:\s+([A-Ea-e\*]))?\s*$"
+)
 
 
-def _q(number, area, subject, topic, statement, alts, correct, tags, difficulty="medio", competency=None):
-    return {
-        "number": number,
-        "area": area,
-        "subject": subject,
-        "topic": topic,
-        "statement": statement,
-        "alternatives": [Alternative(letter=ltr, text=t).model_dump() for ltr, t in alts],
-        "correct_answer": correct,
-        "tags": tags,
-        "difficulty": difficulty,
-        "competency": competency,
-    }
+def parse_answer_key_text(raw: str) -> tuple[list[AnswerKeyItem], list[AnswerKeyItem]]:
+    """Return (english_answers, spanish_answers)."""
+    english: dict[int, str] = {}
+    spanish: dict[int, str] = {}
+    for line in raw.splitlines():
+        m = LINE_RE.match(line)
+        if not m:
+            continue
+        num = int(m.group(1))
+        a = m.group(2).upper()
+        b = (m.group(3) or "").upper()
+        if b:
+            english[num] = a
+            spanish[num] = b
+        else:
+            # shared answer for both languages
+            english[num] = a
+            spanish[num] = a
+    en_items = [AnswerKeyItem(number=n, letter=english[n]) for n in sorted(english)]
+    es_items = [AnswerKeyItem(number=n, letter=spanish[n]) for n in sorted(spanish)]
+    return en_items, es_items
 
 
-def _make_bank(area_offset):
-    """Generate a rich sample bank spanning all areas & tag combinations."""
-    # 12 questions per exam covering diverse cognitive tags
-    return [
-        _q(1, "MT", "Matemática", "Proporcionalidade",
-           "Uma receita usa 3 xícaras de farinha para 6 biscoitos. Quantas xícaras são necessárias para 20 biscoitos?",
-           [("A", "8"), ("B", "9"), ("C", "10"), ("D", "12"), ("E", "15")],
-           "C", _tags(proporcionalidade=True, modelagem=True, complexidade_matematica=3, tipo_raciocinio="proporcional", tema="Razão e proporção"),
-           difficulty="facil"),
-        _q(2, "MT", "Matemática", "Álgebra - Equações",
-           "Um valor x satisfaz 3x + 12 = 5x - 4. Quanto vale x?",
-           [("A", "4"), ("B", "6"), ("C", "8"), ("D", "10"), ("E", "12")],
-           "C", _tags(algebra=True, complexidade_matematica=4, numero_etapas=3, tipo_erro_comum="troca de sinal")),
-        _q(3, "MT", "Matemática", "Funções",
-           "O lucro L(x) de uma empresa em função do número x de unidades vendidas é L(x) = 20x - 200. Quantas unidades são necessárias para o lucro atingir R$ 1000?",
-           [("A", "40"), ("B", "50"), ("C", "60"), ("D", "70"), ("E", "80")],
-           "C", _tags(algebra=True, funcoes=True, modelagem=True, complexidade_matematica=5, numero_etapas=3)),
-        _q(4, "MT", "Matemática", "Estatística",
-           "A média das notas de 5 alunos é 7. Se um novo aluno com nota 4 for incluído, qual será a nova média?",
-           [("A", "5,5"), ("B", "6,0"), ("C", "6,3"), ("D", "6,5"), ("E", "6,8")],
-           "D", _tags(estatistica=True, complexidade_matematica=4, tipo_erro_comum="dividir pelo n antigo", pegadinha=True)),
-        _q(5, "MT", "Matemática", "Geometria",
-           "Um terreno retangular tem 20m por 15m. Qual sua área em m²?",
-           [("A", "70"), ("B", "150"), ("C", "200"), ("D", "300"), ("E", "350")],
-           "D", _tags(geometria=True, complexidade_matematica=2), difficulty="facil"),
-        _q(6, "CN", "Física", "Cinemática",
-           "Um carro percorre 240 km em 3 horas. Sua velocidade média em km/h é:",
-           [("A", "60"), ("B", "70"), ("C", "80"), ("D", "90"), ("E", "100")],
-           "C", _tags(proporcionalidade=True, conversao_unidades=True, complexidade_matematica=3, tema="Velocidade média"), difficulty="facil"),
-        _q(7, "CN", "Química", "Estequiometria",
-           "Na reação 2H₂ + O₂ → 2H₂O, quantos mols de água são formados a partir de 4 mols de H₂?",
-           [("A", "1"), ("B", "2"), ("C", "3"), ("D", "4"), ("E", "8")],
-           "D", _tags(proporcionalidade=True, conhecimento_conceitual=True, complexidade_matematica=4, tema="Reações químicas")),
-        _q(8, "CN", "Biologia", "Genética",
-           "Em cruzamento entre dois heterozigotos (Aa x Aa), qual a proporção esperada de descendentes homozigotos recessivos (aa)?",
-           [("A", "1/2"), ("B", "1/3"), ("C", "1/4"), ("D", "3/4"), ("E", "1/8")],
-           "C", _tags(probabilidade=True, conhecimento_conceitual=True, complexidade_matematica=3)),
-        _q(9, "CH", "História", "República Brasileira",
-           "A Semana de Arte Moderna de 1922, realizada em São Paulo, teve como principal objetivo:",
-           [("A", "Consolidar o academicismo europeu no Brasil"),
-            ("B", "Romper com padrões estéticos tradicionais e valorizar identidade nacional"),
-            ("C", "Fundar um partido político"),
-            ("D", "Criar universidades públicas"),
-            ("E", "Difundir o realismo francês")],
-           "B", _tags(interpretacao_textual=True, memorizacao=True, conhecimento_factual=True, complexidade_textual=6)),
-        _q(10, "CH", "Geografia", "Urbanização",
-            "O processo de metropolização no Brasil está mais fortemente associado a qual fenômeno?",
-            [("A", "Êxodo rural intenso no século XX"),
-             ("B", "Colonização portuguesa do século XVI"),
-             ("C", "Chegada da Família Real em 1808"),
-             ("D", "Descoberta do ouro em Minas Gerais"),
-             ("E", "Descentralização produtiva do século XXI")],
-            "A", _tags(interpretacao_textual=True, conhecimento_conceitual=True, complexidade_textual=7)),
-        _q(11, "LC", "Português", "Interpretação de texto",
-            "\"Ler é decodificar o mundo\". Nessa afirmação, a palavra 'decodificar' é usada em sentido:",
-            [("A", "denotativo"), ("B", "conotativo"), ("C", "irônico"), ("D", "hiperbólico"), ("E", "eufemístico")],
-            "B", _tags(interpretacao_textual=True, complexidade_textual=6, tipo_raciocinio="verbal")),
-        _q(12, "LC", "Inglês", "Compreensão",
-            "The phrase 'time flies' most likely means:",
-            [("A", "time is expensive"),
-             ("B", "time passes very quickly"),
-             ("C", "birds are fast"),
-             ("D", "clocks are broken"),
-             ("E", "airplanes are late")],
-            "B", _tags(interpretacao_textual=True, memorizacao=True, complexidade_textual=4), difficulty="facil"),
-    ]
+async def import_pasted_key(db, provider: str, year: int, day: int, color: str, raw_text: str) -> dict:
+    en_items, es_items = parse_answer_key_text(raw_text)
+    if not en_items and not es_items:
+        raise ValueError("Nenhuma linha reconhecida no gabarito.")
 
+    diverge = any(en_items[i].letter != es_items[i].letter for i in range(min(len(en_items), len(es_items))))
+    has_english = len(en_items) > 0
+    has_spanish = len(es_items) > 0 and diverge  # only mark as separate if actually differs
 
-def build_seed_exams() -> list[tuple[Exam, list[Question]]]:
-    """Return list of (exam, questions) tuples for ENEM 2022, 2023, 2024."""
-    exams: list[tuple[Exam, list[Question]]] = []
-    for year in (2022, 2023, 2024):
-        for color, area in (
-            ("Azul", "Dia 1 - LC + CH"),
-            ("Amarela", "Dia 2 - MT + CN"),
-        ):
-            exam = Exam(
-                provider="ENEM",
-                year=year,
-                color=color,
-                area=area,
-                title=f"ENEM {year} • {color}",
-                total_questions=12,
-            )
-            questions = []
-            for qraw in _make_bank(area_offset=0):
-                q = Question(
-                    exam_id=exam.exam_id,
-                    number=qraw["number"],
-                    area=qraw["area"],
-                    subject=qraw["subject"],
-                    topic=qraw["topic"],
-                    statement=qraw["statement"],
-                    alternatives=[Alternative(**a) for a in qraw["alternatives"]],
-                    correct_answer=qraw["correct_answer"],
-                    tags=qraw["tags"],
-                    difficulty=qraw["difficulty"],
-                    competency=qraw.get("competency"),
-                )
-                questions.append(q)
-            exams.append((exam, questions))
-    return exams
+    total = max(len(en_items), len(es_items))
+    title = f"ENEM {year} · Dia {day} · {color}"
 
-
-async def seed_if_empty(db):
-    count = await db.exams.count_documents({})
-    if count > 0:
-        return
-    for exam, questions in build_seed_exams():
+    # Upsert exam by (provider, year, day, color)
+    existing = await db.exams.find_one(
+        {"provider": provider, "year": year, "day": day, "color": color},
+        {"_id": 0},
+    )
+    if existing:
+        exam_id = existing["exam_id"]
+        await db.exams.update_one(
+            {"exam_id": exam_id},
+            {"$set": {"title": title, "total_questions": total,
+                      "has_english": has_english, "has_spanish": has_spanish}},
+        )
+        await db.answer_keys.delete_many({"exam_id": exam_id})
+    else:
+        exam = Exam(
+            provider=provider, year=year, day=day, color=color,
+            title=title, total_questions=total,
+            has_english=has_english, has_spanish=has_spanish,
+        )
         await db.exams.insert_one(exam.model_dump())
-        for q in questions:
-            await db.questions.insert_one(q.model_dump())
+        exam_id = exam.exam_id
+
+    if en_items:
+        await db.answer_keys.insert_one(
+            AnswerKey(exam_id=exam_id, language="english", answers=en_items).model_dump()
+        )
+    if es_items and has_spanish:
+        await db.answer_keys.insert_one(
+            AnswerKey(exam_id=exam_id, language="spanish", answers=es_items).model_dump()
+        )
+    return {"exam_id": exam_id, "total": total, "english": has_english, "spanish": has_spanish}
+
+
+# ---------- Sample seed (real-looking ENEM 2023 Dia 1 Azul, for demo) ----------
+
+SAMPLE_ENEM_2023_D1_AZUL = """QUESTÃO GABARITO
+INGLÊS ESPANHOL
+1 D B
+2 E C
+3 A A
+4 C D
+5 B B
+6 D
+7 A
+8 C
+9 E
+10 B
+11 D
+12 A
+13 C
+14 E
+15 B
+16 D
+17 A
+18 C
+19 E
+20 B
+21 D
+22 A
+23 C
+24 E
+25 B
+26 D
+27 A
+28 C
+29 E
+30 B
+31 D
+32 A
+33 C
+34 E
+35 B
+36 D
+37 A
+38 C
+39 E
+40 B
+41 D
+42 A
+43 C
+44 E
+45 B
+46 C
+47 D
+48 A
+49 B
+50 E
+51 C
+52 D
+53 A
+54 B
+55 E
+56 C
+57 D
+58 A
+59 B
+60 E
+61 C
+62 D
+63 A
+64 B
+65 E
+66 C
+67 D
+68 A
+69 B
+70 E
+71 C
+72 D
+73 A
+74 B
+75 E
+76 C
+77 D
+78 A
+79 B
+80 E
+81 C
+82 D
+83 A
+84 B
+85 E
+86 C
+87 D
+88 A
+89 B
+90 E
+"""
+
+SAMPLE_ENEM_2023_D2_AZUL = """QUESTÃO GABARITO
+91 A
+92 B
+93 C
+94 D
+95 E
+96 A
+97 B
+98 C
+99 D
+100 E
+101 A
+102 B
+103 C
+104 D
+105 E
+106 A
+107 B
+108 C
+109 D
+110 E
+111 A
+112 B
+113 C
+114 D
+115 E
+116 A
+117 B
+118 C
+119 D
+120 E
+121 A
+122 B
+123 C
+124 D
+125 E
+126 A
+127 B
+128 C
+129 D
+130 E
+131 A
+132 B
+133 C
+134 D
+135 E
+136 C
+137 D
+138 A
+139 B
+140 E
+141 C
+142 D
+143 A
+144 B
+145 E
+146 C
+147 D
+148 A
+149 B
+150 E
+151 C
+152 D
+153 A
+154 B
+155 E
+156 C
+157 D
+158 A
+159 B
+160 E
+161 C
+162 D
+163 A
+164 B
+165 E
+166 C
+167 D
+168 A
+169 B
+170 E
+171 C
+172 D
+173 A
+174 B
+175 E
+176 C
+177 D
+178 A
+179 B
+180 E
+"""
+
+
+SEEDS = [
+    (2023, 1, "Azul", SAMPLE_ENEM_2023_D1_AZUL),
+    (2023, 2, "Azul", SAMPLE_ENEM_2023_D2_AZUL),
+]
+
+
+async def migrate_and_seed(db):
+    """Run once: drop old collections tied to prior schema, seed sample keys."""
+    marker = await db.settings.find_one({"key": "schema_version"}, {"_id": 0})
+    version = marker.get("value", 0) if marker else 0
+    if version >= 2:
+        return
+    # Wipe legacy data (schema change)
+    await db.exams.drop()
+    await db.questions.drop()
+    await db.analyses.drop()
+    await db.answer_keys.drop()
+    # Seed sample answer keys
+    for year, day, color, raw in SEEDS:
+        await import_pasted_key(db, "ENEM", year, day, color, raw)
+    await db.settings.update_one(
+        {"key": "schema_version"},
+        {"$set": {"key": "schema_version", "value": 2}},
+        upsert=True,
+    )

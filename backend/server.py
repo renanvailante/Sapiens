@@ -15,7 +15,7 @@ load_dotenv(ROOT_DIR / ".env")
 
 import auth as auth_module
 import exam_routes as exam_module
-from enem_seed import seed_if_empty
+from enem_seed import migrate_and_seed
 
 mongo_url = os.environ["MONGO_URL"]
 client = AsyncIOMotorClient(mongo_url)
@@ -25,7 +25,6 @@ auth_module.set_db(db)
 exam_module.set_db(db)
 
 app = FastAPI(title="Sapiens")
-
 api_router = APIRouter(prefix="/api")
 
 
@@ -52,8 +51,8 @@ logger = logging.getLogger("sapiens")
 
 @app.on_event("startup")
 async def _startup():
-    await seed_if_empty(db)
-    logger.info("Sapiens ready: seeded ENEM exams if empty.")
+    await migrate_and_seed(db)
+    logger.info("Sapiens ready.")
 
 
 @app.on_event("shutdown")

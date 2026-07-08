@@ -1,4 +1,8 @@
-"""Sapiens data models."""
+"""Sapiens data models — Answer-Key-only schema (v2).
+
+Exams no longer store questions or alternatives. Each exam holds official
+answer keys in English and/or Spanish, keyed by question number.
+"""
 from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
@@ -15,12 +19,14 @@ def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+# ---------- Users ----------
+
 class User(BaseModel):
     user_id: str = Field(default_factory=lambda: f"user_{uuid.uuid4().hex[:12]}")
     email: EmailStr
     name: str
     picture: str | None = None
-    provider: str = "email"  # email | google
+    provider: str = "email"
     password_hash: str | None = None
     created_at: str = Field(default_factory=_now_iso)
 
@@ -33,52 +39,71 @@ class UserSession(BaseModel):
     created_at: str = Field(default_factory=_now_iso)
 
 
-# ---------- ENEM domain ----------
+# ---------- ENEM Answer-Key model ----------
 
-AREAS = {
-    "MT": "Matemática",
-    "CN": "Ciências da Natureza",
-    "CH": "Ciências Humanas",
+AREA_LABELS = {
+    "LC-Idioma": "Língua estrangeira",
     "LC": "Linguagens e Códigos",
+    "CH": "Ciências Humanas",
+    "CN": "Ciências da Natureza",
+    "MT": "Matemática",
 }
 
 
-class Alternative(BaseModel):
-    letter: str  # A, B, C, D, E
-    text: str
+def area_for(day: int, number: int) -> str:
+    """Map (day, question number) → area code using the standard ENEM layout.
+
+    Day 1: 1-5 language, 6-45 Portuguese/Arts/PE, 46-90 CH.
+    Day 2: 91-135 CN, 136-180 MT (or 1-45/46-90 if paste re-numbered from 1).
+    """
+    n = int(number)
+    if day == 1:
+        if 1 <= n <= 5:
+            return "LC-Idioma"
+        if 6 <= n <= 45:
+            return "LC"
+        return "CH"
+    # day 2
+    if 91 <= n <= 135:
+        return "CN"
+    if 136 <= n <= 180:
+        return "MT"
+    # re-numbered from 1
+    if 1 <= n <= 45:
+        return "CN"
+    return "MT"
 
 
-class Question(BaseModel):
-    question_id: str = Field(default_factory=_uuid)
-    exam_id: str
+class AnswerKeyItem(BaseModel):
     number: int
-    area: str  # MT, CN, CH, LC
-    subject: str  # e.g., "Álgebra"
-    topic: str
-    statement: str
-    alternatives: list[Alternative]
-    correct_answer: str
-    image_url: str | None = None
-    tags: dict[str, Any] = Field(default_factory=dict)  # AI-generated tags
-    difficulty: str = "medio"  # facil, medio, dificil
-    competency: int | None = None  # ENEM competency
-    ability: int | None = None  # ENEM ability
-    expected_time_seconds: int = 180
+    letter: str  # A-E, "*" means annulled / no valid answer
 
 
 class Exam(BaseModel):
     exam_id: str = Field(default_factory=_uuid)
-    provider: str = "ENEM"  # ENEM, FUVEST, etc.
+    provider: str = "ENEM"
     year: int
-    color: str  # Azul, Amarela, Branca, Cinza
-    area: str  # Whole day: LC+CH or MT+CN
+    day: int  # 1 or 2
+    color: str  # Azul, Amarela, Branca, Cinza, Rosa, ...
     title: str
     total_questions: int
+    has_english: bool = False
+    has_spanish: bool = False
     created_at: str = Field(default_factory=_now_iso)
 
 
+class AnswerKey(BaseModel):
+    key_id: str = Field(default_factory=_uuid)
+    exam_id: str
+    language: str  # "english" | "spanish"
+    answers: list[AnswerKeyItem]
+    created_at: str = Field(default_factory=_now_iso)
+
+
+# ---------- User answers & analysis ----------
+
 class UserAnswer(BaseModel):
-    question_id: str
+    number: int
     letter: str  # A-E or "" if blank
 
 
@@ -87,20 +112,23 @@ class Analysis(BaseModel):
     user_id: str
     exam_id: str
     exam_label: str
+    label: str | None = None  # user-customisable name
+    language: str
     answers: list[UserAnswer]
     score: int = 0
     total: int = 0
     percent: float = 0.0
-    by_area: dict[str, dict[str, int]] = Field(default_factory=dict)  # area -> {correct, total}
-    by_tag: dict[str, dict[str, int]] = Field(default_factory=dict)   # tag_group -> {correct, total, ...}
-    error_patterns: list[str] = Field(default_factory=list)
-    strengths: list[str] = Field(default_factory=list)
-    weaknesses: list[str] = Field(default_factory=list)
+    by_area: dict[str, dict[str, int]] = Field(default_factory=dict)
+    errors: list[dict[str, Any]] = Field(default_factory=list)  # [{number, area, chosen, correct}]
     diagnostic_headline: str = ""
     diagnostic_body: str = ""
-    cognitive_profile: dict[str, float] = Field(default_factory=dict)  # trait -> 0-100
-    study_plan: list[dict[str, Any]] = Field(default_factory=list)  # ordered items
-    learning_map: dict[str, Any] = Field(default_factory=dict)  # nodes/edges
+    strengths: list[str] = Field(default_factory=list)
+    weaknesses: list[str] = Field(default_factory=list)
+    cognitive_profile: dict[str, float] = Field(default_factory=dict)
+    study_plan: list[dict[str, Any]] = Field(default_factory=list)
+    learning_map: dict[str, Any] = Field(default_factory=dict)
+    deleted: bool = False
+    deleted_at: str | None = None
     created_at: str = Field(default_factory=_now_iso)
 
 
@@ -119,18 +147,18 @@ class LoginRequest(BaseModel):
 
 class SubmitExamRequest(BaseModel):
     exam_id: str
+    language: str  # "english" | "spanish"
     answers: list[UserAnswer]
 
 
 class VisionOCRRequest(BaseModel):
     exam_id: str
-    image_base64: str  # data URL or bare base64
+    image_base64: str
 
 
-class ImportExamRequest(BaseModel):
+class PasteAnswerKeyRequest(BaseModel):
     provider: str = "ENEM"
     year: int
+    day: int  # 1 or 2
     color: str
-    area: str
-    title: str
-    questions: list[dict[str, Any]]
+    raw_text: str  # pasted content from INEP
