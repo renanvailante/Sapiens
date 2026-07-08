@@ -1,0 +1,25 @@
+{
+  "summary": "Backend end-to-end pytest suite for Sapiens: 16/16 tests passed in ~40s including Claude Sonnet 4.5 diagnostic and Gemini Vision OCR endpoints.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_sapiens_backend.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "auth.py /auth/emergent/session: reads data['email'] directly — will raise KeyError (500) if Emergent returns unexpected payload. Consider .get() + explicit 401.",
+    "exam_routes.py /admin/import-exam: no admin-role guard — any authenticated user can insert exams. Add role check or feature-flag.",
+    "auth.py: signup does not validate password strength/length (accepts even 1-char password).",
+    "server.py uses @app.on_event('startup'/'shutdown') which is deprecated in FastAPI; migrate to lifespan handler.",
+    "exam_routes.py submit_analysis: for-loop iterates full questions list per submission but has no timeout guard on diagnose() — a hanging Claude call could pile up requests. Consider explicit timeout/circuit breaker."
+  ],
+  "updated_files": ["/app/backend/tests/test_sapiens_backend.py"],
+  "success_rate": {"backend": "100%", "frontend": "not tested (backend-only request)"},
+  "test_credentials": "qa@sapiens.app / qa12345 (verified working, both login and signup paths)",
+  "seed_data_creation": "Suite creates one TEST_IMPORTED_EXAM (year 2021) via /admin/import-exam and one TEST_<uuid>@sapiens.app user per run; also creates analyses under qa@sapiens.app. No cleanup — recommend main agent add teardown if needed.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Suite runs with `pytest backend/tests/test_sapiens_backend.py -n 0 -v` (pytest.ini enforces -n 2 --dist loadscope; use -n 0 for serial). Uses REACT_APP_BACKEND_URL from /app/frontend/.env. Analysis test relies on Claude via EMERGENT_LLM_KEY and takes ~15-25s. Vision test uses a PIL-generated realistic JPEG with grid+letters — Gemini returned 200 with normalized 12-answer list. Repeated runs will create additional analyses/users; consider periodic Mongo cleanup.",
+  "rca of the issue": "N/A — no issues found."
+}
