@@ -1,0 +1,121 @@
+{
+  "project_identity": {
+    "name": "Sapiens",
+    "vibe": "Premium, Analytical, Approachable",
+    "inspirations": ["Apple (Glassmorphism, smooth animations, crisp typography)", "Notion (Minimalist bento, clean monochrome, high whitespace)", "Stripe (Perfect optical alignment, tracing beams, precise metrics)", "Duolingo (Gamified progress rings, elevated micro-interactions)"],
+    "theme": "Light theme preferred (matches Apple/Notion clean aesthetic). Crisp white backgrounds with deep contrast typography."
+  },
+  "typography": {
+    "strategy": "Swiss Brutalist meets Old Money Tech",
+    "headings": {
+      "font": "Cabinet Grotesk",
+      "weights": ["Bold", "ExtraBold"],
+      "classes": "font-sans tracking-tight leading-none text-zinc-950",
+      "usage": "Hero title, large numbers in dashboard, widget titles."
+    },
+    "body": {
+      "font": "Manrope",
+      "weights": ["Regular", "Medium", "SemiBold"],
+      "classes": "font-sans tracking-normal leading-relaxed text-zinc-600",
+      "usage": "Paragraphs, data labels, tooltips, secondary text."
+    },
+    "hierarchy": {
+      "h1": "text-5xl sm:text-6xl font-extrabold tracking-tighter",
+      "h2": "text-3xl sm:text-4xl font-bold tracking-tight",
+      "h3": "text-xl sm:text-2xl font-semibold",
+      "body_large": "text-lg text-zinc-700",
+      "body_base": "text-base text-zinc-600",
+      "label": "text-xs font-bold uppercase tracking-[0.2em] text-zinc-500"
+    }
+  },
+  "colors": {
+    "archetype": "Swiss High-Contrast with Vibrant Data Accents",
+    "backgrounds": {
+      "page": "#FAFAFA",
+      "surface": "#FFFFFF",
+      "glass": "bg-white/70 backdrop-blur-xl border border-white/20"
+    },
+    "text": {
+      "primary": "#09090B",
+      "secondary": "#52525B",
+      "muted": "#A1A1AA"
+    },
+    "brand_accents": {
+      "primary": "#000000",
+      "interactive": "#4F46E5",
+      "mastery_success": "#10B981",
+      "deficit_error": "#F43F5E",
+      "warning_insight": "#F59E0B"
+    },
+    "rules": [
+      "No full-screen gradients. Use pure white or #FAFAFA for breathing room.",
+      "Data viz colors must be distinct. Green for mastered skills, Coral/Red for deficient skills.",
+      "Hover states for buttons must be a lighter hue (e.g., hover:bg-zinc-800 for primary black buttons)."
+    ]
+  },
+  "visual_enhancers": {
+    "surfaces": [
+      "The 'Crystal' Variant: Use bg-white/70 backdrop-blur-2xl for the top navigation bar and floating action buttons.",
+      "The 'Tactile' Variant: Use white cards with a 1px solid border-zinc-200 and a very soft shadow (shadow-sm) for dashboard widgets (Notion style).",
+      "The 'Tracing Beam': Use a subtle animated gradient border on the 'Premium R$4.99/mês' upsell card to make it feel magical (Stripe style)."
+    ],
+    "shapes": "Slightly rounded corners. max border-radius of 12px (rounded-xl) for cards, rounded-full for pill buttons.",
+    "icons": "Use 'lucide-react' for UI elements. Clean, stroke-based icons. 1.5px stroke width."
+  },
+  "components": {
+    "hero": "Minimalist center-aligned or bento. Massive 'Sapiens' title, clean subtitle. Pill-shaped primary CTA. Background should be mostly white with an abstract geometric wave.",
+    "buttons": "Pill-shaped (rounded-full). Primary is solid black (bg-zinc-950 text-white). Secondary is outline (border-zinc-200 text-zinc-900). Use scale transform on click (active:scale-95).",
+    "dashboard_cards": "No heavy shadows. Use border-zinc-200, bg-white, p-6 or p-8. High density layout. Hide complex filters behind a 'More' dropdown.",
+    "charts": "Use Recharts. Line charts for evolution with smooth curves (type='monotone'). Radar charts for 'Radar de Habilidades'. Bar charts for 'Distribuição de Erros'. Strip away grid lines to keep it minimal.",
+    "learning_map": "Use 'react-force-graph-2d' or 'visx' to render the knowledge graph. Nodes should be colored based on mastery level. Smooth zoom/pan.",
+    "premium_upsell": "Minimalist block, subtle shimmer effect, deep black or indigo background to stand out from the rest of the white UI."
+  },
+  "grids_layouts": {
+    "spacing_system": "Use generous padding. Dashboard containers should have gap-6 or gap-8. Page horizontal padding should be px-6 md:px-12.",
+    "dashboard_grid": "High Density Grid. grid-cols-1 md:grid-cols-3 lg:grid-cols-4. Main charts take col-span-2 or col-span-3. Side feeds take col-span-1.",
+    "alignment": "Left-align dense content and data. Center-align the main landing page hero.",
+    "mobile": "Always ensure 100% width on mobile (grid-cols-1). Hide complex tables inside scrollable X containers."
+  },
+  "motion": {
+    "transitions": "Fast and snappy. transition-transform duration-200 ease-out.",
+    "micro_interactions": "Hover states on cards should slightly lift (-translate-y-1) and increase shadow. Use framer-motion for page entrances (opacity 0 to 1, y: 10 to 0).",
+    "loading": "Use skeleton loaders (shimmering rects) instead of spinning wheels for widgets to maintain the premium Stripe-like feel."
+  },
+  "accessibility": {
+    "contrast": "Text must meet APCA standards. Gray text must be at least text-zinc-500 on white backgrounds.",
+    "focus": "All interactive elements must have focus:ring-2 focus:ring-indigo-500 focus:outline-none.",
+    "testing": "All interactive and key informational elements MUST include a data-testid attribute in kebab-case."
+  },
+  "media": {
+    "image_urls": [
+      {
+        "url": "https://images.unsplash.com/photo-1572635148687-307f8ca9b737?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1ODh8MHwxfHNlYXJjaHwzfHxhYnN0cmFjdCUyMG1vZGVybiUyMGdlb21ldHJ5JTIwY2xlYW4lMjB3aGl0ZSUyMGJhY2tncm91bmR8ZW58MHx8fHwxNzgzNTQyNTg2fDA&ixlib=rb-4.1.0&q=85",
+        "category": "Hero Background",
+        "description": "Abstract clean white geometry with wavy lines. Place with very low opacity or as a masked background in the landing hero."
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1778835548903-4c22d991bec6?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1OTV8MHwxfHNlYXJjaHwzfHxtaW5pbWFsaXN0JTIwc3R1ZGVudCUyMHN0dWR5aW5nJTIwZGVzayUyMGNsZWFufGVufDB8fHx8MTc4MzU0MjU4Nnww&ixlib=rb-4.1.0&q=85",
+        "category": "Onboarding / Empty State",
+        "description": "Minimalist studying desk. Use for the empty state of the dashboard or login screen."
+      }
+    ]
+  },
+  "3d_libraries": {
+    "recommendation": "Use 'react-force-graph-2d' for the 'Mapa de Aprendizagem' (Knowledge Graph) to show root-causes. It provides a lightweight, highly interactive network graph that fits the analytical nature of the app without the heavy overhead of 3D."
+  },
+  "instructions_to_main_agent": [
+    "Use pure HTML + Tailwind for marketing/landing page components to ensure complete layout freedom.",
+    "Use Shadcn UI components for complex interactivity (Dropdowns, Tabs, Dialogs) but strip out default Vercel aesthetics to match the crisp Apple/Notion look (1px subtle borders, white backgrounds).",
+    "Ensure 'data-testid' is added to all actionable elements (buttons, inputs, tabs, map nodes) and data blocks.",
+    "Implement a smooth scroll using standard CSS or Framer Motion.",
+    "Do not use complete transparent backgrounds for headers/dropdowns. Always use bg-white/70 + backdrop-blur-xl or solid colors."
+  ],
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "Do not make generic centered layouts. Create depth through layered design elements.",
+    "Never apply universal transitions (transition: all). Use specific properties (transition-transform, transition-opacity).",
+    "Never center align the app container (.App { text-align: center; }).",
+    "Use 2-3x more spacing (p-6, p-8) to avoid a cramped, cheap look.",
+    "No AI emojis in the UI (🤖🧠💭). Use clean icons from lucide-react.",
+    "Use sonner for toasts, customized to match the monochrome + colored accent theme."
+  ]
+}
