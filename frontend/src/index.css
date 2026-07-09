@@ -115,3 +115,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, [role="button"]:focu
     outline-offset: 2px;
     border-radius: 8px;
 }
+
+/* Feed: hide scrollbar for the snap-scroll container */
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }

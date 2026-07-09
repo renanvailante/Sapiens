@@ -119,7 +119,16 @@ async def submit_analysis(payload: SubmitExamRequest, user: User = Depends(requi
         "idioma": payload.language, "total": total, "acertos": correct_count,
         "percentual": percent, "por_area": dict(by_area), "erros": errors,
     }
-    ai_out = await diagnose(ai_payload)
+    try:
+        ai_out = await diagnose(ai_payload)
+    except Exception:
+        ai_out = {
+            "headline": "Análise recebida. Diagnóstico cognitivo indisponível no momento — tente reprocessar em instantes.",
+            "body": "Sua pontuação e desempenho por área foram calculados normalmente. A camada de IA responsável pela leitura de padrões cognitivos não respondeu a tempo.",
+            "strengths": [], "weaknesses": [],
+            "cognitive_profile": {}, "study_plan": [],
+            "learning_map": {"nodes": [], "edges": []},
+        }
 
     exam_label = exam["title"] + (" · English" if payload.language == "english" else " · Español")
     analysis = Analysis(

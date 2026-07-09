@@ -13,6 +13,8 @@ import LearningMap from "./pages/LearningMap";
 import History from "./pages/History";
 import Trash from "./pages/Trash";
 import Admin from "./pages/Admin";
+import AdminFeed from "./pages/AdminFeed";
+import Feed from "./pages/Feed";
 import AuthCallback from "./components/AuthCallback";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -33,6 +35,8 @@ function AppRouter() {
       <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
       <Route path="/trash" element={<ProtectedRoute><Trash /></ProtectedRoute>} />
       <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+      <Route path="/admin/feed" element={<ProtectedRoute><AdminFeed /></ProtectedRoute>} />
+      <Route path="/feed" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
       <Route path="*" element={<Landing />} />
     </Routes>
   );
