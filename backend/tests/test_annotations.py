@@ -284,6 +284,43 @@ class TestReads:
             assert x["disciplina"] == "Matemática"
 
 
+# ---------- Read endpoint auth gate (iteration 5 fix verification) ----------
+
+class TestReadAuthGate:
+    """Verifies main-agent fix: /annotations, /annotations/{item_id},
+    /annotations/by-question/{banca}/{ano}/{caderno}/{numero} must require auth."""
+
+    def test_list_annotations_requires_auth(self, auth_client, created_ids):
+        # Seed one so list would otherwise return data
+        item_id = f"ITEM-TEST-{uuid.uuid4().hex[:8]}"
+        created_ids.append(item_id)
+        auth_client.post(f"{API}/admin/annotations", json=_base_payload(item_id), timeout=30)
+        r = requests.get(f"{API}/annotations", params={"banca": "ENEM"}, timeout=30)
+        assert r.status_code in (401, 403), f"expected 401/403 without token, got {r.status_code}"
+        # And works with token
+        r2 = auth_client.get(f"{API}/annotations", params={"banca": "ENEM"}, timeout=30)
+        assert r2.status_code == 200
+
+    def test_get_annotation_by_item_id_requires_auth(self, auth_client, created_ids):
+        item_id = f"ITEM-TEST-{uuid.uuid4().hex[:8]}"
+        created_ids.append(item_id)
+        auth_client.post(f"{API}/admin/annotations", json=_base_payload(item_id), timeout=30)
+        r = requests.get(f"{API}/annotations/{item_id}", timeout=30)
+        assert r.status_code in (401, 403), f"expected 401/403 without token, got {r.status_code}"
+        r2 = auth_client.get(f"{API}/annotations/{item_id}", timeout=30)
+        assert r2.status_code == 200
+
+    def test_get_annotation_by_question_requires_auth(self, auth_client, created_ids):
+        item_id = f"ITEM-TEST-{uuid.uuid4().hex[:8]}"
+        created_ids.append(item_id)
+        p = _base_payload(item_id, ano=2022, caderno="Azul", numero=161)
+        auth_client.post(f"{API}/admin/annotations", json=p, timeout=30)
+        r = requests.get(f"{API}/annotations/by-question/ENEM/2022/Azul/161", timeout=30)
+        assert r.status_code in (401, 403), f"expected 401/403 without token, got {r.status_code}"
+        r2 = auth_client.get(f"{API}/annotations/by-question/ENEM/2022/Azul/161", timeout=30)
+        assert r2.status_code == 200
+
+
 # ---------- DELETE ----------
 
 class TestDelete:

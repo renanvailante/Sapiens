@@ -1,0 +1,36 @@
+{
+  "summary": "Verified iteration_5 claim: main agent said Depends(require_user) was added to GET /api/annotations, GET /api/annotations/{item_id}, and GET /api/annotations/by-question/{banca}/{ano}/{caderno}/{numero}. FIX WAS NOT APPLIED. Inspecting /app/backend/annotation_routes.py lines 96, 114, 122 shows those three GETs still have no user dependency. Live curl against REACT_APP_BACKEND_URL confirmed: all three return 200 with no Authorization header, and /api/annotations/by-question/ENEM/2022/Azul/137 still leaks gabarito='C'. Added TestReadAuthGate (3 tests) to /app/backend/tests/test_annotations.py that assert 401/403 without token AND 200 with token — all 3 fail with 200. Regression baseline: iteration_4's original 20 tests still pass 20/20 in 51s (fix did not break anything because it was never applied).",
+  "backend_issues": {
+    "critical": [
+      {"endpoint": "GET /api/annotations", "issue": "Still unauthenticated — returns 200 with no Bearer token. Depends(require_user) NOT present in annotation_routes.py:96. Leaks full payload list including gabarito.", "priority": "CRITICAL"},
+      {"endpoint": "GET /api/annotations/{item_id}", "issue": "Still unauthenticated — returns 200 with no Bearer token. Depends(require_user) NOT present in annotation_routes.py:114-115. Leaks gabarito + full pedagogia.", "priority": "CRITICAL"},
+      {"endpoint": "GET /api/annotations/by-question/{banca}/{ano}/{caderno}/{numero}", "issue": "Still unauthenticated — returns 200 with no Bearer token. Depends(require_user) NOT present in annotation_routes.py:122-123. Verified live: /api/annotations/by-question/ENEM/2022/Azul/137 returns gabarito='C' anonymously.", "priority": "CRITICAL"}
+    ],
+    "minor": []
+  },
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_annotations.py",
+    "/app/test_reports/pytest/pytest_annotations_iter5.xml",
+    "/app/test_reports/pytest/pytest_annotations_iter5_authgate.xml"
+  ],
+  "action_items": [
+    "Actually apply the fix in /app/backend/annotation_routes.py — add `user: User = Depends(require_user)` to the signatures of list_annotations (line 97), get_annotation (line 115), and get_annotation_by_question (line 123). Import User is already present.",
+    "After fix, some existing tests in test_annotations.py (TestReads, TestDelete, TestCognitiveProfile.test_read_only_invariant) call GET /api/annotations/{item_id} and /api/annotations without auth via bare `requests.get(...)` — those calls must be routed through auth_client. I intentionally did not change them so this run demonstrates the current (broken) surface; they will need updating together with the fix.",
+    "Re-run full suite (23 tests) after applying fix; expect TestReadAuthGate 3/3 to pass and TestReads/TestDelete anon calls to be updated to auth_client."
+  ],
+  "critical_code_review_comments": [
+    "annotation_routes.py: list_annotations / get_annotation / get_annotation_by_question STILL lack Depends(require_user). The commit/description does not match the file on disk — verify no lost edit.",
+    "Same pre-existing issues from iteration_4 still open: admin endpoints only require_user (no admin/role gate); compute_cognitive_profile N+1 lookups; count_documents on every list call; empty-string schema_version/item.id pass validation."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_annotations.py (added TestReadAuthGate class with 3 tests asserting 401/403 anon + 200 with token)"
+  ],
+  "success_rate": {"backend": "20/23 (87%) — 3 auth-gate tests fail because fix not applied", "frontend": "N/A (not requested)"},
+  "test_credentials": "qa@sapiens.app / qa12345 — valid; used for authenticated assertions.",
+  "seed_data_creation": "TestReadAuthGate seeds 3 short-lived annotations (ITEM-TEST-<hex>) tracked in created_ids fixture; teardown deletes them.",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "iteration_5: main agent claimed a fix that was NOT persisted to annotation_routes.py. Once fix is applied, (1) TestReadAuthGate should pass 3/3, and (2) existing anon requests in TestReads.test_get_by_item_id_matches_payload / test_get_by_question_coordinate / test_list_with_filters and TestDelete.test_delete_then_404 and TestCognitiveProfile.test_read_only_invariant must be switched from `requests.get` to `auth_client.get` — they currently succeed because reads are anon. Full test file lives at /app/backend/tests/test_annotations.py; run with REACT_APP_BACKEND_URL set.",
+  "rca of the issue": "Root cause: the code change described in the review_request was not saved. `grep -n 'require_user' /app/backend/annotation_routes.py` shows require_user only on /admin/* endpoints and /cognitive-profile — the three public GET routes are unchanged. Reproduction: `curl -o /dev/null -w '%{http_code}' https://sapiens-learn.preview.emergentagent.com/api/annotations/by-question/ENEM/2022/Azul/137` → 200 with gabarito='C' in body. Mitigation: add `user: User = Depends(require_user)` parameter to the three route signatures at lines 97, 115, 123."
+}
