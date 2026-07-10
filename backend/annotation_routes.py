@@ -100,6 +100,7 @@ async def list_annotations(
     disciplina: str | None = None,
     caderno: str | None = None,
     limit: int = Query(200, ge=1, le=1000),
+    user: User = Depends(require_user),
 ):
     q: dict[str, Any] = {}
     if banca: q["banca"] = banca
@@ -112,7 +113,7 @@ async def list_annotations(
 
 
 @router.get("/annotations/{item_id}")
-async def get_annotation(item_id: str):
+async def get_annotation(item_id: str, user: User = Depends(require_user)):
     doc = await annotation_service.find_annotation_by_id(item_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Annotation not found")
@@ -120,7 +121,7 @@ async def get_annotation(item_id: str):
 
 
 @router.get("/annotations/by-question/{banca}/{ano}/{caderno}/{numero}")
-async def get_annotation_by_question(banca: str, ano: int, caderno: str, numero: int):
+async def get_annotation_by_question(banca: str, ano: int, caderno: str, numero: int, user: User = Depends(require_user)):
     doc = await annotation_service.find_annotation_for_question(banca, ano, caderno, numero)
     if not doc:
         raise HTTPException(status_code=404, detail="Annotation not found")

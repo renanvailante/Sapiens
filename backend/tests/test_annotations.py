@@ -150,7 +150,7 @@ class TestUpsertSingle:
         assert r2.status_code == 200
 
         # Only one record in a filter that includes this banca/ano
-        listing = requests.get(f"{API}/annotations", params={"banca": "ENEM", "ano": 2022}, timeout=30).json()
+        listing = auth_client.get(f"{API}/annotations", params={"banca": "ENEM", "ano": 2022}, timeout=30).json()
         matches = [x for x in listing["items"] if x["item_id"] == item_id]
         assert len(matches) == 1
         assert matches[0]["payload"]["item"]["gabarito"] == "D"
@@ -167,7 +167,7 @@ class TestUpsertSingle:
         r = auth_client.post(f"{API}/admin/annotations", json=p, timeout=30)
         assert r.status_code == 200, r.text
 
-        got = requests.get(f"{API}/annotations/{item_id}", timeout=30).json()
+        got = auth_client.get(f"{API}/annotations/{item_id}", timeout=30).json()
         payload = got["payload"]
         assert payload["item"]["new_metadata"] == {"tags": ["novo"], "score": 42}
         assert payload["qualidade_anotacao"]["extra_new_field"] == "future-value"
@@ -219,8 +219,8 @@ class TestBulk:
         assert isinstance(body["errors"][0]["detail"], list) and body["errors"][0]["detail"]
 
         # Confirm the two valid records were stored
-        assert requests.get(f"{API}/annotations/{good1['item']['id']}", timeout=30).status_code == 200
-        assert requests.get(f"{API}/annotations/{good2['item']['id']}", timeout=30).status_code == 200
+        assert auth_client.get(f"{API}/annotations/{good1['item']['id']}", timeout=30).status_code == 200
+        assert auth_client.get(f"{API}/annotations/{good2['item']['id']}", timeout=30).status_code == 200
 
 
 # ---------- GET read endpoints ----------
@@ -233,7 +233,7 @@ class TestReads:
         ingested = copy.deepcopy(p)
         auth_client.post(f"{API}/admin/annotations", json=p, timeout=30)
 
-        got = requests.get(f"{API}/annotations/{item_id}", timeout=30).json()
+        got = auth_client.get(f"{API}/annotations/{item_id}", timeout=30).json()
         # payload matches value-wise
         assert got["payload"]["schema_version"] == ingested["schema_version"]
         assert got["payload"]["item"] == ingested["item"]
@@ -253,11 +253,11 @@ class TestReads:
         p = _base_payload(item_id, ano=2022, caderno="Azul", numero=142)
         auth_client.post(f"{API}/admin/annotations", json=p, timeout=30)
 
-        r = requests.get(f"{API}/annotations/by-question/ENEM/2022/Azul/142", timeout=30)
+        r = auth_client.get(f"{API}/annotations/by-question/ENEM/2022/Azul/142", timeout=30)
         assert r.status_code == 200
         assert r.json()["item_id"] == item_id
 
-        r404 = requests.get(f"{API}/annotations/by-question/ENEM/1900/Rosa/999", timeout=30)
+        r404 = auth_client.get(f"{API}/annotations/by-question/ENEM/1900/Rosa/999", timeout=30)
         assert r404.status_code == 404
 
     def test_list_with_filters(self, auth_client, created_ids):
@@ -269,7 +269,7 @@ class TestReads:
             auth_client.post(f"{API}/admin/annotations",
                              json=_base_payload(iid, ano=2022, numero=n), timeout=30)
 
-        r = requests.get(f"{API}/annotations",
+        r = auth_client.get(f"{API}/annotations",
                          params={"banca": "ENEM", "ano": 2022, "disciplina": "Matemática"}, timeout=30)
         assert r.status_code == 200
         body = r.json()
@@ -327,12 +327,12 @@ class TestDelete:
     def test_delete_then_404(self, auth_client):
         item_id = f"ITEM-TEST-{uuid.uuid4().hex[:8]}"
         auth_client.post(f"{API}/admin/annotations", json=_base_payload(item_id), timeout=30)
-        assert requests.get(f"{API}/annotations/{item_id}", timeout=30).status_code == 200
+        assert auth_client.get(f"{API}/annotations/{item_id}", timeout=30).status_code == 200
 
         r = auth_client.delete(f"{API}/admin/annotations/{item_id}", timeout=30)
         assert r.status_code == 200 and r.json().get("ok") is True
 
-        assert requests.get(f"{API}/annotations/{item_id}", timeout=30).status_code == 404
+        assert auth_client.get(f"{API}/annotations/{item_id}", timeout=30).status_code == 404
         # idempotency: deleting again -> 404
         assert auth_client.delete(f"{API}/admin/annotations/{item_id}", timeout=30).status_code == 404
 
@@ -413,13 +413,13 @@ class TestCognitiveProfile:
         p = _base_payload(item_id, banca="ENEM", ano=2023, caderno="Azul", numero=48,
                           process_id="RQ-RO-001")
         auth_client.post(f"{API}/admin/annotations", json=p, timeout=30)
-        before = requests.get(f"{API}/annotations/{item_id}", timeout=30).json()
+        before = auth_client.get(f"{API}/annotations/{item_id}", timeout=30).json()
 
         for _ in range(5):
             r = auth_client.get(f"{API}/cognitive-profile", timeout=60)
             assert r.status_code == 200
 
-        after = requests.get(f"{API}/annotations/{item_id}", timeout=30).json()
+        after = auth_client.get(f"{API}/annotations/{item_id}", timeout=30).json()
         assert before["payload"] == after["payload"]
         assert before["updated_at"] == after["updated_at"]
         assert before["received_at"] == after["received_at"]
