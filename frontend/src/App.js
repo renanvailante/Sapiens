@@ -14,6 +14,8 @@ import History from "./pages/History";
 import Trash from "./pages/Trash";
 import Admin from "./pages/Admin";
 import AdminFeed from "./pages/AdminFeed";
+import AdminAnnotations from "./pages/AdminAnnotations";
+import CognitiveProfile from "./pages/CognitiveProfile";
 import Feed from "./pages/Feed";
 import AuthCallback from "./components/AuthCallback";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -36,6 +38,8 @@ function AppRouter() {
       <Route path="/trash" element={<ProtectedRoute><Trash /></ProtectedRoute>} />
       <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
       <Route path="/admin/feed" element={<ProtectedRoute><AdminFeed /></ProtectedRoute>} />
+      <Route path="/admin/annotations" element={<ProtectedRoute><AdminAnnotations /></ProtectedRoute>} />
+      <Route path="/cognitive-profile" element={<ProtectedRoute><CognitiveProfile /></ProtectedRoute>} />
       <Route path="/feed" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
       <Route path="*" element={<Landing />} />
     </Routes>

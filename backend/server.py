@@ -16,6 +16,7 @@ load_dotenv(ROOT_DIR / ".env")
 import auth as auth_module
 import exam_routes as exam_module
 import feed_routes as feed_module
+import annotation_routes as annotation_module
 from enem_seed import migrate_and_seed
 from feed_seed import seed_feed
 
@@ -26,6 +27,7 @@ db = client[os.environ["DB_NAME"]]
 auth_module.set_db(db)
 exam_module.set_db(db)
 feed_module.set_db(db)
+annotation_module.set_db(db)
 
 app = FastAPI(title="Sapiens")
 api_router = APIRouter(prefix="/api")
@@ -39,6 +41,7 @@ async def root():
 api_router.include_router(auth_module.router)
 api_router.include_router(exam_module.router)
 api_router.include_router(feed_module.router)
+api_router.include_router(annotation_module.router)
 app.include_router(api_router)
 
 app.add_middleware(

@@ -1,0 +1,26 @@
+{
+  "summary": "Cognitive annotation ingestion pipeline (iteration 4) tested end-to-end. 20 pytest cases covering /api/admin/annotations single upsert (happy path incl. ENEM-2022-MAT-137 shape, idempotency, extra-field forward-compat preservation, missing schema_version -> 400, missing item.id -> 400, unauth 401), /api/admin/annotations/bulk partial success (2 imported, 1 error at correct index with pydantic detail), /api/annotations/{item_id} verbatim payload match, /api/annotations/by-question/{banca}/{ano}/{caderno}/{numero}, /api/annotations list with banca+ano+disciplina filters (returns {items,total}), DELETE + follow-up 404 + idempotent 404 on re-delete, /api/cognitive-profile auth gate + shape, /api/cognitive-profile process aggregation for seeded ENEM/2023/Azul Q46+Q47 with RQ-PROP-003 & error_type_id=99 for QA's wrong C on Q47, and read-only invariant (5x profile calls do not mutate payload/updated_at/received_at). Regression: /api/feed, /api/feed/progress (auth), /api/exams (2023 Azul D1 seeded), /api/analyses trash filter, /api/auth/login. 20/20 passed on first run in 53.7s.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_annotations.py",
+    "/app/test_reports/pytest/pytest_annotations.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "annotation_routes.py: /admin/annotations, /admin/annotations/bulk and DELETE /admin/annotations/{item_id} only require_user (no admin/role gate) — any authenticated user can ingest or delete verbatim annotations. Same issue previously flagged for /admin/paste-answer-key and /admin/feed-items. Add admin gate.",
+    "annotation_routes.py list_annotations: runs both an aggregated find (limit 500 default via service) AND a separate count_documents(q) on every call — for large collections this doubles the DB load; consider caching count or providing an opt-out flag.",
+    "annotation_service.compute_cognitive_profile: performs an N+1 pattern — for each analysis it fetches answer_keys and then calls find_annotation_for_question per answered question (up to 90 * N analyses queries per profile request). For QA with 8 analyses this is ~720 point-lookups. Consider bulk-loading annotations by (banca,ano,caderno) via $in query.",
+    "annotation_service.compute_cognitive_profile: reads analyses without a language filter but then reads answer_keys with analysis.language — if an analysis stores 'spanish' but no spanish key exists, correct_map is empty and every question is silently wrong. Consider raising a warning or falling back explicitly.",
+    "annotation_models.Item.id and AnnotationPayload.schema_version are required but there is no min-length validation — empty strings ('' ) would pass. Consider Field(..., min_length=1).",
+    "annotation_routes get_annotation / get_annotation_by_question are UNAUTHENTICATED reads — annotation payloads may include gabarito (correct letters) and full pedagogical explanations. This is effectively an answer-key leak: /api/annotations/by-question/ENEM/2022/Azul/137 returns gabarito='C' with no auth. Consider gating behind require_user or stripping gabarito for anonymous readers."
+  ],
+  "updated_files": ["/app/backend/tests/test_annotations.py (new)"],
+  "success_rate": {"backend": "100% (20/20)", "frontend": "N/A (not requested)"},
+  "test_credentials": "qa@sapiens.app / qa12345 — login worked; token used via Authorization: Bearer.",
+  "seed_data_creation": "Test created ~10-12 annotations with item_ids prefixed 'ITEM-TEST-<hex>' — cleaned up via DELETE in module fixture teardown. One QA analysis was created on ENEM 2023 D1 Azul for the cognitive-profile aggregation test and permanently deleted at the end.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Annotation ingestion module fully working per spec: extra='allow' preserves unknown nested fields verbatim (round-tripped bit-equal), pydantic 400 detail.validation array is populated correctly, bulk endpoint returns per-index error entries, cognitive-profile aggregates encountered/weighted_accuracy/error_types/misconceptions and is read-only (verified over 5 successive calls). Test file /app/backend/tests/test_annotations.py runs under pytest -n 2 loadscope in ~54s. Notable NON-FAILING findings surfaced to main agent under critical_code_review_comments (biggest concern: unauth read endpoints leak gabarito/pedagogy).",
+  "rca of the issue": "N/A — no failures this iteration."
+}

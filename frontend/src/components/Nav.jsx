@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
-import { LogOut, Compass, History, Sparkles, Trash2, Zap } from "lucide-react";
+import { LogOut, Compass, History, Sparkles, Trash2, Zap, Brain } from "lucide-react";
 
 export default function Nav() {
   const { user, logout } = useAuth();
@@ -25,6 +25,9 @@ export default function Nav() {
             </Link>
             <Link to="/feed" className="hidden md:flex items-center gap-2 text-sm text-zinc-600 hover:text-zinc-900 px-3 py-2 rounded-full" data-testid="nav-feed">
               <Zap className="w-4 h-4" /> Feed
+            </Link>
+            <Link to="/cognitive-profile" className="hidden md:flex items-center gap-2 text-sm text-zinc-600 hover:text-zinc-900 px-3 py-2 rounded-full" data-testid="nav-cognitive">
+              <Brain className="w-4 h-4" /> Cognitivo
             </Link>
             <Link to="/exams" className="hidden md:flex items-center gap-2 text-sm text-zinc-600 hover:text-zinc-900 px-3 py-2 rounded-full" data-testid="nav-exams">
               <Compass className="w-4 h-4" /> Provas
