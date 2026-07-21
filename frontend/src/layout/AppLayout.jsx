@@ -1,4 +1,4 @@
-import { useEffect, useState, createContext, useContext, useMemo } from "react";
+import { useEffect, useState, createContext, useContext } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
@@ -49,10 +49,15 @@ export default function AppLayout() {
 
   useEffect(() => { refreshFilters(); }, []);
 
-  const versaoAtual = useMemo(() => {
-    // Versão referente ao turma+periodo selecionado; simplifica: exibe a mais recente encontrada
-    return options.versoes_taxonomia?.slice(-1)[0] || "Sem dado";
-  }, [options]);
+  // Fetch the taxonomy version of the currently selected turma+periodo snapshot
+  useEffect(() => {
+    if (!filters.turma || !filters.periodo) { setCurrentVersion(""); return; }
+    api.get("/views/turma", { params: { turma: filters.turma, periodo: filters.periodo } })
+      .then(({ data }) => setCurrentVersion(data.versao_taxonomia || ""))
+      .catch(() => setCurrentVersion(""));
+  }, [filters.turma, filters.periodo]);
+
+  const versaoAtual = currentVersion || "Sem dado";
 
   const doLogout = async () => {
     await logout();
