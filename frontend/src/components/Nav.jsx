@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
-import { LogOut, Compass, History, Sparkles, Trash2, Zap, Brain } from "lucide-react";
+import { LogOut, Compass, History, Sparkles, Trash2, Zap, Brain, ShieldCheck } from "lucide-react";
 
 export default function Nav() {
   const { user, logout } = useAuth();
@@ -32,6 +32,11 @@ export default function Nav() {
             <Link to="/exams" className="hidden md:flex items-center gap-2 text-sm text-zinc-600 hover:text-zinc-900 px-3 py-2 rounded-full" data-testid="nav-exams">
               <Compass className="w-4 h-4" /> Provas
             </Link>
+            {user.is_admin && (
+              <Link to="/admin" className="pill inline-flex items-center gap-2 text-xs md:text-sm font-medium bg-emerald-500/10 text-emerald-700 border border-emerald-200 hover:bg-emerald-500/20 px-3 py-2 rounded-full" data-testid="nav-admin">
+                <ShieldCheck className="w-4 h-4" /> Admin
+              </Link>
+            )}
             <button
               onClick={async () => { await logout(); nav("/"); }}
               className="pill flex items-center gap-2 text-sm font-medium bg-zinc-950 hover:bg-zinc-800 text-white px-4 py-2 rounded-full"

@@ -7,7 +7,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, ValidationError
 
-from auth import require_user
+from auth import require_admin, require_user
 from annotation_models import AnnotationPayload, AnnotationRecord
 import annotation_service
 from models import User
@@ -46,7 +46,7 @@ class BulkAnnotationRequest(BaseModel):
 
 
 @router.post("/admin/annotations")
-async def upsert_annotation(payload: dict[str, Any], user: User = Depends(require_user)):
+async def upsert_annotation(payload: dict[str, Any], admin: User = Depends(require_admin)):
     """Ingest one annotation. Validates minimum shape, stores payload VERBATIM.
     Upserts by `item.id`."""
     try:
@@ -65,7 +65,7 @@ async def upsert_annotation(payload: dict[str, Any], user: User = Depends(requir
 
 
 @router.post("/admin/annotations/bulk")
-async def upsert_bulk(request: BulkAnnotationRequest, user: User = Depends(require_user)):
+async def upsert_bulk(request: BulkAnnotationRequest, admin: User = Depends(require_admin)):
     ok, errors = 0, []
     for i, raw in enumerate(request.items):
         try:
@@ -86,7 +86,7 @@ async def upsert_bulk(request: BulkAnnotationRequest, user: User = Depends(requi
 
 
 @router.delete("/admin/annotations/{item_id}")
-async def delete_annotation(item_id: str, user: User = Depends(require_user)):
+async def delete_annotation(item_id: str, admin: User = Depends(require_admin)):
     res = await _db.question_annotations.delete_one({"item_id": item_id})
     if res.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Annotation not found")

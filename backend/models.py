@@ -28,6 +28,7 @@ class User(BaseModel):
     picture: str | None = None
     provider: str = "email"
     password_hash: str | None = None
+    is_admin: bool = False
     created_at: str = Field(default_factory=_now_iso)
 
 

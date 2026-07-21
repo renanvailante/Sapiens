@@ -17,6 +17,8 @@ import auth as auth_module
 import exam_routes as exam_module
 import feed_routes as feed_module
 import annotation_routes as annotation_module
+import admin_routes as admin_module
+import events_routes as events_module
 from enem_seed import migrate_and_seed
 from feed_seed import seed_feed
 
@@ -28,6 +30,8 @@ auth_module.set_db(db)
 exam_module.set_db(db)
 feed_module.set_db(db)
 annotation_module.set_db(db)
+admin_module.set_db(db)
+events_module.set_db(db)
 
 app = FastAPI(title="Sapiens")
 api_router = APIRouter(prefix="/api")
@@ -42,6 +46,8 @@ api_router.include_router(auth_module.router)
 api_router.include_router(exam_module.router)
 api_router.include_router(feed_module.router)
 api_router.include_router(annotation_module.router)
+api_router.include_router(admin_module.router)
+api_router.include_router(events_module.router)
 app.include_router(api_router)
 
 app.add_middleware(

@@ -8,7 +8,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
-from auth import require_user
+from auth import require_admin, require_user
 from ai_service import diagnose, ocr_answer_sheet
 from enem_seed import import_pasted_key
 from models import (
@@ -213,7 +213,7 @@ async def delete_analysis(analysis_id: str, user: User = Depends(require_user)):
 # ---------- Admin: paste answer key ----------
 
 @router.post("/admin/paste-answer-key")
-async def paste_answer_key(payload: PasteAnswerKeyRequest, user: User = Depends(require_user)):
+async def paste_answer_key(payload: PasteAnswerKeyRequest, admin: User = Depends(require_admin)):
     try:
         result = await import_pasted_key(
             _db, payload.provider, payload.year, payload.day, payload.color, payload.raw_text,

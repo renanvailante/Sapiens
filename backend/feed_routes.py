@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
-from auth import require_user
+from auth import require_admin, require_user
 from feed_models import FeedInteractionIn, FeedProgressIn, FeedItem, FeedItemIn
 from models import User
 
@@ -142,13 +142,13 @@ async def set_progress(payload: FeedProgressIn, user: User = Depends(require_use
 # ---------- Admin CRUD ----------
 
 @router.get("/admin/feed-items")
-async def admin_list_items(user: User = Depends(require_user)):
+async def admin_list_items(admin: User = Depends(require_admin)):
     items = await _db.feed_items.find({}, {"_id": 0}).sort("sequence_order", 1).to_list(1000)
     return items
 
 
 @router.post("/admin/feed-items")
-async def admin_create_item(payload: FeedItemIn, user: User = Depends(require_user)):
+async def admin_create_item(payload: FeedItemIn, admin: User = Depends(require_admin)):
     if payload.sequence_order == 0:
         # Auto-assign next order
         last = await _db.feed_items.find_one({}, sort=[("sequence_order", -1)])
@@ -176,7 +176,7 @@ class FeedItemPatch(BaseModel):
 
 
 @router.patch("/admin/feed-items/{content_id}")
-async def admin_update_item(content_id: str, payload: FeedItemPatch, user: User = Depends(require_user)):
+async def admin_update_item(content_id: str, payload: FeedItemPatch, admin: User = Depends(require_admin)):
     changes = {k: v for k, v in payload.model_dump().items() if v is not None}
     if not changes:
         return {"ok": True, "changes": 0}
@@ -188,7 +188,7 @@ async def admin_update_item(content_id: str, payload: FeedItemPatch, user: User 
 
 
 @router.delete("/admin/feed-items/{content_id}")
-async def admin_delete_item(content_id: str, user: User = Depends(require_user)):
+async def admin_delete_item(content_id: str, admin: User = Depends(require_admin)):
     res = await _db.feed_items.delete_one({"content_id": content_id})
     if res.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Item not found")

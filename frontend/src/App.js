@@ -13,12 +13,16 @@ import LearningMap from "./pages/LearningMap";
 import History from "./pages/History";
 import Trash from "./pages/Trash";
 import Admin from "./pages/Admin";
+import AdminDashboard from "./pages/AdminDashboard";
+import AdminUsers from "./pages/AdminUsers";
 import AdminFeed from "./pages/AdminFeed";
 import AdminAnnotations from "./pages/AdminAnnotations";
+import StudentHistory from "./pages/StudentHistory";
 import CognitiveProfile from "./pages/CognitiveProfile";
 import Feed from "./pages/Feed";
 import AuthCallback from "./components/AuthCallback";
 import ProtectedRoute from "./components/ProtectedRoute";
+import AdminRoute from "./components/AdminRoute";
 
 function AppRouter() {
   const location = useLocation();
@@ -36,9 +40,12 @@ function AppRouter() {
       <Route path="/map/:analysisId" element={<ProtectedRoute><LearningMap /></ProtectedRoute>} />
       <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
       <Route path="/trash" element={<ProtectedRoute><Trash /></ProtectedRoute>} />
-      <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
-      <Route path="/admin/feed" element={<ProtectedRoute><AdminFeed /></ProtectedRoute>} />
-      <Route path="/admin/annotations" element={<ProtectedRoute><AdminAnnotations /></ProtectedRoute>} />
+      <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+      <Route path="/admin/answer-keys" element={<AdminRoute><Admin /></AdminRoute>} />
+      <Route path="/admin/feed" element={<AdminRoute><AdminFeed /></AdminRoute>} />
+      <Route path="/admin/annotations" element={<AdminRoute><AdminAnnotations /></AdminRoute>} />
+      <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
+      <Route path="/admin/history" element={<AdminRoute><StudentHistory /></AdminRoute>} />
       <Route path="/cognitive-profile" element={<ProtectedRoute><CognitiveProfile /></ProtectedRoute>} />
       <Route path="/feed" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
       <Route path="*" element={<Landing />} />
