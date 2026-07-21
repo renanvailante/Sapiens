@@ -1,0 +1,85 @@
+{
+  "project_name": "Sapiens Dashboard",
+  "theme": "light",
+  "typography": {
+    "headings": {
+      "font_family": "Chivo",
+      "import_url": "https://fonts.googleapis.com/css2?family=Chivo:wght@400;700&display=swap",
+      "usage": "Use tight letter spacing (tracking-tight). DO NOT use Inter or generic sans. Represents authority and clarity."
+    },
+    "body": {
+      "font_family": "IBM Plex Sans",
+      "import_url": "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap",
+      "usage": "Highly legible for dense data. Use tabular-nums for all numbers. Represents technical precision."
+    },
+    "scale": {
+      "h1": "text-2xl sm:text-3xl tracking-tighter",
+      "h2": "text-xl sm:text-2xl tracking-tight",
+      "h3": "text-lg",
+      "body": "text-sm",
+      "small": "text-xs font-mono"
+    }
+  },
+  "colors": {
+    "archetype": "SWISS & HIGH-CONTRAST",
+    "palette": {
+      "background": "#FFFFFF",
+      "surface": "#F9F9F9",
+      "border": "#E5E5E5",
+      "text_primary": "#0A0A0A",
+      "text_secondary": "#525252",
+      "accent": "#0047AB",
+      "error": "#D32F2F",
+      "success": "#2E7D32"
+    },
+    "rules": "No gradients. Colors are purely functional. Monochrome base with high-contrast accent colors for data points and actions."
+  },
+  "grids_and_layouts": {
+    "strategy": "Grid Borders (The 'Technical' Look). Expose the skeleton. Sharp edges, 0px border-radius.",
+    "spacing": "Dense spacing (p-2, p-4). Containers must have borders and exact padding to avoid text collision.",
+    "dashboard_grid": "High Density Grid. grid-cols-1 md:grid-cols-4 lg:grid-cols-6. gap-px bg-border (to create 1px grid lines).",
+    "header": "Solid white background, bottom border 1px solid. Sticky top. MUST include taxonomy version badge."
+  },
+  "components": {
+    "cards": "rounded-none, border border-border, shadow-none. Brutalist/Swiss style.",
+    "tables": "Sticky headers, sticky first column, right-aligned numbers. Use tabular-nums. No zebra striping, use border-b. Compact rows (py-2).",
+    "buttons": "Sharp corners (rounded-none), solid background, high contrast text.",
+    "badges": "Sharp corners, subtle 1px border. Taxonomy version badge must be prominent.",
+    "filters": "Inline, compact select dropdowns in a dedicated sticky toolbar below the header.",
+    "charts": "Use Recharts. Minimalist axes, no grid lines or very subtle. Use exact data points, no smoothing. Solid colors.",
+    "empty_data": "If a field is missing, display 'Sem dado' in monospace, text-muted-foreground, with a hatched background or simple subtle badge."
+  },
+  "motion": {
+    "transitions": "Instant or very fast (100ms) opacity/color changes. No bouncy animations. Serious tone.",
+    "hover": "Text color darkens or background gets a subtle tint. No lifting or scaling."
+  },
+  "assets": {
+    "icons_library": "@phosphor-icons/react",
+    "images": []
+  },
+  "critical_rules": {
+    "no_inference": "Never invent/infer/estimate data. Always show 'Sem dado' for missing fields.",
+    "aggregations": "Only use sum, count, simple average, percentage, sort, filter. Label as 'Calculado pelo Dashboard'.",
+    "taxonomy_badge": "Taxonomy version (e.g., 'Taxonomia Sapiens v0.8 (Experimental)') MUST be visible in the header at all times."
+  },
+  "specific_instructions_to_main_agent": [
+    "This is a pedagogical observability tool. DO NOT add any gamification, no emojis, no playful colors.",
+    "Implement 5 main views (MVP): Turma, Processo Cognitivo, Aluno, Evolução, Taxonomia. Use Shadcn Tabs or Sidebar.",
+    "The 'Taxonomia' view should be a navigable tree component.",
+    "Include global filters: turma, período, disciplina, ano escolar, banca, prova.",
+    "Add a file upload area for importing JSON data.",
+    "Include CSV export functionality for tables.",
+    "Ensure the UI is in Portuguese (Brazil).",
+    "Use pure HTML/Tailwind for structural layouts to achieve the 'border-collapse' technical look. Avoid Shadcn Card default rounded styles.",
+    "Override Shadcn components to have `rounded-none` and remove shadows to match the Swiss archetype."
+  ],
+  "universal_guidelines_for_main_agent": [
+    "Do not apply `transition: all`.",
+    "Do not center align the app container. Text must flow naturally.",
+    "Ensure proper z-index for dropdowns, modals, and sticky headers. No transparent backgrounds on overlays.",
+    "Add `data-testid` attributes to all interactive elements.",
+    "Use `sonner` for toast notifications.",
+    "Never use AI assistant emojis.",
+    "All components must be .js/.jsx, NOT .tsx."
+  ]
+}
