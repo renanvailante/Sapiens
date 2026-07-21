@@ -31,6 +31,7 @@ export default function AppLayout() {
     turmas: [], periodos: [], disciplinas: [],
     anos_escolares: [], bancas: [], provas: [], versoes_taxonomia: [],
   });
+  const [currentVersion, setCurrentVersion] = useState("");
 
   const refreshFilters = async () => {
     try {
