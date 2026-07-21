@@ -28,7 +28,7 @@ def set_db(db):
 # ---------- Writes (append-only) ----------
 
 @router.post("/events/responses")
-async def record_response(event: ResponseEventIn, user: User = Depends(require_user)):
+async def record_response(event: ResponseEventIn, admin: User = Depends(require_admin)):
     """Append a single response event. Server never rewrites.
     Status transitions (correction, annulment) MUST be new events with the
     same attempt_id.
@@ -56,7 +56,7 @@ async def record_response(event: ResponseEventIn, user: User = Depends(require_u
 
 
 @router.post("/events/responses/bulk")
-async def record_responses_bulk(request: BulkResponsesIn, user: User = Depends(require_user)):
+async def record_responses_bulk(request: BulkResponsesIn, admin: User = Depends(require_admin)):
     docs = []
     for e in request.events:
         stored = StudentResponseEvent(
@@ -76,7 +76,7 @@ async def record_responses_bulk(request: BulkResponsesIn, user: User = Depends(r
 
 
 @router.post("/events/interventions")
-async def record_intervention(event: InterventionEventIn, user: User = Depends(require_user)):
+async def record_intervention(event: InterventionEventIn, admin: User = Depends(require_admin)):
     stored = StudentInterventionEvent(
         aluno_id=event.aluno_id,
         cognitive_process_id=event.cognitive_process_id,
