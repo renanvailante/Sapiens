@@ -1,0 +1,32 @@
+{
+  "summary": "Iteration 8 re-verification: Main agent CLAIMED to have switched POST /api/events/responses, /responses/bulk, /interventions from require_user to require_admin. CODE INSPECTION AND TEST EXECUTION CONFIRM THE FIX WAS NOT APPLIED. events_routes.py lines 31, 59, 79 still read `Depends(require_user)`. Test suite result identical to iteration_7: 27/28 pass; TestEventsAccessControl::test_events_write_non_admin still fails with POST /events/responses returning 200 for a non-admin user instead of 403.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "POST /api/events/responses, POST /api/events/responses/bulk, POST /api/events/interventions",
+        "issue": "NOT FIXED. Still uses Depends(require_user) — non-admin authenticated users can write to the event store (observed 200 instead of 403). File: /app/backend/events_routes.py lines 31, 59, 79. Change to Depends(require_admin).",
+        "priority": "HIGH"
+      }
+    ],
+    "minor": []
+  },
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_admin_and_events.py",
+    "/app/test_reports/pytest/iter8_results.xml"
+  ],
+  "action_items": [
+    "APPLY the fix that was claimed but not persisted: in /app/backend/events_routes.py, change `Depends(require_user)` to `Depends(require_admin)` on lines 31 (record_response), 59 (record_responses_bulk), and 79 (record_intervention). Verify the file was actually saved (git diff or re-open). After saving, hot-reload will pick it up; re-run `pytest backend/tests/test_admin_and_events.py -v` — all 28 must pass."
+  ],
+  "critical_code_review_comments": [
+    "Main agent handoff hazard: iteration_8 request stated the change was already applied, but grep confirms otherwise. Recommend the main agent always run a quick self-verification (grep or one-line curl) after edits before delegating retesting."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "96% (27/28) — UNCHANGED from iteration_7", "frontend": "not tested"},
+  "test_credentials": "qa@sapiens.app / qa12345 (admin). Non-admin users freshly signed up per test.",
+  "seed_data_creation": "None new; reuses seed logic from test_admin_and_events.py (TEST_ prefix).",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Only one failing test remains, identical to iteration_7. Once the three Depends(require_user) → Depends(require_admin) edits are actually persisted in /app/backend/events_routes.py, the full suite of 28 tests should pass. Command: `REACT_APP_BACKEND_URL=https://sapiens-learn.preview.emergentagent.com pytest backend/tests/test_admin_and_events.py -v`.",
+  "rca of the issue": "Root cause: the file edit was not persisted. `grep -n 'require_admin\\|require_user' /app/backend/events_routes.py` shows lines 31/59/79 still bind require_user. Runtime confirms: POST /api/events/responses with a non-admin bearer token returns 200 (a new response_event was appended)."
+}
