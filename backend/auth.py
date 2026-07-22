@@ -201,3 +201,10 @@ async def logout(response: Response, session_token: str | None = Cookie(default=
         await _db.user_sessions.delete_many({"session_token": session_token})
     response.delete_cookie("session_token", path="/")
     return {"ok": True}
+
+
+
+def _admin_emails():
+    raw = os.environ.get("ADMIN_EMAILS", "")
+    print("ADMIN_EMAILS =", raw)
+    return {e.strip().lower() for e in raw.split(",") if e.strip()}
