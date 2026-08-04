@@ -19,6 +19,7 @@ import feed_routes as feed_module
 import annotation_routes as annotation_module
 import admin_routes as admin_module
 import events_routes as events_module
+import firestore_routes as firestore_module
 from enem_seed import migrate_and_seed
 from feed_seed import seed_feed
 
@@ -48,6 +49,7 @@ api_router.include_router(feed_module.router)
 api_router.include_router(annotation_module.router)
 api_router.include_router(admin_module.router)
 api_router.include_router(events_module.router)
+api_router.include_router(firestore_module.router)
 app.include_router(api_router)
 
 app.add_middleware(
