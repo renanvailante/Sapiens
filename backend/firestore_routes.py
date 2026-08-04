@@ -71,10 +71,23 @@ async def get_behavior_schema(limit: int = Query(100, ge=1, le=500), _: User = D
 
 @router.get("/students/me/behavior")
 async def get_my_behavior(user: User = Depends(require_user)):
+    # Auto-provision on first access — no Firebase Auth involved.
+    _safe_call(fs.ensure_student_behavior, user.user_id, user.email, user.name)
     doc = _safe_call(fs.read_student_behavior, user.user_id)
     if doc is None:
         raise HTTPException(status_code=404, detail="Behavior document not found")
     return doc
+
+
+@router.post("/students/me/ensure")
+async def ensure_my_behavior(user: User = Depends(require_user)):
+    """Idempotently create the student's behavior_student document.
+    Called by the frontend on every successful login/session load. No Firebase Auth used —
+    the caller is authenticated via the existing Emergent Auth (require_user).
+    """
+    created = _safe_call(fs.ensure_student_behavior, user.user_id, user.email, user.name)
+    doc = _safe_call(fs.read_student_behavior, user.user_id)
+    return {"created": created, "user_id": user.user_id, "path": f"students_behavior/students_id/{user.user_id}/behavior_student", "doc": doc}
 
 
 @router.put("/students/me/behavior")

@@ -178,6 +178,28 @@ frontend:
             ✅ GET /api/auth/me called on refresh: returns 200 OK
             ✅ Auth persists across page reloads
             
+
+    - agent: "main"
+      message: |
+        UPDATE — user requested (a) confirmation that Firebase Auth is NOT used anywhere, (b) auto-provision of Firestore behavior doc on every login, (c) verify the "login redirects to landing" bug.
+        
+        Actions taken:
+        1) Verified frontend has ZERO firebase packages/imports (grep confirmed, no /firebase in node_modules).
+        2) Added POST /api/firestore/students/me/ensure endpoint — idempotent, creates behavior_student doc if missing. Uses Emergent Auth's require_user dependency (NO Firebase Auth).
+        3) Made GET /api/firestore/students/me/behavior also auto-provision on first access.
+        4) Added new component /app/frontend/src/components/FirestoreStudentProvisioner.jsx that lives inside AuthProvider and calls the ensure endpoint whenever `user` changes (once per user_id per session). NOT modifying auth.jsx, api.js, Login.jsx, or auth.py.
+        5) App.js updated to mount the provisioner (2 minimal edits: import + component tag).
+        6) Backend restarted and endpoint tested locally: works and is idempotent.
+        
+        Please TEST BACKEND:
+        - POST /api/firestore/students/me/ensure with Bearer token for admin@sapiens.app / Sapiens@2026 — expect 200 with {created: bool, user_id, path, doc}
+        - Second call to same endpoint — expect created: false (idempotent)
+        - POST /api/firestore/students/me/ensure without auth — expect 401
+        - Regression: POST /api/auth/login for admin@sapiens.app / Sapiens@2026 — expect 200 (auth still works, unchanged)
+        - Regression: PUT /api/firestore/students/me/behavior + GET — still works
+        
+        DO NOT test frontend — I'll ask user first.
+
             Backend logs analysis:
             - Multiple successful login requests: POST /api/auth/login 200 OK
             - Multiple successful auth checks: GET /api/auth/me 200 OK

@@ -23,6 +23,7 @@ import Feed from "./pages/Feed";
 import AuthCallback from "./components/AuthCallback";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
+import FirestoreStudentProvisioner from "./components/FirestoreStudentProvisioner";
 
 function AppRouter() {
   const location = useLocation();
@@ -58,6 +59,7 @@ export default function App() {
     <div className="App">
       <BrowserRouter>
         <AuthProvider>
+          <FirestoreStudentProvisioner />
           <AppRouter />
           <Toaster position="top-center" richColors closeButton />
         </AuthProvider>
