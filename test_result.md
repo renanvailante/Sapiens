@@ -108,6 +108,9 @@ user_problem_statement: |
   Writes: students_behavior/students_id/{uid}/behavior_student.
   Must NOT modify auth files: backend/auth.py, frontend/src/lib/auth.jsx, frontend/src/lib/api.js, frontend/src/pages/Login.jsx.
   User reports login stopped working; needs verification that Firestore integration did not break auth.
+  
+  NEW USER REPORT (2026-08-04): User reports login redirect bug: "eu logo e volto pra tela inicial" (I log in and go back to the home screen).
+  Needs reproduction testing of the complete UI login flow from landing page → login → dashboard.
 
 backend:
   - task: "Emergent Auth login flow (signup + login + /auth/me)"
@@ -131,6 +134,72 @@ backend:
             (d) GET /api/auth/me WITHOUT auth: ✅ Correctly returns 401
             
             VERDICT: Auth flow is fully functional. User's report of "login broken" is unfounded. All endpoints working correctly with proper authentication, authorization, and error handling.
+
+frontend:
+  - task: "Login UI flow and redirect to dashboard"
+    implemented: true
+    working: true
+    file: "frontend/src/pages/Login.jsx, frontend/src/lib/auth.jsx, frontend/src/components/ProtectedRoute.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: "NA"
+          agent: "user"
+          comment: "User reports: 'eu logo e volto pra tela inicial' (I log in and go back to the home screen). Needs reproduction of login redirect bug."
+        - working: true
+          agent: "testing"
+          comment: |
+            ✅ LOGIN REDIRECT BUG CANNOT BE REPRODUCED - All UI tests passing.
+            
+            Comprehensive UI testing completed with Playwright (3 test scenarios):
+            
+            TEST 1 - Normal login flow (landing → login → dashboard):
+            ✅ Landing page loads correctly
+            ✅ "Entrar" button navigates to /login
+            ✅ Login form accepts credentials (admin@sapiens.app / Sapiens@2026)
+            ✅ Submit button triggers POST /api/auth/login → 200 OK
+            ✅ Token stored in localStorage: tok_ee3b58cfb9c944d099498ece46dcd215...
+            ✅ Session cookie set: session_token
+            ✅ User redirected to /dashboard immediately (within 0.5s)
+            ✅ Dashboard renders with "Olá, Admin." and success toast
+            ✅ URL stays on /dashboard (no redirect back to landing)
+            ✅ GET /api/auth/me returns 200 with user data
+            ✅ Manual navigation to /dashboard works
+            
+            TEST 2 - Fresh browser context (cleared cache/cookies):
+            ✅ Login successful with fresh context
+            ✅ Redirects to /dashboard correctly
+            ✅ Token and cookies set properly
+            
+            TEST 3 - Auth persistence:
+            ✅ Page refresh on /dashboard: stays on /dashboard
+            ✅ Navigate away to landing and back: successfully returns to /dashboard
+            ✅ GET /api/auth/me called on refresh: returns 200 OK
+            ✅ Auth persists across page reloads
+            
+            Backend logs analysis:
+            - Multiple successful login requests: POST /api/auth/login 200 OK
+            - Multiple successful auth checks: GET /api/auth/me 200 OK
+            - No auth-related errors in logs
+            
+            VERDICT: The reported bug "I log in and go back to the home screen" CANNOT BE REPRODUCED. The login flow works perfectly:
+            - Login succeeds and redirects to /dashboard
+            - Dashboard loads and displays user data
+            - No redirect back to landing page occurs
+            - Auth persists across page refreshes and navigation
+            
+            Possible explanations for user's report:
+            1. Bug was already fixed in previous session
+            2. User-specific browser issue (cache, cookies disabled, extensions)
+            3. Intermittent/timing-dependent issue that doesn't reproduce consistently
+            4. User may be using different credentials or different environment
+            
+            RECOMMENDATION: Ask user for more details:
+            - Which browser and version?
+            - Does clearing cache/cookies help?
+            - Can they provide a screen recording?
+            - Are they using the correct URL (REACT_APP_BACKEND_URL)?
 
   - task: "Firestore integration (backend-only)"
     implemented: true
@@ -173,13 +242,12 @@ backend:
 metadata:
   created_by: "main_agent"
   version: "1.0"
-  test_sequence: 2
-  run_ui: false
+  test_sequence: 3
+  run_ui: true
 
 test_plan:
   current_focus:
-    - "Emergent Auth login flow (signup + login + /auth/me)"
-    - "Firestore integration (backend-only)"
+    - "Login UI flow and redirect to dashboard"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
@@ -220,3 +288,68 @@ agent_communication:
         - pipeline/questao and pipeline/fonte: ℹ️ Return 502 due to KNOWN Firestore path validation issue (requires odd number of path segments). This is a DATA CONFIGURATION issue, not a code bug. Backend logs confirm: "ValueError: A collection must have an odd number of path elements"
         
         NO CRITICAL ISSUES FOUND. Both tasks marked as working=true, needs_retesting=false.
+    - agent: "user"
+      message: |
+        NEW BUG REPORT (2026-08-04): User reports login redirect bug.
+        User's description: "eu logo e volto pra tela inicial" (I log in and go back to the home screen).
+        
+        Steps to reproduce (as requested):
+        1. Navigate to root URL (landing page)
+        2. Click "Entrar" (top-right navbar) → should go to /login
+        3. Fill in: admin@sapiens.app / Sapiens@2026
+        4. Click "Entrar" submit button
+        5. Observe: Does URL change to /dashboard? Or does it redirect back to / or /login?
+        
+        Please capture:
+        - Screenshots at each step
+        - Final URL after login
+        - Console errors
+        - Network errors (especially 401 on /api/auth/me)
+        - localStorage.sapiens_token value
+        - document.cookie value
+        - Test direct navigation to /dashboard after login
+    - agent: "testing"
+      message: |
+        ✅ FRONTEND UI TESTING COMPLETE - LOGIN REDIRECT BUG CANNOT BE REPRODUCED
+        
+        Executed comprehensive Playwright UI tests following exact reproduction steps provided by user.
+        
+        CRITICAL FINDING: LOGIN WORKS PERFECTLY - NO REDIRECT BUG
+        
+        Test Results Summary:
+        ✅ All 3 test scenarios passed
+        ✅ Login successfully redirects to /dashboard
+        ✅ Dashboard loads and displays user data ("Olá, Admin.")
+        ✅ No redirect back to landing page occurs
+        ✅ Auth persists across page refreshes
+        ✅ Auth persists across navigation (away and back)
+        ✅ Token stored correctly in localStorage
+        ✅ Session cookie set correctly
+        ✅ /api/auth/me returns 200 OK with user data
+        ✅ No console errors
+        ✅ No network errors
+        
+        Screenshots captured:
+        - 01_landing_page.png: Landing page loads correctly
+        - 02_login_page.png: Login page loads after clicking "Entrar"
+        - 03_login_form_filled.png: Form filled with credentials
+        - 04_immediately_after_submit.png: State immediately after clicking submit
+        - 05_final_state_after_login.png: Dashboard rendered with success toast
+        - 07_manual_dashboard_navigation.png: Manual navigation to /dashboard works
+        
+        Backend logs show no auth errors, only successful login and /auth/me requests.
+        
+        VERDICT: The reported bug CANNOT BE REPRODUCED. The login flow is working as expected.
+        
+        Possible reasons for user's report:
+        1. Bug was already fixed in a previous session
+        2. User-specific browser issue (cache, cookies disabled, browser extensions interfering)
+        3. Intermittent/timing-dependent issue that doesn't reproduce consistently
+        4. User may be using different credentials or accessing a different environment
+        
+        RECOMMENDATION FOR MAIN AGENT:
+        - Inform user that the bug cannot be reproduced in current testing
+        - Ask user to provide more details: browser version, screen recording, exact steps
+        - Suggest user try clearing browser cache/cookies
+        - Verify user is accessing the correct URL from frontend/.env
+        - Consider if this is a user-specific environment issue rather than a code bug
