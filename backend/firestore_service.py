@@ -90,3 +90,62 @@ def read_student_behavior(uid: str) -> Optional[dict[str, Any]]:
     if not snap.exists:
         return None
     return {"id": snap.id, **(snap.to_dict() or {})}
+
+
+# ---------- Seed / provisioning ----------
+
+def _initial_behavior_doc(uid: str, email: Optional[str] = None, name: Optional[str] = None) -> dict[str, Any]:
+    from datetime import datetime, timezone
+    now = datetime.now(timezone.utc).isoformat()
+    return {
+        "user_id": uid,
+        "email": email,
+        "name": name,
+        "profile": {
+            "reading_speed": None,
+            "confidence_level": None,
+            "attention_span": None,
+            "error_pattern": None,
+        },
+        "stats": {
+            "total_answered": 0,
+            "total_correct": 0,
+            "total_incorrect": 0,
+            "avg_time_seconds": 0,
+        },
+        "flags": {
+            "onboarded": False,
+            "first_exam_done": False,
+        },
+        "events": [],
+        "created_at": now,
+        "updated_at": now,
+    }
+
+
+def ensure_student_behavior(uid: str, email: Optional[str] = None, name: Optional[str] = None) -> bool:
+    """Create the behavior_student doc if it does not yet exist. Returns True if created."""
+    ref = _behavior_ref(uid)
+    if ref.get().exists:
+        return False
+    ref.set(_initial_behavior_doc(uid, email, name))
+    return True
+
+
+async def seed_all_students(mongo_db) -> dict[str, int]:
+    """Idempotently create behavior docs for every non-admin user in MongoDB."""
+    created = 0
+    skipped = 0
+    async for u in mongo_db.users.find({}, {"_id": 0, "user_id": 1, "email": 1, "name": 1, "is_admin": 1}):
+        if u.get("is_admin"):
+            skipped += 1
+            continue
+        try:
+            if ensure_student_behavior(u["user_id"], u.get("email"), u.get("name")):
+                created += 1
+            else:
+                skipped += 1
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("seed_all_students failed for %s: %s", u.get("user_id"), exc)
+    logger.info("Firestore student seed: created=%d skipped=%d", created, skipped)
+    return {"created": created, "skipped": skipped}

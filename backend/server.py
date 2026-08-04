@@ -22,6 +22,7 @@ import events_routes as events_module
 import firestore_routes as firestore_module
 from enem_seed import migrate_and_seed
 from feed_seed import seed_feed
+from firestore_service import seed_all_students as _firestore_seed_students
 
 mongo_url = os.environ["MONGO_URL"]
 client = AsyncIOMotorClient(mongo_url)
@@ -68,6 +69,10 @@ logger = logging.getLogger("sapiens")
 async def _startup():
     await migrate_and_seed(db)
     await seed_feed(db)
+    try:
+        await _firestore_seed_students(db)
+    except Exception as exc:
+        logger.warning("Firestore student seed skipped: %s", exc)
     logger.info("Sapiens ready.")
 
 
