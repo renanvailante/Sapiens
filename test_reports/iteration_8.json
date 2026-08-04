@@ -27,6 +27,6 @@
   "seed_data_creation": "None new; reuses seed logic from test_admin_and_events.py (TEST_ prefix).",
   "retest_needed": true,
   "should_main_agent_self_test": true,
-  "context_for_next_testing_agent": "Only one failing test remains, identical to iteration_7. Once the three Depends(require_user) → Depends(require_admin) edits are actually persisted in /app/backend/events_routes.py, the full suite of 28 tests should pass. Command: `REACT_APP_BACKEND_URL=https://sapiens-learn.preview.emergentagent.com pytest backend/tests/test_admin_and_events.py -v`.",
+  "context_for_next_testing_agent": "Only one failing test remains, identical to iteration_7. Once the three Depends(require_user) → Depends(require_admin) edits are actually persisted in /app/backend/events_routes.py, the full suite of 28 tests should pass. Command: `REACT_APP_BACKEND_URL=https://preview-demo-124.preview.emergentagent.com pytest backend/tests/test_admin_and_events.py -v`.",
   "rca of the issue": "Root cause: the file edit was not persisted. `grep -n 'require_admin\\|require_user' /app/backend/events_routes.py` shows lines 31/59/79 still bind require_user. Runtime confirms: POST /api/events/responses with a non-admin bearer token returns 200 (a new response_event was appended)."
 }
