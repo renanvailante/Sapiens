@@ -25,7 +25,7 @@ export default function FirestoreStudentProvisioner() {
     api.post("/firestore/students/me/ensure").catch(() => {
       // Silent — non-blocking. Firestore endpoints will auto-provision lazily anyway.
     });
-  }, [user?.user_id, user?.is_admin]);
+  }, [user?.user_id]);
 
   return null;
 }
