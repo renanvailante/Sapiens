@@ -20,6 +20,7 @@ import AdminAnnotations from "./pages/AdminAnnotations";
 import StudentHistory from "./pages/StudentHistory";
 import CognitiveProfile from "./pages/CognitiveProfile";
 import Feed from "./pages/Feed";
+import Questoes from "./pages/Questoes";
 import AuthCallback from "./components/AuthCallback";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
@@ -33,6 +34,7 @@ function AppRouter() {
     <Routes>
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/questoes" element={<Questoes />} />
       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/exams" element={<ProtectedRoute><ExamSelect /></ProtectedRoute>} />
       <Route path="/exam/:examId" element={<ProtectedRoute><AnswerInput /></ProtectedRoute>} />
