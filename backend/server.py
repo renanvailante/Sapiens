@@ -108,13 +108,13 @@ class LoginInput(BaseModel):
 # --- Auth endpoints ---
 @api_router.post("/auth/register")
 async def register(body: RegisterInput, response: Response):
-    email = body.email.lower()
+    email = body.email.strip().lower()
     if await db.users.find_one({"email": email}):
         raise HTTPException(status_code=400, detail="Email já cadastrado")
     doc = {
         "email": email,
         "password_hash": hash_password(body.password),
-        "name": body.name,
+        "name": body.name.strip(),
         "role": "teacher",
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
@@ -128,9 +128,10 @@ async def register(body: RegisterInput, response: Response):
 
 @api_router.post("/auth/login")
 async def login(body: LoginInput, response: Response):
-    email = body.email.lower()
+    email = body.email.strip().lower()
+    password = body.password.strip()
     user = await db.users.find_one({"email": email})
-    if not user or not verify_password(body.password, user["password_hash"]):
+    if not user or not verify_password(password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Credenciais inválidas")
     user_id = str(user["_id"])
     access = create_access_token(user_id, email)

@@ -18,8 +18,8 @@ export default function LoginPage() {
     e.preventDefault();
     setBusy(true);
     const res = tab === "login"
-      ? await login(email, password)
-      : await register(name, email, password);
+      ? await login(email.trim(), password)
+      : await register(name.trim(), email.trim(), password);
     setBusy(false);
     if (!res.ok) toast.error(res.error || "Falha");
   };
