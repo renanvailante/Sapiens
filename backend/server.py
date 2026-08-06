@@ -35,6 +35,7 @@ feed_module.set_db(db)
 annotation_module.set_db(db)
 admin_module.set_db(db)
 events_module.set_db(db)
+firestore_module.set_db(db)
 
 app = FastAPI(title="Sapiens")
 api_router = APIRouter(prefix="/api")
