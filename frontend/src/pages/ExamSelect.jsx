@@ -146,8 +146,14 @@ function QuestionRunner({ onExit }) {
         </div>
 
         {result && (
-          <div className={`mt-5 rounded-xl px-4 py-3 text-sm font-semibold ${result.acertou ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`} data-testid="result-banner">
-            {result.acertou ? "Você acertou!" : `Resposta incorreta. Correta: ${result.correta}.`}
+          <div className={`mt-5 rounded-xl px-4 py-4 ${result.acertou ? "bg-emerald-50" : "bg-rose-50"}`} data-testid="result-banner">
+            <div className={`text-sm font-bold ${result.acertou ? "text-emerald-700" : "text-rose-700"}`}>
+              {result.feedback?.titulo || (result.acertou ? "Você acertou!" : `Resposta incorreta. Correta: ${result.correta}.`)}
+              {!result.acertou && <span className="ml-1 font-normal">(correta: {result.correta})</span>}
+            </div>
+            {(result.feedback?.mensagens || []).map((m, i) => (
+              <p key={i} className={`mt-2 text-sm leading-relaxed ${result.acertou ? "text-emerald-800" : "text-rose-800"}`}>{m}</p>
+            ))}
           </div>
         )}
 

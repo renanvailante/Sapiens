@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field
 from auth import require_user, require_admin
 from models import User
 import firestore_service as fs
+from feedback_templates import build_feedback
 
 logger = logging.getLogger("sapiens.firestore.routes")
 
@@ -132,6 +133,10 @@ async def register_answer(payload: AnswerPayload, user: User = Depends(require_u
     correta_letra = next((a.get("letra") for a in alternativas if a.get("correta") is True), None)
     acertou = (payload.alternativa_escolhida == correta_letra) if correta_letra is not None else None
 
+    # Feedback qualitativo por TEMPLATES (Fase 3, sem IA): lookup no master.
+    master = await _db.questoes_master.find_one({"id": doc.get("master_id")}, {"_id": 0})
+    feedback = build_feedback(master, payload.alternativa_escolhida, acertou)
+
     # Garante o profile (Fase 1) antes de gravar na subcoleção behavior.
     _safe_call(fs.ensure_student_profile, user.user_id, user.name, user.email)
     _safe_call(
@@ -150,7 +155,7 @@ async def register_answer(payload: AnswerPayload, user: User = Depends(require_u
         dispositivo=payload.dispositivo,
         versao_aplicacao=payload.versao_aplicacao,
     )
-    return {"acertou": acertou, "correta": correta_letra}
+    return {"acertou": acertou, "correta": correta_letra, "feedback": feedback}
 
 
 # Admin-only: access by arbitrary uid (e.g. teacher/admin viewing a student)
