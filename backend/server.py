@@ -1,6 +1,7 @@
 """Sapiens FastAPI application."""
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 from pathlib import Path
@@ -69,10 +70,14 @@ logger = logging.getLogger("sapiens")
 async def _startup():
     await migrate_and_seed(db)
     await seed_feed(db)
-    try:
-        await _firestore_seed_students(db)
-    except Exception as exc:
-        logger.warning("Firestore student seed skipped: %s", exc)
+    # Firestore seed is best-effort: run in background with a timeout so a bad
+    # Firebase credential can never block startup / freeze the event loop.
+    async def _safe_firestore_seed():
+        try:
+            await asyncio.wait_for(_firestore_seed_students(db), timeout=20)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Firestore student seed skipped: %s", exc)
+    asyncio.create_task(_safe_firestore_seed())
     logger.info("Sapiens ready.")
 
 

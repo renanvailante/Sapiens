@@ -85,6 +85,8 @@ frontend/node_modules/.cache/default-development/1.pack
 .env.*
 *.env
 credentials.json
+firebase-service-account.json
+**/firebase-service-account.json
 *.key
 .credentials
 frontend/node_modules/.cache/default-development/0.pack

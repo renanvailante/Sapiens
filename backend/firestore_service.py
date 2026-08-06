@@ -7,6 +7,7 @@ Does NOT use Firebase Auth. Existing Emergent Auth remains the only auth layer.
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import os
@@ -141,7 +142,7 @@ async def seed_all_students(mongo_db) -> dict[str, int]:
             skipped += 1
             continue
         try:
-            if ensure_student_behavior(u["user_id"], u.get("email"), u.get("name")):
+            if await asyncio.to_thread(ensure_student_behavior, u["user_id"], u.get("email"), u.get("name")):
                 created += 1
             else:
                 skipped += 1
