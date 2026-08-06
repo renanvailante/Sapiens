@@ -85,6 +85,8 @@ async def ensure_my_behavior(user: User = Depends(require_user)):
     Called by the frontend on every successful login/session load. No Firebase Auth used —
     the caller is authenticated via the existing Emergent Auth (require_user).
     """
+    # Nova estrutura (Fase 1): cria students/{uid} (profile) no login se não existir.
+    _safe_call(fs.ensure_student_profile, user.user_id, user.name, user.email)
     created = _safe_call(fs.ensure_student_behavior, user.user_id, user.email, user.name)
     doc = _safe_call(fs.read_student_behavior, user.user_id)
     return {"created": created, "user_id": user.user_id, "path": f"students_behavior/students_id/{user.user_id}/behavior_student", "doc": doc}

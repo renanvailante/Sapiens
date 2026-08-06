@@ -8,9 +8,12 @@ Does NOT use Firebase Auth. Existing Emergent Auth remains the only auth layer.
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import logging
 import os
+import uuid
+from datetime import datetime, timezone
 from typing import Any, Optional
 
 import firebase_admin
@@ -150,3 +153,108 @@ async def seed_all_students(mongo_db) -> dict[str, int]:
             logger.warning("seed_all_students failed for %s: %s", u.get("user_id"), exc)
     logger.info("Firestore student seed: created=%d skipped=%d", created, skipped)
     return {"created": created, "skipped": skipped}
+
+
+
+# ======================================================================
+# NEW student data structure (Fase 1)
+#   students/{uid}                      -> documento "profile" do aluno
+#   students/{uid}/behavior/{event_id}  -> um documento por evento de resposta
+# NÃO usa Firebase Auth. O uid vem da autenticação já existente.
+# ======================================================================
+
+def _now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _student_doc_ref(uid: str):
+    return get_firestore().collection("students").document(uid)
+
+
+def _behavior_collection_ref(uid: str):
+    return _student_doc_ref(uid).collection("behavior")
+
+
+def ensure_student_profile(uid: str, name: Optional[str] = None, email: Optional[str] = None) -> bool:
+    """Cria o documento de profile do aluno em students/{uid} se ainda não existir.
+    Deve ser chamado no login (via provisionamento já existente). Retorna True se criou.
+    """
+    ref = _student_doc_ref(uid)
+    if ref.get().exists:
+        return False
+    ref.set({
+        "nome": name,
+        "email": email,
+        "created_at": _now_iso(),
+    })
+    return True
+
+
+def compute_item_hash(item_content: Any) -> str:
+    """Hash determinístico do conteúdo da questão no momento da resposta."""
+    canonical = json.dumps(item_content, sort_keys=True, ensure_ascii=False, default=str)
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def write_behavior_event(
+    uid: str,
+    *,
+    item_id: str,
+    alternativa_escolhida: Optional[str] = None,
+    acertou: Optional[bool] = None,
+    item_schema_version: Optional[str] = None,
+    item_content: Any = None,
+    item_hash: Optional[str] = None,
+    contexto_tipo: Optional[str] = None,
+    prova_id: Optional[str] = None,
+    tempo_resposta_segundos: float = 0,
+    numero_tentativas: int = 1,
+    mudou_resposta: bool = False,
+    status: str = "respondida",
+    dispositivo: Optional[str] = None,
+    versao_aplicacao: Optional[str] = None,
+    attempt_id: Optional[str] = None,
+    event_id: Optional[str] = None,
+    timestamp: Optional[str] = None,
+) -> dict[str, Any]:
+    """Escreve UM evento de behavior em students/{uid}/behavior/{event_id}.
+
+    Segue EXATAMENTE o schema 1.0 definido no produto. Esta função apenas
+    escreve — NÃO é chamada em nenhum fluxo ainda (Fase 1).
+    """
+    event_id = event_id or uuid.uuid4().hex
+    if item_hash is None and item_content is not None:
+        item_hash = compute_item_hash(item_content)
+
+    event = {
+        "schema_version": "1.0",
+        "event_id": event_id,
+        "attempt_id": attempt_id or uuid.uuid4().hex,
+        "student_id": uid,
+        "item_id": item_id,
+        "item_schema_version": item_schema_version,
+        "item_hash": item_hash,
+        "timestamp": timestamp or _now_iso(),
+        "contexto": {
+            "tipo": contexto_tipo,
+            "prova_id": prova_id,
+            "origem": "firestore",
+        },
+        "resposta": {
+            "alternativa_escolhida": alternativa_escolhida,
+            "acertou": acertou,
+        },
+        "desempenho": {
+            "tempo_resposta_segundos": tempo_resposta_segundos,
+            "numero_tentativas": numero_tentativas,
+            "mudou_resposta": mudou_resposta,
+        },
+        "status": status,
+        "metadados": {
+            "dispositivo": dispositivo,
+            "versao_aplicacao": versao_aplicacao,
+        },
+    }
+
+    _behavior_collection_ref(uid).document(event_id).set(event)
+    return event
