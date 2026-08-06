@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { toast } from "sonner";
 import { api } from "../lib/api";
 import Nav from "../components/Nav";
-import { FileText, Zap, Brain, Users, ClipboardList, ArrowRight, ShieldCheck } from "lucide-react";
+import { FileText, Zap, Brain, Users, ClipboardList, ArrowRight, ShieldCheck, RefreshCw, Database } from "lucide-react";
 
 function StatCard({ label, value, hint }) {
   return (
@@ -29,9 +30,24 @@ const SECTIONS = [
 
 export default function AdminDashboard() {
   const [summary, setSummary] = useState(null);
+  const [syncing, setSyncing] = useState(false);
+  const [lastSync, setLastSync] = useState(null);
   useEffect(() => {
     api.get("/admin/summary").then(({ data }) => setSummary(data)).catch(() => {});
   }, []);
+
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      const { data } = await api.post("/admin/firestore/sync");
+      setLastSync(data);
+      toast.success(`Firestore sincronizado: ${data.master_count} questões (master), ${data.public_count} publicadas para alunos.`);
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || "Falha ao sincronizar Firestore.");
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   return (
     <div className="min-h-screen">
@@ -56,6 +72,33 @@ export default function AdminDashboard() {
           <StatCard label="Anotações" value={summary?.annotations} hint="ITEMs anotados" />
           <StatCard label="Feed" value={summary?.feed_items} hint={`${summary?.feed_items_published ?? 0} publicados`} />
           <StatCard label="Interações no feed" value={summary?.feed_interactions} hint="Eventos brutos" />
+        </div>
+
+        {/* Firestore sync */}
+        <div className="mt-10 bg-white border border-zinc-200 rounded-2xl p-6 flex flex-col md:flex-row md:items-center gap-4">
+          <div className="w-11 h-11 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0">
+            <Database className="w-5 h-5" strokeWidth={1.7} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="font-display font-bold text-lg tracking-tight text-zinc-950">Sincronizar Firestore</div>
+            <div className="mt-1 text-sm text-zinc-500">
+              Importa todas as questões e o schema completo do Firestore para a base interna (master, editável só no admin) e regenera a versão filtrada que o aluno acessa.
+            </div>
+            {lastSync && (
+              <div className="mt-2 text-xs text-emerald-600">
+                Última sincronização: {lastSync.master_count} no master · {lastSync.public_count} publicadas.
+              </div>
+            )}
+          </div>
+          <button
+            onClick={handleSync}
+            disabled={syncing}
+            data-testid="btn-sync-firestore"
+            className="shrink-0 inline-flex items-center gap-2 rounded-xl bg-zinc-950 px-5 py-3 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} />
+            {syncing ? "Sincronizando…" : "Sincronizar Firestore"}
+          </button>
         </div>
 
         {/* Sections */}

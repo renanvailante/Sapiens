@@ -47,22 +47,19 @@ async def root():
 
 @api_router.get("/questoes")
 async def list_questoes_publico(limit: int = 100):
-    """Endpoint PUBLICO (sem autenticacao) que le a colecao 'itens' do Firestore
-    usando a conexao de Service Account ja existente no backend.
-    Nenhum Firebase Auth e envolvido aqui.
+    """Endpoint PUBLICO (sem autenticacao) do ALUNO.
+    Le APENAS a colecao filtrada 'questoes_public' do Mongo (versao sem
+    metadados internos). NUNCA le do Firestore nem da colecao master.
     """
     try:
         limit = max(1, min(int(limit), 500))
     except (TypeError, ValueError):
         limit = 100
-    try:
-        import firestore_service as _fs
-        items = await asyncio.to_thread(_fs.read_collection, "itens", limit)
-        return {"items": items, "count": len(items)}
-    except Exception as exc:  # noqa: BLE001
-        import logging as _logging
-        _logging.getLogger("sapiens").exception("GET /api/questoes falhou: %s", exc)
-        raise HTTPException(status_code=502, detail=f"Firestore error: {exc}")
+    cursor = db.questoes_public.find(
+        {}, {"_id": 0, "master_id": 0}
+    ).limit(limit)
+    items = await cursor.to_list(length=limit)
+    return {"items": items, "count": len(items)}
 
 
 api_router.include_router(auth_module.router)
