@@ -11,7 +11,7 @@ import string
 from datetime import datetime
 
 # Backend URL from frontend/.env
-BACKEND_URL = "https://cognitive-hierarchy.preview.emergentagent.com"
+BACKEND_URL = "https://fast-preview-15.preview.emergentagent.com"
 BASE_URL = f"{BACKEND_URL}/api"
 
 # Test credentials from /app/memory/test_credentials.md
