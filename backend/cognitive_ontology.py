@@ -1,93 +1,130 @@
-"""Constrói a árvore da Ontologia Cognitiva Sapiens v1.4 a partir do corpus
-de questões auditadas (questoes_master). NÃO inventa categorias: cada nó
-(domínio/competência/processo/habilidade) é um código v1.4 que existe nos dados.
+"""Ontologia Cognitiva Sapiens v1.4 — arquitetura em rede.
 
-Relações de parentesco (domínio→competência→processo→habilidade):
-- habilidade → processo: link EXPLÍCITO no dado (processo.habilidades).
-- processo → competência e competência → domínio: derivadas por co-ocorrência
-  dominante dentro do mesmo item anotado (o corpus v1.4 é a fonte).
+FONTE ÚNICA: /app/backend/docs/ontology JSON v1.4 (NÃO usar ontology.py/CHC
+nem co-ocorrência do corpus). As relações são LIDAS explicitamente do JSON,
+sem inventar categorias:
 
+    domínio → competência → processo → habilidade
+
+Relações no JSON:
+- competencia.processos          → processos da competência
+- processo.competencia           → competência do processo
+- processo.dominios              → domínios do processo
+- habilidade.processos_cognitivos→ processos que a habilidade observa
+
+A competência é ancorada ao domínio do(s) seu(s) processo(s) (determinístico).
 Sem IA/LLM — puro agregado determinístico.
 """
 from __future__ import annotations
 
-from collections import Counter, defaultdict
+import json
+import os
+import re
+from collections import defaultdict
+from functools import lru_cache
 from typing import Any
 
-
-def _ec(m: dict) -> dict:
-    return (m.get("pipeline") or {}).get("estrutura_cognitiva") or {}
+_ONTOLOGY_PATH = os.path.join(os.path.dirname(__file__), "docs", "ontology JSON v1.4")
 
 
-def build_ontology_tree(masters: list[dict], answered_master_ids: set[str]) -> list[dict[str, Any]]:
-    comp_dom: dict[str, Counter] = defaultdict(Counter)
-    proc_comp: dict[str, Counter] = defaultdict(Counter)
-    proc_habs: dict[str, set] = defaultdict(set)
+@lru_cache(maxsize=1)
+def load_ontology() -> dict:
+    """Carrega o JSON v1.4 (que está embrulhado em markdown com crases)."""
+    with open(_ONTOLOGY_PATH, "r", encoding="utf-8") as f:
+        raw = f.read()
+    # Cada fragmento JSON está numa linha entre crases; concatenar reconstrói o JSON.
+    fragments = re.findall(r"`([^`]*)`", raw)
+    text = "".join(fragments)
+    return json.loads(text)
 
-    all_doms: set[str] = set()
-    dom_ok: set[str] = set()
-    comp_ok: set[str] = set()
-    proc_ok: set[str] = set()
-    hab_ok: set[str] = set()
 
-    for m in masters:
-        ec = _ec(m)
-        doms = [d.get("id") for d in (ec.get("dominios") or []) if d.get("id")]
-        comps = [c.get("id") for c in (ec.get("competencias") or []) if c.get("id")]
-        procs = ec.get("processos") or []
-        answered = m.get("id") in answered_master_ids
+def build_ontology_tree(answered_process_ids: set[str] | None = None) -> list[dict[str, Any]]:
+    """Monta a árvore completa da ontologia v1.4.
 
-        for d in doms:
-            all_doms.add(d)
-            if answered:
-                dom_ok.add(d)
-        for c in comps:
-            if answered:
-                comp_ok.add(c)
-            for d in doms:
-                comp_dom[c][d] += 1
-        for p in procs:
-            pid = p.get("id")
-            if not pid:
-                continue
-            if answered:
-                proc_ok.add(pid)
-            for h in (p.get("habilidades") or []):
-                hid = h.get("id")
-                if not hid:
-                    continue
-                proc_habs[pid].add(hid)
-                if answered:
-                    hab_ok.add(hid)
-            for c in comps:
-                proc_comp[pid][c] += 1
+    answered_process_ids: conjunto de IDs de processo (PROC-*) que o usuário
+    efetivamente ativou (respondeu ao menos uma questão que os aciona).
 
-    comp_parent = {c: (cnt.most_common(1)[0][0] if cnt else None) for c, cnt in comp_dom.items()}
-    proc_parent = {p: (cnt.most_common(1)[0][0] if cnt else None) for p, cnt in proc_comp.items()}
+    Propagação de `answered`:
+    - processo   : respondido se estiver em answered_process_ids
+    - habilidade : respondida se o processo pai foi respondido (granularidade
+                   das anotações é por processo)
+    - competência: respondida se algum processo filho foi respondido
+    - domínio    : respondido se alguma competência filha foi respondida
+    """
+    answered = set(answered_process_ids or [])
+    onto = load_ontology()
+    domains = onto.get("dominios", [])
+    comps = onto.get("competencias", [])
+    procs = onto.get("processos_cognitivos", [])
+    habs = onto.get("habilidades_observaveis", [])
 
-    comps_by_dom: dict[str, list] = defaultdict(list)
-    for c, d in comp_parent.items():
-        comps_by_dom[d].append(c)
-    procs_by_comp: dict[str, list] = defaultdict(list)
-    for p, c in proc_parent.items():
-        procs_by_comp[c].append(p)
+    proc_by_id = {p["id"]: p for p in procs}
+
+    habs_by_proc: dict[str, list] = defaultdict(list)
+    for h in habs:
+        for pid in h.get("processos_cognitivos", []) or []:
+            habs_by_proc[pid].append(h)
+
+    # Ancora cada competência ao domínio do primeiro processo que tem domínio.
+    comp_domain: dict[str, str | None] = {}
+    for c in comps:
+        dom = None
+        for pid in c.get("processos", []) or []:
+            p = proc_by_id.get(pid)
+            if p and p.get("dominios"):
+                dom = p["dominios"][0]
+                break
+        comp_domain[c["id"]] = dom
+
+    comps_by_domain: dict[str | None, list] = defaultdict(list)
+    for c in comps:
+        comps_by_domain[comp_domain[c["id"]]].append(c)
 
     tree: list[dict[str, Any]] = []
-    for d in sorted(all_doms):
-        dnode = {"code": d, "level": "dominio", "answered": d in dom_ok, "children": []}
-        for c in sorted(comps_by_dom.get(d, [])):
-            cnode = {"code": c, "level": "competencia", "answered": c in comp_ok, "children": []}
-            for p in sorted(procs_by_comp.get(c, [])):
+    for d in domains:
+        dnode: dict[str, Any] = {
+            "code": d["id"],
+            "nome": d.get("nome", d["id"]),
+            "descricao": d.get("descricao", ""),
+            "level": "dominio",
+            "children": [],
+        }
+        dom_answered = False
+        for c in comps_by_domain.get(d["id"], []):
+            cnode: dict[str, Any] = {
+                "code": c["id"],
+                "nome": c.get("nome", c["id"]),
+                "level": "competencia",
+                "children": [],
+            }
+            comp_answered = False
+            for pid in c.get("processos", []) or []:
+                p = proc_by_id.get(pid)
+                if not p:
+                    continue
+                p_answered = pid in answered
+                if p_answered:
+                    comp_answered = True
                 pnode = {
-                    "code": p,
+                    "code": pid,
+                    "nome": p.get("nome", pid),
+                    "definicao": p.get("definicao_operacional", ""),
                     "level": "processo",
-                    "answered": p in proc_ok,
+                    "answered": p_answered,
                     "children": [
-                        {"code": h, "level": "habilidade", "answered": h in hab_ok}
-                        for h in sorted(proc_habs.get(p, []))
+                        {
+                            "code": h["id"],
+                            "nome": h.get("nome", h["id"]),
+                            "level": "habilidade",
+                            "answered": p_answered,
+                        }
+                        for h in habs_by_proc.get(pid, [])
                     ],
                 }
                 cnode["children"].append(pnode)
+            cnode["answered"] = comp_answered
+            dom_answered = dom_answered or comp_answered
             dnode["children"].append(cnode)
+        dnode["answered"] = dom_answered
         tree.append(dnode)
     return tree

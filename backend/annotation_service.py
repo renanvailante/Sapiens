@@ -8,6 +8,8 @@ from __future__ import annotations
 from collections import defaultdict
 from typing import Any
 
+from cognitive_ontology import build_ontology_tree
+
 
 _db = None
 def set_db(db):
@@ -40,7 +42,8 @@ async def compute_cognitive_profile(user_id: str) -> dict[str, Any]:
     """
     analyses = await _db.analyses.find({"user_id": user_id, "deleted": False}, {"_id": 0}).to_list(500)
     if not analyses:
-        return {"processes": [], "error_types": [], "misconceptions": [], "coverage": 0}
+        return {"processes": [], "error_types": [], "misconceptions": [], "coverage": 0,
+                "ontology_tree": build_ontology_tree(set())}
 
     # Preload the exam metadata to know banca/ano/caderno
     exam_ids = list({a["exam_id"] for a in analyses})
@@ -133,4 +136,5 @@ async def compute_cognitive_profile(user_id: str) -> dict[str, Any]:
         "coverage": round(100 * matched_questions / total_questions, 1) if total_questions else 0.0,
         "matched_questions": matched_questions,
         "total_questions": total_questions,
+        "ontology_tree": build_ontology_tree(set(process_stats.keys())),
     }

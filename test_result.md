@@ -135,7 +135,70 @@ backend:
             
             VERDICT: Auth flow is fully functional. User's report of "login broken" is unfounded. All endpoints working correctly with proper authentication, authorization, and error handling.
 
+  - task: "Fase 4 - Cognitive ontology tree from JSON v1.4 (/api/cognitive-profile)"
+    implemented: true
+    working: true
+    file: "backend/cognitive_ontology.py, backend/annotation_service.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Reescrevi cognitive_ontology.py para carregar a ontologia v1.4 do arquivo docs/ontology JSON v1.4 (fonte unica, NAO usa corpus/CHC). Monta rede dominio->competencia->processo->habilidade com relacoes explicitas do JSON. build_ontology_tree(answered_process_ids) marca answered por propagacao. GET /api/cognitive-profile agora inclui ontology_tree (verificado via curl: 11 dominios). Sem IA/LLM. Test: login teste@sapiens.dev/teste1234, GET /api/cognitive-profile -> ontology_tree com 11 dominios, cada no com code/nome/level/answered; sem coverage tudo answered=false."
+        - working: true
+          agent: "testing"
+          comment: |
+            ✅ ALL TESTS PASSING - Fase 4 cognitive ontology tree fully functional.
+            
+            Comprehensive backend testing completed (6 test scenarios):
+            
+            TEST 1 - Auth Regression Check:
+            ✅ POST /api/auth/login with teste@sapiens.dev / teste1234 → 200 OK
+            ✅ Returns {user, token} with valid token
+            
+            TEST 2 - Cognitive Profile Endpoint:
+            ✅ GET /api/cognitive-profile with Bearer token → 200 OK
+            ✅ Response contains 'ontology_tree' key
+            ✅ Response keys: processes, error_types, misconceptions, coverage, ontology_tree
+            
+            TEST 3 - Domain Count Validation:
+            ✅ Exactly 11 domain nodes found (level == "dominio")
+            ✅ Domain codes: DOM-QUANT, DOM-ESPACO, DOM-MUDANCA, DOM-INCERTEZA, DOM-CAUSAL, DOM-LOGICO, DOM-SIMBOLICO, DOM-TEXTUAL, DOM-EXPERIMENTAL, DOM-SISTEMICO, DOM-CLASSIF
+            
+            TEST 4 - Node Structure Validation:
+            ✅ All domain nodes have required fields: code, nome, level, answered, children
+            
+            TEST 5 - 4-Level Network Structure:
+            ✅ Validated dominio → competencia → processo → habilidade hierarchy
+            ✅ DOM-QUANT contains COMP-01
+            ✅ COMP-01 contains all 4 expected processos: PROC-QUANT-01, PROC-QUANT-02, PROC-QUANT-03, PROC-QUANT-04
+            ✅ PROC-QUANT-01 contains habilidade children (HAB-01, HAB-02, etc.)
+            ✅ All nodes at all levels have answered=False (no coverage, as expected)
+            
+            TEST 6 - Auth Protection:
+            ✅ GET /api/cognitive-profile WITHOUT auth → 401 Unauthorized (correct)
+            
+            Backend logs confirm:
+            - Two successful 200 OK responses for authenticated requests
+            - One 401 Unauthorized for unauthenticated request
+            - No errors related to cognitive-profile endpoint
+            
+            VERDICT: The cognitive ontology tree endpoint is fully functional. The ontology v1.4 is correctly loaded from JSON, the 4-level network structure is properly built, and all nodes correctly show answered=False when the user has no coverage.
+
 frontend:
+  - task: "Fase 4 - Aba Cognitivo: arvore completa da ontologia v1.4"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/pages/CognitiveProfile.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Substitui graficos (recharts) por arvore hierarquica dominio->competencia->processo->habilidade lida de data.ontology_tree. No respondido = destaque cheio, no nao respondido = cinza esmaecido. Sem IA/LLM. NOTA: componente JSX auto-recursivo causava crash no Babel (Maximum call stack) - refatorado para achatar a arvore em JS puro e renderizar lista plana com expand/collapse. Compila limpo. Nao testar frontend sem permissao do usuario."
+
   - task: "Login UI flow and redirect to dashboard"
     implemented: true
     working: true
@@ -269,10 +332,24 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Login UI flow and redirect to dashboard"
+    - "Fase 4 - Cognitive ontology tree from JSON v1.4 (/api/cognitive-profile)"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
+
+agent_communication:
+    - agent: "main"
+      message: |
+        FASE 4 - Testar SOMENTE backend do endpoint /api/cognitive-profile.
+        Contexto: ambiente foi resetado (recriei backend/.env e frontend/.env; reinstalei deps). Usuario de teste: teste@sapiens.dev / teste1234 (ja criado via signup).
+        Verificar:
+        1) POST /api/auth/login (teste@sapiens.dev / teste1234) -> 200 com {user, token} (regressao auth).
+        2) GET /api/cognitive-profile com Bearer token -> 200. Deve conter a chave "ontology_tree".
+        3) ontology_tree deve ter EXATAMENTE 11 dominios (nivel "dominio"), cada no com campos code, nome, level, answered e children.
+        4) Estrutura em rede: dominio -> competencia -> processo -> habilidade (4 niveis). Ex: DOM-QUANT contem COMP-01 que contem PROC-QUANT-01..04, e PROC-QUANT-01 contem habilidades HAB-*.
+        5) Como o usuario nao respondeu questoes (sem coverage), TODOS os nos devem ter answered=false.
+        6) GET /api/cognitive-profile SEM auth -> 401.
+        NAO testar frontend (pedirei permissao ao usuario).
 
 agent_communication:
     - agent: "main"
