@@ -185,6 +185,46 @@ backend:
             - No errors related to cognitive-profile endpoint
             
             VERDICT: The cognitive ontology tree endpoint is fully functional. The ontology v1.4 is correctly loaded from JSON, the 4-level network structure is properly built, and all nodes correctly show answered=False when the user has no coverage.
+        - working: true
+          agent: "testing"
+          comment: |
+            ✅ BUGFIX VERIFIED - Firestore integration working perfectly. All tests passing.
+            
+            Context: Main agent fixed bug where cognitive profile was reading from empty Mongo collections instead of Firestore. Now reads from students/{uid}/behavior, joins with `itens` collection by item_hash, extracts estrutura_cognitiva.processos.
+            
+            Comprehensive testing completed (3 test scenarios with 24 validation checks):
+            
+            TEST A - User WITH 18 answers (renan.test@sapiens.dev):
+            ✅ POST /api/auth/login → 200 OK with valid token
+            ✅ GET /api/cognitive-profile with Bearer token → 200 OK
+            ✅ Response contains 'ontology_tree' with 11 domain nodes
+            ✅ answered_items == 18 (EXACT match)
+            ✅ EXACTLY 11 processos with answered=true
+            ✅ Process codes match EXACTLY: {PROC-ESPACO-01, PROC-ESPACO-02, PROC-INC-04, PROC-MUD-01, PROC-QUANT-01, PROC-QUANT-02, PROC-QUANT-04, PROC-SIMB-01, PROC-SIMB-02, PROC-TEXT-01, PROC-TEXT-03}
+            ✅ EXACTLY 6 dominios with answered=true
+            ✅ EXACTLY 6 competencias with answered=true
+            ✅ EXACTLY 25 habilidades with answered=true
+            
+            TEST B - User WITHOUT answers (teste@sapiens.dev):
+            ✅ POST /api/auth/login → 200 OK with valid token
+            ✅ GET /api/cognitive-profile with Bearer token → 200 OK
+            ✅ Response contains 'ontology_tree' with 11 domain nodes
+            ✅ answered_items == 0 (EXACT match)
+            ✅ ALL processo nodes have answered=false
+            ✅ ALL dominio nodes have answered=false
+            ✅ ALL competencia nodes have answered=false
+            ✅ ALL habilidade nodes have answered=false
+            
+            TEST C - Auth Protection:
+            ✅ GET /api/cognitive-profile WITHOUT auth → 401 Unauthorized (correct)
+            
+            Backend logs confirm:
+            - All login requests: 200 OK
+            - All authenticated /api/cognitive-profile requests: 200 OK
+            - Unauthenticated requests: 401 Unauthorized (correct)
+            - No errors related to cognitive-profile endpoint
+            
+            VERDICT: The Firestore integration bugfix is FULLY WORKING. The cognitive profile now correctly reads student answers from Firestore, matches them with the `itens` collection by item_hash, and accurately propagates answered=true flags through the ontology tree. All counts match expected values exactly.
 
 frontend:
   - task: "Fase 4 - Aba Cognitivo: arvore completa da ontologia v1.4"
@@ -340,7 +380,24 @@ test_plan:
 agent_communication:
     - agent: "main"
       message: |
-        FASE 4 - Testar SOMENTE backend do endpoint /api/cognitive-profile.
+        BUGFIX FASE 4 - Aba Cognitivo mostrava tudo answered=false. Causa: compute_cognitive_profile lia do Mongo (analyses+question_annotations, vazios), mas as respostas do aluno ficam no FIRESTORE.
+        Correcao (SO na LEITURA; escrita nao mudou - ja grava no formato novo students/{uid}/behavior via POST /students/me/answer):
+        - annotation_service.compute_cognitive_profile agora le Firestore students/{uid}/behavior/{event_id}, pega item_hash de cada evento, casa com a colecao Firestore `itens` (chave = fs.compute_item_hash(pipeline.questao)) e extrai estrutura_cognitiva.processos[].id -> answered_process_ids -> build_ontology_tree.
+        - Config: adicionei FIREBASE_SERVICE_ACCOUNT_PATH em backend/.env e o arquivo firebase-service-account.json (project sapiens-dataset). Firestore estava sem credenciais apos reset do ambiente.
+        Verificado internamente para o uid real user_2e0854c50784: 18/18 eventos casaram -> 11 processos, 6 dominios, 6 competencias, 25 habilidades answered=true.
+
+        TESTAR SOMENTE BACKEND (nao testar frontend):
+        Credenciais em /app/memory/test_credentials.md.
+        1) Login renan.test@sapiens.dev / renan1234 -> 200. GET /api/cognitive-profile com Bearer:
+           - deve conter ontology_tree (11 dominios) e answered_items == 18.
+           - EXATAMENTE 11 nos level=processo com answered=true; os PROC esperados: PROC-ESPACO-01, PROC-ESPACO-02, PROC-INC-04, PROC-MUD-01, PROC-QUANT-01, PROC-QUANT-02, PROC-QUANT-04, PROC-SIMB-01, PROC-SIMB-02, PROC-TEXT-01, PROC-TEXT-03.
+           - dominios answered=true = 6; competencias answered=true = 6; habilidades answered=true = 25.
+        2) Login teste@sapiens.dev / teste1234 -> 200. GET /api/cognitive-profile -> ontology_tree presente, answered_items == 0, TODOS os nos answered=false.
+        3) GET /api/cognitive-profile SEM auth -> 401.
+
+    - agent: "main"
+      message: |
+        FASE 4 (anterior) - Testar SOMENTE backend do endpoint /api/cognitive-profile.
         Contexto: ambiente foi resetado (recriei backend/.env e frontend/.env; reinstalei deps). Usuario de teste: teste@sapiens.dev / teste1234 (ja criado via signup).
         Verificar:
         1) POST /api/auth/login (teste@sapiens.dev / teste1234) -> 200 com {user, token} (regressao auth).
