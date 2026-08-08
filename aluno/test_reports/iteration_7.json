@@ -1,0 +1,43 @@
+{
+  "summary": "Iteration 7 backend testing: Admin role gate + Response Event Store. 27/28 tests pass. One contract deviation found: POST /events/* endpoints use require_user, but review contract says admin-only. Also fixed a MongoDB _id leakage bug that caused 500s on POST /events/responses and POST /events/interventions responses.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "POST /api/events/responses, /api/events/responses/bulk, /api/events/interventions",
+        "issue": "Contract violation vs review spec: these WRITE endpoints depend on require_user, not require_admin. Non-admin authenticated users successfully append events (returns 200) and are counted in /api/students. Spec says: 'All /api/events/* and /api/students/* endpoints require admin. Non-admin gets 403; anon gets 401.' Fix: switch dependency to require_admin in events_routes.py (record_response, record_responses_bulk, record_intervention).",
+        "priority": "HIGH"
+      }
+    ],
+    "minor": [
+      {
+        "endpoint": "POST /api/events/responses and POST /api/events/interventions",
+        "issue": "FIXED IN THIS ITERATION: motor's insert_one adds `_id` (ObjectId) in place to the doc dict, which was then returned directly. FastAPI's jsonable_encoder failed with 'ObjectId is not iterable' → 500. Fix applied in events_routes.py: `doc.pop('_id', None)` before returning."
+      }
+    ]
+  },
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_admin_and_events.py",
+    "/app/test_reports/pytest/iter7_results.xml"
+  ],
+  "action_items": [
+    "Change events_routes.py POSTs (record_response, record_responses_bulk, record_intervention) from Depends(require_user) to Depends(require_admin) to match the spec. Non-admin users must get 403 on POST /events/*. Re-run backend/tests/test_admin_and_events.py::TestEventsAccessControl::test_events_write_non_admin to verify."
+  ],
+  "critical_code_review_comments": [
+    "events_routes.py: All write handlers returned the mutated insert_one doc directly. Any Mongo write path that returns a doc must strip _id or exclude it in projection.",
+    "events_routes.py: `_build_query` accepts `disciplina` but never applies it in the Mongo query (correct by design — filter is post-JOIN). Consider renaming or dropping the unused param to reduce confusion.",
+    "auth.py: `_reconcile_admin` unconditionally overwrites is_admin on every login based on ADMIN_EMAILS env. This means an admin promoted via PATCH /admin/users but NOT in ADMIN_EMAILS will be silently demoted on their next login. Consider merging (OR) with existing DB flag or documenting env as the sole source of truth.",
+    "events_models.py: `acertou` is required to be client-computed against gabarito; the server never validates this against the joined item.gabarito. Trust boundary weakness — a malicious client could self-report accuracy=100%. Recommend server-side computation using the annotation store."
+  ],
+  "updated_files": [
+    "/app/backend/events_routes.py (bug fix: strip _id from insert_one responses)",
+    "/app/backend/tests/test_admin_and_events.py (new)"
+  ],
+  "success_rate": {"backend": "96% (27/28)", "frontend": "not tested"},
+  "test_credentials": "qa@sapiens.app / qa12345 (admin, auto-promoted via ADMIN_EMAILS). Fresh non-admin users created with TEST_student_<uuid>@test.com / pass1234.",
+  "seed_data_creation": "Tests seed one annotation for ITEM-ENEM-2022-MAT-137 (schema_version=1.0, disciplina=Matemática), several response_events for a TEST_aluno_* id (respondida + anulada + 3 bulk revisao), and one intervention_event. All prefixed with TEST_ for cleanup.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "The single failing test (TestEventsAccessControl::test_events_write_non_admin) documents a real contract gap between spec ('all /events/* require admin') and implementation (write endpoints use require_user). After main agent fixes events_routes.py to switch the three POST handlers to require_admin, re-run: `pytest backend/tests/test_admin_and_events.py -v`. All 28 tests should pass. The seeded annotation uses schema_version='1.0' with item.id=ITEM-ENEM-2022-MAT-137 and disciplina='Matemática'. JOIN correctness verified: response events contain zero cognitive fields; item.payload contains processos_ativados/error_type_id/estrutura_cognitiva.",
+  "rca of the issue": "Root cause of the 500s: motor's insert_one mutates the input document to inject _id, and the handler then returned that same dict. FastAPI's jsonable_encoder cannot serialize bson.ObjectId, hence 500 with 'ObjectId is not iterable'. Fixed by popping _id before return. Root cause of the access-control gap: events_routes.py POST handlers were wired with `Depends(require_user)` instead of `Depends(require_admin)`, allowing any authenticated user to write to the event store — inconsistent with the review contract which mandates admin-only writes."
+}

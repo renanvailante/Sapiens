@@ -1,0 +1,121 @@
+@import url('https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@800,700&f[]=general-sans@700,600,500,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    --background: 0 0% 98%;
+    --foreground: 240 10% 4%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 4%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 4%;
+    --primary: 240 6% 10%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 5% 96%;
+    --secondary-foreground: 240 6% 10%;
+    --muted: 240 5% 96%;
+    --muted-foreground: 240 4% 40%;
+    --accent: 240 5% 96%;
+    --accent-foreground: 240 6% 10%;
+    --destructive: 349 89% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 6% 90%;
+    --input: 240 6% 90%;
+    --ring: 243 75% 59%;
+    --chart-1: 158 64% 45%;
+    --chart-2: 349 89% 60%;
+    --chart-3: 38 92% 50%;
+    --chart-4: 243 75% 59%;
+    --chart-5: 240 6% 10%;
+    --radius: 0.75rem;
+}
+
+* {
+    border-color: hsl(var(--border));
+}
+
+html, body, #root {
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: 'Manrope', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.font-display {
+    font-family: 'Cabinet Grotesk', 'General Sans', sans-serif;
+    letter-spacing: -0.03em;
+}
+
+.font-mono-alt {
+    font-family: 'JetBrains Mono', monospace;
+}
+
+/* Subtle grain */
+.grain::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background-image: radial-gradient(circle at 1px 1px, rgba(0,0,0,0.025) 1px, transparent 0);
+    background-size: 6px 6px;
+    z-index: -1;
+}
+
+/* Sapiens brand mark shimmer */
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+.shimmer {
+    background: linear-gradient(90deg, #09090b 0%, #52525b 50%, #09090b 100%);
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: shimmer 6s ease-in-out infinite;
+}
+
+/* Reveal animation */
+@keyframes reveal {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.reveal { animation: reveal .6s ease-out both; }
+.reveal-delay-1 { animation-delay: .08s; }
+.reveal-delay-2 { animation-delay: .16s; }
+.reveal-delay-3 { animation-delay: .24s; }
+.reveal-delay-4 { animation-delay: .32s; }
+
+/* Pill button transitions */
+.pill { transition: transform .18s ease-out, background-color .18s ease-out, box-shadow .18s ease-out; }
+.pill:active { transform: scale(0.97); }
+
+/* Glass */
+.glass {
+    background: rgba(255,255,255,0.72);
+    backdrop-filter: saturate(160%) blur(16px);
+    -webkit-backdrop-filter: saturate(160%) blur(16px);
+    border-bottom: 1px solid hsl(var(--border));
+}
+
+/* Card lift */
+.lift { transition: transform .18s ease-out, box-shadow .18s ease-out; }
+.lift:hover { transform: translateY(-2px); box-shadow: 0 8px 24px -12px rgba(0,0,0,0.12); }
+
+/* Selection */
+::selection { background: #09090b; color: #fff; }
+
+/* Focus */
+button:focus-visible, a:focus-visible, input:focus-visible, [role="button"]:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+    border-radius: 8px;
+}
+
+/* Feed: hide scrollbar for the snap-scroll container */
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
