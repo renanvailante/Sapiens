@@ -1,0 +1,46 @@
+{
+  "summary": "Testado o novo modo 'Caderno/prova' + paralelismo do lote. Backend (pytest, 6 pass / 2 skip): /api/book/upload aceita PDF/PNG/JPG e retorna {id, files, created_at, manifest:null}; rejeita .txt com 400; GET /api/book/{id} devolve o doc com manifest:null antes do passo 2; manifest/process com book_id inexistente → 404; POST /api/book/{id}/manifest chega até o Gemini e retorna 502 (LLM budget ainda esgotado). Frontend (Playwright com mocks de LLM): 3 modos visíveis; batch paraleliza 3 chamadas /api/pipeline/generate (span<0.5s, total<2×latência); associação filename↔result correta em batch-open-{0,1,2}; book-results renderiza 3 book-item-{i} a partir do manifest; book-select-all alterna todos; book-copy escreve JSON array com N=selecionados; book-export baixa 'sapiens-caderno-<id>.json'; book-toggle-0 abre book-json-0; book-edit-0 abre book-editor-0 e book-save-edit-0 dispara PUT /api/pipeline/{id}; book-delete remove selecionadas. PARALELISMO do book também confirmado (3 chamadas /process concorrentes, span<0.5s). PORÉM foi encontrado BUG CRÍTICO: apenas a última questão fica com status 'OK' — as demais permanecem em 'Aguardando' na UI (stale-closure em processSelected). Detalhado abaixo.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "BookResults.processSelected (src/components/BookResults.jsx L67-103)",
+        "issue": "Stale-closure: setItem/removeItem/selectAll usam a variável `items` (=book.items) capturada no momento do render. Quando as tarefas paralelas terminam sequencialmente, cada setItem chama onUpdate({...book, items: items.map(...)}) baseado na MESMA lista original — assim cada atualização SOBRESCREVE as anteriores. Efeito visível: com 3 questões processadas em paralelo, somente a última que resolve fica em status 'done' (OK); as outras permanecem em 'pending' (Aguardando) mesmo com a chamada HTTP tendo retornado 200. Os pipelines são criados no servidor corretamente, mas a UI perde os resultados.",
+        "selector": "[data-testid=\"book-item-0\"], [data-testid=\"book-item-1\"], [data-testid=\"book-item-2\"]",
+        "priority": "CRITICAL"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_book_endpoints.py",
+    "/app/test_reports/pytest/pytest_iter4.xml"
+  ],
+  "action_items": [
+    "CORRIGIR BookResults.processSelected para evitar stale closure. Padrão sugerido (mesmo do BatchResults): manter um array `current = [...book.items]` FORA do state React, atualizá-lo em cada tarefa, e chamar onUpdate({...book, items: [...current]}) após cada mutação. Alternativamente, subir o estado para o pai e passar um updater funcional, ou usar useRef para segurar a versão mais recente do array. Depois de corrigido, revalidar que os 3 items ficam 'OK' e que book-open-{i} continua apontando para o pipeline correto.",
+    "AMBIENTE: EMERGENT_LLM_KEY continua com budget esgotado (Budget has been exceeded! Current cost: 1.02, Max budget: 1.0). Manifest/process reais retornam 502; o backend está OK, apenas o LLM não responde. Renovar/recarregar a chave para permitir teste E2E real."
+  ],
+  "critical_code_review_comments": [
+    "server.py /book/upload valida extensões via ALLOWED_QUESTION_EXTS e persiste em MongoDB corretamente com manifest:null inicial — OK.",
+    "server.py /book/{id}/manifest e /process retornam 404 para id ausente e 502 quando o LLM falha — encapsulamento correto.",
+    "BookProcessRequest usa question_number:str (bom, evita perder zeros à esquerda como '01').",
+    "cognitive_engine.run_book_manifest higieniza a saída do modelo (numero, titulo, paginas, disciplina, tem_figura) — robusto.",
+    "run_cognitive_pipeline aceita focus_hint e o injeta no prompt do usuário — OK para o modo caderno.",
+    "BUG na UI (BookResults.processSelected): stale-closure sobre `items` derruba os updates concorrentes. Ver ui_bugs acima.",
+    "BookResults.removeItem tem o MESMO padrão de stale-closure (usa `items` do render). Se um usuário disparar deleteOne(i) enquanto outra tarefa async estiver rodando, pode haver perda de update. Recomenda-se refatorar todo o setItem/removeItem/selectAll para usar functional updater.",
+    "parallel.js runInParallel está correto — o problema não é aqui; é como o consumidor (BookResults) integra o setState.",
+    "PipelineGenerator.generateBatch usa `current = [...initial]` fora do state e funciona bem, servindo de referência para o fix do BookResults."
+  ],
+  "updated_files": ["/app/backend/tests/test_book_endpoints.py (novo)"],
+  "success_rate": {
+    "backend": "100% dos endpoints não-LLM (6/6 pytest passaram, 2 skipped por LLM budget). Endpoints LLM (manifest/process) alcançam o Gemini e retornam 502 corretamente quando o budget acaba.",
+    "frontend": "~85% — modos, paralelismo (batch e book), associações, copy/export/edit/delete/save PUT funcionam; porém a UI fica DESATUALIZADA após processamento paralelo do caderno (apenas 1 de N mostra 'OK')."
+  },
+  "test_credentials": "N/A",
+  "seed_data_creation": "Testes criam books efêmeros via /api/book/upload; cada teste faz cleanup no fim (bulk_delete quando há pipeline id). Nenhum dado de produção alterado.",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "O BUG do BookResults é reproduzível 100% com 3 mocks paralelos de /book/{id}/process. Script Playwright completo está no output do agente anterior (mocka /pipeline/generate, /book/upload, /book/*/manifest, /book/*/process e /pipeline/{id}). Ao mockar, ATENÇÃO: page.route é LIFO — registre o catch-all (/api/pipeline/*) ANTES da rota específica (/api/pipeline/generate) para que a específica ganhe. Após o fix, esperado: 3/3 items com data-testid book-item-* em status 'OK' após aguardar book-open-2. LLM ainda com budget esgotado — testes de manifest/process reais precisam de recarga da EMERGENT_LLM_KEY.",
+  "rca of the issue": "Root cause do bug UI: em src/components/BookResults.jsx L39 `const items = book.items;` captura a referência de items no render atual. Em L46 setItem faz `items.map(...)` sobre essa captura. Quando várias tarefas assíncronas paralelas terminam sequencialmente (dentro do mesmo tick não-síncrono do React), cada setItem gera um novo book baseado no MESMO snapshot inicial de items — não no state atualizado. Como resultado, as atualizações se sobrescrevem: apenas a última tarefa a chamar setItem 'ganha'. Reprodução: 1) modo book, upload PDF, 3 questões detectadas via mock manifest; 2) clicar book-process-btn; 3) todas as 3 chamadas /process retornam 200 quase simultaneamente; 4) apenas book-item-2 exibe 'OK', book-item-0/1 permanecem em 'Aguardando'. Mitigação: seguir o padrão de BatchResults (array `current` externo mutado por índice) OU refatorar para usar useReducer/useRef com atualizações imutáveis."
+}

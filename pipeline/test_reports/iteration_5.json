@@ -1,0 +1,33 @@
+{
+  "summary": "Re-teste do fix de stale-closure em BookResults.jsx (iter 4 → iter 5). RESULTADO: BUG CORRIGIDO. Com 3 mocks paralelos de /api/book/{id}/process, os 3 book-item-{0,1,2} agora ficam com status 'OK' (wall-time 0.42s vs 3×0.3=0.9s serial → paralelismo confirmado). book-copy escreve JSON array com 3 items quando todos selecionados e com 2 items quando 1 é desmarcado. book-delete-item-1 remove corretamente 1 item (2 restantes). book-edit-0 + book-save-edit-0 disparam PUT /api/pipeline/{id} e atualizam a UI (badge 'JSON atualizado' + disciplina 'EDITED' visível). Regressão OK: modo batch continua paralelo (3/3 OK em 0.47s), modo single continua renderizando pipeline-result. Backend não retestado (LLM budget ainda esgotado — mesmos endpoints validados no iter 4 permanecem inalterados).",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_book_endpoints.py",
+    "/app/test_reports/pytest/pytest_iter4.xml"
+  ],
+  "action_items": [
+    "Nenhum bloqueador. Renovar EMERGENT_LLM_KEY para permitir teste E2E real do fluxo book (manifest/process) — atualmente retorna 502 mas backend está OK."
+  ],
+  "critical_code_review_comments": [
+    "Fix aplicado corretamente em BookResults.jsx: setItem/removeItem/toggleSelect/selectAll agora usam onUpdate((prev) => ...) — functional updater elimina o stale-closure.",
+    "PipelineGenerator.jsx passa setBook diretamente como onUpdate — setBook é setState nativo do React, suporta functional updater. OK.",
+    "processSelected também usa functional updater no toast final (linha 111-117) para computar contagens do state mais recente. OK.",
+    "deleteSelected usa functional updater no filter final (linha 203-206). OK."
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "100% (não retestado nesta iteração; sem mudanças no backend)",
+    "frontend": "100% — bug fix validado + todas regressões passando"
+  },
+  "test_credentials": "N/A",
+  "seed_data_creation": "Nenhum. Testes usam mocks 100% no frontend (page.route).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Bug de stale-closure em BookResults está resolvido via functional updaters. Se houver novas features no modo book, reuse o padrão do script desta iteração: mockar /api/book/upload, /api/book/{id}/manifest (3 questões), /api/book/{id}/process (com ~300ms sleep para simular paralelismo), e catch-all /api/pipeline/** (registrado ANTES do específico /api/pipeline/generate para LIFO). Assertivas-chave: (1) todos book-item textContent contém 'OK' após process; (2) wall-time < N×latência prova paralelismo; (3) navigator.clipboard.writeText interceptado via page.evaluate para inspecionar payload do book-copy.",
+  "rca of the issue": "N/A — bug já corrigido e validado nesta iteração."
+}

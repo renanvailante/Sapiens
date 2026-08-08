@@ -1,0 +1,36 @@
+{
+  "summary": "E2E REAL testing of Gemini refactor (emergentintegrations → google-genai direto, model=gemini-3-flash-preview). Backend: 31/32 tests passed (13/14 backend_test.py + 18/18 book/bulk/ontology). Motor cognitivo funcionou REAL end-to-end: /api/pipeline/generate retornou 200 com pipeline/questao/classificacao válidos usando IDs da ontologia semente (DOM-*/COMP-*/PROC-*). Modo Caderno também funcionou REAL: upload → manifest (2+ questões detectadas) → process criou pipeline vinculado ao book_id. Backend logs confirmam 'Gemini call · model=gemini-3-flash-preview'. Retry de 503 confirmado nos logs (4 tentativas com backoff 2/4/6s). Único fail: test_regenerate retornou 502 após esgotar 4 retries devido a 503 UNAVAILABLE persistente do Gemini (upstream, não bug de código). Frontend smoke test: Dashboard, Ontologia, Gerador, Questões todas navegam sem erros; sidebar mostra 'MOTOR: gemini-3-flash'. Nenhuma regressão. Ontologia semente 1.0.0-seed intacta (8/16/28/13/7).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/pipeline/{id}/regenerate", "issue": "Retornou 502 em 1 execução pois Gemini emitiu 503 UNAVAILABLE em todas as 4 tentativas (upstream spike). Retry lógica funciona corretamente; não é bug de código. Reexecutar quando quota/demanda se estabilizar."}
+    ]
+  },
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/backend_test.py",
+    "/app/backend/tests/test_book_endpoints.py",
+    "/app/backend/tests/test_bulk_pipelines.py",
+    "/app/backend/tests/test_ontology_reset_import.py",
+    "/app/test_reports/pytest/pytest_iter6.xml",
+    "/app/test_reports/pytest/pytest_iter6_extra.xml"
+  ],
+  "action_items": [
+    "Nenhum bloqueador. Refatoração para google-genai direto está funcional. Retry de 503 comprovado nos logs.",
+    "(Opcional) Aumentar retries de 4 para 5-6 ou adicionar jitter no backoff para reduzir chance de falha em picos de demanda do gemini-3-flash-preview."
+  ],
+  "critical_code_review_comments": [
+    "cognitive_engine.py: docstring diz 'default: gemini-3.1-pro-preview' mas DEFAULT_MODEL='gemini-3-flash-preview'. Ajuste cosmético do docstring recomendado.",
+    "cognitive_engine.py._generate_json: retry só cobre ServerError code=503; um 429 (quota) explodirá diretamente como 502. OK por ora (Gemini docs recomendam não retentar 429 sem exponential backoff maior).",
+    "server.py.generate_pipeline / book_process: capturam Exception genérico e mapeiam para 502 — perde-se tipo (poderia inspecionar isinstance ServerError e propagar código real). Aceitável.",
+    "cognitive_engine.py._extract_json_object: usa depth counter simples que pode falhar com chaves dentro de strings JSON. Baixíssima probabilidade dado response_mime_type=application/json + regex fence fallback."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "96.9% (31/32 — 1 fail devido a 503 upstream persistente do Gemini, não bug)", "frontend": "100% (smoke test)"},
+  "test_credentials": "N/A (sem auth)",
+  "seed_data_creation": "Nenhuma. Testes criam e limpam seus próprios pipelines/books via bulk_delete.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Motor cognitivo agora usa google-genai==2.12.1 direto (GEMINI_API_KEY em backend/.env), modelo default 'gemini-3-flash-preview'. Testes REAIS de LLM podem intermitentemente falhar com 502 quando Gemini retornar 503 UNAVAILABLE em todos os 4 retries — não é bug. backend_test.py::TestRegenerate falhou nesta run por esse motivo; reexecutar isoladamente se necessário. Logs em /var/log/supervisor/backend.err.log mostram 'Gemini call · model=gemini-3-flash-preview' e warnings de retry — use-os para diagnóstico.",
+  "rca of the issue": "test_regenerate → 502: Gemini API respondeu 503 UNAVAILABLE nas 4 tentativas (backoff 2s/4s/6s). Logs confirmam retry funcionando. Causa raiz: pico de demanda upstream no modelo gemini-3-flash-preview (transitório). Mitigação: reexecutar; opcionalmente ampliar retries ou aumentar backoff. NÃO é regressão de código."
+}

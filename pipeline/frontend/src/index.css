@@ -1,0 +1,92 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Fonts: Chivo (headings), IBM Plex Sans (body), IBM Plex Mono (code/tags) */
+@import url("https://fonts.googleapis.com/css2?family=Chivo:wght@400;600;700;900&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap");
+
+@layer base {
+  :root {
+    --background: 240 5% 96%;       /* #F4F4F5 */
+    --foreground: 240 6% 6%;        /* #09090B */
+    --card: 0 0% 100%;
+    --card-foreground: 240 6% 6%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 6% 6%;
+    --primary: 224 100% 33%;        /* #002FA7 - Klein Blue */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 5% 96%;
+    --secondary-foreground: 240 6% 10%;
+    --muted: 240 5% 96%;
+    --muted-foreground: 240 4% 34%; /* #52525B */
+    --accent: 240 5% 96%;
+    --accent-foreground: 240 6% 10%;
+    --destructive: 350 82% 47%;     /* #E11D48 */
+    --destructive-foreground: 0 0% 100%;
+    --border: 240 6% 90%;           /* #E4E4E7 */
+    --input: 240 6% 90%;
+    --ring: 224 100% 33%;
+    --success: 158 90% 30%;         /* #059669 */
+    --chart-1: 224 100% 33%;
+    --chart-2: 158 90% 30%;
+    --chart-3: 350 82% 47%;
+    --chart-4: 240 6% 6%;
+    --chart-5: 240 4% 34%;
+    --radius: 0.125rem;             /* 2px */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html, body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: "IBM Plex Sans", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: "Chivo", "IBM Plex Sans", sans-serif;
+    letter-spacing: -0.01em;
+  }
+  code, pre, .font-mono {
+    font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+  }
+  ::selection {
+    background-color: hsl(var(--primary));
+    color: white;
+  }
+}
+
+/* Custom utilities for the Swiss / High-Contrast aesthetic */
+@layer utilities {
+  .overline {
+    font-family: "IBM Plex Mono", monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .grid-lines > * + * {
+    border-top: 1px solid hsl(var(--border));
+  }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { scrollbar-width: none; }
+}
+
+@layer base {
+  [data-debug-wrapper="true"] { display: contents !important; }
+  [data-debug-wrapper="true"] > * {
+    margin-left: inherit; margin-right: inherit;
+    margin-top: inherit; margin-bottom: inherit;
+    padding: inherit; column-gap: inherit; row-gap: inherit; gap: inherit;
+    border-left-width: inherit; border-right-width: inherit;
+    border-top-width: inherit; border-bottom-width: inherit;
+    border-left-style: inherit; border-right-style: inherit;
+    border-top-style: inherit; border-bottom-style: inherit;
+    border-left-color: inherit; border-right-color: inherit;
+    border-top-color: inherit; border-bottom-color: inherit;
+  }
+}

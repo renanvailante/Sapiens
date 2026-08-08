@@ -1,0 +1,37 @@
+{
+  "summary": "Testado processamento em lote no Gerador e ações em massa em Questões Processadas. Backend: 5/5 pytest tests para /api/pipelines/bulk_get e /api/pipelines/bulk_delete passaram (ordem preservada, ids inexistentes ignorados, deleted count correto, edge cases com lista vazia). Frontend: /questoes valida bulk-toolbar, select-all, selection-count, select-all-header, row-select, bulk-copy (navigator.clipboard chamado com JSON array de tamanho == selecionados), bulk-export (download blob com nome sapiens-selecao-*.json), bulk-delete (POST /api/pipelines/bulk_delete + reload). /gerador valida mode-single (default) + mode-batch, upload de 2 arquivos, painel batch-results com batch-item-0/1, associação filename↔result preservada, batch-select-all, batch-copy (array de 2), batch-export, batch-toggle-0 (batch-json-0), batch-edit-0 (batch-edit-panel-0 + batch-editor-0 + batch-save-edit-0 chama PUT /api/pipeline/{id}), batch-delete-0 remove o item.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_bulk_pipelines.py",
+    "/app/test_reports/pytest/pytest_iter3.xml"
+  ],
+  "action_items": [
+    "AVISO IMPORTANTE (não é bug de código): a chave EMERGENT_LLM_KEY excedeu o orçamento (Budget has been exceeded! Current cost: 1.0214162, Max budget: 1.0). Chamadas reais a /api/pipeline/generate retornam 502 do litellm/Gemini. Recomenda-se renovar/aumentar o budget antes de rodar o fluxo E2E real de geração de pipelines pelo usuário."
+  ],
+  "critical_code_review_comments": [
+    "server.py bulk_get_pipelines preserva a ordem dos ids solicitados via dicionário indexado — correto e idempotente para ids duplicados/faltantes.",
+    "bulk_delete usa delete_many({id: {$in: ids}}) e retorna {deleted: count} — comportamento correto mesmo com ids inexistentes (não falha).",
+    "BatchResults.collectSelectedJsons preserva a associação filename↔pipeline via `source_file: it.filename` — nenhum risco de mistura.",
+    "ProcessedQuestions.fetchSelected usa POST /pipelines/bulk_get para reconstruir o payload completo (com artifacts + pipeline) antes de copiar/exportar — evita colisão com o payload leve retornado por GET /pipelines.",
+    "Boa prática: window.confirm() é usado tanto no bulk-delete individual quanto no de massa; foi corretamente mockado nos testes.",
+    "Sugestão menor (não bloqueante): considerar adicionar toast.info ao iniciar a exportação para arquivos muito grandes; hoje o feedback só ocorre após o click do <a>."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_bulk_pipelines.py (novo)"
+  ],
+  "success_rate": {
+    "backend": "100% (5/5 novos testes; endpoints bulk_get/bulk_delete verificados diretamente)",
+    "frontend": "100% (todos os data-testids exigidos presentes e funcionando; batch UI validada com mock de /pipeline/generate por causa do budget LLM exaurido)"
+  },
+  "test_credentials": "N/A (sem auth)",
+  "seed_data_creation": "Seed direto no MongoDB via motor: 3 pipelines TEST_UI_ALPHA/BETA/GAMMA + 2 bulk_A/bulk_B. Todos removidos ao final (delete_many disciplina=TEST). Estado final do banco: 2 pipelines pré-existentes preservados.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Para testar /pipeline/generate real, o EMERGENT_LLM_KEY precisa ter budget disponível — no momento do teste estava esgotado (1.02/1.0). O fluxo batch da UI foi validado com page.route mockando /api/pipeline/generate, o que é apropriado dado que a lógica testada é do front-end (não do motor Gemini). Backend endpoints bulk_get/bulk_delete não dependem do LLM e foram exercitados end-to-end contra o backend real.",
+  "rca of the issue": "N/A — nenhum bug encontrado no código do lote/bulk. Único bloqueio ambiental: budget LLM esgotado (não é bug de código, é limite da chave)."
+}

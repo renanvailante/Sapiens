@@ -1,0 +1,111 @@
+{
+  "theme": "light",
+  "typography": {
+    "headings": "Chivo",
+    "body": "IBM Plex Sans",
+    "mono": "IBM Plex Mono",
+    "rules": [
+      "Use bold weights (700, 900) for structural clarity and hierarchy.",
+      "Use IBM Plex Mono for all cognitive process labels, technical tags, and JSON output.",
+      "Never use Inter for headings. Ensure a scientific, rigorous tone.",
+      "Apply tight tracking (`tracking-tight`) for headings over 32px.",
+      "Use uppercase with wide tracking (`tracking-widest`) for overlines and structural section headers."
+    ]
+  },
+  "colors": {
+    "archetype": "Swiss & High-Contrast (Authority, Clarity, Truth)",
+    "background": "#F4F4F5",
+    "surface": "#FFFFFF",
+    "border": "#E4E4E7",
+    "text_primary": "#09090B",
+    "text_secondary": "#52525B",
+    "accent_primary": "#002FA7",
+    "accent_secondary": "#E11D48",
+    "accent_tertiary": "#059669",
+    "rules": [
+      "No gradients. Flat solid backgrounds to maintain functional, academic clarity.",
+      "Use High contrast text ONLY. Never use gray-on-gray for critical cognitive data.",
+      "Accent colors are strictly functional (e.g., Red for 'Tipos de erro', Green for 'Competências', Blue for primary actions)."
+    ]
+  },
+  "visual_enhancers": {
+    "surfaces": "Grid Borders (The 'Technical' Look). Expose the skeleton. Data-heavy tables and JSON visualizers need visible structural lines.",
+    "borders": "1px solid #E4E4E7 on all structural elements. Use `border-collapse` style layout where possible.",
+    "shadows": "None or extremely subtle `shadow-sm`. Rely on 1px borders and stark contrast rather than soft shadows.",
+    "micro_interactions": "Sharp, instantaneous state changes. Hover states darken the background slightly."
+  },
+  "layouts": {
+    "spacing": "Dense but structured. Use `p-4` to `p-6` for data cards. Use `p-8` for page padding.",
+    "grid": "High Density Grid (For Dashboards/Analytics). `grid-cols-1` mobile to `grid-cols-12` desktop system.",
+    "navigation": "Left sidebar, rigid 1px border right. Solid background (`bg-white`).",
+    "patterns": [
+      "Split View for Pipeline: Left side (Question content, PDF/Img preview - 5 cols), Right side (Cognitive JSON & Tags - 7 cols).",
+      "Collapsible Trees for Ontology: Use indented borders and clean vertical lines to show hierarchy."
+    ]
+  },
+  "components": {
+    "libraries": [
+      "shadcn/ui (Accordions, Cards, Badges, Tabs, Dialogs, Dropdowns)",
+      "sonner (Toasts)",
+      "lucide-react (Icons)",
+      "react-syntax-highlighter (For JSON block formatting)"
+    ],
+    "customizations": [
+      "Cards: Go cardless or use sharp 0px/2px radius with 1px borders.",
+      "Badges: Square or 2px radius, use monochromatic scale + 1 accent color.",
+      "Use Shadcn Dropdown, Calendar, Tabs, etc., but override default rounded corners with `rounded-sm` or `rounded-none`."
+    ]
+  },
+  "motion": {
+    "rules": [
+      "Minimalist. Use micro-interactions for feedback.",
+      "Avoid large sweeping animations. The tool must feel like a fast, rigorous scientific instrument."
+    ]
+  },
+  "accessibility": {
+    "contrast": "Strict APCA/WCAG AA compliance. Dark text on light backgrounds.",
+    "testing": "All interactive and key informational elements MUST include a `data-testid` attribute."
+  },
+  "media": {
+    "image_urls": [
+      {
+        "url": "https://images.unsplash.com/photo-1488229297570-58520851e868?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2NDN8MHwxfHNlYXJjaHwzfHxhYnN0cmFjdCUyMGRhdGElMjBncmlkfGVufDB8fHx8MTc4MzcwODY5MHww&ixlib=rb-4.1.0&q=85",
+        "description": "Architectural grid/structure, useful for subtle empty state or welcome screen.",
+        "category": "backgrounds"
+      }
+    ],
+    "rules": [
+      "Minimal image usage. Prioritize raw data, text layout, and structural hierarchy.",
+      "No placeholder images. Use functional empty state text and icons instead."
+    ]
+  },
+  "GENERAL_UI_UX_DESIGN_GUIDELINES": [
+    "Language MUST be Portuguese Brazil (pt-BR).",
+    "Navigation must be visible on desktop (Sidebar).",
+    "Provide clear, color-coded tags for cognitive data (Domínios Cognitivos, Competências, Processos Cognitivos, Tipos de erro).",
+    "Make JSON outputs clearly readable with syntax highlighting.",
+    "Implement 'Explicabilidade' by allowing users to click 'Mostrar justificativa' on cognitive processes to reveal an expandable panel or tooltip with the exact logic.",
+    "Do not use complete transparent background in headers, overlays, or dropdowns."
+  ],
+  "instructions_to_main_agent": [
+    "Build a Left Sidebar with Navigation to: Dashboard (Home), Ontologia Cognitiva, Gerador de Pipeline, Questões Processadas.",
+    "For the 'Ontologia Cognitiva' page, build a deep collapsible hierarchy visualization (8 Domains, 16 Competencies, etc.) using Shadcn Accordion or Collapsible. Include stats (import date, version, counts).",
+    "For the 'Gerador de Pipeline' page, build a complex layout: file upload area, and upon generation, display the question context alongside a detailed cognitive pipeline output (Tags + Justifications + raw JSON block). Add action buttons (Export, Copy, Validate JSON).",
+    "For 'Questões Processadas', build a functional data table with robust filtering (discipline, year, process, etc.).",
+    "Avoid typical generic SaaS styling. Use square corners (0px to 4px max) to reinforce the scientific/academic feel.",
+    "Provide design rules for `.js` and `.jsx` files, not `.tsx`, as the repository uses JavaScript.",
+    "Always use `data-testid` for buttons, inputs, and key data points."
+  ],
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "Do not use generic centered layouts or simplistic gradients.",
+    "Create depth through layered design elements with z-index hierarchy, using borders and stark contrasts instead of deep shadows.",
+    "You MUST NOT apply universal transition (`transition: all`).",
+    "You MUST NOT center align the app container in CSS.",
+    "Use modern button styles relevant to the app style (in this case, sharp/brutalist technical buttons).",
+    "NEVER use AI assistant Emoji characters (🤖🧠💡) for icons. Use clean Lucide icons.",
+    "Every interaction needs micro-animations (hover, focus states).",
+    "Prioritize using pre-existing components from `src/components/ui`.",
+    "Use `sonner` for toasts.",
+    "Ensure all dropdowns and overlay backgrounds are solid (e.g., `bg-white`), never transparent."
+  ]
+}

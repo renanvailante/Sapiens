@@ -1,0 +1,31 @@
+{
+  "summary": "Tested new /api/ontology/reset endpoint, empty-JSON guard-rail, TXT-via-Gemini import, and Ontology page reset button. All 5 backend pytest cases passed (11.17s) and frontend reset flow works end-to-end (window.confirm mocked, POST /ontology/reset called, version metadata returns to 1.0.0-seed with 72 total elements). Seed is left ACTIVE for the user (final reset test).",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_ontology_reset_import.py",
+    "/app/test_reports/pytest/pytest_iter2.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py parse_ontology_file correctly routes PDF/DOCX/MD/TXT to parse_ontology_with_gemini and preserves canonical schema keys.",
+    "Guard-rail (total==0 -> HTTP 400 with 'Nenhum elemento cognitivo encontrado') works and includes actionable message referencing the new reset button.",
+    "/api/ontology/reset reactivates existing seed doc if present (idempotent) — good; avoids duplicate seed docs.",
+    "cognitive_engine.parse_ontology_with_gemini uses the same LlmChat/emergentintegrations pattern as run_cognitive_pipeline — consistent.",
+    "Frontend Ontology.jsx uses window.confirm before reset (as required) and disables buttons during busy state."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_ontology_reset_import.py (new)"
+  ],
+  "success_rate": { "backend": "100% (5/5 new + previous suite unchanged)", "frontend": "100%" },
+  "test_credentials": "N/A (no auth)",
+  "seed_data_creation": "Test imports a small TEST-BEFORE-RESET / TEST-JSON-OK ontology then resets back to 1.0.0-seed. Final state: 1.0.0-seed active (as requested).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend base URL must be loaded from /app/frontend/.env via python-dotenv in test files. Backend pytest config disables xdist args via -o addopts='' when running a single file. Gemini TXT parse takes ~5s and reliably produces >=1 dominio/processo for the sample. Frontend reset requires mocking window.confirm=()=>true before clicking [data-testid=ontology-reset-btn].",
+  "rca of the issue": "N/A — no bugs found."
+}
