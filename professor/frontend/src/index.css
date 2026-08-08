@@ -1,0 +1,133 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Chivo:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+:root {
+  --background: 0 0% 100%;
+  --foreground: 0 0% 4%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 4%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 4%;
+  --primary: 0 0% 9%;
+  --primary-foreground: 0 0% 98%;
+  --secondary: 0 0% 96%;
+  --secondary-foreground: 0 0% 9%;
+  --muted: 0 0% 96%;
+  --muted-foreground: 0 0% 32%;
+  --accent: 214 100% 34%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 65% 51%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 0 0% 90%;
+  --input: 0 0% 90%;
+  --ring: 214 100% 34%;
+  --radius: 0;
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+html, body, #root {
+  height: 100%;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+body {
+  margin: 0;
+  font-family: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  font-feature-settings: 'tnum' 1, 'cv11' 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5 {
+  font-family: 'Chivo', 'IBM Plex Sans', sans-serif;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+}
+
+.font-mono, code, .tabular {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-feature-settings: 'tnum' 1;
+}
+
+.tabular-nums { font-variant-numeric: tabular-nums; }
+
+/* Override shadcn defaults: kill rounding + shadows for the Swiss brutalist look */
+.rounded-sm, .rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl, .rounded {
+  border-radius: 0 !important;
+}
+.shadow, .shadow-sm, .shadow-md, .shadow-lg, .shadow-xl {
+  box-shadow: none !important;
+}
+
+/* Compact tables */
+table.sapiens-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 13px;
+}
+table.sapiens-table th, table.sapiens-table td {
+  border: 1px solid hsl(var(--border));
+  padding: 6px 10px;
+  text-align: left;
+  white-space: nowrap;
+}
+table.sapiens-table th {
+  background: hsl(0 0% 97%);
+  font-weight: 600;
+  font-family: 'Chivo', sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: hsl(var(--muted-foreground));
+}
+table.sapiens-table td.num, table.sapiens-table th.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-family: 'IBM Plex Mono', monospace;
+}
+table.sapiens-table tbody tr:hover {
+  background: hsl(0 0% 98%);
+}
+
+.sem-dado {
+  display: inline-block;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  padding: 1px 6px;
+  color: hsl(var(--muted-foreground));
+  background: repeating-linear-gradient(
+    45deg,
+    transparent 0 3px,
+    hsl(0 0% 94%) 3px 5px
+  );
+  border: 1px dashed hsl(var(--border));
+}
+
+/* Selection */
+::selection {
+  background: hsl(214 100% 34% / 0.15);
+  color: hsl(var(--foreground));
+}
+
+/* Heatmap cell coloring by taxa_erro */
+.heat-0  { background: #F8FAFC; }
+.heat-1  { background: #E0F2FE; }
+.heat-2  { background: #FDE68A; }
+.heat-3  { background: #FDBA74; }
+.heat-4  { background: #FCA5A5; }
+.heat-5  { background: #EF4444; color: white; }
+
+/* Scrollbars */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: hsl(0 0% 85%); }
+::-webkit-scrollbar-thumb:hover { background: hsl(0 0% 70%); }

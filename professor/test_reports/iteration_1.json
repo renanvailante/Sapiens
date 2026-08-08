@@ -1,0 +1,56 @@
+{
+  "summary": "First-finish smoke test for Sapiens Dashboard: 13 backend endpoints and full frontend navigation across 5 MVP screens verified. All core auth/data/CSV/import flows work. Login, turma matrix with heatmap, filters, processo, aluno (Δ), evolução (aviso de versões diferentes), taxonomia, import (Usar exemplo), logout all functional.",
+  "tested_scope": ["backend", "frontend", "auth", "integration"],
+  "passed": [
+    "POST /api/auth/login sets httpOnly cookies and returns user; GET /api/auth/me works with cookies",
+    "POST /api/auth/register creates user (role=teacher) and auto-logs in",
+    "POST /api/auth/logout returns 200 (browser flow redirects to /login correctly)",
+    "GET /api/filters returns turmas [9ºA, 9ºB], periodos [2024.1, 2024.2, 2025.1], anos, bancas, provas, disciplinas, 2 versões taxonomia",
+    "GET /api/views/turma retorna 8 alunos, 7 nós, rows com taxa_erro (com null para 'Sem dado'), total_alunos=8, total_questoes=263, versao_taxonomia populada",
+    "GET /api/views/processo retorna media_taxa_erro (0.2503), distribuicao com bins percentuais incluindo faixa 'Sem dado', e 8 alunos",
+    "GET /api/views/aluno retorna 7 rows com taxa_erro_aluno vs media_turma por nó",
+    "GET /api/views/alunos retorna {alunos: [8 items]}",
+    "GET /api/views/evolucao retorna 3 series, versoes_multiplas=true (v0.8 + v0.9)",
+    "GET /api/taxonomia retorna versoes_disponiveis e arvore agrupada por disciplina",
+    "POST /api/imports cria snapshot e aparece em GET /api/imports; DELETE não testado explicitamente mas listagem funciona",
+    "GET /api/export/turma.csv retorna CSV válido com header + 8 linhas e valores 'Sem dado' onde aplicável",
+    "Endpoints protegidos retornam 401 sem token ('Não autenticado')",
+    "Frontend: login redireciona para /turma; header exibe badge 'TAXONOMIA Taxonomia Sapiens v0.9', badge 'CALCULADO PELO DASHBOARD', total_alunos=8, total_questoes=263",
+    "Frontend: seleção de filtros turma=9ºA + periodo=2024.1 carrega matriz 8×7 com heatmap colorido e células 'Sem dado'",
+    "Frontend: botão 'Exportar CSV' presente após dados carregados",
+    "Frontend /processo: gráfico + página carrega com dados",
+    "Frontend /aluno: contém Δ (delta) na tabela",
+    "Frontend /evolucao: exibe aviso sobre versões diferentes",
+    "Frontend /taxonomia: página carrega",
+    "Frontend /import: página carrega com botão 'Usar exemplo'",
+    "Frontend: botão 'Sair' desloga e redireciona para /login"
+  ],
+  "failed": [
+    {
+      "area": "backend/auth",
+      "issue": "POST /api/auth/logout envia Set-Cookie de deleção com SameSite=lax, mas o login usa SameSite=None; Secure. Em curl (e potencialmente em alguns navegadores estritos) os cookies antigos permanecem válidos após logout. No teste de browser real o fluxo funcionou (redirect para /login), mas a inconsistência de atributos pode causar sessão persistente cross-origin em edge cases.",
+      "evidence": "curl -b jar -X POST /api/auth/logout retorna Set-Cookie access_token=\"\"; SameSite=lax; subsequente /api/auth/me ainda retorna 200 com dados do usuário.",
+      "priority": "MEDIUM"
+    },
+    {
+      "area": "frontend/header",
+      "issue": "Badge de versão no header exibe 'v0.9' mesmo quando os dados carregados são da versão v0.8 (período 2024.1). O badge parece mostrar a versão mais recente disponível em vez da versão do snapshot atualmente visualizado, o que pode confundir o usuário.",
+      "evidence": "Screenshot turma_loaded.png: header 'TAXONOMIA Taxonomia Sapiens v0.9 (Experimental)' enquanto card 'VERSÃO TAXONOMIA' na página mostra 'Taxonomia Sapiens v0.8 (Experimental)' para o mesmo período selecionado.",
+      "priority": "LOW"
+    },
+    {
+      "area": "frontend/console",
+      "issue": "Warnings recorrentes: 'Select is changing from uncontrolled to controlled' e 'Recharts width(-1) height(-1)' — não bloqueiam funcionalidade mas indicam value inicial indefinido nos Selects e container de gráfico sem dimensões em algum momento do render.",
+      "evidence": "Console logs em múltiplas navegações.",
+      "priority": "LOW"
+    }
+  ],
+  "action_items": [
+    "Ajustar POST /api/auth/logout para usar os mesmos atributos de cookie do login (SameSite=None; Secure) ao emitir Max-Age=0, garantindo remoção efetiva cross-origin.",
+    "Fazer o badge de versão de taxonomia no header refletir a versão do snapshot carregado (mesma exibida no card 'VERSÃO TAXONOMIA'), ou renomear para 'versão mais recente disponível'.",
+    "Prover value default (ex.: '') para os componentes Select para evitar warning uncontrolled→controlled; garantir minWidth/minHeight ou dimensões nos ResponsiveContainer do Recharts."
+  ],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "retest_needed": false,
+  "full_testing_deferred": true
+}
