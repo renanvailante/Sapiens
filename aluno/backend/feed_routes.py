@@ -41,6 +41,11 @@ async def get_feed(
     """
     q = {"sequence_order": {"$gt": cursor}, "published": True}
     items = await _db.feed_items.find(q, {"_id": 0}).sort("sequence_order", 1).limit(limit).to_list(limit)
+    for it in items:
+        it["answer_options"] = [
+            {k: v for k, v in opt.items() if k != "is_correct"}
+            for opt in it.get("answer_options", [])
+        ]
     next_cursor = items[-1]["sequence_order"] if items else cursor
     has_more = False
     if items:
@@ -63,6 +68,13 @@ async def log_interaction(payload: FeedInteractionIn, user: User = Depends(requi
     if not item:
         raise HTTPException(status_code=404, detail="Content not found")
 
+    correct_key = next(
+        (o.get("key") for o in item.get("answer_options", []) if o.get("is_correct")), None
+    )
+    selected = (payload.user_response or {}).get("selected")
+    # Never trust the client's own grading: recompute from the stored answer key.
+    is_correct = (selected == correct_key) if (selected and correct_key) else None
+
     now = _now()
     doc = await _db.feed_interactions.find_one(
         {"user_id": user.user_id, "content_id": payload.content_id}, {"_id": 0}
@@ -81,8 +93,8 @@ async def log_interaction(payload: FeedInteractionIn, user: User = Depends(requi
             update["$set"]["completed"] = True
         if payload.user_response:
             update["$set"]["user_response"] = payload.user_response
-        if payload.is_correct is not None:
-            update["$set"]["is_correct"] = payload.is_correct
+        if is_correct is not None:
+            update["$set"]["is_correct"] = is_correct
         if event:
             update["$push"] = {"interaction_history": event}
         if not update["$set"]:
@@ -98,7 +110,7 @@ async def log_interaction(payload: FeedInteractionIn, user: User = Depends(requi
             "time_spent_ms": max(0, payload.time_spent_ms),
             "completed": bool(payload.completed),
             "user_response": payload.user_response or {},
-            "is_correct": payload.is_correct,
+            "is_correct": is_correct,
             "interaction_history": [event] if event else [],
             "created_at": now,
         }
@@ -113,6 +125,9 @@ async def log_interaction(payload: FeedInteractionIn, user: User = Depends(requi
             upsert=True,
         )
 
+    # The answer key is only disclosed after the student has actually answered.
+    if selected:
+        return {"ok": True, "is_correct": is_correct, "correct_key": correct_key}
     return {"ok": True}
 
 

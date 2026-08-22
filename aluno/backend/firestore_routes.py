@@ -1,7 +1,7 @@
 """FastAPI routes for Firestore-backed pipeline & student behavior.
 
-All routes are protected by the EXISTING Emergent Auth (`auth.require_user`).
-No Firebase Authentication is used.
+Todas as rotas sao protegidas pela sessao do proprio backend
+(`auth.require_user`). Nao se usa Firebase Authentication.
 """
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ import logging
 from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from auth import require_user, require_admin
 from models import User
@@ -40,8 +40,38 @@ class AnswerPayload(BaseModel):
     versao_aplicacao: Optional[str] = None
 
 
+class BehaviorProfile(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    reading_speed: Optional[str] = None
+    confidence_level: Optional[str] = None
+    attention_span: Optional[str] = None
+    error_pattern: Optional[str] = None
+
+
+class BehaviorFlags(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    onboarded: Optional[bool] = None
+    first_exam_done: Optional[bool] = None
+
+
 class BehaviorPayload(BaseModel):
-    data: dict[str, Any] = Field(default_factory=dict, description="Arbitrary behavior fields; merged into behavior_student doc.")
+    """Only self-declared fields are writable by the student. Server-derived
+    blocks (stats, events, identity) are never accepted from the client."""
+    model_config = ConfigDict(extra="forbid")
+    profile: Optional[BehaviorProfile] = None
+    flags: Optional[BehaviorFlags] = None
+
+    def to_update(self) -> dict[str, Any]:
+        out: dict[str, Any] = {}
+        if self.profile:
+            p = self.profile.model_dump(exclude_none=True)
+            if p:
+                out["profile"] = p
+        if self.flags:
+            f = self.flags.model_dump(exclude_none=True)
+            if f:
+                out["flags"] = f
+        return out
 
 
 def _safe_call(fn, *args, **kwargs):
@@ -89,6 +119,23 @@ async def get_behavior_schema(limit: int = Query(100, ge=1, le=500), _: User = D
 
 # ---------- Student behavior ----------
 
+@router.get("/students/me/respondidas")
+async def minhas_respondidas(user: User = Depends(require_user)):
+    """`item_id`s que este aluno já respondeu, do histórico de behavior real
+    (Firestore, `students/{uid}/behavior`) — nunca inferido de outro lugar.
+
+    Usado para retomar uma prova exatamente de onde o aluno parou: o
+    frontend cruza esta lista com os itens do bloco que está exibindo e pula
+    para o primeiro ainda não respondido. Não existe um "ponto de parada"
+    gravado à parte — cada resposta já é um evento de behavior persistido no
+    instante em que é enviada (`POST /students/me/answer`), então abandonar
+    no meio nunca perde progresso: só não respondeu o que não respondeu.
+    """
+    eventos = _safe_call(fs.get_student_behavior_history, user.user_id, 5000)
+    item_ids = sorted({e.get("item_id") for e in eventos if e.get("item_id")})
+    return {"item_ids": item_ids}
+
+
 @router.get("/students/me/behavior")
 async def get_my_behavior(user: User = Depends(require_user)):
     # Auto-provision on first access — no Firebase Auth involved.
@@ -103,7 +150,7 @@ async def get_my_behavior(user: User = Depends(require_user)):
 async def ensure_my_behavior(user: User = Depends(require_user)):
     """Idempotently create the student's behavior_student document.
     Called by the frontend on every successful login/session load. No Firebase Auth used —
-    the caller is authenticated via the existing Emergent Auth (require_user).
+    o chamador e autenticado pela sessao do proprio backend (require_user).
     """
     # Nova estrutura (Fase 1): cria students/{uid} (profile) no login se não existir.
     _safe_call(fs.ensure_student_profile, user.user_id, user.name, user.email)
@@ -114,15 +161,21 @@ async def ensure_my_behavior(user: User = Depends(require_user)):
 
 @router.put("/students/me/behavior")
 async def upsert_my_behavior(payload: BehaviorPayload, user: User = Depends(require_user)):
-    return _safe_call(fs.write_student_behavior, user.user_id, payload.data)
+    return _safe_call(fs.write_student_behavior, user.user_id, payload.to_update())
 
 
 @router.post("/students/me/answer")
 async def register_answer(payload: AnswerPayload, user: User = Depends(require_user)):
-    """Registra a resposta do aluno a uma questão (Fase 2).
-    Determina certo/errado no servidor a partir de 'questoes_public' e grava o
-    evento de behavior (schema 1.0) em students/{uid}/behavior via Fase 1.
-    Retorna apenas certo/errado (sem feedback qualitativo — isso é a Fase 3).
+    """Registra a resposta do aluno a uma questão.
+
+    Determina certo/errado **no servidor** a partir de `questoes_public` e grava
+    o evento de behavior (contrato **1.1**) em `students/{uid}/behavior`.
+
+    `ontology_version` e `item_hash` vêm do ITEM respondido, não da ontologia
+    ativa nem de um recálculo: o contrato 1.1 pede a versão contra a qual o item
+    **estava anotado no momento da resposta**, e o hash do conteúdo **daquele**
+    momento. Recalcular o hash aqui produziria um valor que só por acaso
+    coincidiria com o do item, e o casamento item↔evento falharia em silêncio.
     """
     doc = await _db.questoes_public.find_one({"item_id": payload.item_id}, {"_id": 0})
     if not doc:
@@ -133,19 +186,34 @@ async def register_answer(payload: AnswerPayload, user: User = Depends(require_u
     correta_letra = next((a.get("letra") for a in alternativas if a.get("correta") is True), None)
     acertou = (payload.alternativa_escolhida == correta_letra) if correta_letra is not None else None
 
-    # Feedback qualitativo por TEMPLATES (Fase 3, sem IA): lookup no master.
+    ontology_version = doc.get("ontology_version")
+    if not ontology_version:
+        # Item sincronizado antes da migração 2.2: não sabemos contra qual
+        # catálogo ele foi anotado. Recusar é a única resposta correta —
+        # gravar um evento sem versão o tornaria indatável para sempre.
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "Este item não declara 'ontology_version' e foi anotado antes do "
+                "Schema 2.2. Rode a sincronização do pipeline (POST /admin/firestore/sync) "
+                "para reingeri-lo sob o contrato vigente antes de aceitar respostas."
+            ),
+        )
+
+    # Feedback qualitativo por TEMPLATES (sem IA): lookup no master.
     master = await _db.questoes_master.find_one({"id": doc.get("master_id")}, {"_id": 0})
     feedback = build_feedback(master, payload.alternativa_escolhida, acertou)
 
-    # Garante o profile (Fase 1) antes de gravar na subcoleção behavior.
     _safe_call(fs.ensure_student_profile, user.user_id, user.name, user.email)
     _safe_call(
         fs.write_behavior_event,
         user.user_id,
         item_id=payload.item_id,
+        ontology_version=ontology_version,
         alternativa_escolhida=payload.alternativa_escolhida,
         acertou=acertou,
         item_schema_version=doc.get("item_schema_version"),
+        item_hash=doc.get("item_hash"),
         item_content=questao,
         contexto_tipo=payload.contexto_tipo,
         prova_id=payload.prova_id,

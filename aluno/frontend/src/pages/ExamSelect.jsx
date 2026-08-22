@@ -1,18 +1,33 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { api } from "../lib/api";
+import { api, errMsg} from "../lib/api";
 import Nav from "../components/Nav";
-import { ArrowRight, Check, X, RotateCw, Sparkles } from "lucide-react";
+import { ArrowRight, Check, X, RotateCw, Sparkles, BookOpen, ChevronLeft } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 
 const APP_VERSION = "sapiens-web-1.0";
 
+// "AMARELO" -> "Amarelo" — só para exibição das cores de caderno do ENEM.
+const capitalizar = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : s);
+
 // ---------------- Fluxo principal: questões auditadas do Firestore ----------------
-function QuestionRunner({ onExit }) {
+// `filtro`, quando presente ({ banca, ano, prova, numero_min, numero_max }),
+// restringe às questões de UM bloco (prova real de até 45 questões) — o que
+// o aluno escolheu em <ProvasGrid>. Sem filtro, mantém o comportamento
+// anterior (todas as questões públicas).
+//
+// Retomar de onde parou: não existe um "ponto de parada" gravado à parte.
+// Cada resposta já vira um evento de behavior no instante em que é enviada
+// (POST /students/me/answer) — abandonar no meio nunca perde nada. Ao
+// reabrir o mesmo bloco, cruzamos os itens dele com
+// GET /students/me/respondidas e pulamos para o primeiro item ainda sem
+// resposta. "Onde ele parou" = "o próximo item sem evento de behavior".
+function QuestionRunner({ filtro, onExit }) {
   const [itens, setItens] = useState([]);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
   const [idx, setIdx] = useState(0);
+  const [retomado, setRetomado] = useState(0); // quantas já vinham respondidas ao abrir
   const [selected, setSelected] = useState(null);
   const [result, setResult] = useState(null); // { acertou, correta }
   const [submitting, setSubmitting] = useState(false);
@@ -22,12 +37,32 @@ function QuestionRunner({ onExit }) {
 
   useEffect(() => {
     let ativo = true;
-    api.get("/questoes?limit=100")
-      .then(({ data }) => { if (ativo) setItens(data.items || []); })
+    const params = new URLSearchParams({ limit: "100" });
+    if (filtro?.banca) params.set("banca", filtro.banca);
+    if (filtro?.ano) params.set("ano", filtro.ano);
+    if (filtro?.prova) params.set("prova", filtro.prova);
+    if (filtro?.numero_min) params.set("numero_min", filtro.numero_min);
+    if (filtro?.numero_max) params.set("numero_max", filtro.numero_max);
+
+    Promise.all([
+      api.get(`/questoes?${params.toString()}`),
+      api.get("/firestore/students/me/respondidas").catch(() => ({ data: { item_ids: [] } })),
+    ])
+      .then(([{ data }, { data: prog }]) => {
+        if (!ativo) return;
+        const lista = data.items || [];
+        const respondidasSet = new Set(prog.item_ids || []);
+        const primeiraPendente = lista.findIndex((it) => !respondidasSet.has(it.item_id));
+        const comeco = primeiraPendente === -1 ? lista.length : primeiraPendente;
+        setItens(lista);
+        setIdx(comeco);
+        setRetomado(comeco);
+        setAnswered(comeco);
+      })
       .catch((e) => { if (ativo) setErro(e?.message || "Falha ao carregar"); })
       .finally(() => { if (ativo) setLoading(false); });
     return () => { ativo = false; };
-  }, []);
+  }, [filtro]);
 
   const item = itens[idx];
   const q = item?.questao || {};
@@ -58,7 +93,7 @@ function QuestionRunner({ onExit }) {
       setResult(data);
       setAnswered((n) => n + 1);
     } catch (e) {
-      setErro(e?.response?.data?.detail || "Não foi possível registrar a resposta.");
+      setErro(errMsg(e, "Não foi possível registrar a resposta."));
     } finally {
       setSubmitting(false);
     }
@@ -104,6 +139,12 @@ function QuestionRunner({ onExit }) {
         </div>
         <button onClick={onExit} className="text-sm text-zinc-500 underline hover:text-zinc-900">Sair</button>
       </div>
+
+      {retomado > 0 && idx === retomado && (
+        <div className="mb-4 rounded-xl bg-indigo-50 border border-indigo-100 px-4 py-2.5 text-sm text-indigo-800">
+          Retomando de onde você parou — {retomado} já respondida(s) nesta prova.
+        </div>
+      )}
 
       <article className="bg-white border border-zinc-200 rounded-2xl p-6 md:p-8">
         <div className="mb-4 flex flex-wrap gap-2">
@@ -174,6 +215,86 @@ function QuestionRunner({ onExit }) {
           )}
         </div>
       </article>
+    </div>
+  );
+}
+
+// ---------------- Seleção de caderno: agrupado por banca/ano/cor ----------------
+// GET /api/provas agrupa `questoes_public` por (banca, ano, prova) — cada
+// grupo é um caderno real já sincronizado do Firestore (nunca inventado
+// aqui). `onSelect` recebe exatamente esses 3 campos, usados como filtro em
+// <QuestionRunner>.
+function ProvasGrid({ onSelect, onExit }) {
+  const [provas, setProvas] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [erro, setErro] = useState(null);
+
+  useEffect(() => {
+    let ativo = true;
+    api.get("/provas")
+      .then(({ data }) => { if (ativo) setProvas(data.provas || []); })
+      .catch((e) => { if (ativo) setErro(e?.message || "Falha ao carregar"); })
+      .finally(() => { if (ativo) setLoading(false); });
+    return () => { ativo = false; };
+  }, []);
+
+  return (
+    <div>
+      <button onClick={onExit} className="mb-6 inline-flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-900">
+        <ChevronLeft className="w-4 h-4" /> Voltar
+      </button>
+
+      {loading && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {[...Array(2)].map((_, i) => <div key={i} className="animate-pulse h-32 bg-zinc-100 rounded-2xl" />)}
+        </div>
+      )}
+
+      {erro && !loading && (
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-rose-700">Erro: {erro}</div>
+      )}
+
+      {!loading && !erro && provas.length === 0 && (
+        <div className="bg-white border border-zinc-200 rounded-2xl p-10 text-center">
+          <div className="font-display text-2xl font-bold text-zinc-950">Nenhuma prova disponível ainda.</div>
+          <p className="mt-2 text-zinc-500">Peça a um admin para sincronizar o Firestore no painel administrativo.</p>
+        </div>
+      )}
+
+      {!loading && !erro && provas.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {provas.map((p, i) => (
+            <button
+              key={`${p.banca}-${p.ano}-${p.prova}-${p.numero_min}-${i}`}
+              onClick={() => onSelect(p)}
+              data-testid={`prova-card-${p.banca}-${p.ano}-${p.prova}-${p.numero_min}`}
+              className="lift text-left bg-white border border-zinc-200 rounded-2xl p-6 hover:border-zinc-900"
+            >
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 rounded-xl bg-zinc-950 text-white flex items-center justify-center shrink-0">
+                  <BookOpen className="w-5 h-5" strokeWidth={1.7} />
+                </div>
+                <div className="min-w-0">
+                  <div className="font-display font-bold text-lg tracking-tight text-zinc-950 truncate">
+                    {p.banca} {p.ano} · Caderno {capitalizar(p.prova)}
+                  </div>
+                  <div className="text-xs text-zinc-500">
+                    {p.disciplinas.join(" e ") || "Disciplina não informada"} · Questões {p.numero_min}–{p.numero_max}
+                  </div>
+                </div>
+              </div>
+              <div className="mt-4 flex items-center justify-between">
+                <span className="text-xs font-mono-alt text-zinc-400">
+                  {p.count}{p.total_bloco && p.count < p.total_bloco ? ` de ${p.total_bloco}` : ""} questão(ões)
+                </span>
+                <span className="inline-flex items-center gap-1.5 text-sm text-zinc-900 font-medium">
+                  Praticar <ArrowRight className="w-4 h-4" />
+                </span>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -249,14 +370,28 @@ function ExamsByYear() {
 }
 
 export default function ExamSelect() {
-  const [mode, setMode] = useState("hub"); // 'hub' | 'practice'
+  const [mode, setMode] = useState("hub"); // 'hub' | 'provas' | 'practice'
+  const [filtro, setFiltro] = useState(null); // { banca, ano, prova, disciplinas, count }
+
+  const escolherProva = (p) => { setFiltro(p); setMode("practice"); };
 
   return (
     <div className="min-h-screen">
       <Nav />
       <div className="max-w-3xl mx-auto px-6 md:px-10 py-14">
         {mode === "practice" ? (
-          <QuestionRunner onExit={() => setMode("hub")} />
+          <QuestionRunner filtro={filtro} onExit={() => setMode("provas")} />
+        ) : mode === "provas" ? (
+          <>
+            <div className="mb-10">
+              <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-zinc-500 mb-3">Provas</div>
+              <h1 className="font-display text-4xl md:text-5xl font-extrabold tracking-tighter text-zinc-950">
+                Escolha um caderno
+              </h1>
+              <p className="mt-3 text-zinc-500 max-w-lg">Cada caderno é uma prova real, agrupada por banca, ano e cor.</p>
+            </div>
+            <ProvasGrid onSelect={escolherProva} onExit={() => setMode("hub")} />
+          </>
         ) : (
           <>
             <div className="mb-10">
@@ -267,9 +402,9 @@ export default function ExamSelect() {
               <p className="mt-3 text-zinc-500 max-w-lg">Questões auditadas, uma de cada vez. Suas respostas são registradas para revelar seus padrões cognitivos.</p>
             </div>
 
-            {/* Principal: fluxo de questões do Firestore */}
+            {/* Principal: escolher um caderno (banca/ano/cor) e praticar */}
             <button
-              onClick={() => setMode("practice")}
+              onClick={() => setMode("provas")}
               data-testid="start-practice"
               className="lift w-full text-left bg-zinc-950 text-white rounded-3xl p-8 flex items-center gap-5 hover:bg-zinc-800"
             >
@@ -278,7 +413,7 @@ export default function ExamSelect() {
               </div>
               <div className="flex-1">
                 <div className="font-display font-extrabold text-2xl tracking-tight">Começar prática de questões</div>
-                <div className="mt-1 text-sm text-white/70">Fluxo questão por questão · feedback imediato de certo/errado</div>
+                <div className="mt-1 text-sm text-white/70">Escolha uma prova · feedback imediato de certo/errado</div>
               </div>
               <ArrowRight className="w-6 h-6" />
             </button>

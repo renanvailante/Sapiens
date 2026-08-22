@@ -1,8 +1,8 @@
-"""Ontologia Cognitiva Sapiens v1.4 — arquitetura em rede.
+"""Ontologia Cognitiva Sapiens — arquitetura em rede.
 
-FONTE ÚNICA: /app/backend/docs/ontology JSON v1.4 (NÃO usar ontology.py/CHC
-nem co-ocorrência do corpus). As relações são LIDAS explicitamente do JSON,
-sem inventar categorias:
+FONTE ÚNICA: `pipeline/docs/ontology/ontology_v1.4.json` (hoje na versão
+**1.4.1**), resolvido por `canonical_ontology`. As relações são LIDAS
+explicitamente do JSON, sem inventar categorias:
 
     domínio → competência → processo → habilidade
 
@@ -12,34 +12,20 @@ Relações no JSON:
 - processo.dominios              → domínios do processo
 - habilidade.processos_cognitivos→ processos que a habilidade observa
 
-A competência é ancorada ao domínio do(s) seu(s) processo(s) (determinístico).
+A competência é ancorada ao domínio do(s) seu(s) processo(s) — derivação, nunca
+atribuição direta, conforme a proibição da Constituição §4.4.
 Sem IA/LLM — puro agregado determinístico.
 """
 from __future__ import annotations
 
-import json
-import os
-import re
 from collections import defaultdict
-from functools import lru_cache
 from typing import Any
 
-_ONTOLOGY_PATH = os.path.join(os.path.dirname(__file__), "docs", "ontology JSON v1.4")
-
-
-@lru_cache(maxsize=1)
-def load_ontology() -> dict:
-    """Carrega o JSON v1.4 (que está embrulhado em markdown com crases)."""
-    with open(_ONTOLOGY_PATH, "r", encoding="utf-8") as f:
-        raw = f.read()
-    # Cada fragmento JSON está numa linha entre crases; concatenar reconstrói o JSON.
-    fragments = re.findall(r"`([^`]*)`", raw)
-    text = "".join(fragments)
-    return json.loads(text)
+from canonical_ontology import load_ontology, ontology_version  # noqa: F401  (reexport)
 
 
 def build_ontology_tree(answered_process_ids: set[str] | None = None) -> list[dict[str, Any]]:
-    """Monta a árvore completa da ontologia v1.4.
+    """Monta a árvore completa do catálogo canônico vigente.
 
     answered_process_ids: conjunto de IDs de processo (PROC-*) que o usuário
     efetivamente ativou (respondeu ao menos uma questão que os aciona).

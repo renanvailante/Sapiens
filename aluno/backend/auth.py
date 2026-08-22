@@ -1,9 +1,21 @@
-"""Authentication routes for Sapiens: JWT email/password + Emergent Google Auth.
+"""Rotas de autenticação do Sapiens — e-mail/senha com sessão em cookie.
 
-Admin role is bootstrapped via env var `ADMIN_EMAILS` (comma-separated) — every
-signup/login/Emergent-session flow reconciles the `is_admin` flag against that
-list, so promoting a user is as simple as adding their email and having them
-sign in again. Admins can also toggle other users' admin flag via /admin/users.
+Papel de admin é semeado por `ADMIN_EMAILS` (separado por vírgula): todo
+signup/login reconcilia a flag `is_admin` contra essa lista, então promover
+alguém é acrescentar o e-mail e pedir que entre de novo. Admins também podem
+alternar a flag de outros via /admin/users.
+
+**Login com Google, 2026-08-22.** O fluxo antigo dependia da infraestrutura da
+Emergent (`auth.emergentagent.com` para o redirect, `demobackend...` para trocar
+o `session_id`) e foi removido com ela. A reimplementação usa **Firebase
+Authentication**, com a mesma credencial de serviço que o projeto já usa para o
+Firestore — nenhum fornecedor novo.
+
+A troca é deliberadamente estreita: o Firebase autentica e devolve um ID token;
+`/auth/google` verifica esse token e emite **a mesma sessão** do fluxo de
+e-mail/senha. Não há segunda noção de sessão, segundo formato de usuário nem
+segundo caminho de autorização — `require_user` continua sendo o único portão, e
+quem entrou por Google é indistinguível de quem entrou por senha daí em diante.
 """
 from __future__ import annotations
 
@@ -12,16 +24,14 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 import bcrypt
-import httpx
-from fastapi import APIRouter, Cookie, HTTPException, Request, Response
-from fastapi import Header
+from fastapi import APIRouter, Body, Cookie, HTTPException, Request, Response
 
+import settings
 from models import LoginRequest, SignupRequest, User, UserSession
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-SESSION_TTL_DAYS = 7
-EMERGENT_SESSION_ENDPOINT = "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data"
+SESSION_TTL_DAYS = settings.SESSION_TTL_DAYS
 
 
 _db = None
@@ -31,8 +41,7 @@ def set_db(db):
 
 
 def _admin_emails() -> set[str]:
-    raw = os.environ.get("ADMIN_EMAILS", "")
-    return {e.strip().lower() for e in raw.split(",") if e.strip()}
+    return {e.lower() for e in settings.ADMIN_EMAILS}
 
 
 def _is_admin_email(email: str) -> bool:
@@ -63,10 +72,21 @@ async def _create_session(user_id: str) -> str:
 
 
 def _set_cookie(response: Response, token: str):
+    """Emite o cookie de sessao com a politica adequada ao ambiente.
+
+    `Secure` + `SameSite=None` e obrigatorio quando frontend e backend estao em
+    dominios diferentes sobre HTTPS. Em desenvolvimento sobre http://localhost o
+    navegador DESCARTA esse cookie em silencio — o login parece funcionar e a
+    sessao nao persiste. Por isso a politica vem da configuracao.
+    """
     response.set_cookie(
         key="session_token", value=token,
         max_age=SESSION_TTL_DAYS * 24 * 3600,
-        httponly=True, secure=True, samesite="none", path="/",
+        httponly=True,
+        secure=settings.COOKIE_SECURE,
+        samesite=settings.COOKIE_SAMESITE,
+        domain=settings.COOKIE_DOMAIN,
+        path="/",
     )
 
 
@@ -152,39 +172,61 @@ async def login(payload: LoginRequest, response: Response):
     }
 
 
-@router.post("/emergent/session")
-async def emergent_session(response: Response, x_session_id: str = Header(..., alias="X-Session-ID")):
-    async with httpx.AsyncClient(timeout=15) as client:
-        r = await client.get(EMERGENT_SESSION_ENDPOINT, headers={"X-Session-ID": x_session_id})
-    if r.status_code != 200:
-        raise HTTPException(status_code=401, detail="Invalid Emergent session")
-    data = r.json()
-    email = data["email"]
-    existing = await _db.users.find_one({"email": email}, {"_id": 0})
-    if existing:
-        user_id = existing["user_id"]
+@router.post("/google")
+async def google_sign_in(response: Response, id_token: str = Body(..., embed=True)):
+    """Troca um ID token do Firebase pela sessão do Sapiens.
+
+    O token é verificado com a credencial de serviço do projeto: assinatura,
+    expiração, emissor e audiência. Um token forjado ou de outro projeto é
+    recusado pelo próprio SDK — nunca confiamos no e-mail que o cliente afirma.
+
+    O casamento com uma conta existente é por **e-mail verificado**. Sem essa
+    condição, alguém poderia registrar `vitima@exemplo.com` num provedor que não
+    verifica e-mail e assumir a conta de senha correspondente.
+    """
+    from firebase_admin import auth as fb_auth
+
+    import firestore_service as fs
+
+    try:
+        fs.get_firestore()  # garante que o app do firebase_admin foi inicializado
+        claims = fb_auth.verify_id_token(id_token)
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=401, detail=f"Token do Firebase inválido: {type(exc).__name__}")
+
+    email = (claims.get("email") or "").strip().lower()
+    if not email:
+        raise HTTPException(status_code=401, detail="Token sem e-mail.")
+    if not claims.get("email_verified"):
+        raise HTTPException(
+            status_code=401,
+            detail="E-mail não verificado pelo provedor — não é possível vincular a conta.",
+        )
+
+    nome = claims.get("name") or email.split("@")[0]
+    foto = claims.get("picture")
+    admin = _is_admin_email(email)
+
+    existente = await _db.users.find_one({"email": email}, {"_id": 0})
+    if existente:
+        user_id = existente["user_id"]
+        # `provider` passa a "google" para refletir a última via de entrada; a
+        # senha existente é PRESERVADA, para que os dois caminhos continuem
+        # abertos para a mesma pessoa.
         await _db.users.update_one(
             {"user_id": user_id},
-            {"$set": {"name": data.get("name") or existing["name"],
-                      "picture": data.get("picture"),
-                      "provider": "google",
-                      "is_admin": _is_admin_email(email)}},
+            {"$set": {"name": existente.get("name") or nome, "picture": foto,
+                      "provider": "google", "is_admin": admin}},
         )
     else:
-        user = User(email=email, name=data.get("name") or email.split("@")[0],
-                    picture=data.get("picture"), provider="google",
-                    is_admin=_is_admin_email(email))
-        await _db.users.insert_one(user.model_dump())
-        user_id = user.user_id
+        novo = User(email=email, name=nome, picture=foto, provider="google", is_admin=admin)
+        await _db.users.insert_one(novo.model_dump())
+        user_id = novo.user_id
 
-    session_token = data.get("session_token") or _new_session_token()
-    expires_at = datetime.now(timezone.utc) + timedelta(days=SESSION_TTL_DAYS)
-    await _db.user_sessions.insert_one(
-        UserSession(user_id=user_id, session_token=session_token, expires_at=expires_at.isoformat()).model_dump()
-    )
-    _set_cookie(response, session_token)
-    user_doc = await _db.users.find_one({"user_id": user_id}, {"_id": 0, "password_hash": 0})
-    return {"user": user_doc, "token": session_token}
+    token = await _create_session(user_id)
+    _set_cookie(response, token)
+    doc = await _db.users.find_one({"user_id": user_id}, {"_id": 0, "password_hash": 0})
+    return {"user": doc, "token": token}
 
 
 @router.get("/me")
@@ -199,12 +241,10 @@ async def me(request: Request):
 async def logout(response: Response, session_token: str | None = Cookie(default=None)):
     if session_token:
         await _db.user_sessions.delete_many({"session_token": session_token})
-    response.delete_cookie("session_token", path="/")
+    # os mesmos atributos do set_cookie, senao o navegador nao casa o cookie
+    # a ser removido e a sessao continua valida no cliente
+    response.delete_cookie(
+        "session_token", path="/", domain=settings.COOKIE_DOMAIN,
+        secure=settings.COOKIE_SECURE, samesite=settings.COOKIE_SAMESITE,
+    )
     return {"ok": True}
-
-
-
-def _admin_emails():
-    raw = os.environ.get("ADMIN_EMAILS", "")
-    print("ADMIN_EMAILS =", raw)
-    return {e.strip().lower() for e in raw.split(",") if e.strip()}

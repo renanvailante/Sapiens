@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { api } from "./api";
+import { entrarComGoogle } from "./firebase";
 
 const AuthCtx = createContext(null);
 
@@ -19,12 +20,6 @@ export function AuthProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    // CRITICAL: If returning from OAuth callback, skip the /me check.
-    // AuthCallback will exchange the session_id and establish the session first.
-    if (window.location.hash?.includes("session_id=")) {
-      setLoading(false);
-      return;
-    }
     checkAuth();
   }, [checkAuth]);
 
@@ -40,19 +35,25 @@ export function AuthProvider({ children }) {
     setUser(data.user);
     return data.user;
   };
+  /**
+   * Login com Google: o Firebase autentica, o backend verifica o ID token e
+   * emite a MESMA sessão do fluxo de e-mail/senha. Daqui para a frente não há
+   * diferença — o resto do app não sabe por qual porta a pessoa entrou.
+   */
+  const loginGoogle = async () => {
+    const idToken = await entrarComGoogle();
+    const { data } = await api.post("/auth/google", { id_token: idToken });
+    localStorage.setItem("sapiens_token", data.token);
+    setUser(data.user);
+    return data.user;
+  };
   const logout = async () => {
     try { await api.post("/auth/logout"); } catch {}
     localStorage.removeItem("sapiens_token");
     setUser(null);
   };
-  const startGoogle = () => {
-    // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
-    const redirectUrl = window.location.origin + "/dashboard";
-    window.location.href = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
-  };
-
   return (
-    <AuthCtx.Provider value={{ user, loading, login, signup, logout, startGoogle, refresh: checkAuth, setUser }}>
+    <AuthCtx.Provider value={{ user, loading, login, signup, loginGoogle, logout, refresh: checkAuth, setUser }}>
       {children}
     </AuthCtx.Provider>
   );

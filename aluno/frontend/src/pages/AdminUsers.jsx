@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api } from "../lib/api";
+import { api, errMsg} from "../lib/api";
 import Nav from "../components/Nav";
 import { toast } from "sonner";
 import { useAuth } from "../lib/auth";
@@ -17,7 +17,7 @@ export default function AdminUsers() {
       toast.success(!u.is_admin ? "Usuário promovido a admin." : "Acesso admin removido.");
       load();
     } catch (e) {
-      toast.error(e?.response?.data?.detail || "Falha ao atualizar.");
+      toast.error(errMsg(e, "Falha ao atualizar."));
     }
   };
 

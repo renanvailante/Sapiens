@@ -7,7 +7,7 @@ import { api } from "../lib/api";
  * in Firestore. Runs once per user_id (per session) whenever a user is loaded —
  * i.e. after login, signup, or on page refresh.
  *
- * Uses ONLY the existing Emergent Auth session (no Firebase Authentication).
+ * Usa apenas a sessao do proprio backend (sem Firebase Authentication).
  * Renders nothing.
  */
 export default function FirestoreStudentProvisioner() {

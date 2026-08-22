@@ -3,7 +3,9 @@
 Read:  pipeline/questao, pipeline/fonte, pipeline/config/behavior_schema
 Write: students_behavior/students_id/{uid}/behavior_student
 
-Does NOT use Firebase Auth. Existing Emergent Auth remains the only auth layer.
+Nao usa Firebase Authentication. A autenticacao e a sessao em cookie do
+proprio backend (auth.require_user), unica camada de auth desde a remocao da
+Emergent em 2026-08-21.
 """
 from __future__ import annotations
 
@@ -196,10 +198,14 @@ def compute_item_hash(item_content: Any) -> str:
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
+BEHAVIOR_SCHEMA_VERSION = "1.1"
+
+
 def write_behavior_event(
     uid: str,
     *,
     item_id: str,
+    ontology_version: Optional[str] = None,
     alternativa_escolhida: Optional[str] = None,
     acertou: Optional[bool] = None,
     item_schema_version: Optional[str] = None,
@@ -207,6 +213,7 @@ def write_behavior_event(
     item_hash: Optional[str] = None,
     contexto_tipo: Optional[str] = None,
     prova_id: Optional[str] = None,
+    origem: str = "firestore",
     tempo_resposta_segundos: float = 0,
     numero_tentativas: int = 1,
     mudou_resposta: bool = False,
@@ -219,15 +226,35 @@ def write_behavior_event(
 ) -> dict[str, Any]:
     """Escreve UM evento de behavior em students/{uid}/behavior/{event_id}.
 
-    Segue EXATAMENTE o schema 1.0 definido no produto. Esta função apenas
-    escreve — NÃO é chamada em nenhum fluxo ainda (Fase 1).
+    Contrato: `pipeline/docs/behavior/07 behavior student 1.4.md`, versão
+    **1.1** (o "1.4" do nome do arquivo é resíduo de nomeação e nunca foi versão
+    deste contrato — GOV-1.0 §6.1).
+
+    `ontology_version` é **obrigatório** desde a 1.1: é a versão da ontologia
+    contra a qual o ITEM estava anotado no momento da resposta, não a versão
+    ativa hoje. Sem ela, o evento não pode ser reinterpretado depois de a
+    ontologia mudar de versão MAIOR, porque não há como saber contra qual
+    catálogo o item estava anotado quando o estudante respondeu.
+
+    Nota sobre o bloco `desempenho` (estatuto declarado na 1.1): esses campos são
+    o que o White Paper 1.0 chamava de Indicador Comportamental, nível removido
+    na arquitetura vigente. Eles são **coletados e registrados**, e **não**
+    alimentam atualização de crença sobre o estado cognitivo do estudante — o
+    canal de evidência além de acerto/erro segue regido por GL-3, aberto.
     """
     event_id = event_id or uuid.uuid4().hex
     if item_hash is None and item_content is not None:
         item_hash = compute_item_hash(item_content)
+    if not ontology_version:
+        raise ValueError(
+            "ontology_version é obrigatório no contrato de behavior 1.1 "
+            "(GOV-1.0 §6.1). Ele vem do item respondido — a versão contra a qual "
+            "o item estava anotado —, nunca da ontologia ativa no momento da escrita."
+        )
 
     event = {
-        "schema_version": "1.0",
+        "schema_version": BEHAVIOR_SCHEMA_VERSION,
+        "ontology_version": ontology_version,
         "event_id": event_id,
         "attempt_id": attempt_id or uuid.uuid4().hex,
         "student_id": uid,
@@ -238,7 +265,7 @@ def write_behavior_event(
         "contexto": {
             "tipo": contexto_tipo,
             "prova_id": prova_id,
-            "origem": "firestore",
+            "origem": origem,
         },
         "resposta": {
             "alternativa_escolhida": alternativa_escolhida,
@@ -258,3 +285,34 @@ def write_behavior_event(
 
     _behavior_collection_ref(uid).document(event_id).set(event)
     return event
+
+
+def get_student_behavior_history(uid: str, limit: int = 1000) -> list[dict[str, Any]]:
+    """Lê o histórico de eventos de behavior (schema canônico) de um aluno,
+    do mais recente para o mais antigo."""
+    docs = (
+        _behavior_collection_ref(uid)
+        .order_by("timestamp", direction=firestore.Query.DESCENDING)
+        .limit(limit)
+        .stream()
+    )
+    return [d.to_dict() for d in docs]
+
+
+def list_students_with_behavior(limit: int = 500) -> list[dict[str, Any]]:
+    """Agrega, via collection group query, todos os alunos com pelo menos um
+    evento de behavior registrado (schema canônico), com contagem e último evento."""
+    events = get_firestore().collection_group("behavior").limit(5000).stream()
+    by_student: dict[str, dict[str, Any]] = {}
+    for snap in events:
+        ev = snap.to_dict() or {}
+        sid = ev.get("student_id")
+        if not sid:
+            continue
+        agg = by_student.setdefault(sid, {"student_id": sid, "count": 0, "last_at": None})
+        agg["count"] += 1
+        ts = ev.get("timestamp")
+        if ts and (agg["last_at"] is None or ts > agg["last_at"]):
+            agg["last_at"] = ts
+    rows = sorted(by_student.values(), key=lambda r: r["last_at"] or "", reverse=True)
+    return rows[:limit]

@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import asyncio
-import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -60,25 +59,54 @@ async def update_user(user_id: str, payload: UpdateUserRequest, admin: User = De
     if admin.user_id == user_id and payload.is_admin is False:
         raise HTTPException(status_code=400, detail="Você não pode remover seu próprio acesso admin.")
     res = await _db.users.update_one({"user_id": user_id}, {"$set": {"is_admin": payload.is_admin}})
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    return {"ok": True, "is_admin": payload.is_admin}
 
 
 # ---------- Firestore sync (admin only) ----------
 
+def _annotated_item(master: dict) -> dict:
+    """Extrai o item anotado (Schema 2.2) de um documento espelhado do pipeline.
+
+    O pipeline grava a anotação sob a chave `item`. A chave `pipeline` é a forma
+    anterior (pré-2.2) e é lida apenas para não perder documentos já sincronizados
+    antes da migração.
+    """
+    return master.get("item") or master.get("pipeline") or master
+
+
 def _build_public_doc(master: dict) -> dict:
     """Gera a versao FILTRADA (aluno) a partir do doc completo (master).
-    Mantem SOMENTE questao (enunciado, alternativas, recursos) e dados
-    basicos da fonte. Nenhum processo cognitivo / dominio / competencia /
-    metadado interno. item_id aleatorio e unico por questao.
+
+    Mantem SOMENTE `questao` (enunciado, alternativas, recursos) e dados basicos
+    da `fonte`. Nenhum processo cognitivo / dominio / competencia / metadado
+    interno — o aluno nao ve a classificacao.
+
+    **`item_id` é copiado do item, nunca gerado aqui.** O Schema 2.2 obriga que
+    ele "permaneça invariável entre pipeline, Firestore, aluno e professor". Até
+    2026-08-21 esta função sorteava um `uuid4().hex` novo **a cada sync**, o que
+    tornava impossível ligar um evento de behavior ao item que o originou e
+    quebrava o vínculo a cada reconciliação. `master_id` continua guardando o id
+    interno do documento do pipeline, que é outra coisa.
+
+    `ontology_version`, `item_schema_version` e `item_hash` são propagados porque
+    o contrato de behavior 1.1 os exige em todo evento de resposta, e a única
+    fonte correta deles é o item respondido.
     """
-    q = (master.get("pipeline") or {}).get("questao") or master.get("questao") or {}
-    f = (master.get("pipeline") or {}).get("fonte") or master.get("fonte") or {}
+    item = _annotated_item(master)
+    q = item.get("questao") or {}
+    f = item.get("fonte") or {}
     alternativas = [
         {"letra": a.get("letra"), "texto": a.get("texto"), "correta": a.get("correta")}
         for a in (q.get("alternativas") or [])
     ]
     return {
-        "item_id": uuid.uuid4().hex,
+        "item_id": item.get("item_id") or master.get("item_id") or master.get("id"),
         "master_id": master.get("id"),
+        "item_schema_version": item.get("schema_version") or master.get("schema_version"),
+        "ontology_version": item.get("ontology_version") or master.get("ontology_version"),
+        "item_hash": item.get("item_hash") or master.get("item_hash"),
         "questao": {
             "enunciado": q.get("enunciado"),
             "alternativas": alternativas,
@@ -89,6 +117,7 @@ def _build_public_doc(master: dict) -> dict:
             "ano": f.get("ano"),
             "prova": f.get("prova"),
             "banca": f.get("banca"),
+            "numero": f.get("numero"),
             "tema": f.get("tema"),
             "conteudo": f.get("conteudo"),
         },
@@ -149,16 +178,8 @@ async def update_questao_master(item_id: str, payload: UpdateMasterRequest, admi
     if res.matched_count == 0:
         raise HTTPException(status_code=404, detail="Questão não encontrada")
     master = await _db.questoes_master.find_one({"id": item_id}, {"_id": 0})
-    # regenera a versao publica desta questao, preservando o item_id existente
-    existing = await _db.questoes_public.find_one({"master_id": item_id}, {"_id": 0, "item_id": 1})
     pub = _build_public_doc(master)
-    if existing and existing.get("item_id"):
-        pub["item_id"] = existing["item_id"]
     await _db.questoes_public.update_one(
         {"master_id": item_id}, {"$set": pub}, upsert=True
     )
     return {"ok": True}
-
-    if res.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Usuário não encontrado")
-    return {"ok": True, "is_admin": payload.is_admin}

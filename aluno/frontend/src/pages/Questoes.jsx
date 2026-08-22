@@ -31,8 +31,12 @@ function Alternativa({ alt, revelar }) {
 
 function QuestaoCard({ item, index }) {
   const [revelar, setRevelar] = useState(false);
-  const q = item?.pipeline?.questao || item?.questao || {};
-  const fonte = item?.pipeline?.fonte || item?.fonte || {};
+  // `questoes_public` é plano: `questao` e `fonte` no topo do documento. O
+  // caminho `item.pipeline.questao` era resíduo do Formato A, aninhamento que
+  // esta coleção nunca teve — e, por ser testado primeiro, teria mascarado a
+  // leitura correta se algum documento voltasse a trazê-lo.
+  const q = item?.questao || {};
+  const fonte = item?.fonte || {};
   const alternativas = Array.isArray(q.alternativas) ? q.alternativas : [];
   const tags = [fonte.disciplina, fonte.ano, fonte.prova, fonte.banca].filter(Boolean);
 

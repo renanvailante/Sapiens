@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api } from "../lib/api";
+import { api, errMsg} from "../lib/api";
 import Nav from "../components/Nav";
 import { toast } from "sonner";
 import { Plus, Save, Trash2, Eye, EyeOff } from "lucide-react";
@@ -43,7 +43,7 @@ export default function AdminFeed() {
       toast.success("Card criado.");
       setDraft(EMPTY);
       load();
-    } catch (e) { toast.error(e?.response?.data?.detail || "Erro ao criar."); }
+    } catch (e) { toast.error(errMsg(e, "Erro ao criar.")); }
     finally { setBusy(false); }
   };
 

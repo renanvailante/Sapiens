@@ -118,6 +118,13 @@ export default function CognitiveProfile() {
               {stats.answered}
               <span className="text-zinc-500 text-xl"> / {stats.total}</span>
             </div>
+            {/* Toda leitura do catálogo nomeia a versão contra a qual foi
+                resolvida — nunca "a ontologia vigente" (GOV-1.0 §6.1). */}
+            {data?.ontology_version && (
+              <div className="mt-1 font-mono-alt text-[10px] text-zinc-500" data-testid="cp-onto-version">
+                ontologia {data.ontology_version}
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-5 text-sm text-zinc-300">
             <span className="flex items-center gap-2">

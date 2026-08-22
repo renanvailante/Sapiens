@@ -1,3 +1,21 @@
+# =========================================================================
+# [CONTRATO SUPERSEDED — NAO REATIVAR SEM REESCREVER]
+#
+# Esta suite assere o Formato C (`error_type_id` inteiro — colisao NS-1),
+# substituido em 2026-08-21 pelo Schema Sapiens 2.2.
+#
+# Ela tambem nunca chega a rodar: exige `REACT_APP_BACKEND_URL` e um servidor
+# no ar, e falha na COLETA — inclusive antes desta migracao.
+#
+# Preservada em vez de apagada porque documenta o comportamento anterior, mas
+# **suas asercoes estao erradas contra o contrato atual**. Reativa-la sem
+# reescrever produziria falha legitima lida como regressao, ou pior, passaria a
+# exigir de volta a forma que os documentos removeram.
+#
+# Cobertura equivalente, que roda offline e sem infraestrutura:
+#   * pipeline/backend/tests/test_contratos_canonicos.py
+#   * aluno/backend/tests/test_contratos_aluno.py
+# =========================================================================
 """Iteration 7 backend tests — Admin role gate + Response Event Store.
 
 Covers:

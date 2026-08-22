@@ -1,38 +1,66 @@
-"""Sapiens AI service: Claude Sonnet 4.5 diagnostic + Gemini Vision OCR."""
+"""Serviços de IA do app do aluno — Google Gemini, chamada direta.
+
+Substitui o proxy `emergentintegrations`, removido da plataforma. Duas
+capacidades, ambas cobertas nativamente pela Gemini API:
+
+* `diagnose` — narrativa diagnóstica sobre um cartão-resposta corrigido.
+  Antes ia para Claude Sonnet via proxy; é geração de texto com saída JSON, que
+  o Gemini faz com `response_mime_type="application/json"`.
+* `ocr_answer_sheet` — leitura do cartão-resposta. Já era Gemini Vision, só que
+  atravessando o proxy. Agora é a mesma família de modelo, sem intermediário.
+
+Mesmo cliente (`google-genai`) e mesmo padrão de configuração do motor do
+pipeline, para que exista **uma** forma de falar com o modelo neste projeto.
+
+**Fronteira de contrato.** Nada aqui produz Error Trace, e nada aqui alimenta a
+camada de crença sobre o estado cognitivo de um estudante. O `cognitive_profile`
+devolvido por `diagnose` é texto de apresentação para o próprio aluno, derivado
+de acerto/erro por área — não é anotação, não usa IDs da ontologia e não é
+persistido como estrutura cognitiva. A atribuição de causa de erro tem contrato
+próprio (`Especificação do Error Trace v1.0`) e exige confiança ponderada por
+elo; derivá-la daqui produziria atribuição determinística, proibida pela
+Constituição §4.4.
+"""
 from __future__ import annotations
 
 import json
+import logging
 import os
 import re
-import uuid
 from typing import Any
 
 from dotenv import load_dotenv
-from emergentintegrations.llm.chat import (
-    ImageContent,
-    LlmChat,
-    StreamDone,
-    TextDelta,
-    UserMessage,
-)
+from google import genai
+from google.genai import types
 
 load_dotenv()
 
-EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY", "")
-CLAUDE_MODEL = "claude-sonnet-4-5-20250929"
-VISION_MODEL = ("gemini", "gemini-2.5-flash")
+logger = logging.getLogger("sapiens.ai")
+
+DEFAULT_MODEL = "gemini-3-flash-preview"
+DEFAULT_VISION_MODEL = "gemini-3-flash-preview"
 
 
-def _new_chat(system: str, provider: str = "anthropic", model: str = CLAUDE_MODEL) -> LlmChat:
-    return LlmChat(
-        api_key=EMERGENT_LLM_KEY,
-        session_id=f"sapiens-{uuid.uuid4().hex[:8]}",
-        system_message=system,
-    ).with_model(provider, model)
+def _client() -> genai.Client:
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        raise RuntimeError(
+            "GEMINI_API_KEY não configurada. O app do aluno usa a Gemini API "
+            "diretamente desde a remoção do proxy Emergent."
+        )
+    return genai.Client(api_key=api_key)
+
+
+def _model() -> str:
+    return os.environ.get("GEMINI_MODEL") or DEFAULT_MODEL
+
+
+def _vision_model() -> str:
+    return os.environ.get("GEMINI_VISION_MODEL") or DEFAULT_VISION_MODEL
 
 
 def _extract_json(text: str) -> Any:
-    text = text.strip()
+    text = (text or "").strip()
     try:
         return json.loads(text)
     except Exception:
@@ -49,21 +77,32 @@ def _extract_json(text: str) -> Any:
             return json.loads(m.group(1))
         except Exception:
             pass
-    raise ValueError("Could not parse JSON from AI response")
+    raise ValueError("Não foi possível extrair JSON da resposta do modelo.")
 
 
-async def _send(chat: LlmChat, text: str, images: list[ImageContent] | None = None) -> str:
-    msg = UserMessage(text=text, file_contents=images) if images else UserMessage(text=text)
-    out = ""
-    async for ev in chat.stream_message(msg):
-        if isinstance(ev, TextDelta):
-            out += ev.content
-        elif isinstance(ev, StreamDone):
-            break
-    return out
+async def _generate_json(
+    system_instruction: str,
+    user_text: str,
+    parts: list | None = None,
+    model: str | None = None,
+) -> Any:
+    client = _client()
+    chosen = model or _model()
+    contents = list(parts or [])
+    contents.append(types.Part.from_text(text=user_text))
+    resp = await client.aio.models.generate_content(
+        model=chosen,
+        contents=contents,
+        config=types.GenerateContentConfig(
+            system_instruction=system_instruction,
+            response_mime_type="application/json",
+            temperature=0.2,
+        ),
+    )
+    return _extract_json(resp.text or "")
 
 
-# ---------- Cognitive Diagnostic ----------
+# ---------- Diagnóstico cognitivo ----------
 
 DIAGNOSTIC_SYSTEM = """Você é o Sapiens — um analista de aprendizagem que descobre padrões cognitivos.
 NUNCA comece pela nota. Comece revelando um padrão que surpreenda o aluno.
@@ -77,6 +116,10 @@ Você não tem o enunciado das questões — apenas:
 Combine posição da questão, área, e padrão da letra escolhida para inferir padrões cognitivos
 (ex: fadiga nas questões finais, viés de alternativa, letra "chutada" repetida, fraqueza em blocos
 consecutivos de uma área).
+
+Estas observações são de superfície, feitas sem acesso ao enunciado: descreva
+padrões de comportamento de prova, nunca causa cognitiva definitiva. Não use
+identificadores de catálogo (PROC-, ERR-, HAB-, DOM-, COMP-, INT-) em nenhum campo.
 
 Responda EXCLUSIVAMENTE com JSON no formato:
 {
@@ -108,26 +151,34 @@ Responda EXCLUSIVAMENTE com JSON no formato:
 }
 Sem markdown, sem prefixos, apenas o JSON."""
 
+_DIAGNOSTIC_FALLBACK = {
+    "headline": "Seu desempenho revela padrões maiores do que a nota mostra.",
+    "body": (
+        "Analisamos suas respostas em busca de padrões cognitivos. Explore o "
+        "painel para ver o perfil e o plano de estudos."
+    ),
+    "strengths": [],
+    "weaknesses": [],
+    "cognitive_profile": {},
+    "study_plan": [],
+    "learning_map": {"nodes": [], "edges": []},
+}
+
 
 async def diagnose(payload: dict[str, Any]) -> dict[str, Any]:
-    chat = _new_chat(DIAGNOSTIC_SYSTEM)
+    """Narrativa diagnóstica do cartão-resposta. Degrada para texto neutro."""
     prompt = "Dados da prova:\n" + json.dumps(payload, ensure_ascii=False, indent=2)
-    reply = await _send(chat, prompt)
     try:
-        return _extract_json(reply)
-    except Exception:
-        return {
-            "headline": "Seu desempenho revela padrões maiores do que a nota mostra.",
-            "body": "Analisamos suas respostas em busca de padrões cognitivos. Explore o painel para ver o perfil e o plano de estudos.",
-            "strengths": [],
-            "weaknesses": [],
-            "cognitive_profile": {},
-            "study_plan": [],
-            "learning_map": {"nodes": [], "edges": []},
-        }
+        result = await _generate_json(DIAGNOSTIC_SYSTEM, prompt)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Diagnóstico indisponível: %s", exc)
+        return dict(_DIAGNOSTIC_FALLBACK)
+    if not isinstance(result, dict):
+        return dict(_DIAGNOSTIC_FALLBACK)
+    return {**_DIAGNOSTIC_FALLBACK, **result}
 
 
-# ---------- Vision: Answer-sheet OCR ----------
+# ---------- Visão: leitura do cartão-resposta ----------
 
 VISION_SYSTEM = """Você reconhece cartões-resposta de provas objetivas.
 Retorne SOMENTE um JSON no formato:
@@ -136,14 +187,37 @@ Retorne SOMENTE um JSON no formato:
 - Considere marcações preenchidas apenas quando a bolha estiver bem preenchida.
 - Não adicione explicações."""
 
+_DATA_URL = re.compile(r"^data:(?P<mime>[^;,]+)?[^,]*,")
 
-async def ocr_answer_sheet(image_base64: str, expected_count: int, start_number: int = 1) -> list[dict[str, Any]]:
-    if "," in image_base64 and image_base64.strip().startswith("data:"):
-        image_base64 = image_base64.split(",", 1)[1]
-    chat = _new_chat(VISION_SYSTEM, provider=VISION_MODEL[0], model=VISION_MODEL[1])
-    img = ImageContent(image_base64=image_base64)
+
+def _decode_image(image_base64: str) -> tuple[bytes, str]:
+    """Aceita base64 puro ou data URL, preservando o mime declarado."""
+    import base64
+
+    raw = (image_base64 or "").strip()
+    mime = "image/jpeg"
+    m = _DATA_URL.match(raw)
+    if m:
+        mime = m.group("mime") or mime
+        raw = raw[m.end():]
+    return base64.b64decode(raw), mime
+
+
+async def ocr_answer_sheet(
+    image_base64: str, expected_count: int, start_number: int = 1
+) -> list[dict[str, Any]]:
+    data, mime = _decode_image(image_base64)
     end_number = start_number + expected_count - 1
-    prompt = f"Extraia as respostas marcadas. A prova tem {expected_count} questões numeradas de {start_number} a {end_number}."
-    reply = await _send(chat, prompt, images=[img])
-    data = _extract_json(reply)
-    return data.get("answers", [])
+    prompt = (
+        f"Extraia as respostas marcadas. A prova tem {expected_count} questões "
+        f"numeradas de {start_number} a {end_number}."
+    )
+    parsed = await _generate_json(
+        VISION_SYSTEM,
+        prompt,
+        parts=[types.Part.from_bytes(data=data, mime_type=mime)],
+        model=_vision_model(),
+    )
+    if isinstance(parsed, list):
+        return parsed
+    return (parsed or {}).get("answers", [])

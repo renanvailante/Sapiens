@@ -8,7 +8,9 @@ import sys
 from typing import Dict, Any, Set
 
 # Backend URL from frontend/.env
-BASE_URL = "https://ebf1a3c9-880c-47b4-8543-da912a98cf66.preview.emergentagent.com/api"
+import os
+
+BASE_URL = os.environ.get("SAPIENS_BACKEND_URL", "http://localhost:8001").rstrip("/") + "/api"
 
 # Test credentials from /app/memory/test_credentials.md
 USER_WITH_ANSWERS = {

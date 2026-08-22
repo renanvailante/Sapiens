@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import { ChevronUp, Check, X, RotateCw, ArrowLeft } from "lucide-react";
@@ -38,17 +38,14 @@ function FeedCard({ item, index, onView, onAnswer, isActive }) {
     }
   }, [isActive, item, onView]);
 
-  const correctKey = useMemo(
-    () => item.answer_options?.find(o => o.is_correct)?.key,
-    [item.answer_options]
-  );
+  const [correctKey, setCorrectKey] = useState(null);
 
-  const handleSelect = (k) => {
+  const handleSelect = async (k) => {
     if (revealed) return;
     setSelected(k);
     setRevealed(true);
-    const isCorrect = k === correctKey;
-    onAnswer?.(item, k, isCorrect);
+    const result = await onAnswer?.(item, k);
+    setCorrectKey(result?.correct_key ?? null);
   };
 
   const renderQuestion = () => (
@@ -303,14 +300,18 @@ export default function Feed() {
     }
   }, []);
 
-  const onAnswer = useCallback(async (item, response, isCorrect) => {
-    api.post("/feed/interactions", {
-      content_id: item.content_id,
-      completed: true,
-      user_response: { selected: response },
-      is_correct: isCorrect,
-      event: { event: "answered", response },
-    }).catch(() => {});
+  const onAnswer = useCallback(async (item, response) => {
+    try {
+      const { data } = await api.post("/feed/interactions", {
+        content_id: item.content_id,
+        completed: true,
+        user_response: { selected: response },
+        event: { event: "answered", response },
+      });
+      return data;
+    } catch {
+      return null;
+    }
   }, []);
 
   return (

@@ -4,47 +4,72 @@ import Nav from "../components/Nav";
 import { toast } from "sonner";
 import { Upload, Trash2, ChevronDown, ChevronRight, ShieldCheck } from "lucide-react";
 
+// Exemplo no contrato canônico — Schema Sapiens 2.2.
+//
+// O exemplo anterior estava no formato legado, com três problemas que o
+// tornavam perigoso como modelo a copiar:
+//   * "error_type_id": 7 — inteiro. Os tipos de erro do White Paper 1.0 são
+//     numerados de 1 a 13 e formam conjunto DISJUNTO dos ERR-01..ERR-13 do
+//     catálogo vigente. É a colisão NS-1, classificada BLOQUEANTE: um `7`
+//     ingerido e lido como ERR-07 produz diagnóstico plausível e errado.
+//   * "RQ-PROP-003" — identificador da geração G0, que não existe no catálogo.
+//   * ausência de "ontology_version" — sem ela a anotação é indatável.
+//
+// `dominios` e `competencias` não aparecem aqui de propósito: são DERIVADOS dos
+// processos pelo servidor (Constituição §4.4). Enviá-los divergentes é erro de
+// integridade; não enviá-los é o caminho normal.
 const SAMPLE = `{
-  "schema_version": "1.0",
-  "item": {
-    "id": "ITEM-ENEM-2023-MAT-137",
-    "fonte": { "banca": "ENEM", "ano": 2023, "caderno": "Azul", "numero": 137 },
-    "disciplina": "Matemática",
-    "tema_objetivo": "Razão e proporcionalidade",
-    "conteudo_curricular": ["Grandezas proporcionais"],
+  "schema_version": "2.2",
+  "ontology_version": "1.4.1",
+  "item_id": "ITEM-INEP-2023-ENEMCAD01-Q137",
+  "fonte": {
+    "banca": "INEP", "ano": 2023, "prova": "ENEM-CAD01", "numero": 137,
+    "disciplina": "Matemática", "tema": "Razão e proporcionalidade"
+  },
+  "questao": {
     "enunciado": "...",
     "alternativas": [
-      {"id":"A","texto":"..."},{"id":"B","texto":"..."},{"id":"C","texto":"..."},
-      {"id":"D","texto":"..."},{"id":"E","texto":"..."}
+      {"letra":"A","texto":"...","correta":false},
+      {"letra":"B","texto":"...","correta":false},
+      {"letra":"C","texto":"...","correta":false},
+      {"letra":"D","texto":"...","correta":true},
+      {"letra":"E","texto":"...","correta":false}
     ],
-    "gabarito": "D"
+    "recursos": {}
   },
   "estrutura_cognitiva": {
-    "nivel_abstracao": "semi_abstrato",
-    "carga_cognitiva": "media",
-    "dificuldade_global": 0.54,
-    "tipo_raciocinio_predominante": ["quantitativo","proporcional"],
-    "operacoes_cognitivas": ["identificar","comparar","calcular","inferir"]
+    "processos": [
+      {
+        "id": "PROC-QUANT-02",
+        "papel": "nuclear",
+        "peso_no_item": 1.0,
+        "confianca": "alta",
+        "habilidades": [
+          {"id":"HAB-03","peso_no_processo":1.0,"confianca":"alta","aproximado":false}
+        ],
+        "evidencias": {"trechos":["mantendo a mesma taxa"],"figuras":[]},
+        "justificativa": "A resposta depende de escalonar uma relação proporcional; o cenário é irrelevante."
+      }
+    ]
   },
-  "processos_ativados": [
-    {"cognitive_process_id":"RQ-PROP-003","papel":"nuclear","prioridade":1,
-     "peso_ativacao":0.91,"confianca":0.96,"dificuldade_local":0.38,
-     "evidencias":["necessidade de escalonamento proporcional"]}
+  "distratores": [
+    {
+      "alternativa": "A",
+      "erros_esperados": [
+        {"ordem":1,"erro":"ERR-05","processo_afetado":"PROC-QUANT-02","confianca":"alta","mecanismo":"MEC-01"}
+      ],
+      "plausibilidade": {"valor":"alta"},
+      "explicacao": "Trata a relação como diferença, não como razão."
+    }
   ],
-  "analise_distratores": [
-    {"alternativa":"A","error_type_id":7,"cognitive_process_falhou":["RQ-PROP-003"],
-     "explicacao":"Aluno não escalou a proporção."}
+  "intervencoes": [
+    {"id":"INT-03","gatilho":{"processo":"PROC-QUANT-02","erro":"ERR-05"},"acao":"Prática guiada de relações proporcionais."}
   ],
-  "caracteristicas_item": {
-    "possui_texto": true, "necessita_calculo": true, "contexto_cotidiano": true
-  },
-  "pedagogia": {
-    "principal_intervencao": {"cognitive_process_id":"RQ-PROP-003","tipo":"feedback"},
-    "explicacao_resolucao": "...",
-    "misconceptions": ["Confusão entre razão e diferença"]
-  },
-  "qualidade_anotacao": {
-    "confianca_global": 0.92, "revisado_humano": true, "revisor": "Claude", "data": "2026-07-09"
+  "qualidade": {
+    "confianca_global": "alta",
+    "revisado": true,
+    "revisor": "nome-ou-id-do-revisor",
+    "data_anotacao": "2026-08-21T12:00:00Z"
   }
 }`;
 
@@ -58,14 +83,20 @@ function AnnotationRow({ ann, onDelete }) {
         </button>
         <div className="flex-1 min-w-0">
           <div className="text-xs font-mono-alt uppercase tracking-[0.2em] text-zinc-500">
-            {ann.banca} · {ann.ano} · {ann.caderno} · Q{ann.numero} · v{ann.schema_version}
+            {ann.banca} · {ann.ano} · {ann.prova} · Q{ann.numero} · schema v{ann.schema_version} · onto {ann.ontology_version}
           </div>
           <div className="mt-1 font-display font-semibold text-base text-zinc-900 truncate">
             {ann.item_id} <span className="text-zinc-400 font-normal">— {ann.disciplina}</span>
           </div>
+          {ann.validacao?.valid === false && (
+            <div className="mt-1 text-xs text-rose-700" data-testid={`ann-invalid-${ann.item_id}`}>
+              {ann.validacao.errors.length} violação(ões) do contrato — armazenada para revisão,
+              não pode alimentar o estado de nenhum aluno.
+            </div>
+          )}
         </div>
         <div className="text-xs text-zinc-500 font-mono-alt">
-          {(ann.payload?.processos_ativados || []).length} proc.
+          {(ann.payload?.estrutura_cognitiva?.processos || []).length} proc.
         </div>
         <button onClick={() => onDelete(ann)} className="p-2 rounded-full hover:bg-rose-50 text-rose-600" data-testid={`ann-delete-${ann.item_id}`}>
           <Trash2 className="w-4 h-4" />
@@ -107,14 +138,25 @@ export default function AdminAnnotations() {
       if (Array.isArray(parsed) || (parsed && Array.isArray(parsed.items))) {
         const arr = Array.isArray(parsed) ? parsed : parsed.items;
         const { data } = await api.post("/admin/annotations/bulk", { items: arr });
+        const invalidas = data.invalidos_contra_o_catalogo?.length || 0;
         if (data.errors?.length) {
-          toast.error(`${data.imported} importadas, ${data.errors.length} com erro.`);
+          toast.error(`${data.imported} importadas, ${data.errors.length} rejeitadas por forma.`);
+        } else if (invalidas) {
+          // Armazenadas, mas fora do contrato: precisam ficar visíveis para
+          // revisão humana em vez de sumir num erro de ingestão.
+          toast.warning(`${data.imported} importadas · ${invalidas} violam o contrato e aguardam revisão.`);
         } else {
           toast.success(`${data.imported} anotações importadas.`);
         }
       } else {
-        await api.post("/admin/annotations", parsed);
-        toast.success(`Anotação ${parsed.item?.id || ""} armazenada.`);
+        const { data } = await api.post("/admin/annotations", parsed);
+        if (data.validacao?.valid === false) {
+          toast.warning(
+            `${data.item_id} armazenada com ${data.validacao.errors.length} violação(ões) do contrato — revise antes de usar.`
+          );
+        } else {
+          toast.success(`Anotação ${data.item_id || ""} armazenada.`);
+        }
       }
       setRaw("");
       load();

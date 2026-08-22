@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { api } from "../lib/api";
+import { api, errMsg} from "../lib/api";
 import Nav from "../components/Nav";
 import { FileText, Zap, Brain, Users, ClipboardList, ArrowRight, ShieldCheck, RefreshCw, Database } from "lucide-react";
 
@@ -43,7 +43,7 @@ export default function AdminDashboard() {
       setLastSync(data);
       toast.success(`Firestore sincronizado: ${data.master_count} questões (master), ${data.public_count} publicadas para alunos.`);
     } catch (e) {
-      toast.error(e?.response?.data?.detail || "Falha ao sincronizar Firestore.");
+      toast.error(errMsg(e, "Falha ao sincronizar Firestore."));
     } finally {
       setSyncing(false);
     }

@@ -1,5 +1,5 @@
 import "./App.css";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "sonner";
 import { AuthProvider } from "./lib/auth";
 import Landing from "./pages/Landing";
@@ -21,15 +21,11 @@ import StudentHistory from "./pages/StudentHistory";
 import CognitiveProfile from "./pages/CognitiveProfile";
 import Feed from "./pages/Feed";
 import Questoes from "./pages/Questoes";
-import AuthCallback from "./components/AuthCallback";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
 import FirestoreStudentProvisioner from "./components/FirestoreStudentProvisioner";
 
 function AppRouter() {
-  const location = useLocation();
-  // CRITICAL: handle Emergent OAuth session_id BEFORE routing
-  if (location.hash?.includes("session_id=")) return <AuthCallback />;
   return (
     <Routes>
       <Route path="/" element={<Landing />} />

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { api } from "../lib/api";
+import { api, errMsg} from "../lib/api";
 import Nav from "../components/Nav";
 import { toast } from "sonner";
 
@@ -36,7 +36,7 @@ export default function Admin() {
       toast.success(`Gabarito importado: ${data.total} questões (EN: ${data.english ? "sim" : "não"}, ES: ${data.spanish ? "sim" : "não"}).`);
       setRaw("");
     } catch (e) {
-      toast.error(e?.response?.data?.detail || "Falha ao importar.");
+      toast.error(errMsg(e, "Falha ao importar."));
     } finally { setBusy(false); }
   };
 

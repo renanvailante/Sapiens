@@ -1,16 +1,35 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../lib/auth";
+import { errMsg } from "../lib/api";
+import { googleDisponivel, mensagemDeErroGoogle } from "../lib/firebase";
 import { toast } from "sonner";
 
 export default function Login() {
-  const { login, signup, startGoogle } = useAuth();
+  const { login, signup, loginGoogle } = useAuth();
   const nav = useNavigate();
   const [mode, setMode] = useState("login");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  const [busyGoogle, setBusyGoogle] = useState(false);
+
+  const comGoogle = async () => {
+    setBusyGoogle(true);
+    try {
+      await loginGoogle();
+      nav("/dashboard");
+    } catch (e) {
+      // Fechar o popup não é erro: `mensagemDeErroGoogle` devolve null nesse
+      // caso, e um toast ali seria ruído sobre uma ação deliberada.
+      const doFirebase = mensagemDeErroGoogle(e);
+      if (doFirebase !== null) toast.error(doFirebase || errMsg(e));
+      else if (e?.response) toast.error(errMsg(e));
+    } finally {
+      setBusyGoogle(false);
+    }
+  };
 
   const submit = async (e) => {
     e.preventDefault();
@@ -21,7 +40,7 @@ export default function Login() {
       toast.success("Bem-vindo ao Sapiens.");
       nav("/dashboard", { replace: true });
     } catch (err) {
-      toast.error(err?.response?.data?.detail || "Não foi possível entrar.");
+      toast.error(errMsg(err, "Não foi possível entrar."));
     } finally {
       setBusy(false);
     }
@@ -56,18 +75,25 @@ export default function Login() {
             {mode === "login" ? "Bem-vindo de volta." : "Sua primeira análise é gratuita."}
           </p>
 
-          <button
-            onClick={startGoogle}
-            className="pill mt-8 w-full border border-zinc-200 hover:bg-zinc-50 rounded-full px-4 py-3 flex items-center justify-center gap-3 font-medium text-zinc-900"
-            data-testid="login-google"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#EA4335" d="M12 10.2v3.9h5.5c-.25 1.5-1.7 4.4-5.5 4.4-3.3 0-6-2.7-6-6.1s2.7-6.1 6-6.1c1.9 0 3.2.8 3.9 1.5l2.7-2.6C16.9 3.6 14.7 2.6 12 2.6 6.9 2.6 2.8 6.7 2.8 11.8S6.9 21 12 21c6.9 0 9.4-4.8 9.4-8.6 0-.6-.1-1-.2-1.5H12z"/></svg>
-            Continuar com Google
-          </button>
+          {googleDisponivel && (
+            <>
+              <button
+                type="button"
+                onClick={comGoogle}
+                disabled={busyGoogle || busy}
+                className="pill mt-8 w-full border border-zinc-200 hover:bg-zinc-50 disabled:opacity-50 rounded-full px-4 py-3 flex items-center justify-center gap-3 font-medium text-zinc-900"
+                data-testid="login-google"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="#EA4335" d="M12 10.2v3.9h5.5c-.25 1.5-1.7 4.4-5.5 4.4-3.3 0-6-2.7-6-6.1s2.7-6.1 6-6.1c1.9 0 3.2.8 3.9 1.5l2.7-2.6C16.9 3.6 14.7 2.6 12 2.6 6.9 2.6 2.8 6.7 2.8 11.8S6.9 21 12 21c6.9 0 9.4-4.8 9.4-8.6 0-.6-.1-1-.2-1.5H12z"/></svg>
+                {busyGoogle ? "Abrindo o Google…" : "Continuar com Google"}
+              </button>
 
-          <div className="my-6 flex items-center gap-3 text-xs text-zinc-400">
-            <div className="flex-1 h-px bg-zinc-200" /> ou email <div className="flex-1 h-px bg-zinc-200" />
-          </div>
+              <div className="my-6 flex items-center gap-3 text-xs text-zinc-400">
+                <div className="flex-1 h-px bg-zinc-200" /> ou email <div className="flex-1 h-px bg-zinc-200" />
+              </div>
+            </>
+          )}
+          {!googleDisponivel && <div className="mt-8" />}
 
           <form onSubmit={submit} className="space-y-3">
             {mode === "signup" && (

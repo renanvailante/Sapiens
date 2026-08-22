@@ -1,0 +1,56 @@
+# Sapiens — app do aluno (backend). Staging público v0.1.
+#
+# Build a partir da RAIZ do repositório:
+#     fly deploy --config aluno/backend/fly.toml --dockerfile aluno/backend/Dockerfile
+#
+# O Dockerfile copia `pipeline/docs/ontology/` e o validador de contratos, que
+# vivem fora de `aluno/backend/` — daí o contexto na raiz.
+
+app = "sapiens-aluno"
+primary_region = "gru"          # São Paulo: menor latência para o piloto
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  APP_ENV = "production"
+  LOG_LEVEL = "INFO"
+  PORT = "8000"
+  # Cross-site: o frontend está no Cloudflare Pages, o backend aqui.
+  COOKIE_SECURE = "true"
+  COOKIE_SAMESITE = "none"
+  SESSION_TTL_DAYS = "7"
+  # Nunca semear dado fictício num banco que recebe aluno real.
+  SEED_DEMO_DATA = "false"
+  GEMINI_MODEL = "gemini-3-flash-preview"
+  # Corpus canônico dentro da imagem (ver Dockerfile).
+  SAPIENS_ONTOLOGY_PATH = "/app/contracts/ontology/ontology_v1.4.json"
+  SAPIENS_CONTRACTS_PATH = "/app/contracts"
+
+[http_service]
+  internal_port = 8000
+  force_https = true            # o Fly termina TLS e redireciona http→https
+  auto_stop_machines = "suspend"
+  auto_start_machines = true
+  # Uma máquina sempre de pé: `suspend` retoma em ~1s, mas manter o mínimo em 1
+  # evita que o primeiro aluno do dia pague o custo de retomada.
+  min_machines_running = 1
+  processes = ["app"]
+
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 40
+    hard_limit = 80
+
+# Readiness: 503 enquanto Mongo/Firestore/ontologia não responderem, para que o
+# Fly não mande tráfego a uma instância que ainda não consegue atender.
+[[http_service.checks]]
+  grace_period = "20s"
+  interval = "30s"
+  method = "GET"
+  timeout = "8s"
+  path = "/ready"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"              # 256mb não comporta firebase-admin + google-genai
