@@ -18,7 +18,7 @@ import AdminUsers from "./pages/AdminUsers";
 import AdminFeed from "./pages/AdminFeed";
 import AdminAnnotations from "./pages/AdminAnnotations";
 import StudentHistory from "./pages/StudentHistory";
-import CognitiveProfile from "./pages/CognitiveProfile";
+import SkillsMap from "./pages/SkillsMap";
 import Feed from "./pages/Feed";
 import Questoes from "./pages/Questoes";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -45,7 +45,7 @@ function AppRouter() {
       <Route path="/admin/annotations" element={<AdminRoute><AdminAnnotations /></AdminRoute>} />
       <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
       <Route path="/admin/history" element={<AdminRoute><StudentHistory /></AdminRoute>} />
-      <Route path="/cognitive-profile" element={<ProtectedRoute><CognitiveProfile /></ProtectedRoute>} />
+      <Route path="/cognitive-profile" element={<ProtectedRoute><SkillsMap /></ProtectedRoute>} />
       <Route path="/feed" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
       <Route path="*" element={<Landing />} />
     </Routes>

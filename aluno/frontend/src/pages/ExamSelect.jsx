@@ -10,6 +10,54 @@ const APP_VERSION = "sapiens-web-1.0";
 // "AMARELO" -> "Amarelo" — só para exibição das cores de caderno do ENEM.
 const capitalizar = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : s);
 
+// ---------------- Rodadas de 10 (a última fecha com o que sobrar: 5, num
+// bloco de 45) — os mesmos limites que o backend usa em `_rodada_range`
+// (firestore_routes.py). `total=45` -> [10,20,30,40,45].
+function limitesDeRodada(total) {
+  const limites = [];
+  for (let b = 10; b < total; b += 10) limites.push(b);
+  if (total > 0) limites.push(total);
+  return limites;
+}
+
+// Devolve o número da rodada (1-based) quando `posicao` (quantidade de
+// questões já respondidas NESTE bloco, contando a que acabou de ser
+// respondida) é exatamente um limite de rodada — senão `null`.
+function rodadaNaPosicao(posicao, total) {
+  const idx = limitesDeRodada(total).indexOf(posicao);
+  return idx === -1 ? null : idx + 1;
+}
+
+// ---------------- Barra de progresso da prova (0 -> 45/45) ----------------
+// Sem estado próprio: `respondidas` é sempre a contagem já persistida
+// (behavior events reais), nunca um valor fictício — a mesma fonte usada
+// para retomar a prova.
+function ProgressoProva({ respondidas, total, pulso }) {
+  const pct = total > 0 ? Math.min(100, Math.round((respondidas / total) * 100)) : 0;
+  return (
+    <div className="mb-5" data-testid="progresso-prova">
+      <div className="mb-1.5 flex items-center justify-between">
+        <span className="font-mono-alt text-[10px] uppercase tracking-[0.25em] text-zinc-500">Progresso da prova</span>
+        <span className="font-mono-alt text-xs font-bold text-zinc-700" data-testid="progresso-contador">
+          {respondidas}/{total}
+        </span>
+      </div>
+      <div
+        className={`h-2.5 w-full rounded-full bg-zinc-100 overflow-hidden transition-shadow duration-300 ${
+          pulso ? "ring-2 ring-emerald-400 ring-offset-2" : ""
+        }`}
+      >
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-emerald-500 transition-all duration-700 ease-out"
+          style={{ width: `${pct}%` }}
+          data-testid="progresso-barra"
+          data-pct={pct}
+        />
+      </div>
+    </div>
+  );
+}
+
 // ---------------- Fluxo principal: questões auditadas do Firestore ----------------
 // `filtro`, quando presente ({ banca, ano, prova, numero_min, numero_max }),
 // restringe às questões de UM bloco (prova real de até 45 questões) — o que
@@ -32,8 +80,25 @@ function QuestionRunner({ filtro, onExit }) {
   const [result, setResult] = useState(null); // { acertou, correta }
   const [submitting, setSubmitting] = useState(false);
   const [answered, setAnswered] = useState(0);
+  const [resumoSessao, setResumoSessao] = useState(null); // resposta de /sessao/diagnostico
+  const [carregandoResumo, setCarregandoResumo] = useState(false);
+  const [rodadaResumo, setRodadaResumo] = useState(null); // devolutiva determinística da rodada (10/10, 5/5 etc.)
+  const [pulso, setPulso] = useState(false); // destaque breve na barra ao responder
+  const [sparks, setSparks] = useState(null);
   const startRef = useRef(Date.now());
   const changesRef = useRef(0);
+  const respostasSessaoRef = useRef([]); // [{item_id, alternativa_escolhida, acertou}], só desta sessão
+  const resumoMostradoParaRef = useRef(0); // evita mostrar o mesmo resumo 2x
+  const rodadaPendenteRef = useRef(null); // devolutiva de rodada já buscada, aguardando o clique em "avançar"
+  const rodadasProcessadasRef = useRef(new Set()); // evita chamar /rodada/concluir 2x pela mesma rodada nesta sessão
+
+  useEffect(() => {
+    let ativo = true;
+    api.get("/firestore/students/me/sparks")
+      .then(({ data }) => { if (ativo) setSparks(data.sparks_balance); })
+      .catch(() => {});
+    return () => { ativo = false; };
+  }, []);
 
   useEffect(() => {
     let ativo = true;
@@ -92,6 +157,35 @@ function QuestionRunner({ filtro, onExit }) {
       });
       setResult(data);
       setAnswered((n) => n + 1);
+      setPulso(true);
+      setTimeout(() => setPulso(false), 700);
+      respostasSessaoRef.current.push({
+        item_id: item.item_id, alternativa_escolhida: selected, acertou: data.acertou,
+      });
+
+      // Fim de rodada (10/10, ..., ou 5/5 na última): busca a devolutiva +
+      // Sparks já aqui (mesmo request-cycle da resposta, para minimizar a
+      // janela em que um fechamento de aba perderia a rodada) — mas só
+      // EXIBE ao clicar em avançar, para não interromper o aluno no meio da
+      // leitura do feedback desta questão.
+      const posicao = idx + 1;
+      const rodadaNum = filtro && rodadaNaPosicao(posicao, itens.length);
+      if (rodadaNum && !rodadasProcessadasRef.current.has(rodadaNum)) {
+        rodadasProcessadasRef.current.add(rodadaNum);
+        try {
+          const { data: rd } = await api.post("/firestore/students/me/rodada/concluir", {
+            bloco: {
+              banca: filtro.banca, ano: filtro.ano, prova: filtro.prova,
+              numero_min: filtro.numero_min, numero_max: filtro.numero_max,
+            },
+            rodada: rodadaNum,
+          });
+          rodadaPendenteRef.current = rd;
+          if (typeof rd.sparks_balance === "number") setSparks(rd.sparks_balance);
+        } catch {
+          // nunca bloqueia a prática — mesmo princípio do resumo de sessão
+        }
+      }
     } catch (e) {
       setErro(errMsg(e, "Não foi possível registrar a resposta."));
     } finally {
@@ -107,6 +201,66 @@ function QuestionRunner({ filtro, onExit }) {
     setIdx((i) => i + 1);
   };
 
+  // A cada 10 respostas DESTA sessão (não conta o que já vinha de uma
+  // retomada), busca o resumo de padrões antes de seguir para a próxima
+  // questão. Nunca bloqueia a prática: se o resumo falhar (ex.: Gemini
+  // fora do ar), segue direto sem mostrar nada — é um bônus, não um
+  // requisito para continuar respondendo.
+  //
+  // Quando a devolutiva da rodada (determinística, sem IA) e este resumo de
+  // sessão (LLM) caem na MESMA resposta — o caso comum de quem começa o
+  // bloco do zero, já que ambos os contadores começam em 0 juntos — a
+  // devolutiva da rodada é a experiência principal: mostra ela e marca este
+  // checkpoint de 10 como já tratado, para NUNCA chamar `diagnose_sessao` (e
+  // gastar Gemini) nem duplicar feedback nesse momento. Fora dessa
+  // coincidência — por exemplo, retomando o bloco no meio, onde a 10ª
+  // resposta desta sessão cai numa posição que não é limite de rodada — o
+  // resumo de sessão continua funcionando exatamente como antes.
+  const avancar = async () => {
+    if (rodadaPendenteRef.current) {
+      const rd = rodadaPendenteRef.current;
+      rodadaPendenteRef.current = null;
+      const nAgora = respostasSessaoRef.current.length;
+      if (nAgora > 0 && nAgora % 10 === 0) resumoMostradoParaRef.current = nAgora;
+      setRodadaResumo(rd);
+      return;
+    }
+    const n = respostasSessaoRef.current.length;
+    if (n > 0 && n % 10 === 0 && resumoMostradoParaRef.current !== n) {
+      resumoMostradoParaRef.current = n;
+      setCarregandoResumo(true);
+      try {
+        const { data } = await api.post("/firestore/students/me/sessao/diagnostico", {
+          respostas: respostasSessaoRef.current,
+        });
+        setSelected(null);
+        setResult(null);
+        changesRef.current = 0;
+        startRef.current = Date.now();
+        setResumoSessao(data);
+      } catch {
+        proxima();
+      } finally {
+        setCarregandoResumo(false);
+      }
+      return;
+    }
+    proxima();
+  };
+
+  const continuarAposResumo = () => {
+    setResumoSessao(null);
+    proxima();
+  };
+
+  const continuarAposRodada = () => {
+    setRodadaResumo(null);
+    // Reentra em avancar(): o checkpoint de 10 já foi marcado como tratado
+    // (ver comentário acima) quando os dois coincidem, então isto NUNCA
+    // dispara o resumo de sessão logo em seguida — só avança a questão.
+    avancar();
+  };
+
   if (loading) return <div className="py-24 text-center text-zinc-500">Carregando questões…</div>;
   if (erro && itens.length === 0)
     return <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-rose-700">Erro: {erro}</div>;
@@ -118,9 +272,56 @@ function QuestionRunner({ filtro, onExit }) {
       </div>
     );
 
+  if (resumoSessao)
+    return (
+      <div className="bg-white border border-zinc-200 rounded-2xl p-6 md:p-8">
+        <div className="font-mono-alt text-xs uppercase tracking-[0.3em] text-indigo-600 mb-2">
+          Resumo da sessão · {respostasSessaoRef.current.length} questões
+        </div>
+        <div className="font-display text-2xl font-bold tracking-tight text-zinc-950" data-testid="resumo-sessao-headline">
+          {resumoSessao.headline}
+        </div>
+        <p className="mt-3 text-[15px] leading-relaxed text-zinc-700 whitespace-pre-line">{resumoSessao.body}</p>
+
+        {resumoSessao.pontos_fortes?.length > 0 && (
+          <div className="mt-5">
+            <div className="text-xs font-bold uppercase tracking-wide text-emerald-700">Pontos fortes</div>
+            <ul className="mt-1.5 space-y-1 text-sm text-zinc-700">
+              {resumoSessao.pontos_fortes.map((p, i) => <li key={i}>· {p}</li>)}
+            </ul>
+          </div>
+        )}
+        {resumoSessao.pontos_de_atencao?.length > 0 && (
+          <div className="mt-4">
+            <div className="text-xs font-bold uppercase tracking-wide text-amber-700">Pontos de atenção</div>
+            <ul className="mt-1.5 space-y-1 text-sm text-zinc-700">
+              {resumoSessao.pontos_de_atencao.map((p, i) => <li key={i}>· {p}</li>)}
+            </ul>
+          </div>
+        )}
+        {resumoSessao.padroes_de_erro?.length > 0 && (
+          <div className="mt-4">
+            <div className="text-xs font-bold uppercase tracking-wide text-rose-700">Padrões de erro</div>
+            <ul className="mt-1.5 space-y-1 text-sm text-zinc-700">
+              {resumoSessao.padroes_de_erro.map((p, i) => <li key={i}>· {p}</li>)}
+            </ul>
+          </div>
+        )}
+
+        <button
+          onClick={continuarAposResumo}
+          data-testid="btn-continuar-apos-resumo"
+          className="pill inline-flex items-center gap-2 mt-6 bg-zinc-950 hover:bg-zinc-800 text-white px-6 py-3 rounded-full text-sm font-medium"
+        >
+          Continuar praticando <ArrowRight className="w-4 h-4" />
+        </button>
+      </div>
+    );
+
   if (idx >= itens.length)
     return (
       <div className="bg-white border border-zinc-200 rounded-2xl p-10 text-center">
+        <ProgressoProva respondidas={itens.length} total={itens.length} pulso={false} />
         <div className="font-display text-2xl font-bold text-zinc-950">Você concluiu todas as questões! 🎉</div>
         <p className="mt-2 text-zinc-500">Respostas registradas: {answered}.</p>
         <button onClick={onExit} className="pill inline-flex items-center gap-2 mt-6 bg-zinc-950 hover:bg-zinc-800 text-white px-5 py-3 rounded-full text-sm font-medium">
@@ -133,12 +334,24 @@ function QuestionRunner({ filtro, onExit }) {
 
   return (
     <div>
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-1 flex items-center justify-between">
         <div className="font-mono-alt text-xs uppercase tracking-[0.25em] text-zinc-500">
           Questão {idx + 1} de {itens.length}
         </div>
-        <button onClick={onExit} className="text-sm text-zinc-500 underline hover:text-zinc-900">Sair</button>
+        <div className="flex items-center gap-3">
+          {sparks != null && (
+            <span
+              className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2.5 py-1 text-xs font-bold text-amber-700"
+              data-testid="sparks-balance"
+            >
+              <Sparkles className="w-3.5 h-3.5" /> {sparks}
+            </span>
+          )}
+          <button onClick={onExit} className="text-sm text-zinc-500 underline hover:text-zinc-900">Sair</button>
+        </div>
       </div>
+
+      <ProgressoProva respondidas={Math.min(answered, itens.length)} total={itens.length} pulso={pulso} />
 
       {retomado > 0 && idx === retomado && (
         <div className="mb-4 rounded-xl bg-indigo-50 border border-indigo-100 px-4 py-2.5 text-sm text-indigo-800">
@@ -156,6 +369,17 @@ function QuestionRunner({ filtro, onExit }) {
         <p className="whitespace-pre-line text-[15px] leading-relaxed text-zinc-800">
           {q.enunciado || "(Sem enunciado)"}
         </p>
+
+        {q.recursos?.imagens?.length > 0 && (
+          <img
+            key={item.item_id}
+            src={`/exam-images/${item.item_id}.png`}
+            alt="Imagem da questão"
+            className="mt-4 max-w-full rounded-lg border border-zinc-200"
+            data-testid="questao-imagem"
+            onError={(e) => { e.currentTarget.style.display = "none"; }}
+          />
+        )}
 
         <div className="mt-6 grid gap-2">
           {alternativas.map((alt) => {
@@ -209,12 +433,91 @@ function QuestionRunner({ filtro, onExit }) {
               {submitting ? "Registrando…" : "Responder"}
             </button>
           ) : (
-            <button onClick={proxima} data-testid="btn-proxima" className="pill inline-flex items-center gap-2 bg-zinc-950 hover:bg-zinc-800 text-white px-6 py-3 rounded-full text-sm font-medium">
-              {idx + 1 < itens.length ? "Próxima questão" : "Concluir"} <ArrowRight className="w-4 h-4" />
+            <button
+              onClick={avancar}
+              disabled={carregandoResumo}
+              data-testid="btn-proxima"
+              className="pill inline-flex items-center gap-2 bg-zinc-950 hover:bg-zinc-800 disabled:opacity-40 text-white px-6 py-3 rounded-full text-sm font-medium"
+            >
+              {carregandoResumo
+                ? "Analisando padrões desta sessão…"
+                : idx + 1 < itens.length ? "Próxima questão" : "Concluir"} <ArrowRight className="w-4 h-4" />
             </button>
           )}
         </div>
       </article>
+
+      <Dialog open={!!rodadaResumo} onOpenChange={(v) => { if (!v) continuarAposRodada(); }}>
+        <DialogContent className="rounded-2xl max-w-md" data-testid="rodada-devolutiva">
+          {rodadaResumo && (
+            <>
+              <DialogHeader>
+                <div className="font-mono-alt text-xs uppercase tracking-[0.3em] text-indigo-600 mb-1">
+                  Rodada {rodadaResumo.rodada} concluída
+                </div>
+                <DialogTitle
+                  className="font-display text-3xl font-extrabold tracking-tight text-zinc-950 flex items-center gap-2"
+                  data-testid="rodada-acertos"
+                >
+                  {rodadaResumo.acertos}/{rodadaResumo.total}
+                  <Check className="w-6 h-6 text-emerald-500" />
+                </DialogTitle>
+              </DialogHeader>
+
+              {rodadaResumo.sparks_ganhos > 0 && (
+                <div
+                  className="flex items-center justify-between rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 animate-in zoom-in-95 duration-300"
+                  data-testid="rodada-sparks-ganhos"
+                >
+                  <div className="flex items-center gap-2 font-bold text-amber-700">
+                    <Sparkles className="w-5 h-5" /> +{rodadaResumo.sparks_ganhos} Sparks
+                  </div>
+                  <div className="font-mono-alt text-xs text-amber-700">saldo: {rodadaResumo.sparks_balance}</div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="rounded-xl bg-zinc-50 px-3 py-2.5">
+                  <div className="text-xs text-zinc-500">Acerto na rodada</div>
+                  <div className="font-bold text-zinc-900 text-lg">{rodadaResumo.percentual_acerto}%</div>
+                </div>
+                <div className="rounded-xl bg-zinc-50 px-3 py-2.5">
+                  <div className="text-xs text-zinc-500">Evolução</div>
+                  <div
+                    className={`font-bold text-lg ${
+                      rodadaResumo.evolucao > 0 ? "text-emerald-600" : rodadaResumo.evolucao < 0 ? "text-rose-600" : "text-zinc-900"
+                    }`}
+                    data-testid="rodada-evolucao"
+                  >
+                    {rodadaResumo.evolucao == null
+                      ? "—"
+                      : `${rodadaResumo.evolucao > 0 ? "+" : ""}${rodadaResumo.evolucao} p.p.`}
+                  </div>
+                </div>
+              </div>
+
+              {rodadaResumo.padroes_de_erro?.length > 0 && (
+                <div data-testid="rodada-padroes-erro">
+                  <div className="text-xs font-bold uppercase tracking-wide text-rose-700">Padrões observados nesta rodada</div>
+                  <ul className="mt-1.5 space-y-1 text-sm text-zinc-700">
+                    {rodadaResumo.padroes_de_erro.map((p, i) => <li key={i}>· {p.nome}</li>)}
+                  </ul>
+                </div>
+              )}
+
+              <DialogFooter>
+                <button
+                  onClick={continuarAposRodada}
+                  data-testid="btn-continuar-rodada"
+                  className="pill inline-flex items-center justify-center gap-2 bg-zinc-950 hover:bg-zinc-800 text-white px-6 py-3 rounded-full text-sm font-medium"
+                >
+                  Continuar praticando <ArrowRight className="w-4 h-4" />
+                </button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
