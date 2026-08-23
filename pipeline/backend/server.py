@@ -1,13 +1,15 @@
 """Sapiens Cognitive Annotator — FastAPI backend."""
 from __future__ import annotations
 
+import hmac
 import json
 import logging
 import os
+import secrets
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import yaml
 from dotenv import load_dotenv
@@ -17,17 +19,20 @@ from dotenv import load_dotenv
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / ".env")
 
-from fastapi import APIRouter, FastAPI, File, HTTPException, Query, UploadFile
-from fastapi.responses import Response
+from fastapi import APIRouter, Depends, FastAPI, File, Form, Header, HTTPException, Query, Request, UploadFile
+from fastapi.responses import JSONResponse, Response
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, Field
 from starlette.middleware.cors import CORSMiddleware
 
+import batch_queue
+import gemini_telemetry
 from cognitive_engine import (
     DEFAULT_PIPELINE_SCHEMA,
     parse_ontology_with_gemini,
     run_book_manifest,
     run_cognitive_pipeline,
+    run_cognitive_pipeline_adaptive,
 )
 from firestore_sync import (
     create_question_sync,
@@ -36,21 +41,50 @@ from firestore_sync import (
     sync_all_questions,
     update_question_sync,
 )
+from item_contract import (
+    SCHEMA_VERSION,
+    index_fields as _index_fields,
+    normalize_item,
+    validate as validate_item,
+)
 from ontology_seed import DEFAULT_ONTOLOGY
-from storage import build_path, get_object, init_storage, put_object
+from ontology_validator import OntologyRegistry
+import settings
+from storage import APP_NAME, build_path, delete_prefix, get_object, init_storage, put_object
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=getattr(logging, settings.LOG_LEVEL, logging.INFO),
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
 
-mongo_url = os.environ["MONGO_URL"]
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ["DB_NAME"]]
+settings.exigir_config_valida()
 
-app = FastAPI(title="Sapiens Cognitive Annotator")
-api_router = APIRouter(prefix="/api")
+client = AsyncIOMotorClient(settings.MONGO_URL, serverSelectionTimeoutMS=5000)
+db = client[settings.DB_NAME]
+
+PIPELINE_API_KEY = settings.PIPELINE_API_KEY
+
+
+async def require_api_key(x_api_key: str | None = Header(default=None)) -> None:
+    if not PIPELINE_API_KEY:
+        raise HTTPException(status_code=503, detail="PIPELINE_API_KEY not configured on server")
+    # Comparação em tempo constante: `!=` sobre strings sai no primeiro byte
+    # divergente, o que transforma a chave num alvo de ataque por temporização.
+    if not x_api_key or not hmac.compare_digest(x_api_key, PIPELINE_API_KEY):
+        raise HTTPException(status_code=401, detail="Invalid or missing X-API-Key")
+
+
+app = FastAPI(
+    title="Sapiens Cognitive Annotator",
+    # A documentação interativa expõe todo o inventário de rotas e schemas.
+    # Útil em desenvolvimento; em produção é superfície gratuita para um
+    # atacante mapear o serviço antes mesmo de tentar autenticar.
+    docs_url=None if settings.IS_PRODUCTION else "/docs",
+    redoc_url=None if settings.IS_PRODUCTION else "/redoc",
+    openapi_url=None if settings.IS_PRODUCTION else "/openapi.json",
+)
+api_router = APIRouter(prefix="/api", dependencies=[Depends(require_api_key)])
 
 
 # ----------------------------------------------------------------------------
@@ -84,6 +118,47 @@ ONTOLOGY_MIME = {
     ".markdown": "text/markdown",
     ".txt": "text/plain",
 }
+
+
+async def _ler_upload(f: UploadFile, exts_permitidas: set[str]) -> tuple[str, bytes, str]:
+    """Lê um upload aplicando limite de extensão e de tamanho.
+
+    O limite de tamanho não é decorativo: sem ele, `await f.read()` carrega o
+    corpo inteiro na memória do processo, e um único POST grande derruba a
+    instância — que num PaaS de plano gratuito tem poucas centenas de MB.
+    """
+    nome = f.filename or "arquivo"
+    ext = os.path.splitext(nome)[1].lower()
+    if ext not in exts_permitidas:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Extensão '{ext}' não suportada. Use: {sorted(exts_permitidas)}",
+        )
+    data = await f.read()
+    if len(data) > settings.MAX_UPLOAD_BYTES:
+        raise HTTPException(
+            status_code=413,
+            detail=(
+                f"'{nome}' tem {len(data) / 1_048_576:.1f} MB; o limite é "
+                f"{settings.MAX_UPLOAD_MB} MB (MAX_UPLOAD_MB)."
+            ),
+        )
+    if not data:
+        raise HTTPException(status_code=400, detail=f"'{nome}' está vazio.")
+    return nome, data, MIME_BY_EXT.get(ext, "application/octet-stream")
+
+
+def _limitar_quantidade(files: list[UploadFile]) -> None:
+    if not files:
+        raise HTTPException(status_code=400, detail="Nenhum arquivo enviado.")
+    if len(files) > settings.MAX_FILES_POR_REQUISICAO:
+        raise HTTPException(
+            status_code=413,
+            detail=(
+                f"{len(files)} arquivos; o limite por requisição é "
+                f"{settings.MAX_FILES_POR_REQUISICAO} (MAX_FILES_POR_REQUISICAO)."
+            ),
+        )
 
 
 async def parse_ontology_file(filename: str, data: bytes) -> dict[str, Any]:
@@ -142,10 +217,10 @@ async def get_active_schema() -> dict[str, Any]:
 def _schema_summary(doc: dict[str, Any] | None) -> dict[str, Any]:
     if not doc:
         return {
-            "version": "default-builtin",
-            "name": "Schema padrão (builtin)",
+            "version": SCHEMA_VERSION,
+            "name": "Schema Sapiens 2.2 (contrato canônico)",
             "imported_at": None,
-            "source_filename": None,
+            "source_filename": "pipeline/docs/Schema anotador de questoes/06 Schema Sapiens 2.1.json.md",
             "is_default": True,
         }
     return {
@@ -189,13 +264,30 @@ async def _startup() -> None:
 
     existing = await db.ontologies.find_one({"is_active": True})
     if existing:
+        # Migration: a previously auto-seeded ontology (source_filename ==
+        # "seed_default.json") whose version no longer matches the canonical
+        # docs/ontology JSON is stale — archive it (never delete) and activate
+        # the canonical version. A real imported ontology (any other
+        # source_filename) is left untouched.
+        if (
+            existing.get("source_filename") == "seed_default.json"
+            and existing.get("version") != DEFAULT_ONTOLOGY["version"]
+        ):
+            await db.ontologies.update_one({"id": existing["id"]}, {"$set": {"is_active": False}})
+            canonical = {
+                **DEFAULT_ONTOLOGY,
+                "id": str(uuid.uuid4()),
+                "imported_at": _now_iso(),
+                "source_filename": "seed_default.json",
+                "is_active": True,
+            }
+            await db.ontologies.insert_one(canonical)
+            logger.info(
+                "Ontologia semente desatualizada (%s) arquivada; canônica %s ativada.",
+                existing.get("version"), canonical["version"],
+            )
+            return
         logger.info("Ontologia ativa: %s", existing.get("version"))
-        # Backfill habilidades_observaveis on-the-fly if the active ontology was
-        # imported before the field was supported and a reference JSON exists.
-        try:
-            await _maybe_backfill_habilidades(existing)
-        except Exception as exc:  # pragma: no cover
-            logger.warning("Não foi possível fazer backfill de habilidades: %s", exc)
         return
 
     seed = {
@@ -207,45 +299,6 @@ async def _startup() -> None:
     }
     await db.ontologies.insert_one(seed)
     logger.info("Ontologia semente inserida (versão %s)", seed["version"])
-
-
-async def _maybe_backfill_habilidades(active: dict[str, Any]) -> None:
-    """One-shot migration for pre-existing ontologies that were imported before
-    ``habilidades_observaveis`` was supported by the parser.
-
-    If the active ontology has 0 habilidades AND a reference JSON matching its
-    version exists at ``docs/ontology/ontology_v<version>.json``, copy the
-    ``habilidades_observaveis`` array from that reference into the DB.
-    """
-    if active.get("habilidades_observaveis"):
-        return
-    version = str(active.get("version") or "").strip()
-    if not version:
-        return
-    ref_paths = [
-        ROOT_DIR.parent / f"docs/ontology/ontology_v{version}.json",
-        ROOT_DIR.parent / "docs/ontology/ontology_v1.4.json",
-    ]
-    ref_path = next((p for p in ref_paths if p.exists()), None)
-    if not ref_path:
-        return
-    try:
-        ref = json.loads(ref_path.read_text(encoding="utf-8"))
-    except Exception as exc:
-        logger.warning("Falha ao ler referência de habilidades %s: %s", ref_path, exc)
-        return
-    habs = ref.get("habilidades_observaveis") or []
-    if not habs:
-        return
-    await db.ontologies.update_one(
-        {"id": active["id"]},
-        {"$set": {"habilidades_observaveis": habs}},
-    )
-    logger.info(
-        "Backfill de habilidades_observaveis (%d itens) aplicado à ontologia %s",
-        len(habs),
-        version,
-    )
 
 
 @app.on_event("shutdown")
@@ -278,14 +331,7 @@ async def ontology_versions() -> list[dict]:
 
 @api_router.post("/ontology/import")
 async def import_ontology(file: UploadFile = File(...)) -> dict:
-    ext = os.path.splitext(file.filename or "")[1].lower()
-    if ext not in ALLOWED_ONTOLOGY_EXTS:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Extensão não suportada. Use: {sorted(ALLOWED_ONTOLOGY_EXTS)}",
-        )
-
-    data = await file.read()
+    _, data, _ = await _ler_upload(file, ALLOWED_ONTOLOGY_EXTS)
     try:
         parsed = await parse_ontology_file(file.filename or "ontology", data)
     except Exception as exc:
@@ -302,7 +348,7 @@ async def import_ontology(file: UploadFile = File(...)) -> dict:
             detail=(
                 "Nenhum elemento cognitivo encontrado no arquivo. "
                 "Verifique se o documento contém domínios/competências/processos "
-                "ou use o botão 'Resetar para versão 1.0'."
+                "ou use o botão 'Resetar para versão canônica'."
             ),
         )
 
@@ -322,8 +368,8 @@ async def import_ontology(file: UploadFile = File(...)) -> dict:
 
 @api_router.post("/ontology/reset")
 async def reset_ontology() -> dict:
-    """Restaura a ontologia semente (versão 1.0.0-seed). Se já existir uma cópia
-    no banco, ativa-a; caso contrário, reinsere."""
+    """Restaura a ontologia canônica (pipeline/docs/ontology). Se já existir uma
+    cópia no banco, ativa-a; caso contrário, reinsere."""
     seed = await db.ontologies.find_one({"version": DEFAULT_ONTOLOGY["version"]})
     await db.ontologies.update_many({"is_active": True}, {"$set": {"is_active": False}})
     if seed:
@@ -389,20 +435,18 @@ async def schema_versions() -> list[dict]:
 
 @api_router.post("/schema/import")
 async def import_schema(file: UploadFile = File(...)) -> dict:
-    """Import a custom pipeline schema from a JSON file.
+    """Importa um schema de saída customizado (JSON) para instruir o modelo.
 
-    O arquivo DEVE ser um objeto JSON com pelo menos as chaves ``questao``,
-    ``classificacao`` e ``meta`` (a estrutura completa que o motor cognitivo
-    espera). Não valida os IDs — a ontologia continua sendo a fonte de IDs.
+    **Aviso de contrato.** O schema builtin é o **Schema Sapiens 2.2**, contrato
+    canônico do item anotado. Um schema importado substitui apenas a *instrução
+    de forma* enviada ao modelo — ele NÃO desliga a normalização nem a
+    validação: `ontology_version`, `item_id`, `item_hash` e a derivação de
+    domínios/competências continuam sendo aplicados pelo servidor, e o resultado
+    continua sendo validado contra o Schema 2.2. Um schema que produza forma
+    incompatível gera itens marcados como inválidos em `validacao`, não itens
+    fora de contrato.
     """
-    ext = os.path.splitext(file.filename or "")[1].lower()
-    if ext != ".json":
-        raise HTTPException(
-            status_code=400,
-            detail="Apenas arquivos .json são aceitos para o schema.",
-        )
-
-    data = await file.read()
+    _, data, _ = await _ler_upload(file, {".json"})
     try:
         parsed = json.loads(data.decode("utf-8", errors="replace"))
     except Exception as exc:
@@ -442,31 +486,40 @@ async def reset_schema() -> dict:
 class PipelineListItem(BaseModel):
     id: str
     created_at: str
+    item_id: str | None = None
+    item_hash: str | None = None
     disciplina: str | None = None
     banca: str | None = None
     ano: str | None = None
     tema: str | None = None
     resposta_correta: str | None = None
     ontology_version: str | None = None
+    schema_version: str | None = None
     processos: list[str] = Field(default_factory=list)
     competencias: list[str] = Field(default_factory=list)
     dominios: list[str] = Field(default_factory=list)
 
 
-def _index_fields(pipeline_json: dict) -> dict:
-    """Compute indexed columns used for filtering the list view."""
-    q = pipeline_json.get("questao", {}) or {}
-    c = pipeline_json.get("classificacao", {}) or {}
-    return {
-        "disciplina": q.get("disciplina"),
-        "banca": q.get("banca"),
-        "ano": q.get("ano"),
-        "tema": q.get("tema"),
-        "resposta_correta": q.get("resposta_correta"),
-        "processos": [p.get("id") for p in c.get("processos_cognitivos", []) if p.get("id")],
-        "competencias": list(c.get("competencias", [])),
-        "dominios": list(c.get("dominios", [])),
-    }
+def _persist_annotation(
+    record: dict, item: dict, ontology: dict, registry: OntologyRegistry
+) -> None:
+    """Grava a anotação normalizada no registro + o resultado da validação.
+
+    A validação é **registrada, nunca bloqueante**, e isso é exigido pelo corpus,
+    não escolhido aqui. `EXT-WP1-1.0`, item L13, lista "ler a regra 1 como
+    proibição de armazenamento" entre os **riscos de reintrodução indevida**:
+    "o item pode ser armazenado; não pode ser exposto ao motor. A distinção é o
+    que permite ingestão em massa com enriquecimento posterior."
+
+    O que impede um item de contaminar a camada de crença é
+    `qualidade.apto_para_camada_de_crenca` (L13b), que só a revisão humana torna
+    verdadeiro — nunca a recusa de ingestão.
+    """
+    record["item"] = item
+    record["schema_version"] = item.get("schema_version")
+    record["ontology_version"] = item.get("ontology_version") or ontology.get("version")
+    record["validacao"] = validate_item(item, registry)
+    record.update(_index_fields(item))
 
 
 async def _persist_artifacts(
@@ -500,51 +553,113 @@ async def _persist_artifacts(
     }
 
 
+def _discard_artifacts(question_id: str) -> None:
+    """Remove os binários de um item apagado.
+
+    Enquanto o storage era da Emergent, apagar um item deixava os artefatos
+    órfãos numa infraestrutura fora de alcance. Agora o storage é nosso, então
+    apagar um item apaga também os arquivos dele. Best-effort: uma falha aqui
+    não pode desfazer a remoção do registro, que já ocorreu.
+    """
+    try:
+        removed = delete_prefix(f"{APP_NAME}/questions/{question_id}")
+        if removed:
+            logger.info("Artefatos removidos para %s: %d", question_id, removed)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Falha ao remover artefatos de %s: %s", question_id, exc)
+
+
 @api_router.post("/pipeline/generate")
-async def generate_pipeline(files: list[UploadFile] = File(...)) -> dict:
-    if not files:
-        raise HTTPException(status_code=400, detail="Nenhum arquivo enviado.")
+async def generate_pipeline(
+    files: list[UploadFile] = File(...),
+    fonte: str | None = Query(
+        None,
+        description=(
+            "JSON com a procedência já conhecida (banca, ano, prova, numero, "
+            "disciplina). Sobrescreve o que o modelo inferir: numa prova de 2023 "
+            "ele chegou a devolver ano 2010. Também é o que torna o item_id "
+            "determinístico e estável."
+        ),
+    ),
+) -> dict:
+    _limitar_quantidade(files)
 
     ontology = await get_active_ontology()
     schema = await get_active_schema()
 
-    incoming: list[tuple[str, bytes, str]] = []
-    for f in files:
-        ext = os.path.splitext(f.filename or "")[1].lower()
-        if ext not in ALLOWED_QUESTION_EXTS:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Extensão '{ext}' não suportada. Use PDF, PNG, JPG, JPEG.",
-            )
-        data = await f.read()
-        incoming.append((f.filename or f"file{ext}", data, MIME_BY_EXT.get(ext, "application/octet-stream")))
+    incoming: list[tuple[str, bytes, str]] = [
+        await _ler_upload(f, ALLOWED_QUESTION_EXTS) for f in files
+    ]
+
+    question_id = str(uuid.uuid4())
+
+    fonte_conhecida = None
+    if fonte:
+        try:
+            fonte_conhecida = json.loads(fonte)
+        except json.JSONDecodeError as exc:
+            raise HTTPException(status_code=400, detail=f"'fonte' não é JSON válido: {exc}")
+        if not isinstance(fonte_conhecida, dict):
+            raise HTTPException(status_code=400, detail="'fonte' deve ser um objeto JSON.")
+
+    registry = OntologyRegistry.from_dict(ontology)
+
+    async def _usage_sink(u: dict) -> None:
+        await gemini_telemetry.persist(
+            db.gemini_usage, u, context="pipeline_generate", item_id=question_id,
+        )
+
+    def _judge(raw_candidate: dict) -> bool:
+        candidate_item = normalize_item(
+            raw_candidate, ontology, arquivo_origem=incoming[0][0] if incoming else None,
+            fonte_conhecida=fonte_conhecida, registry=registry,
+        )
+        return validate_item(candidate_item, registry)["valid"]
 
     # Cognitive pass
     try:
-        pipeline_json = await run_cognitive_pipeline(
-            ontology, [(n, d) for n, d, _ in incoming], schema=schema
+        raw, _thinking_meta = await run_cognitive_pipeline_adaptive(
+            ontology, [(n, d) for n, d, _ in incoming], schema=schema,
+            cache_collection=db.gemini_caches, on_usage=_usage_sink, judge=_judge,
         )
     except Exception as exc:
         logger.exception("Falha no pipeline cognitivo")
         raise HTTPException(status_code=502, detail=f"Falha na chamada do modelo: {exc}") from exc
 
-    # Extraction artifact = question section of pipeline (structured extraction)
-    extraction = {"questao": pipeline_json.get("questao"), "arquivos": [n for n, _, _ in incoming]}
+    item = normalize_item(
+        raw, ontology, arquivo_origem=incoming[0][0] if incoming else None,
+        fonte_conhecida=fonte_conhecida, registry=registry,
+    )
 
-    question_id = str(uuid.uuid4())
-    artifacts = await _persist_artifacts(question_id, incoming, extraction, pipeline_json)
+    # Artefato de extração = o bloco `questao` do contrato 2.2 (extração
+    # estruturada), separado da classificação cognitiva.
+    extraction = {"questao": item.get("questao"), "arquivos": [n for n, _, _ in incoming]}
 
-    indexed = _index_fields(pipeline_json)
     record = {
         "id": question_id,
         "created_at": _now_iso(),
         "updated_at": _now_iso(),
-        "ontology_version": ontology.get("version"),
-        "artifacts": artifacts,
-        "pipeline": pipeline_json,
-        **indexed,
+        "artifacts": {},
     }
+    _persist_annotation(record, item, ontology, registry)
+    # Persist the (already paid for) model output before touching object storage,
+    # so a storage outage costs the binaries but never the cognitive result.
     await db.pipelines.insert_one(record)
+
+    try:
+        artifacts = await _persist_artifacts(question_id, incoming, extraction, item)
+    except Exception as exc:
+        logger.exception("Artefatos não persistidos para %s: %s", question_id, exc)
+        record["artifacts_error"] = str(exc)
+        await db.pipelines.update_one(
+            {"id": question_id}, {"$set": {"artifacts_error": str(exc)}}
+        )
+    else:
+        record["artifacts"] = artifacts
+        await db.pipelines.update_one(
+            {"id": question_id}, {"$set": {"artifacts": artifacts, "updated_at": _now_iso()}}
+        )
+
     create_question_sync(question_id, record)
     return _clean_id({**record})
 
@@ -577,7 +692,7 @@ async def list_pipelines(
         query["$or"] = [
             {"tema": {"$regex": q, "$options": "i"}},
             {"disciplina": {"$regex": q, "$options": "i"}},
-            {"pipeline.questao.enunciado": {"$regex": q, "$options": "i"}},
+            {"item.questao.enunciado": {"$regex": q, "$options": "i"}},
         ]
     docs = await db.pipelines.find(
         query,
@@ -585,12 +700,16 @@ async def list_pipelines(
             "_id": 0,
             "id": 1,
             "created_at": 1,
+            "item_id": 1,
+            "item_hash": 1,
             "disciplina": 1,
             "banca": 1,
             "ano": 1,
             "tema": 1,
             "resposta_correta": 1,
             "ontology_version": 1,
+            "schema_version": 1,
+            "validacao": 1,
             "processos": 1,
             "competencias": 1,
             "dominios": 1,
@@ -624,11 +743,21 @@ async def bulk_delete_pipelines(payload: BulkIdsRequest) -> dict:
     result = await db.pipelines.delete_many({"id": {"$in": payload.ids}})
     for pid in payload.ids:
         delete_question_sync(pid)
+        _discard_artifacts(pid)
     return {"deleted": result.deleted_count}
 
 
 class PipelineUpdate(BaseModel):
-    pipeline: dict
+    # `item` é o nome canônico (Schema 2.2). `pipeline` é aceito como alias de
+    # compatibilidade para clientes ainda não migrados.
+    item: dict | None = None
+    pipeline: dict | None = None
+
+    def payload(self) -> dict:
+        doc = self.item if self.item is not None else self.pipeline
+        if doc is None:
+            raise HTTPException(status_code=422, detail="Envie o item anotado em 'item'.")
+        return doc
 
 
 @api_router.put("/pipeline/{pipeline_id}")
@@ -637,18 +766,26 @@ async def update_pipeline(pipeline_id: str, payload: PipelineUpdate) -> dict:
     if not existing:
         raise HTTPException(status_code=404, detail="Pipeline não encontrado.")
 
-    pipeline_json = payload.pipeline
-    indexed = _index_fields(pipeline_json)
-    update = {
-        "pipeline": pipeline_json,
-        "updated_at": _now_iso(),
-        **indexed,
-    }
+    ontology = await get_active_ontology()
+    registry = OntologyRegistry.from_dict(ontology)
+    # Preserva o item_id existente: ele é invariável por contrato entre
+    # pipeline, Firestore, aluno e professor. Editar o conteúdo muda o
+    # `item_hash`, nunca a identidade do item.
+    item = normalize_item(
+        payload.payload(),
+        ontology,
+        item_id=existing.get("item_id") or (existing.get("item") or {}).get("item_id"),
+        registry=registry,
+    )
+
+    update: dict[str, Any] = {"updated_at": _now_iso()}
+    _persist_annotation(update, item, ontology, registry)
+
     # Re-upload pipeline artifact (extraction remains untouched)
     try:
         put_object(
             existing["artifacts"]["pipeline"],
-            json.dumps(pipeline_json, ensure_ascii=False, indent=2).encode(),
+            json.dumps(item, ensure_ascii=False, indent=2).encode(),
             "application/json",
         )
     except Exception as exc:
@@ -674,25 +811,46 @@ async def regenerate_pipeline(pipeline_id: str) -> dict:
         data, _ = get_object(orig["path"])
         files.append((orig["filename"], data))
 
+    registry = OntologyRegistry.from_dict(ontology)
+    existing_item_id = existing.get("item_id") or (existing.get("item") or {}).get("item_id")
+
+    async def _usage_sink(u: dict) -> None:
+        await gemini_telemetry.persist(
+            db.gemini_usage, u, context="pipeline_regenerate", item_id=pipeline_id,
+        )
+
+    def _judge(raw_candidate: dict) -> bool:
+        candidate_item = normalize_item(
+            raw_candidate, ontology, item_id=existing_item_id,
+            arquivo_origem=files[0][0] if files else None, registry=registry,
+        )
+        return validate_item(candidate_item, registry)["valid"]
+
     try:
-        pipeline_json = await run_cognitive_pipeline(ontology, files, schema=schema)
+        raw, _thinking_meta = await run_cognitive_pipeline_adaptive(
+            ontology, files, schema=schema, cache_collection=db.gemini_caches,
+            on_usage=_usage_sink, judge=_judge,
+        )
     except Exception as exc:
         logger.exception("Falha na regeneração")
         raise HTTPException(status_code=502, detail=f"Falha na chamada do modelo: {exc}") from exc
 
+    item = normalize_item(
+        raw,
+        ontology,
+        item_id=existing_item_id,
+        arquivo_origem=files[0][0] if files else None,
+        registry=registry,
+    )
+
     put_object(
         existing["artifacts"]["pipeline"],
-        json.dumps(pipeline_json, ensure_ascii=False, indent=2).encode(),
+        json.dumps(item, ensure_ascii=False, indent=2).encode(),
         "application/json",
     )
 
-    indexed = _index_fields(pipeline_json)
-    update = {
-        "pipeline": pipeline_json,
-        "updated_at": _now_iso(),
-        "ontology_version": ontology.get("version"),
-        **indexed,
-    }
+    update: dict[str, Any] = {"updated_at": _now_iso()}
+    _persist_annotation(update, item, ontology, registry)
     await db.pipelines.update_one({"id": pipeline_id}, {"$set": update})
     doc = await db.pipelines.find_one({"id": pipeline_id}, {"_id": 0})
     update_question_sync(pipeline_id, doc)
@@ -705,6 +863,7 @@ async def delete_pipeline(pipeline_id: str) -> dict:
     if not result.deleted_count:
         raise HTTPException(status_code=404, detail="Pipeline não encontrado.")
     delete_question_sync(pipeline_id)
+    _discard_artifacts(pipeline_id)
     return {"deleted": True, "id": pipeline_id}
 
 
@@ -712,22 +871,38 @@ async def delete_pipeline(pipeline_id: str) -> dict:
 # Book (caderno) endpoints — split a multi-question PDF into individual pipelines
 # ----------------------------------------------------------------------------
 @api_router.post("/book/upload")
-async def upload_book(files: list[UploadFile] = File(...)) -> dict:
-    if not files:
-        raise HTTPException(status_code=400, detail="Nenhum arquivo enviado.")
+async def upload_book(
+    files: list[UploadFile] = File(...),
+    banca: str = Form(..., description="Banca examinadora. Para ENEM, deve ser exatamente 'ENEM'."),
+    ano: int = Form(..., description="Ano da prova."),
+    prova: str = Form(..., description="Cor/identificador do caderno (ex.: Azul, Amarelo, CAD11)."),
+) -> dict:
+    """Recebe o PDF do caderno + a procedência fornecida pelo usuário.
+
+    `banca`/`ano`/`prova` são OBRIGATÓRIOS aqui, não opcionais em algum ponto
+    posterior: são metadado de procedência, e o Manual §8 proíbe inferi-los do
+    conteúdo. O modelo lê o cabeçalho da página e erra — numa prova de 2023 já
+    devolveu ano 2010 e 2016. Ficam presos ao caderno inteiro (todas as
+    questões dele compartilham a mesma banca/ano/prova) e são carimbados sobre
+    o que o modelo produzir em `/book/{id}/process`, nunca aceitos dele.
+    """
+    banca = banca.strip()
+    prova = prova.strip()
+    if not banca:
+        raise HTTPException(status_code=400, detail="'banca' não pode ser vazia.")
+    if not prova:
+        raise HTTPException(status_code=400, detail="'prova' (cor do caderno) não pode ser vazia.")
+    if banca.upper() == "ENEM" and banca != "ENEM":
+        raise HTTPException(status_code=400, detail="Para ENEM, 'banca' deve ser registrada exatamente como 'ENEM'.")
+    if not (1998 <= ano <= 2100):
+        raise HTTPException(status_code=400, detail=f"'ano'={ano} fora do intervalo plausível (1998–2100).")
+
+    _limitar_quantidade(files)
 
     book_id = str(uuid.uuid4())
     stored: list[dict] = []
     for f in files:
-        ext = os.path.splitext(f.filename or "")[1].lower()
-        if ext not in ALLOWED_QUESTION_EXTS:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Extensão '{ext}' não suportada. Use PDF, PNG, JPG, JPEG.",
-            )
-        data = await f.read()
-        filename = f.filename or f"file{ext}"
-        content_type = MIME_BY_EXT.get(ext, "application/octet-stream")
+        filename, data, content_type = await _ler_upload(f, ALLOWED_QUESTION_EXTS)
         path = build_path("book", book_id, filename)
         try:
             put_object(path, data, content_type)
@@ -744,6 +919,9 @@ async def upload_book(files: list[UploadFile] = File(...)) -> dict:
         "files": stored,
         "manifest": None,
         "manifest_generated_at": None,
+        "banca": banca,
+        "ano": ano,
+        "prova": prova,
     }
     await db.books.insert_one(doc)
     return _clean_id({**doc})
@@ -755,6 +933,28 @@ async def _load_book_files(book_doc: dict) -> list[tuple[str, bytes, str]]:
         data, _ = get_object(f["path"])
         result.append((f["filename"], data, f["content_type"]))
     return result
+
+
+def _book_fonte_conhecida(book_doc: dict, question_number: str) -> dict:
+    """Procedência autoritativa do caderno: fornecida pelo usuário no upload,
+    nunca inferida ou substituída pelo modelo (Manual §8).
+
+    `banca`/`ano`/`prova` vêm do caderno inteiro; `numero` é por questão. Os
+    quatro juntos são exatamente `_FONTE_PARA_ID` — o que torna `item_id`
+    determinístico. Cadernos antigos (anteriores a esta exigência) podem não
+    ter `banca`/`ano`/`prova` gravados; nesse caso o valor é omitido em vez de
+    forçado a `None`, para não sobrescrever uma inferência do modelo com um
+    `null` pior do que ela.
+    """
+    try:
+        numero: Any = int(question_number)
+    except (TypeError, ValueError):
+        numero = question_number
+    fonte: dict[str, Any] = {"numero": numero}
+    for campo in ("banca", "ano", "prova"):
+        if book_doc.get(campo) is not None:
+            fonte[campo] = book_doc[campo]
+    return fonte
 
 
 @api_router.post("/book/{book_id}/manifest")
@@ -780,6 +980,10 @@ async def book_manifest(book_id: str) -> dict:
 class BookProcessRequest(BaseModel):
     question_number: str
     question_title: str | None = None
+    # Vale só para este processamento — nunca muda GEMINI_THINKING_LEVEL nem
+    # o padrão global (`cognitive_engine.DEFAULT_THINKING_LEVEL`). Ausente
+    # usa o padrão do processo, como antes.
+    thinking_level: Literal["LOW", "MEDIUM", "HIGH"] | None = None
 
 
 @api_router.post("/book/{book_id}/process")
@@ -797,35 +1001,61 @@ async def book_process_question(book_id: str, payload: BookProcessRequest) -> di
     if payload.question_title:
         focus_hint += f" — {payload.question_title.strip()}"
 
+    question_id = str(uuid.uuid4())
+    registry = OntologyRegistry.from_dict(ontology)
+    fonte_conhecida = _book_fonte_conhecida(book, payload.question_number)
+
+    async def _usage_sink(u: dict) -> None:
+        await gemini_telemetry.persist(
+            db.gemini_usage, u, context="book_process",
+            book_id=book_id, question_number=payload.question_number, item_id=question_id,
+        )
+
+    def _judge(raw_candidate: dict) -> bool:
+        candidate_item = normalize_item(
+            raw_candidate, ontology, arquivo_origem=incoming[0][0] if incoming else None,
+            fonte_conhecida=fonte_conhecida, registry=registry,
+        )
+        return validate_item(candidate_item, registry)["valid"]
+
     try:
-        pipeline_json = await run_cognitive_pipeline(
-            ontology, files_bytes, focus_hint=focus_hint, schema=schema
+        raw, _thinking_meta = await run_cognitive_pipeline_adaptive(
+            ontology, files_bytes, focus_hint=focus_hint, schema=schema,
+            cache_collection=db.gemini_caches, on_usage=_usage_sink,
+            thinking_level=payload.thinking_level, judge=_judge,
+            # Mesmo book_id em toda questão deste caderno: a 1ª chamada sobe
+            # o PDF pro cache, as seguintes só leem — não reenvia o PDF
+            # inteiro (32 páginas) em toda questão. Ver
+            # `run_cognitive_pipeline` e auditoria/AUDITORIA-OTIMIZACAO-
+            # CUSTO-GEMINI-2.md.
+            book_cache_key=book_id,
         )
     except Exception as exc:
         logger.exception("Falha no pipeline (caderno)")
         raise HTTPException(status_code=502, detail=f"Falha na chamada do modelo: {exc}") from exc
 
-    question_id = str(uuid.uuid4())
+    item = normalize_item(
+        raw, ontology, arquivo_origem=incoming[0][0] if incoming else None,
+        fonte_conhecida=fonte_conhecida, registry=registry,
+    )
+
     extraction = {
-        "questao": pipeline_json.get("questao"),
+        "questao": item.get("questao"),
         "arquivos": [n for n, _, _ in incoming],
         "book_id": book_id,
         "question_number": payload.question_number,
     }
-    artifacts = await _persist_artifacts(question_id, incoming, extraction, pipeline_json)
+    artifacts = await _persist_artifacts(question_id, incoming, extraction, item)
 
-    indexed = _index_fields(pipeline_json)
     record = {
         "id": question_id,
         "created_at": _now_iso(),
         "updated_at": _now_iso(),
-        "ontology_version": ontology.get("version"),
         "artifacts": artifacts,
-        "pipeline": pipeline_json,
         "book_id": book_id,
         "question_number": payload.question_number,
-        **indexed,
     }
+    _persist_annotation(record, item, ontology, registry)
     await db.pipelines.insert_one(record)
     create_question_sync(question_id, record)
     return _clean_id({**record})
@@ -837,6 +1067,78 @@ async def get_book(book_id: str) -> dict:
     if not doc:
         raise HTTPException(status_code=404, detail="Caderno não encontrado.")
     return doc
+
+
+# ----------------------------------------------------------------------------
+# Batch endpoints — fila com retry/backoff, para lotes que uma chamada
+# síncrona por questão não sobrevive (ex.: 429 de cota diária no meio do
+# lote). Ver `batch_queue.py`. Ninguém aqui inicia processamento sozinho:
+# `enqueue` só grava; `drain` é quem de fato chama o Gemini, e só quando
+# chamado explicitamente.
+# ----------------------------------------------------------------------------
+@api_router.post("/batch/enqueue")
+async def batch_enqueue(
+    files: list[UploadFile] = File(...),
+    fonte: str | None = Query(None, description="JSON com a procedência já conhecida (mesmo formato de /pipeline/generate)."),
+) -> dict:
+    _limitar_quantidade(files)
+    incoming = [await _ler_upload(f, ALLOWED_QUESTION_EXTS) for f in files]
+
+    fonte_conhecida = None
+    if fonte:
+        try:
+            fonte_conhecida = json.loads(fonte)
+        except json.JSONDecodeError as exc:
+            raise HTTPException(status_code=400, detail=f"'fonte' não é JSON válido: {exc}")
+        if not isinstance(fonte_conhecida, dict):
+            raise HTTPException(status_code=400, detail="'fonte' deve ser um objeto JSON.")
+
+    item_id = await batch_queue.enqueue(db, files=incoming, fonte_conhecida=fonte_conhecida)
+    return {"queue_item_id": item_id, "status": "pending"}
+
+
+@api_router.post("/batch/enqueue/book/{book_id}")
+async def batch_enqueue_book_question(book_id: str, payload: BookProcessRequest) -> dict:
+    book = await db.books.find_one({"id": book_id})
+    if not book:
+        raise HTTPException(status_code=404, detail="Caderno não encontrado.")
+    incoming = await _load_book_files(book)
+
+    focus_hint = f"Questão nº {payload.question_number}"
+    if payload.question_title:
+        focus_hint += f" — {payload.question_title.strip()}"
+
+    item_id = await batch_queue.enqueue(
+        db, files=incoming,
+        fonte_conhecida=_book_fonte_conhecida(book, payload.question_number),
+        focus_hint=focus_hint,
+    )
+    return {"queue_item_id": item_id, "status": "pending", "book_id": book_id}
+
+
+@api_router.post("/batch/drain")
+async def batch_drain(limit: int = Query(20, ge=1, le=200)) -> dict:
+    """Processa até `limit` itens já no prazo. Chamada explícita — não há
+    scheduler em background; repita a chamada (manualmente, via cron, etc.)
+    para continuar drenando a fila."""
+    ontology = await get_active_ontology()
+    schema = await get_active_schema()
+    return await batch_queue.drain(
+        db, ontology=ontology, schema=schema, limit=limit, cache_collection=db.gemini_caches,
+    )
+
+
+@api_router.get("/batch/status")
+async def batch_status() -> dict:
+    return await batch_queue.status(db)
+
+
+@api_router.post("/batch/requeue/{item_id}")
+async def batch_requeue(item_id: str) -> dict:
+    ok = await batch_queue.requeue(db, item_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Item de fila não encontrado.")
+    return {"queue_item_id": item_id, "status": "pending"}
 
 
 @api_router.get("/pipeline/{pipeline_id}/artifact/{kind}")
@@ -970,10 +1272,92 @@ async def root() -> dict:
 
 app.include_router(api_router)
 
+
+# ----------------------------------------------------------------------------
+# Health checks — FORA do api_router, portanto sem exigir X-API-Key.
+# O balanceador da plataforma não tem a chave; se o health exigisse auth, o
+# serviço seria marcado como morto e reiniciado em laço.
+# ----------------------------------------------------------------------------
+@app.get("/health")
+async def health() -> dict:
+    """Liveness: o processo está de pé. Não toca em dependência alguma."""
+    return {"status": "ok", "service": "pipeline", "app_env": settings.APP_ENV}
+
+
+@app.get("/ready")
+async def ready() -> JSONResponse:
+    """Readiness: as dependências respondem?
+
+    Devolve 503 enquanto alguma estiver fora, para que a plataforma não mande
+    tráfego para uma instância que ainda não consegue atender.
+    """
+    checks: dict[str, Any] = {}
+    ok = True
+
+    try:
+        await client.admin.command("ping")
+        checks["mongo"] = "ok"
+    except Exception as exc:  # noqa: BLE001
+        checks["mongo"] = f"falhou: {type(exc).__name__}"
+        ok = False
+
+    try:
+        onto = await db.ontologies.find_one({"is_active": True}, {"_id": 0, "version": 1})
+        checks["ontologia_ativa"] = onto.get("version") if onto else "nenhuma"
+        ok = ok and bool(onto)
+    except Exception as exc:  # noqa: BLE001
+        checks["ontologia_ativa"] = f"falhou: {type(exc).__name__}"
+        ok = False
+
+    try:
+        checks["storage"] = {"modo": settings.STORAGE_MODE, "destino": init_storage()}
+    except Exception as exc:  # noqa: BLE001
+        checks["storage"] = f"falhou: {type(exc).__name__}"
+        ok = False
+
+    checks["firestore_mode"] = settings.FIRESTORE_MODE
+    checks["gemini_configurado"] = bool(settings.GEMINI_API_KEY)
+    ok = ok and checks["gemini_configurado"]
+
+    return JSONResponse(
+        status_code=200 if ok else 503,
+        content={"status": "ready" if ok else "degraded", "checks": checks},
+    )
+
+
+# ----------------------------------------------------------------------------
+# Erros não tratados
+# ----------------------------------------------------------------------------
+@app.exception_handler(Exception)
+async def _erro_nao_tratado(request: Request, exc: Exception) -> JSONResponse:
+    """Registra o traceback no log e devolve um identificador ao cliente.
+
+    O default do Starlette pode devolver detalhe interno na resposta. Em
+    produção isso vaza caminho de arquivo e estrutura do código; aqui o cliente
+    recebe apenas um id correlacionável com a entrada de log.
+    """
+    incidente = secrets.token_hex(8)
+    logger.exception("[%s] %s %s", incidente, request.method, request.url.path)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Erro interno.", "incidente": incidente},
+    )
+
+
+if not settings.CORS_ORIGINS:
+    # Só alcançável fora de produção — `settings.validar()` recusa o boot em
+    # produção sem origens declaradas.
+    logger.warning(
+        "CORS_ORIGINS não definido; liberando apenas localhost. Em produção o "
+        "boot teria sido recusado."
+    )
+
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=os.environ.get("CORS_ORIGINS", "*").split(","),
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=settings.CORS_ORIGINS or [
+        "http://localhost:3000", "http://localhost:3001", "http://localhost:3002",
+    ],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "X-API-Key"],
 )
