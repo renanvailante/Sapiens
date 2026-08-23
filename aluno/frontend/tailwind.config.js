@@ -52,6 +52,13 @@ module.exports = {
           '3': 'hsl(var(--chart-3))',
           '4': 'hsl(var(--chart-4))',
           '5': 'hsl(var(--chart-5))'
+        },
+        sapiens: {
+          navy: '#132D5C',
+          navyDeep: '#0C1C3A',
+          accent: '#4A85E3',
+          accentDeep: '#1F4F95',
+          accentSoft: '#DBE9FC'
         }
       },
       keyframes: {

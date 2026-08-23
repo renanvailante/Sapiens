@@ -79,13 +79,13 @@ export default function AnswerInput() {
 
         {!mode && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <button onClick={() => setMode("photo")} className="lift text-left bg-white border border-zinc-200 rounded-2xl p-8 hover:border-zinc-900" data-testid="answer-mode-photo">
-              <Camera className="w-6 h-6 text-emerald-500" strokeWidth={1.6} />
+            <button onClick={() => setMode("photo")} className="lift card-sapiens text-left rounded-2xl p-8 hover:border-sapiens-accent" data-testid="answer-mode-photo">
+              <Camera className="w-6 h-6 text-sapiens-accent" strokeWidth={1.6} />
               <div className="mt-6 font-display font-bold text-xl tracking-tight text-zinc-950">Fotografar cartão</div>
               <div className="mt-2 text-sm text-zinc-500">Nossa IA reconhece suas respostas. Você confirma antes da análise.</div>
             </button>
-            <button onClick={() => setMode("manual")} className="lift text-left bg-white border border-zinc-200 rounded-2xl p-8 hover:border-zinc-900" data-testid="answer-mode-manual">
-              <Keyboard className="w-6 h-6 text-zinc-900" strokeWidth={1.6} />
+            <button onClick={() => setMode("manual")} className="lift card-sapiens text-left rounded-2xl p-8 hover:border-sapiens-accent" data-testid="answer-mode-manual">
+              <Keyboard className="w-6 h-6 text-sapiens-navy" strokeWidth={1.6} />
               <div className="mt-6 font-display font-bold text-xl tracking-tight text-zinc-950">Digitar respostas</div>
               <div className="mt-2 text-sm text-zinc-500">Marque manualmente cada alternativa. Rápido e preciso.</div>
             </button>
@@ -93,7 +93,7 @@ export default function AnswerInput() {
         )}
 
         {mode === "photo" && (
-          <div className="mt-6 bg-white border border-zinc-200 rounded-2xl p-8">
+          <div className="mt-6 card-sapiens rounded-2xl p-8">
             <div className="font-display font-bold text-xl text-zinc-950 tracking-tight">Envie a foto do cartão-resposta</div>
             <p className="text-sm text-zinc-500 mt-2">JPEG/PNG. A IA identifica as alternativas marcadas. Você poderá revisar antes da análise.</p>
             <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden"
@@ -101,7 +101,7 @@ export default function AnswerInput() {
               data-testid="answer-photo-input" />
             <div className="mt-6 flex items-center gap-3">
               <button onClick={() => fileRef.current?.click()} disabled={ocrBusy}
-                className="pill inline-flex items-center gap-2 bg-zinc-950 hover:bg-zinc-800 disabled:opacity-60 text-white px-5 py-3 rounded-full text-sm font-medium"
+                className="pill btn-sapiens inline-flex items-center gap-2 disabled:opacity-60 px-5 py-3 rounded-full text-sm font-medium"
                 data-testid="answer-photo-upload">
                 {ocrBusy ? <><Loader2 className="w-4 h-4 animate-spin" /> Reconhecendo...</> : "Escolher imagem"}
               </button>
@@ -119,12 +119,12 @@ export default function AnswerInput() {
                 Respondidas {answeredCount}/{numbers.length}
               </div>
               <button onClick={submit} disabled={submitting}
-                className="pill inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-60 text-white px-6 py-3 rounded-full text-sm font-medium"
+                className="pill btn-sapiens inline-flex items-center gap-2 disabled:opacity-60 px-6 py-3 rounded-full text-sm font-medium"
                 data-testid="answer-submit">
                 {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Analisando...</> : <><Check className="w-4 h-4" /> Confirmar e analisar</>}
               </button>
             </div>
-            <div className="bg-white border border-zinc-200 rounded-2xl p-4 md:p-6 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1">
+            <div className="card-sapiens rounded-2xl p-4 md:p-6 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1">
               {numbers.map((n) => (
                 <div key={n} className="flex items-center justify-between border-b border-zinc-100 last:border-0 py-2.5" data-testid={`answer-row-${n}`}>
                   <div className="font-mono-alt text-xs w-10 text-zinc-500">Q{n}</div>
@@ -134,7 +134,7 @@ export default function AnswerInput() {
                       return (
                         <button key={l}
                           onClick={() => setAnswers(a => ({ ...a, [n]: chosen ? "" : l }))}
-                          className={`pill w-8 h-8 rounded-full text-xs font-semibold border ${chosen ? "bg-zinc-950 text-white border-zinc-950" : "border-zinc-200 text-zinc-700 hover:border-zinc-900"}`}
+                          className={`pill w-8 h-8 rounded-full text-xs font-semibold border transition-colors ${chosen ? "bg-sapiens-accent text-white border-sapiens-accent select-pop" : "border-zinc-200 text-zinc-700 hover:border-sapiens-accent"}`}
                           data-testid={`answer-choice-${n}-${l}`}>
                           {l}
                         </button>

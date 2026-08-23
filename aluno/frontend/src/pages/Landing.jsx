@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, Sparkles, Brain, Network } from "lucide-react";
 import { useAuth } from "../lib/auth";
+import BrandMark from "../components/BrandMark";
 
 export default function Landing() {
   const nav = useNavigate();
@@ -10,12 +11,13 @@ export default function Landing() {
     <div className="min-h-screen grain">
       {/* Top bar */}
       <div className="max-w-6xl mx-auto px-6 md:px-10 pt-6 flex items-center justify-between">
-        <div className="font-display text-2xl font-extrabold tracking-tighter" data-testid="landing-brand">
-          Sapiens<span className="text-emerald-500">.</span>
+        <div className="flex items-center gap-2 font-display text-2xl font-extrabold tracking-tighter" data-testid="landing-brand">
+          <BrandMark className="w-6 h-6" tone="dark" />
+          Sapiens
         </div>
         <div className="flex items-center gap-3">
           {user ? (
-            <Link to="/dashboard" className="pill text-sm font-medium bg-zinc-950 text-white hover:bg-zinc-800 px-4 py-2 rounded-full" data-testid="landing-go-dashboard">
+            <Link to="/dashboard" className="pill btn-sapiens text-sm font-medium px-4 py-2 rounded-full" data-testid="landing-go-dashboard">
               Ir para o painel
             </Link>
           ) : (
@@ -43,7 +45,7 @@ export default function Landing() {
         <div className="reveal reveal-delay-4 mt-10 flex items-center justify-center gap-3">
           <button
             onClick={() => nav(user ? "/exams" : "/login")}
-            className="pill inline-flex items-center gap-2 bg-zinc-950 hover:bg-zinc-800 text-white text-base font-medium px-7 py-4 rounded-full"
+            className="pill btn-sapiens inline-flex items-center gap-2 text-base font-medium px-7 py-4 rounded-full"
             data-testid="landing-analyze-cta"
           >
             Analisar uma prova <ArrowRight className="w-4 h-4" />
@@ -58,8 +60,8 @@ export default function Landing() {
           { icon: Sparkles, title: "Perfil cognitivo", body: "Um retrato vivo da sua mente: precisão, velocidade, abstração e tolerância à complexidade." },
           { icon: Network, title: "Mapa de aprendizagem", body: "Não estude o sintoma. Estude a causa-raiz — o grafo revela o que precisa ser destravado." },
         ].map((c, i) => (
-          <div key={i} className="lift bg-white border border-zinc-200 rounded-2xl p-7" data-testid={`landing-feature-${i}`}>
-            <c.icon className="w-5 h-5 text-emerald-500" strokeWidth={1.6} />
+          <div key={i} className="lift card-sapiens rounded-2xl p-7" data-testid={`landing-feature-${i}`}>
+            <c.icon className="w-5 h-5 text-sapiens-accent" strokeWidth={1.6} />
             <div className="mt-4 font-display font-bold text-lg tracking-tight text-zinc-950">{c.title}</div>
             <div className="mt-2 text-sm text-zinc-500 leading-relaxed">{c.body}</div>
           </div>

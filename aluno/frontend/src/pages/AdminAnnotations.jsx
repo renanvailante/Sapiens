@@ -195,7 +195,7 @@ export default function AdminAnnotations() {
 
         <div className="mt-3 flex flex-wrap items-center gap-3">
           <button disabled={busy} onClick={submit}
-            className="pill inline-flex items-center gap-2 bg-zinc-950 hover:bg-zinc-800 disabled:opacity-60 text-white px-6 py-3 rounded-full text-sm font-medium"
+            className="pill inline-flex items-center gap-2 btn-sapiens disabled:opacity-60 text-white px-6 py-3 rounded-full text-sm font-medium"
             data-testid="ann-admin-submit">
             <Upload className="w-4 h-4" /> {busy ? "Validando..." : "Ingerir JSON"}
           </button>

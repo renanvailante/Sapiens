@@ -32,23 +32,24 @@ function rodadaNaPosicao(posicao, total) {
 // Sem estado próprio: `respondidas` é sempre a contagem já persistida
 // (behavior events reais), nunca um valor fictício — a mesma fonte usada
 // para retomar a prova.
-function ProgressoProva({ respondidas, total, pulso }) {
+function ProgressoProva({ respondidas, total, pulso, tone = "light" }) {
   const pct = total > 0 ? Math.min(100, Math.round((respondidas / total) * 100)) : 0;
+  const onDark = tone === "light"; // "light" = texto claro, para uso sobre o fundo azul da prova
   return (
     <div className="mb-5" data-testid="progresso-prova">
       <div className="mb-1.5 flex items-center justify-between">
-        <span className="font-mono-alt text-[10px] uppercase tracking-[0.25em] text-zinc-500">Progresso da prova</span>
-        <span className="font-mono-alt text-xs font-bold text-zinc-700" data-testid="progresso-contador">
+        <span className={`font-mono-alt text-[10px] uppercase tracking-[0.25em] ${onDark ? "text-white/70" : "text-zinc-500"}`}>Progresso da prova</span>
+        <span className={`font-mono-alt text-xs font-bold ${onDark ? "text-white" : "text-zinc-700"}`} data-testid="progresso-contador">
           {respondidas}/{total}
         </span>
       </div>
       <div
-        className={`h-2.5 w-full rounded-full bg-zinc-100 overflow-hidden transition-shadow duration-300 ${
-          pulso ? "ring-2 ring-emerald-400 ring-offset-2" : ""
+        className={`h-2.5 w-full rounded-full overflow-hidden transition-shadow duration-300 ${onDark ? "bg-white/15" : "bg-zinc-100"} ${
+          pulso ? `ring-2 ring-sapiens-accent ring-offset-2 ${onDark ? "ring-offset-sapiens-navy" : "ring-offset-white"}` : ""
         }`}
       >
         <div
-          className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-emerald-500 transition-all duration-700 ease-out"
+          className="h-full rounded-full bg-gradient-to-r from-sapiens-accentSoft to-sapiens-accent transition-all duration-700 ease-out"
           style={{ width: `${pct}%` }}
           data-testid="progresso-barra"
           data-pct={pct}
@@ -261,12 +262,12 @@ function QuestionRunner({ filtro, onExit }) {
     avancar();
   };
 
-  if (loading) return <div className="py-24 text-center text-zinc-500">Carregando questões…</div>;
+  if (loading) return <div className="py-24 text-center text-white/70">Carregando questões…</div>;
   if (erro && itens.length === 0)
-    return <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-rose-700">Erro: {erro}</div>;
+    return <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-rose-700 shadow-[0_20px_50px_-25px_rgba(6,16,36,0.55)]">Erro: {erro}</div>;
   if (itens.length === 0)
     return (
-      <div className="bg-white border border-zinc-200 rounded-2xl p-10 text-center">
+      <div className="card-sapiens rounded-2xl p-10 text-center shadow-[0_20px_50px_-25px_rgba(6,16,36,0.55)]">
         <div className="font-display text-2xl font-bold text-zinc-950">Nenhuma questão disponível ainda.</div>
         <p className="mt-2 text-zinc-500">Peça a um admin para sincronizar o Firestore no painel administrativo.</p>
       </div>
@@ -274,8 +275,8 @@ function QuestionRunner({ filtro, onExit }) {
 
   if (resumoSessao)
     return (
-      <div className="bg-white border border-zinc-200 rounded-2xl p-6 md:p-8">
-        <div className="font-mono-alt text-xs uppercase tracking-[0.3em] text-indigo-600 mb-2">
+      <div className="card-sapiens rounded-2xl p-6 md:p-8 shadow-[0_20px_50px_-25px_rgba(6,16,36,0.55)]">
+        <div className="font-mono-alt text-xs uppercase tracking-[0.3em] text-sapiens-accentDeep mb-2">
           Resumo da sessão · {respostasSessaoRef.current.length} questões
         </div>
         <div className="font-display text-2xl font-bold tracking-tight text-zinc-950" data-testid="resumo-sessao-headline">
@@ -311,7 +312,7 @@ function QuestionRunner({ filtro, onExit }) {
         <button
           onClick={continuarAposResumo}
           data-testid="btn-continuar-apos-resumo"
-          className="pill inline-flex items-center gap-2 mt-6 bg-zinc-950 hover:bg-zinc-800 text-white px-6 py-3 rounded-full text-sm font-medium"
+          className="pill btn-sapiens inline-flex items-center gap-2 mt-6 px-6 py-3 rounded-full text-sm font-medium"
         >
           Continuar praticando <ArrowRight className="w-4 h-4" />
         </button>
@@ -320,11 +321,11 @@ function QuestionRunner({ filtro, onExit }) {
 
   if (idx >= itens.length)
     return (
-      <div className="bg-white border border-zinc-200 rounded-2xl p-10 text-center">
-        <ProgressoProva respondidas={itens.length} total={itens.length} pulso={false} />
+      <div className="card-sapiens rounded-2xl p-10 text-center shadow-[0_20px_50px_-25px_rgba(6,16,36,0.55)]">
+        <ProgressoProva respondidas={itens.length} total={itens.length} pulso={false} tone="dark" />
         <div className="font-display text-2xl font-bold text-zinc-950">Você concluiu todas as questões! 🎉</div>
         <p className="mt-2 text-zinc-500">Respostas registradas: {answered}.</p>
-        <button onClick={onExit} className="pill inline-flex items-center gap-2 mt-6 bg-zinc-950 hover:bg-zinc-800 text-white px-5 py-3 rounded-full text-sm font-medium">
+        <button onClick={onExit} className="pill btn-sapiens inline-flex items-center gap-2 mt-6 px-5 py-3 rounded-full text-sm font-medium">
           Voltar
         </button>
       </div>
@@ -335,7 +336,7 @@ function QuestionRunner({ filtro, onExit }) {
   return (
     <div>
       <div className="mb-1 flex items-center justify-between">
-        <div className="font-mono-alt text-xs uppercase tracking-[0.25em] text-zinc-500">
+        <div className="font-mono-alt text-xs uppercase tracking-[0.25em] text-white/70">
           Questão {idx + 1} de {itens.length}
         </div>
         <div className="flex items-center gap-3">
@@ -347,22 +348,22 @@ function QuestionRunner({ filtro, onExit }) {
               <Sparkles className="w-3.5 h-3.5" /> {sparks}
             </span>
           )}
-          <button onClick={onExit} className="text-sm text-zinc-500 underline hover:text-zinc-900">Sair</button>
+          <button onClick={onExit} className="text-sm text-white/60 underline hover:text-white">Sair</button>
         </div>
       </div>
 
       <ProgressoProva respondidas={Math.min(answered, itens.length)} total={itens.length} pulso={pulso} />
 
       {retomado > 0 && idx === retomado && (
-        <div className="mb-4 rounded-xl bg-indigo-50 border border-indigo-100 px-4 py-2.5 text-sm text-indigo-800">
+        <div className="mb-4 rounded-xl bg-white/10 border border-white/20 px-4 py-2.5 text-sm text-white">
           Retomando de onde você parou — {retomado} já respondida(s) nesta prova.
         </div>
       )}
 
-      <article className="bg-white border border-zinc-200 rounded-2xl p-6 md:p-8">
+      <article className="card-sapiens rounded-2xl p-6 md:p-8 shadow-[0_20px_50px_-25px_rgba(6,16,36,0.55)]">
         <div className="mb-4 flex flex-wrap gap-2">
           {tags.map((t, i) => (
-            <span key={i} className="rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-600">{t}</span>
+            <span key={i} className="rounded-full bg-sapiens-accentSoft px-3 py-1 text-xs font-medium text-sapiens-navy">{t}</span>
           ))}
         </div>
 
@@ -387,20 +388,20 @@ function QuestionRunner({ filtro, onExit }) {
             const isSelected = selected === letra;
             const isCorrect = result && letra === result.correta;
             const isWrongChoice = result && isSelected && !result.acertou;
-            let cls = "border-zinc-200 bg-white hover:border-indigo-300";
+            let cls = "border-zinc-200 bg-white hover:border-sapiens-accent hover:shadow-sm";
             if (isCorrect) cls = "border-emerald-400 bg-emerald-50";
             else if (isWrongChoice) cls = "border-rose-400 bg-rose-50";
-            else if (isSelected) cls = "border-indigo-500 bg-indigo-50";
+            else if (isSelected) cls = "border-sapiens-accent bg-sapiens-accentSoft/60 shadow-sm";
             return (
               <button
                 key={letra}
                 onClick={() => pick(letra)}
                 disabled={!!result}
                 data-testid={`alt-${letra}`}
-                className={`flex items-start gap-3 rounded-xl border px-4 py-3 text-left transition ${cls}`}
+                className={`flex items-start gap-3 rounded-xl border px-4 py-3 text-left transition ${cls} ${isSelected && !result ? "select-pop" : ""}`}
               >
-                <span className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
-                  isCorrect ? "bg-emerald-500 text-white" : isWrongChoice ? "bg-rose-500 text-white" : isSelected ? "bg-indigo-600 text-white" : "bg-zinc-100 text-zinc-600"
+                <span className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold transition-colors ${
+                  isCorrect ? "bg-emerald-500 text-white" : isWrongChoice ? "bg-rose-500 text-white" : isSelected ? "bg-sapiens-accent text-white" : "bg-zinc-100 text-zinc-600"
                 }`}>
                   {isCorrect ? <Check className="w-4 h-4" /> : isWrongChoice ? <X className="w-4 h-4" /> : letra}
                 </span>
@@ -411,7 +412,7 @@ function QuestionRunner({ filtro, onExit }) {
         </div>
 
         {result && (
-          <div className={`mt-5 rounded-xl px-4 py-4 ${result.acertou ? "bg-emerald-50" : "bg-rose-50"}`} data-testid="result-banner">
+          <div className={`mt-5 rounded-xl px-4 py-4 reveal ${result.acertou ? "bg-emerald-50" : "bg-rose-50"}`} data-testid="result-banner">
             <div className={`text-sm font-bold ${result.acertou ? "text-emerald-700" : "text-rose-700"}`}>
               {result.feedback?.titulo || (result.acertou ? "Você acertou!" : `Resposta incorreta. Correta: ${result.correta}.`)}
               {!result.acertou && <span className="ml-1 font-normal">(correta: {result.correta})</span>}
@@ -428,7 +429,7 @@ function QuestionRunner({ filtro, onExit }) {
               onClick={responder}
               disabled={!selected || submitting}
               data-testid="btn-responder"
-              className="pill inline-flex items-center gap-2 bg-zinc-950 hover:bg-zinc-800 disabled:opacity-40 text-white px-6 py-3 rounded-full text-sm font-medium"
+              className="pill btn-sapiens inline-flex items-center gap-2 disabled:opacity-40 px-6 py-3 rounded-full text-sm font-medium"
             >
               {submitting ? "Registrando…" : "Responder"}
             </button>
@@ -437,7 +438,7 @@ function QuestionRunner({ filtro, onExit }) {
               onClick={avancar}
               disabled={carregandoResumo}
               data-testid="btn-proxima"
-              className="pill inline-flex items-center gap-2 bg-zinc-950 hover:bg-zinc-800 disabled:opacity-40 text-white px-6 py-3 rounded-full text-sm font-medium"
+              className="pill btn-sapiens inline-flex items-center gap-2 disabled:opacity-40 px-6 py-3 rounded-full text-sm font-medium"
             >
               {carregandoResumo
                 ? "Analisando padrões desta sessão…"
@@ -452,7 +453,7 @@ function QuestionRunner({ filtro, onExit }) {
           {rodadaResumo && (
             <>
               <DialogHeader>
-                <div className="font-mono-alt text-xs uppercase tracking-[0.3em] text-indigo-600 mb-1">
+                <div className="font-mono-alt text-xs uppercase tracking-[0.3em] text-sapiens-accentDeep mb-1">
                   Rodada {rodadaResumo.rodada} concluída
                 </div>
                 <DialogTitle
@@ -509,7 +510,7 @@ function QuestionRunner({ filtro, onExit }) {
                 <button
                   onClick={continuarAposRodada}
                   data-testid="btn-continuar-rodada"
-                  className="pill inline-flex items-center justify-center gap-2 bg-zinc-950 hover:bg-zinc-800 text-white px-6 py-3 rounded-full text-sm font-medium"
+                  className="pill btn-sapiens inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full text-sm font-medium"
                 >
                   Continuar praticando <ArrowRight className="w-4 h-4" />
                 </button>
@@ -558,7 +559,7 @@ function ProvasGrid({ onSelect, onExit }) {
       )}
 
       {!loading && !erro && provas.length === 0 && (
-        <div className="bg-white border border-zinc-200 rounded-2xl p-10 text-center">
+        <div className="card-sapiens rounded-2xl p-10 text-center">
           <div className="font-display text-2xl font-bold text-zinc-950">Nenhuma prova disponível ainda.</div>
           <p className="mt-2 text-zinc-500">Peça a um admin para sincronizar o Firestore no painel administrativo.</p>
         </div>
@@ -571,10 +572,10 @@ function ProvasGrid({ onSelect, onExit }) {
               key={`${p.banca}-${p.ano}-${p.prova}-${p.numero_min}-${i}`}
               onClick={() => onSelect(p)}
               data-testid={`prova-card-${p.banca}-${p.ano}-${p.prova}-${p.numero_min}`}
-              className="lift text-left bg-white border border-zinc-200 rounded-2xl p-6 hover:border-zinc-900"
+              className="lift card-sapiens text-left rounded-2xl p-6 hover:border-sapiens-accent"
             >
               <div className="flex items-center gap-2">
-                <div className="w-10 h-10 rounded-xl bg-zinc-950 text-white flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sapiens-accent to-sapiens-navy text-white flex items-center justify-center shrink-0">
                   <BookOpen className="w-5 h-5" strokeWidth={1.7} />
                 </div>
                 <div className="min-w-0">
@@ -632,7 +633,7 @@ function ExamsByYear() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {grouped[y].map(e => (
-              <button key={e.exam_id} onClick={() => setSelected(e)} className="lift text-left bg-white border border-zinc-200 rounded-2xl p-6 hover:border-zinc-900" data-testid={`exam-card-${e.exam_id}`}>
+              <button key={e.exam_id} onClick={() => setSelected(e)} className="lift card-sapiens text-left rounded-2xl p-6 hover:border-sapiens-accent" data-testid={`exam-card-${e.exam_id}`}>
                 <div className="flex items-center justify-between">
                   <div className="font-mono-alt text-[10px] uppercase tracking-[0.25em] text-zinc-500">Dia {e.day} · {e.color}</div>
                   <div className="text-xs text-zinc-400">{e.total_questions}q</div>
@@ -656,11 +657,11 @@ function ExamsByYear() {
             <p className="text-sm text-zinc-500">Apenas as questões 1-5 mudam entre inglês e espanhol.</p>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-3 mt-2">
-            <button disabled={!selected?.has_english} onClick={() => goWithLanguage("english")} className="pill p-6 rounded-2xl border border-zinc-200 hover:border-zinc-900 disabled:opacity-40 disabled:cursor-not-allowed text-left" data-testid="lang-english">
+            <button disabled={!selected?.has_english} onClick={() => goWithLanguage("english")} className="pill p-6 rounded-2xl border border-zinc-200 hover:border-sapiens-accent disabled:opacity-40 disabled:cursor-not-allowed text-left" data-testid="lang-english">
               <div className="font-mono-alt text-[10px] uppercase tracking-[0.3em] text-zinc-500">Idioma</div>
               <div className="mt-2 font-display font-bold text-xl">Inglês</div>
             </button>
-            <button disabled={!selected?.has_spanish} onClick={() => goWithLanguage("spanish")} className="pill p-6 rounded-2xl border border-zinc-200 hover:border-zinc-900 disabled:opacity-40 disabled:cursor-not-allowed text-left" data-testid="lang-spanish">
+            <button disabled={!selected?.has_spanish} onClick={() => goWithLanguage("spanish")} className="pill p-6 rounded-2xl border border-zinc-200 hover:border-sapiens-accent disabled:opacity-40 disabled:cursor-not-allowed text-left" data-testid="lang-spanish">
               <div className="font-mono-alt text-[10px] uppercase tracking-[0.3em] text-zinc-500">Idioma</div>
               <div className="mt-2 font-display font-bold text-xl">Espanhol</div>
             </button>
@@ -677,9 +678,10 @@ export default function ExamSelect() {
   const [filtro, setFiltro] = useState(null); // { banca, ano, prova, disciplinas, count }
 
   const escolherProva = (p) => { setFiltro(p); setMode("practice"); };
+  const imersivo = mode === "practice";
 
   return (
-    <div className="min-h-screen">
+    <div className={`min-h-screen ${imersivo ? "exam-shell" : ""}`}>
       <Nav />
       <div className="max-w-3xl mx-auto px-6 md:px-10 py-14">
         {mode === "practice" ? (
@@ -709,9 +711,9 @@ export default function ExamSelect() {
             <button
               onClick={() => setMode("provas")}
               data-testid="start-practice"
-              className="lift w-full text-left bg-zinc-950 text-white rounded-3xl p-8 flex items-center gap-5 hover:bg-zinc-800"
+              className="lift btn-sapiens w-full text-left rounded-3xl p-8 flex items-center gap-5"
             >
-              <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center shrink-0">
+              <div className="w-12 h-12 rounded-2xl bg-white/15 flex items-center justify-center shrink-0">
                 <Sparkles className="w-6 h-6" />
               </div>
               <div className="flex-1">

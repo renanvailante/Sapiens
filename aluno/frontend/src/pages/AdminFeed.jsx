@@ -167,7 +167,7 @@ export default function AdminFeed() {
           </div>
 
           <button disabled={busy} onClick={create}
-            className="pill mt-6 inline-flex items-center gap-2 bg-zinc-950 hover:bg-zinc-800 disabled:opacity-60 text-white px-6 py-3 rounded-full text-sm font-medium"
+            className="pill mt-6 inline-flex items-center gap-2 btn-sapiens disabled:opacity-60 text-white px-6 py-3 rounded-full text-sm font-medium"
             data-testid="feed-admin-create">
             <Plus className="w-4 h-4" /> {busy ? "Criando..." : "Criar card"}
           </button>

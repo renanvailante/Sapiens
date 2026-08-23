@@ -292,7 +292,7 @@ export default function SkillsMap() {
           <div className="text-zinc-500" data-testid="sm-load-error">{loadError || "Não foi possível carregar o mapa agora."}</div>
           <button
             onClick={load}
-            className="pill mt-4 text-sm font-medium bg-zinc-950 hover:bg-zinc-800 text-white px-4 py-2 rounded-full"
+            className="pill mt-4 text-sm font-medium btn-sapiens text-white px-4 py-2 rounded-full"
             data-testid="sm-retry-btn"
           >
             Tentar de novo

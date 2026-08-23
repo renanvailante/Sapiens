@@ -94,7 +94,7 @@ export default function AdminDashboard() {
             onClick={handleSync}
             disabled={syncing}
             data-testid="btn-sync-firestore"
-            className="shrink-0 inline-flex items-center gap-2 rounded-xl bg-zinc-950 px-5 py-3 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-50"
+            className="shrink-0 btn-sapiens inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold disabled:opacity-50"
           >
             <RefreshCw className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} />
             {syncing ? "Sincronizando…" : "Sincronizar Firestore"}

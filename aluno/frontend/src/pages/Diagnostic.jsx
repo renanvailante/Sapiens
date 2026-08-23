@@ -64,7 +64,7 @@ export default function Diagnostic() {
             <div className="mt-10 flex items-center gap-3">
               <button
                 onClick={() => setPhase("score")}
-                className="pill inline-flex items-center gap-2 bg-zinc-950 hover:bg-zinc-800 text-white px-6 py-3 rounded-full text-sm font-medium"
+                className="pill inline-flex items-center gap-2 btn-sapiens text-white px-6 py-3 rounded-full text-sm font-medium"
                 data-testid="diag-see-numbers"
               >
                 Ver os números <ArrowRight className="w-4 h-4" />
@@ -116,7 +116,7 @@ export default function Diagnostic() {
             </div>
 
             <div className="mt-8 flex items-center gap-3">
-              <button onClick={() => nav(`/plan/${a.analysis_id}`)} className="pill bg-zinc-950 hover:bg-zinc-800 text-white px-6 py-3 rounded-full text-sm font-medium" data-testid="diag-go-plan">
+              <button onClick={() => nav(`/plan/${a.analysis_id}`)} className="pill btn-sapiens text-white px-6 py-3 rounded-full text-sm font-medium" data-testid="diag-go-plan">
                 Ver plano de estudos
               </button>
               <button onClick={() => nav(`/map/${a.analysis_id}`)} className="pill border border-zinc-200 hover:bg-zinc-50 px-6 py-3 rounded-full text-sm font-medium text-zinc-900" data-testid="diag-go-map">

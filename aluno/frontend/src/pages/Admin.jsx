@@ -80,7 +80,7 @@ export default function Admin() {
           className="mt-6 w-full h-[420px] font-mono-alt text-xs border border-zinc-200 rounded-2xl p-4 focus:border-zinc-900 outline-none"
           data-testid="admin-paste" />
         <button disabled={busy} onClick={submit}
-          className="pill mt-4 bg-zinc-950 hover:bg-zinc-800 disabled:opacity-60 text-white px-6 py-3 rounded-full text-sm font-medium"
+          className="pill mt-4 btn-sapiens disabled:opacity-60 text-white px-6 py-3 rounded-full text-sm font-medium"
           data-testid="admin-submit">
           {busy ? "Importando..." : "Importar gabarito"}
         </button>

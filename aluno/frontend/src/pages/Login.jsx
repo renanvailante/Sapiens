@@ -4,6 +4,7 @@ import { useAuth } from "../lib/auth";
 import { errMsg } from "../lib/api";
 import { googleDisponivel, mensagemDeErroGoogle } from "../lib/firebase";
 import { toast } from "sonner";
+import BrandMark from "../components/BrandMark";
 
 export default function Login() {
   const { login, signup, loginGoogle } = useAuth();
@@ -49,20 +50,21 @@ export default function Login() {
   return (
     <div className="min-h-screen grid grid-cols-1 md:grid-cols-2">
       {/* Left brand panel */}
-      <div className="hidden md:flex flex-col justify-between p-10 bg-zinc-950 text-white">
-        <Link to="/" className="font-display text-2xl font-extrabold tracking-tighter" data-testid="login-brand">
-          Sapiens<span className="text-emerald-400">.</span>
+      <div className="hidden md:flex flex-col justify-between p-10 exam-shell text-white">
+        <Link to="/" className="flex items-center gap-2 font-display text-2xl font-extrabold tracking-tighter" data-testid="login-brand">
+          <BrandMark className="w-6 h-6" />
+          Sapiens
         </Link>
         <div>
-          <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-zinc-500">Manifesto</div>
+          <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-white/50">Manifesto</div>
           <p className="mt-4 font-display text-4xl leading-[1.05] tracking-tight">
             Descubra por que você erra.
           </p>
-          <p className="mt-4 text-zinc-400 text-sm max-w-md leading-relaxed">
+          <p className="mt-4 text-white/60 text-sm max-w-md leading-relaxed">
             Você não é uma nota. Você é um conjunto de padrões cognitivos que podemos revelar em minutos.
           </p>
         </div>
-        <div className="text-xs text-zinc-500 font-mono-alt tracking-wider">© Sapiens Learning</div>
+        <div className="text-xs text-white/50 font-mono-alt tracking-wider">© Sapiens Learning</div>
       </div>
 
       {/* Right form */}
@@ -100,25 +102,25 @@ export default function Login() {
               <input
                 required value={name} onChange={(e) => setName(e.target.value)}
                 placeholder="Seu nome"
-                className="w-full border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:border-zinc-900 outline-none"
+                className="w-full border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:border-sapiens-accent outline-none"
                 data-testid="login-name"
               />
             )}
             <input
               required type="email" value={email} onChange={(e) => setEmail(e.target.value)}
               placeholder="email@exemplo.com"
-              className="w-full border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:border-zinc-900 outline-none"
+              className="w-full border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:border-sapiens-accent outline-none"
               data-testid="login-email"
             />
             <input
               required type="password" value={password} onChange={(e) => setPassword(e.target.value)}
               placeholder="Senha (mín 6 caracteres)" minLength={6}
-              className="w-full border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:border-zinc-900 outline-none"
+              className="w-full border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:border-sapiens-accent outline-none"
               data-testid="login-password"
             />
             <button
               type="submit" disabled={busy}
-              className="pill w-full bg-zinc-950 hover:bg-zinc-800 disabled:opacity-60 text-white rounded-full py-3 font-medium"
+              className="pill btn-sapiens w-full disabled:opacity-60 rounded-full py-3 font-medium"
               data-testid="login-submit"
             >
               {busy ? "Aguarde..." : mode === "login" ? "Entrar" : "Criar conta"}

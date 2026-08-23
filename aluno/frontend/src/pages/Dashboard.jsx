@@ -34,42 +34,42 @@ export default function Dashboard() {
             </h1>
             <p className="mt-2 text-zinc-500 max-w-lg">Aqui está o que o Sapiens descobriu sobre você.</p>
           </div>
-          <button onClick={() => nav("/exams")} className="pill inline-flex items-center gap-2 bg-zinc-950 hover:bg-zinc-800 text-white px-5 py-3 rounded-full text-sm font-medium" data-testid="dash-new-analysis">
+          <button onClick={() => nav("/exams")} className="pill btn-sapiens inline-flex items-center gap-2 px-5 py-3 rounded-full text-sm font-medium" data-testid="dash-new-analysis">
             <Sparkles className="w-4 h-4" /> Analisar prova
           </button>
         </div>
 
         {analyses.length === 0 ? (
-          <div className="bg-white border border-zinc-200 rounded-2xl p-10 text-center">
+          <div className="card-sapiens rounded-2xl p-10 text-center">
             <div className="font-display text-2xl font-bold tracking-tight text-zinc-950">Sua primeira análise está a um clique.</div>
             <p className="mt-2 text-zinc-500 max-w-md mx-auto">Escolha uma prova do ENEM, envie suas respostas e revelaremos os padrões cognitivos por trás delas.</p>
-            <button onClick={() => nav("/exams")} className="pill mt-6 inline-flex items-center gap-2 bg-zinc-950 hover:bg-zinc-800 text-white px-6 py-3 rounded-full text-sm font-medium" data-testid="dash-cta-first">
+            <button onClick={() => nav("/exams")} className="pill btn-sapiens mt-6 inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-medium" data-testid="dash-cta-first">
               Começar <ArrowRight className="w-4 h-4" />
             </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Latest headline */}
-            <div className="md:col-span-3 bg-zinc-950 text-white rounded-2xl p-8">
-              <div className="font-mono-alt text-[10px] uppercase tracking-[0.3em] text-zinc-400">Último diagnóstico · {latest.exam_label}</div>
+            <div className="md:col-span-3 exam-shell text-white rounded-2xl p-8">
+              <div className="font-mono-alt text-[10px] uppercase tracking-[0.3em] text-white/50">Último diagnóstico · {latest.exam_label}</div>
               <div className="mt-4 font-display text-2xl md:text-3xl tracking-tight leading-tight" data-testid="dash-headline">
                 {latest.diagnostic_headline}
               </div>
               <div className="mt-6 flex flex-wrap items-center gap-3">
-                <Link to={`/analysis/${latest.analysis_id}`} className="pill inline-flex items-center gap-2 bg-white text-zinc-950 hover:bg-zinc-100 px-5 py-2.5 rounded-full text-sm font-medium" data-testid="dash-open-analysis">
+                <Link to={`/analysis/${latest.analysis_id}`} className="pill inline-flex items-center gap-2 bg-white text-sapiens-navy hover:bg-zinc-100 px-5 py-2.5 rounded-full text-sm font-medium" data-testid="dash-open-analysis">
                   Ver análise completa <ArrowRight className="w-4 h-4" />
                 </Link>
-                <Link to={`/plan/${latest.analysis_id}`} className="pill inline-flex items-center gap-2 border border-zinc-700 text-white hover:bg-zinc-900 px-5 py-2.5 rounded-full text-sm font-medium" data-testid="dash-open-plan">
+                <Link to={`/plan/${latest.analysis_id}`} className="pill inline-flex items-center gap-2 border border-white/25 text-white hover:bg-white/10 px-5 py-2.5 rounded-full text-sm font-medium" data-testid="dash-open-plan">
                   <Compass className="w-4 h-4" /> Plano de estudos
                 </Link>
-                <Link to={`/map/${latest.analysis_id}`} className="pill inline-flex items-center gap-2 border border-zinc-700 text-white hover:bg-zinc-900 px-5 py-2.5 rounded-full text-sm font-medium" data-testid="dash-open-map">
+                <Link to={`/map/${latest.analysis_id}`} className="pill inline-flex items-center gap-2 border border-white/25 text-white hover:bg-white/10 px-5 py-2.5 rounded-full text-sm font-medium" data-testid="dash-open-map">
                   <Network className="w-4 h-4" /> Mapa de aprendizagem
                 </Link>
               </div>
             </div>
 
             {/* Evolution */}
-            <div className="md:col-span-2 bg-white border border-zinc-200 rounded-2xl p-6">
+            <div className="md:col-span-2 card-sapiens rounded-2xl p-6">
               <div className="font-mono-alt text-[10px] uppercase tracking-[0.3em] text-zinc-500 mb-4">Evolução</div>
               <div className="h-56">
                 <ResponsiveContainer>
@@ -85,7 +85,7 @@ export default function Dashboard() {
             </div>
 
             {/* Cognitive Profile */}
-            <div className="bg-white border border-zinc-200 rounded-2xl p-6">
+            <div className="card-sapiens rounded-2xl p-6">
               <div className="font-mono-alt text-[10px] uppercase tracking-[0.3em] text-zinc-500 mb-4">Perfil cognitivo</div>
               <div className="h-56">
                 <ResponsiveContainer>
@@ -93,7 +93,7 @@ export default function Dashboard() {
                     <PolarGrid stroke="#e4e4e7" />
                     <PolarAngleAxis dataKey="trait" fontSize={9} stroke="#71717a" />
                     <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
-                    <Radar dataKey="value" stroke="#4f46e5" fill="#4f46e5" fillOpacity={0.15} />
+                    <Radar dataKey="value" stroke="#4A85E3" fill="#4A85E3" fillOpacity={0.15} />
                   </RadarChart>
                 </ResponsiveContainer>
               </div>

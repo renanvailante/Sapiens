@@ -64,7 +64,7 @@ export default function History() {
             <div className="bg-white border border-zinc-200 rounded-2xl p-10 text-center">
               <div className="font-display text-2xl font-bold text-zinc-950">Sem tentativas ainda.</div>
               <p className="mt-2 text-zinc-500">Analise sua primeira prova para começar seu histórico.</p>
-              <button onClick={() => nav("/exams")} className="pill mt-6 bg-zinc-950 hover:bg-zinc-800 text-white px-6 py-3 rounded-full text-sm font-medium" data-testid="history-empty-cta">
+              <button onClick={() => nav("/exams")} className="pill mt-6 btn-sapiens text-white px-6 py-3 rounded-full text-sm font-medium" data-testid="history-empty-cta">
                 Analisar uma prova
               </button>
             </div>
@@ -123,7 +123,7 @@ export default function History() {
             data-testid="rename-input" />
           <DialogFooter className="mt-4">
             <button onClick={() => setRenameTarget(null)} className="pill px-4 py-2 rounded-full text-sm font-medium border border-zinc-200 hover:bg-zinc-50" data-testid="rename-cancel">Cancelar</button>
-            <button onClick={doRename} className="pill px-4 py-2 rounded-full text-sm font-medium bg-zinc-950 hover:bg-zinc-800 text-white" data-testid="rename-save">Salvar</button>
+            <button onClick={doRename} className="pill px-4 py-2 rounded-full text-sm font-medium btn-sapiens text-white" data-testid="rename-save">Salvar</button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -55,7 +55,7 @@ export default function Trash() {
             <div className="bg-white border border-zinc-200 rounded-2xl p-10 text-center">
               <div className="font-display text-2xl font-bold text-zinc-950">Lixeira vazia.</div>
               <p className="mt-2 text-zinc-500">Nada aqui — bem organizado.</p>
-              <button onClick={() => nav("/history")} className="pill mt-6 bg-zinc-950 hover:bg-zinc-800 text-white px-5 py-2.5 rounded-full text-sm font-medium" data-testid="trash-empty-back">
+              <button onClick={() => nav("/history")} className="pill mt-6 btn-sapiens text-white px-5 py-2.5 rounded-full text-sm font-medium" data-testid="trash-empty-back">
                 Voltar ao histórico
               </button>
             </div>

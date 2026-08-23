@@ -1,5 +1,4 @@
-@import url('https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@800,700&f[]=general-sans@700,600,500,400&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap');
+/* Fontes carregadas via <link> em public/index.html (Manrope + IBM Plex Mono) */
 
 @tailwind base;
 @tailwind components;
@@ -12,25 +11,32 @@
     --card-foreground: 240 10% 4%;
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 4%;
-    --primary: 240 6% 10%;
+    --primary: 219 66% 22%;
     --primary-foreground: 0 0% 98%;
     --secondary: 240 5% 96%;
     --secondary-foreground: 240 6% 10%;
     --muted: 240 5% 96%;
     --muted-foreground: 240 4% 40%;
-    --accent: 240 5% 96%;
-    --accent-foreground: 240 6% 10%;
+    --accent: 214 84% 92%;
+    --accent-foreground: 219 66% 22%;
     --destructive: 349 89% 60%;
     --destructive-foreground: 0 0% 98%;
     --border: 240 6% 90%;
     --input: 240 6% 90%;
-    --ring: 243 75% 59%;
+    --ring: 217 73% 59%;
     --chart-1: 158 64% 45%;
     --chart-2: 349 89% 60%;
     --chart-3: 38 92% 50%;
-    --chart-4: 243 75% 59%;
-    --chart-5: 240 6% 10%;
+    --chart-4: 217 73% 59%;
+    --chart-5: 219 66% 22%;
     --radius: 0.75rem;
+
+    /* Identidade Sapiens — Constelação-S */
+    --brand-navy: #132D5C;
+    --brand-navy-deep: #0C1C3A;
+    --brand-accent: #4A85E3;
+    --brand-accent-deep: #1F4F95;
+    --brand-accent-soft: #DBE9FC;
 }
 
 * {
@@ -46,12 +52,13 @@ html, body, #root {
 }
 
 .font-display {
-    font-family: 'Cabinet Grotesk', 'General Sans', sans-serif;
-    letter-spacing: -0.03em;
+    font-family: 'Manrope', system-ui, sans-serif;
+    letter-spacing: -0.02em;
 }
 
 .font-mono-alt {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'IBM Plex Mono', monospace;
+    font-variant-numeric: tabular-nums;
 }
 
 /* Subtle grain */
@@ -71,7 +78,7 @@ html, body, #root {
     100% { background-position: 200% 0; }
 }
 .shimmer {
-    background: linear-gradient(90deg, #09090b 0%, #52525b 50%, #09090b 100%);
+    background: linear-gradient(90deg, var(--brand-navy) 0%, var(--brand-accent) 50%, var(--brand-navy) 100%);
     background-size: 200% 100%;
     -webkit-background-clip: text;
     background-clip: text;
@@ -107,7 +114,56 @@ html, body, #root {
 .lift:hover { transform: translateY(-2px); box-shadow: 0 8px 24px -12px rgba(0,0,0,0.12); }
 
 /* Selection */
-::selection { background: #09090b; color: #fff; }
+::selection { background: var(--brand-navy); color: #fff; }
+
+/* ---------------- Identidade Sapiens: CTA, cards, ambiente de prova ---------------- */
+
+/* Botão primário — gradiente da marca, com resposta visível ao toque */
+.btn-sapiens {
+    background: linear-gradient(135deg, var(--brand-accent) 0%, var(--brand-navy) 100%);
+    color: #fff;
+    box-shadow: 0 1px 2px rgba(12,28,58,0.16), 0 10px 22px -10px rgba(19,45,92,0.5);
+    transition: transform .18s ease-out, box-shadow .18s ease-out, filter .18s ease-out;
+}
+.btn-sapiens:hover:not(:disabled) {
+    filter: brightness(1.08);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(12,28,58,0.2), 0 14px 28px -10px rgba(74,133,227,0.55);
+}
+.btn-sapiens:active:not(:disabled) { transform: translateY(0) scale(0.97); filter: brightness(0.96); }
+.btn-sapiens:disabled { filter: grayscale(0.25); box-shadow: none; }
+
+/* Superfície de conteúdo — branco com gradiente muito sutil, para uso sobre o fundo azul da prova */
+.card-sapiens {
+    background: linear-gradient(180deg, #ffffff 0%, #f5f9ff 100%);
+    border: 1px solid rgba(19,45,92,0.08);
+}
+
+/* Ambiente imersivo da experiência de prova */
+.exam-shell {
+    background:
+        radial-gradient(1100px 520px at 12% -8%, rgba(74,133,227,0.32), transparent 60%),
+        radial-gradient(900px 520px at 100% 8%, rgba(31,79,149,0.38), transparent 55%),
+        linear-gradient(180deg, #16336b 0%, #0c1c3a 100%);
+    background-attachment: fixed;
+}
+
+/* Microinteração: pequena resposta ao selecionar uma alternativa */
+@keyframes select-pop {
+    0% { transform: scale(1); }
+    45% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+}
+.select-pop { animation: select-pop .26s ease-out; }
+
+@media (prefers-reduced-motion: reduce) {
+    .select-pop, .reveal, .reveal-delay-1, .reveal-delay-2, .reveal-delay-3, .reveal-delay-4, .shimmer {
+        animation: none !important;
+    }
+    .lift:hover, .btn-sapiens:hover, .btn-sapiens:active, .pill:active {
+        transform: none !important;
+    }
+}
 
 /* Focus */
 button:focus-visible, a:focus-visible, input:focus-visible, [role="button"]:focus-visible {
