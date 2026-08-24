@@ -43,25 +43,25 @@ export default function Trash() {
     <div className="min-h-screen">
       <Nav />
       <div className="max-w-4xl mx-auto px-6 md:px-10 py-12">
-        <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-zinc-500 mb-3">Lixeira</div>
-        <h1 className="font-display text-4xl md:text-5xl font-extrabold tracking-tighter text-zinc-950" data-testid="trash-title">
+        <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-white/50 mb-3">Lixeira</div>
+        <h1 className="font-display text-4xl md:text-5xl font-extrabold tracking-tighter text-white" data-testid="trash-title">
           Tentativas descartadas.
         </h1>
-        <p className="mt-3 text-zinc-500 max-w-lg">Aqui ficam as análises que você removeu do histórico. Você pode restaurá-las a qualquer momento — ou excluí-las para sempre.</p>
+        <p className="mt-3 text-white/60 max-w-lg">Aqui ficam as análises que você removeu do histórico. Você pode restaurá-las a qualquer momento — ou excluí-las para sempre.</p>
 
         <div className="mt-10 space-y-3">
-          {loading && <div className="text-zinc-500">Carregando...</div>}
+          {loading && <div className="text-white/60">Carregando...</div>}
           {!loading && items.length === 0 && (
-            <div className="bg-white border border-zinc-200 rounded-2xl p-10 text-center">
+            <div className="card-sapiens rounded-2xl p-10 text-center">
               <div className="font-display text-2xl font-bold text-zinc-950">Lixeira vazia.</div>
               <p className="mt-2 text-zinc-500">Nada aqui — bem organizado.</p>
-              <button onClick={() => nav("/history")} className="pill mt-6 btn-sapiens text-white px-5 py-2.5 rounded-full text-sm font-medium" data-testid="trash-empty-back">
+              <button onClick={() => nav("/history")} className="pill mt-6 btn-sapiens px-5 py-2.5 rounded-full text-sm font-medium" data-testid="trash-empty-back">
                 Voltar ao histórico
               </button>
             </div>
           )}
           {items.map(a => (
-            <div key={a.analysis_id} className="bg-white border border-zinc-200 rounded-2xl p-5 md:p-6" data-testid={`trash-item-${a.analysis_id}`}>
+            <div key={a.analysis_id} className="card-sapiens rounded-2xl p-5 md:p-6" data-testid={`trash-item-${a.analysis_id}`}>
               <div className="flex items-center justify-between gap-4">
                 <div className="flex-1">
                   <div className="font-display font-bold text-lg tracking-tight text-zinc-950">

@@ -47,30 +47,30 @@ export default function History() {
       <div className="max-w-4xl mx-auto px-6 md:px-10 py-12">
         <div className="flex items-end justify-between flex-wrap gap-4">
           <div>
-            <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-zinc-500 mb-3">Histórico</div>
-            <h1 className="font-display text-4xl md:text-5xl font-extrabold tracking-tighter text-zinc-950" data-testid="history-title">
+            <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-white/50 mb-3">Histórico</div>
+            <h1 className="font-display text-4xl md:text-5xl font-extrabold tracking-tighter text-white" data-testid="history-title">
               Sua trajetória.
             </h1>
-            <p className="mt-3 text-zinc-500 max-w-lg">Cada tentativa é armazenada individualmente. Refazer uma prova nunca sobrescreve a análise anterior.</p>
+            <p className="mt-3 text-white/60 max-w-lg">Cada tentativa é armazenada individualmente. Refazer uma prova nunca sobrescreve a análise anterior.</p>
           </div>
-          <Link to="/trash" className="pill inline-flex items-center gap-2 border border-zinc-200 hover:bg-zinc-50 text-zinc-900 px-4 py-2 rounded-full text-sm font-medium" data-testid="history-trash-link">
+          <Link to="/trash" className="pill inline-flex items-center gap-2 border border-white/20 hover:bg-white/10 text-white px-4 py-2 rounded-full text-sm font-medium" data-testid="history-trash-link">
             <Trash2 className="w-4 h-4" /> Lixeira
           </Link>
         </div>
 
         <div className="mt-10 space-y-3">
-          {loading && <div className="text-zinc-500">Carregando...</div>}
+          {loading && <div className="text-white/60">Carregando...</div>}
           {!loading && items.length === 0 && (
-            <div className="bg-white border border-zinc-200 rounded-2xl p-10 text-center">
+            <div className="card-sapiens rounded-2xl p-10 text-center">
               <div className="font-display text-2xl font-bold text-zinc-950">Sem tentativas ainda.</div>
               <p className="mt-2 text-zinc-500">Analise sua primeira prova para começar seu histórico.</p>
-              <button onClick={() => nav("/exams")} className="pill mt-6 btn-sapiens text-white px-6 py-3 rounded-full text-sm font-medium" data-testid="history-empty-cta">
+              <button onClick={() => nav("/exams")} className="pill mt-6 btn-sapiens px-6 py-3 rounded-full text-sm font-medium" data-testid="history-empty-cta">
                 Analisar uma prova
               </button>
             </div>
           )}
           {items.map(a => (
-            <div key={a.analysis_id} className="lift bg-white border border-zinc-200 rounded-2xl p-5 md:p-6" data-testid={`history-item-${a.analysis_id}`}>
+            <div key={a.analysis_id} className="lift card-sapiens rounded-2xl p-5 md:p-6" data-testid={`history-item-${a.analysis_id}`}>
               <div className="flex items-center justify-between gap-4">
                 <button onClick={() => nav(`/analysis/${a.analysis_id}`)} className="flex-1 text-left">
                   <div className="font-display font-bold text-lg tracking-tight text-zinc-950">
@@ -118,7 +118,7 @@ export default function History() {
             <DialogTitle className="font-display text-2xl tracking-tight">Renomear tentativa</DialogTitle>
           </DialogHeader>
           <input value={newLabel} onChange={e => setNewLabel(e.target.value)}
-            className="mt-2 w-full border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:border-zinc-900 outline-none"
+            className="mt-2 w-full border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:border-sapiens-accent outline-none"
             placeholder="Ex.: Simulado antes da matrícula"
             data-testid="rename-input" />
           <DialogFooter className="mt-4">

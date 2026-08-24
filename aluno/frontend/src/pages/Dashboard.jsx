@@ -28,11 +28,11 @@ export default function Dashboard() {
       <div className="max-w-6xl mx-auto px-6 md:px-10 py-10">
         <div className="flex items-end justify-between flex-wrap gap-4 mb-10">
           <div>
-            <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-zinc-500 mb-2">Painel</div>
-            <h1 className="font-display text-4xl md:text-5xl font-extrabold tracking-tighter text-zinc-950" data-testid="dash-title">
+            <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-white/50 mb-2">Painel</div>
+            <h1 className="font-display text-4xl md:text-5xl font-extrabold tracking-tighter text-white" data-testid="dash-title">
               Olá, {user?.name?.split(" ")[0] || "aluno"}.
             </h1>
-            <p className="mt-2 text-zinc-500 max-w-lg">Aqui está o que o Sapiens descobriu sobre você.</p>
+            <p className="mt-2 text-white/60 max-w-lg">Aqui está o que o Sapiens descobriu sobre você.</p>
           </div>
           <button onClick={() => nav("/exams")} className="pill btn-sapiens inline-flex items-center gap-2 px-5 py-3 rounded-full text-sm font-medium" data-testid="dash-new-analysis">
             <Sparkles className="w-4 h-4" /> Analisar prova
@@ -50,19 +50,19 @@ export default function Dashboard() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Latest headline */}
-            <div className="md:col-span-3 exam-shell text-white rounded-2xl p-8">
-              <div className="font-mono-alt text-[10px] uppercase tracking-[0.3em] text-white/50">Último diagnóstico · {latest.exam_label}</div>
-              <div className="mt-4 font-display text-2xl md:text-3xl tracking-tight leading-tight" data-testid="dash-headline">
+            <div className="md:col-span-3 card-sapiens rounded-2xl p-8">
+              <div className="font-mono-alt text-[10px] uppercase tracking-[0.3em] text-sapiens-accentDeep">Último diagnóstico · {latest.exam_label}</div>
+              <div className="mt-4 font-display text-2xl md:text-3xl tracking-tight leading-tight text-zinc-950" data-testid="dash-headline">
                 {latest.diagnostic_headline}
               </div>
               <div className="mt-6 flex flex-wrap items-center gap-3">
-                <Link to={`/analysis/${latest.analysis_id}`} className="pill inline-flex items-center gap-2 bg-white text-sapiens-navy hover:bg-zinc-100 px-5 py-2.5 rounded-full text-sm font-medium" data-testid="dash-open-analysis">
+                <Link to={`/analysis/${latest.analysis_id}`} className="pill btn-sapiens inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium" data-testid="dash-open-analysis">
                   Ver análise completa <ArrowRight className="w-4 h-4" />
                 </Link>
-                <Link to={`/plan/${latest.analysis_id}`} className="pill inline-flex items-center gap-2 border border-white/25 text-white hover:bg-white/10 px-5 py-2.5 rounded-full text-sm font-medium" data-testid="dash-open-plan">
+                <Link to={`/plan/${latest.analysis_id}`} className="pill inline-flex items-center gap-2 border border-zinc-200 text-sapiens-navy hover:border-sapiens-accent px-5 py-2.5 rounded-full text-sm font-medium" data-testid="dash-open-plan">
                   <Compass className="w-4 h-4" /> Plano de estudos
                 </Link>
-                <Link to={`/map/${latest.analysis_id}`} className="pill inline-flex items-center gap-2 border border-white/25 text-white hover:bg-white/10 px-5 py-2.5 rounded-full text-sm font-medium" data-testid="dash-open-map">
+                <Link to={`/map/${latest.analysis_id}`} className="pill inline-flex items-center gap-2 border border-zinc-200 text-sapiens-navy hover:border-sapiens-accent px-5 py-2.5 rounded-full text-sm font-medium" data-testid="dash-open-map">
                   <Network className="w-4 h-4" /> Mapa de aprendizagem
                 </Link>
               </div>

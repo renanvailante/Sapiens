@@ -160,7 +160,7 @@ function HubTreeCard({ hub, onLeaves, toggleLeaf }) {
   }, [hub]);
 
   return (
-    <div className="bg-white border border-zinc-200 rounded-2xl p-5" data-testid={"sm-hub-" + hub.hub}>
+    <div className="card-sapiens rounded-2xl p-5" data-testid={"sm-hub-" + hub.hub}>
       <div className="flex items-center gap-3">
         <div
           ref={iconRef}
@@ -279,7 +279,7 @@ export default function SkillsMap() {
     return (
       <div>
         <Nav />
-        <div className="p-10 text-zinc-500">Compondo mapa...</div>
+        <div className="p-10 text-white/60">Compondo mapa...</div>
       </div>
     );
   }
@@ -289,10 +289,10 @@ export default function SkillsMap() {
       <div>
         <Nav />
         <div className="max-w-4xl mx-auto px-6 md:px-10 py-12">
-          <div className="text-zinc-500" data-testid="sm-load-error">{loadError || "Não foi possível carregar o mapa agora."}</div>
+          <div className="text-white/60" data-testid="sm-load-error">{loadError || "Não foi possível carregar o mapa agora."}</div>
           <button
             onClick={load}
-            className="pill mt-4 text-sm font-medium btn-sapiens text-white px-4 py-2 rounded-full"
+            className="pill mt-4 text-sm font-medium btn-sapiens px-4 py-2 rounded-full"
             data-testid="sm-retry-btn"
           >
             Tentar de novo
@@ -312,23 +312,23 @@ export default function SkillsMap() {
     <div className="min-h-screen">
       <Nav />
       <div className="max-w-4xl mx-auto px-6 md:px-10 py-12">
-        <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-zinc-500 mb-3">Mapa de habilidades</div>
-        <h1 className="font-display text-4xl md:text-5xl font-extrabold tracking-tighter text-zinc-950" data-testid="sm-title">
+        <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-white/50 mb-3">Mapa de habilidades</div>
+        <h1 className="font-display text-4xl md:text-5xl font-extrabold tracking-tighter text-white" data-testid="sm-title">
           Como você evolui.
         </h1>
-        <p className="mt-3 text-zinc-500 max-w-lg">
+        <p className="mt-3 text-white/60 max-w-lg">
           Seis frentes amplas do seu raciocínio. Quanto mais afastado do centro, mais você já domina naquela frente.
         </p>
 
-        <div className="mt-8 bg-zinc-950 text-white rounded-2xl p-6 flex flex-wrap items-center justify-between gap-4">
+        <div className="mt-8 card-sapiens rounded-2xl p-6 flex flex-wrap items-center justify-between gap-4">
           <div>
             <div className="font-mono-alt text-[10px] uppercase tracking-[0.3em] text-zinc-400">Saldo de Sparks</div>
-            <div className="mt-2 font-display text-3xl font-bold tracking-tight flex items-center gap-2" data-testid="sm-sparks-balance">
-              <Zap className="w-6 h-6 text-amber-400" fill="currentColor" />
+            <div className="mt-2 font-display text-3xl font-bold tracking-tight flex items-center gap-2 text-zinc-950" data-testid="sm-sparks-balance">
+              <Zap className="w-6 h-6 text-amber-500" fill="currentColor" />
               {balance}
             </div>
             {data?.updated_at && (
-              <div className="mt-1 font-mono-alt text-[10px] text-zinc-500" data-testid="sm-updated-at">
+              <div className="mt-1 font-mono-alt text-[10px] text-zinc-400" data-testid="sm-updated-at">
                 atualizado em {new Date(data.updated_at).toLocaleDateString("pt-BR")}
               </div>
             )}
@@ -336,7 +336,7 @@ export default function SkillsMap() {
           <button
             onClick={generate}
             disabled={generating || !canAfford}
-            className="pill flex items-center gap-2 text-sm font-medium bg-white text-zinc-950 hover:bg-zinc-200 disabled:opacity-40 disabled:cursor-not-allowed px-4 py-2.5 rounded-full"
+            className="pill btn-sapiens flex items-center gap-2 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed px-4 py-2.5 rounded-full"
             data-testid="sm-generate-btn"
           >
             <RefreshCw className={"w-4 h-4 " + (generating ? "animate-spin" : "")} />
@@ -344,12 +344,12 @@ export default function SkillsMap() {
           </button>
         </div>
         {!canAfford && (
-          <div className="mt-2 text-xs text-red-500" data-testid="sm-insufficient-sparks">
+          <div className="mt-2 text-xs text-red-400" data-testid="sm-insufficient-sparks">
             Saldo insuficiente para gerar o mapa ({balance} / {cost} Sparks).
           </div>
         )}
 
-        <div className="mt-6 bg-white border border-zinc-200 rounded-2xl p-4 md:p-6" data-testid="sm-radar">
+        <div className="mt-6 card-sapiens rounded-2xl p-4 md:p-6" data-testid="sm-radar">
           <div style={{ width: "100%", height: 360 }}>
             <ResponsiveContainer>
               <RadarChart data={radarData} outerRadius="66%">
@@ -359,7 +359,7 @@ export default function SkillsMap() {
                   tick={<VertexTick hubs={data?.hubs} activeHub={activeHub} onSelect={setActiveHub} />}
                 />
                 <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
-                <Radar dataKey="value" stroke="#18181b" fill="#18181b" fillOpacity={0.15} />
+                <Radar dataKey="value" stroke="#4A85E3" fill="#4A85E3" fillOpacity={0.15} />
               </RadarChart>
             </ResponsiveContainer>
           </div>
@@ -417,7 +417,7 @@ export default function SkillsMap() {
         </div>
 
         {feedback && (
-          <div className="mt-6 bg-white border border-zinc-200 rounded-2xl p-5 md:p-6" data-testid="sm-feedback">
+          <div className="mt-6 card-sapiens rounded-2xl p-5 md:p-6" data-testid="sm-feedback">
             <div className="font-display font-bold text-lg text-zinc-950" data-testid="sm-feedback-headline">
               {feedback.headline}
             </div>
@@ -462,7 +462,7 @@ export default function SkillsMap() {
         )}
 
         {feedback?.narrativa?.length > 0 && (
-          <div className="mt-6 bg-white border border-zinc-200 rounded-2xl p-5 md:p-6" data-testid="sm-narrativa">
+          <div className="mt-6 card-sapiens rounded-2xl p-5 md:p-6" data-testid="sm-narrativa">
             <div className="font-display font-bold text-lg text-zinc-950 mb-1">Seu histórico, questão por questão</div>
             <p className="text-xs text-zinc-400 mb-3">
               Resumo interativo montado a partir das suas rodadas de 10 questões — sem IA, só os seus números. Toque numa rodada para ver detalhes.

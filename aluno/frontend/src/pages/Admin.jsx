@@ -44,46 +44,48 @@ export default function Admin() {
     <div className="min-h-screen">
       <Nav />
       <div className="max-w-4xl mx-auto px-6 md:px-10 py-12">
-        <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-zinc-500 mb-3">Admin</div>
-        <h1 className="font-display text-4xl font-extrabold tracking-tighter text-zinc-950" data-testid="admin-title">Importar gabarito do INEP</h1>
-        <p className="mt-3 text-zinc-500 max-w-2xl">
+        <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-white/50 mb-3">Admin</div>
+        <h1 className="font-display text-4xl font-extrabold tracking-tighter text-white" data-testid="admin-title">Importar gabarito do INEP</h1>
+        <p className="mt-3 text-white/60 max-w-2xl">
           Cole diretamente o gabarito oficial (Ctrl+C / Ctrl+V) da página do INEP. O Sapiens ignora cabeçalhos e formatação, e cria automaticamente as versões em <b>inglês</b> e <b>espanhol</b>.
         </p>
 
-        <div className="mt-8 grid grid-cols-3 gap-3">
-          <div>
-            <label className="text-xs font-mono-alt uppercase tracking-[0.2em] text-zinc-500">Ano</label>
-            <input type="number" value={year} onChange={e => setYear(e.target.value)}
-              className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2 text-sm focus:border-zinc-900 outline-none"
-              data-testid="admin-year" />
+        <div className="mt-8 card-sapiens rounded-2xl p-6">
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="text-xs font-mono-alt uppercase tracking-[0.2em] text-zinc-500">Ano</label>
+              <input type="number" value={year} onChange={e => setYear(e.target.value)}
+                className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2 text-sm focus:border-sapiens-accent outline-none"
+                data-testid="admin-year" />
+            </div>
+            <div>
+              <label className="text-xs font-mono-alt uppercase tracking-[0.2em] text-zinc-500">Dia</label>
+              <select value={day} onChange={e => setDay(e.target.value)}
+                className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2 text-sm focus:border-sapiens-accent outline-none bg-white"
+                data-testid="admin-day">
+                <option value={1}>Dia 1 (LC + CH)</option>
+                <option value={2}>Dia 2 (CN + MT)</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-mono-alt uppercase tracking-[0.2em] text-zinc-500">Cor</label>
+              <select value={color} onChange={e => setColor(e.target.value)}
+                className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2 text-sm focus:border-sapiens-accent outline-none bg-white"
+                data-testid="admin-color">
+                {COLORS.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
           </div>
-          <div>
-            <label className="text-xs font-mono-alt uppercase tracking-[0.2em] text-zinc-500">Dia</label>
-            <select value={day} onChange={e => setDay(e.target.value)}
-              className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2 text-sm focus:border-zinc-900 outline-none bg-white"
-              data-testid="admin-day">
-              <option value={1}>Dia 1 (LC + CH)</option>
-              <option value={2}>Dia 2 (CN + MT)</option>
-            </select>
-          </div>
-          <div>
-            <label className="text-xs font-mono-alt uppercase tracking-[0.2em] text-zinc-500">Cor</label>
-            <select value={color} onChange={e => setColor(e.target.value)}
-              className="mt-1 w-full border border-zinc-200 rounded-xl px-3 py-2 text-sm focus:border-zinc-900 outline-none bg-white"
-              data-testid="admin-color">
-              {COLORS.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </div>
-        </div>
 
-        <textarea value={raw} onChange={e => setRaw(e.target.value)} placeholder={SAMPLE}
-          className="mt-6 w-full h-[420px] font-mono-alt text-xs border border-zinc-200 rounded-2xl p-4 focus:border-zinc-900 outline-none"
-          data-testid="admin-paste" />
-        <button disabled={busy} onClick={submit}
-          className="pill mt-4 btn-sapiens disabled:opacity-60 text-white px-6 py-3 rounded-full text-sm font-medium"
-          data-testid="admin-submit">
-          {busy ? "Importando..." : "Importar gabarito"}
-        </button>
+          <textarea value={raw} onChange={e => setRaw(e.target.value)} placeholder={SAMPLE}
+            className="mt-6 w-full h-[420px] font-mono-alt text-xs border border-zinc-200 rounded-2xl p-4 focus:border-sapiens-accent outline-none"
+            data-testid="admin-paste" />
+          <button disabled={busy} onClick={submit}
+            className="pill mt-4 btn-sapiens disabled:opacity-60 px-6 py-3 rounded-full text-sm font-medium"
+            data-testid="admin-submit">
+            {busy ? "Importando..." : "Importar gabarito"}
+          </button>
+        </div>
       </div>
     </div>
   );

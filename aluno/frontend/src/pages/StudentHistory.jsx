@@ -12,7 +12,7 @@ function Expandable({ ev }) {
   const contexto = ev.contexto || {};
   const metadados = ev.metadados || {};
   return (
-    <div className="bg-white border border-zinc-200 rounded-2xl" data-testid={`hist-event-${ev.event_id}`}>
+    <div className="card-sapiens rounded-2xl" data-testid={`hist-event-${ev.event_id}`}>
       <div className="p-4 flex items-center gap-4">
         <button onClick={() => setOpen(o => !o)} className="p-1 hover:bg-zinc-100 rounded" data-testid={`hist-toggle-${ev.event_id}`}>
           {open ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
@@ -100,17 +100,17 @@ export default function StudentHistory() {
     <div className="min-h-screen">
       <Nav />
       <div className="max-w-6xl mx-auto px-6 md:px-10 py-12">
-        <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-zinc-500 mb-3">Admin · Histórico do Aluno</div>
-        <h1 className="font-display text-4xl md:text-5xl font-extrabold tracking-tighter text-zinc-950" data-testid="hist-title">
+        <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-white/50 mb-3">Admin · Histórico do Aluno</div>
+        <h1 className="font-display text-4xl md:text-5xl font-extrabold tracking-tighter text-white" data-testid="hist-title">
           Behavior Event Store
         </h1>
-        <p className="mt-3 text-zinc-500 max-w-2xl">
+        <p className="mt-3 text-white/60 max-w-2xl">
           Fonte única: <code className="font-mono-alt text-xs">students/{"{uid}"}/behavior</code> no Firestore, no schema
           definido em <code className="font-mono-alt text-xs">pipeline/docs/behavior</code>. Append-only — cada evento é imutável.
         </p>
 
         {/* Filters */}
-        <div className="mt-8 bg-white border border-zinc-200 rounded-2xl p-5">
+        <div className="mt-8 card-sapiens rounded-2xl p-5">
           <div className="flex items-center gap-2 text-xs font-mono-alt uppercase tracking-[0.25em] text-zinc-500 mb-4">
             <Filter className="w-3.5 h-3.5" /> Aluno
           </div>
@@ -139,10 +139,10 @@ export default function StudentHistory() {
         {/* Timeline */}
         {history && (
           <div className="mt-8 space-y-6">
-            {grouped.length === 0 && <div className="text-zinc-500">Sem eventos registrados para este aluno.</div>}
+            {grouped.length === 0 && <div className="text-white/60">Sem eventos registrados para este aluno.</div>}
             {grouped.map(([day, entries]) => (
               <div key={day}>
-                <div className="font-mono-alt text-xs uppercase tracking-[0.3em] text-zinc-500 mb-2">{day}</div>
+                <div className="font-mono-alt text-xs uppercase tracking-[0.3em] text-white/50 mb-2">{day}</div>
                 <div className="space-y-2">
                   {entries.map(ev => <Expandable key={ev.event_id} ev={ev} />)}
                 </div>
@@ -157,7 +157,7 @@ export default function StudentHistory() {
 
 function StatMini({ label, value }) {
   return (
-    <div className="bg-white border border-zinc-200 rounded-2xl p-4">
+    <div className="card-sapiens rounded-2xl p-4">
       <div className="font-mono-alt text-[10px] uppercase tracking-[0.25em] text-zinc-500">{label}</div>
       <div className="mt-1 font-display text-xl font-extrabold tracking-tighter text-zinc-950">{value ?? "—"}</div>
     </div>

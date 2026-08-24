@@ -25,15 +25,15 @@ export default function AdminUsers() {
     <div className="min-h-screen">
       <Nav />
       <div className="max-w-4xl mx-auto px-6 md:px-10 py-12">
-        <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-zinc-500 mb-3">Admin · Usuários</div>
-        <h1 className="font-display text-4xl font-extrabold tracking-tighter text-zinc-950" data-testid="admin-users-title">
+        <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-white/50 mb-3">Admin · Usuários</div>
+        <h1 className="font-display text-4xl font-extrabold tracking-tighter text-white" data-testid="admin-users-title">
           Permissões
         </h1>
-        <p className="mt-3 text-zinc-500 max-w-lg">Alterne o acesso administrativo por usuário. Você não pode remover seu próprio acesso.</p>
+        <p className="mt-3 text-white/60 max-w-lg">Alterne o acesso administrativo por usuário. Você não pode remover seu próprio acesso.</p>
 
         <div className="mt-8 space-y-2">
           {users.map(u => (
-            <div key={u.user_id} className="bg-white border border-zinc-200 rounded-2xl p-4 flex items-center gap-4" data-testid={`admin-user-row-${u.user_id}`}>
+            <div key={u.user_id} className="card-sapiens rounded-2xl p-4 flex items-center gap-4" data-testid={`admin-user-row-${u.user_id}`}>
               <div className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-600 font-display font-bold">
                 {u.name?.[0]?.toUpperCase() || "?"}
               </div>

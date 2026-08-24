@@ -5,8 +5,14 @@
 @tailwind utilities;
 
 :root {
-    --background: 0 0% 98%;
-    --foreground: 240 10% 4%;
+    /* Ambiente global: azul escuro, propositalmente pouco saturado — a tela
+       principal do produto, não um elemento de marca. Fica calmo por horas
+       de estudo; o azul vivo da marca (--brand-accent) é reservado para
+       ação/seleção/progresso, nunca para preencher grandes áreas. */
+    --background: 218 46% 11%;
+    --foreground: 220 24% 96%;
+    /* Superfícies (card/popover/dialog) permanecem claras de propósito — é
+       onde o conteúdo é lido, então NÃO seguem o fundo escuro global. */
     --card: 0 0% 100%;
     --card-foreground: 240 10% 4%;
     --popover: 0 0% 100%;
@@ -37,6 +43,8 @@
     --brand-accent: #4A85E3;
     --brand-accent-deep: #1F4F95;
     --brand-accent-soft: #DBE9FC;
+    --env-bg-1: #0b1424;
+    --env-bg-2: #16233c;
 }
 
 * {
@@ -44,7 +52,11 @@
 }
 
 html, body, #root {
-    background: hsl(var(--background));
+    background:
+        radial-gradient(1400px 720px at 14% -12%, rgba(74,133,227,0.10), transparent 60%),
+        radial-gradient(1100px 680px at 100% 0%, rgba(31,79,149,0.13), transparent 55%),
+        linear-gradient(180deg, var(--env-bg-2) 0%, var(--env-bg-1) 100%);
+    background-attachment: fixed;
     color: hsl(var(--foreground));
     font-family: 'Manrope', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
@@ -67,7 +79,7 @@ html, body, #root {
     position: fixed;
     inset: 0;
     pointer-events: none;
-    background-image: radial-gradient(circle at 1px 1px, rgba(0,0,0,0.025) 1px, transparent 0);
+    background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.035) 1px, transparent 0);
     background-size: 6px 6px;
     z-index: -1;
 }
@@ -78,7 +90,7 @@ html, body, #root {
     100% { background-position: 200% 0; }
 }
 .shimmer {
-    background: linear-gradient(90deg, var(--brand-navy) 0%, var(--brand-accent) 50%, var(--brand-navy) 100%);
+    background: linear-gradient(90deg, var(--brand-accent) 0%, #ffffff 50%, var(--brand-accent) 100%);
     background-size: 200% 100%;
     -webkit-background-clip: text;
     background-clip: text;
@@ -118,28 +130,33 @@ html, body, #root {
 
 /* ---------------- Identidade Sapiens: CTA, cards, ambiente de prova ---------------- */
 
-/* Botão primário — gradiente da marca, com resposta visível ao toque */
+/* Botão primário — gradiente da marca; o anel claro garante que ele se
+   destaque tanto sobre cards brancos quanto sobre o ambiente azul-escuro. */
 .btn-sapiens {
     background: linear-gradient(135deg, var(--brand-accent) 0%, var(--brand-navy) 100%);
     color: #fff;
-    box-shadow: 0 1px 2px rgba(12,28,58,0.16), 0 10px 22px -10px rgba(19,45,92,0.5);
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.14) inset, 0 1px 2px rgba(12,28,58,0.16), 0 10px 24px -8px rgba(74,133,227,0.45);
     transition: transform .18s ease-out, box-shadow .18s ease-out, filter .18s ease-out;
 }
 .btn-sapiens:hover:not(:disabled) {
     filter: brightness(1.08);
     transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(12,28,58,0.2), 0 14px 28px -10px rgba(74,133,227,0.55);
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.2) inset, 0 2px 4px rgba(12,28,58,0.2), 0 16px 30px -8px rgba(74,133,227,0.6);
 }
 .btn-sapiens:active:not(:disabled) { transform: translateY(0) scale(0.97); filter: brightness(0.96); }
 .btn-sapiens:disabled { filter: grayscale(0.25); box-shadow: none; }
 
-/* Superfície de conteúdo — branco com gradiente muito sutil, para uso sobre o fundo azul da prova */
+/* Superfície de conteúdo — branco com gradiente muito sutil e profundidade
+   para se destacar do ambiente azul-escuro. É a "página" onde o aluno lê e
+   decide; usada em todo o produto, não só na prova. */
 .card-sapiens {
     background: linear-gradient(180deg, #ffffff 0%, #f5f9ff 100%);
     border: 1px solid rgba(19,45,92,0.08);
+    box-shadow: 0 20px 50px -25px rgba(6,16,36,0.55);
 }
 
-/* Ambiente imersivo da experiência de prova */
+/* Painel de marca — usado em áreas que merecem o azul mais vívido da marca
+   (ex.: painel do login), além do ambiente global mais discreto. */
 .exam-shell {
     background:
         radial-gradient(1100px 520px at 12% -8%, rgba(74,133,227,0.32), transparent 60%),

@@ -7,7 +7,7 @@ import { FileText, Zap, Brain, Users, ClipboardList, ArrowRight, ShieldCheck, Re
 
 function StatCard({ label, value, hint }) {
   return (
-    <div className="bg-white border border-zinc-200 rounded-2xl p-5">
+    <div className="card-sapiens rounded-2xl p-5">
       <div className="font-mono-alt text-[10px] uppercase tracking-[0.3em] text-zinc-500">{label}</div>
       <div className="mt-2 font-display text-3xl font-extrabold tracking-tighter text-zinc-950">{value ?? "—"}</div>
       {hint && <div className="mt-1 text-xs text-zinc-500">{hint}</div>}
@@ -54,13 +54,13 @@ export default function AdminDashboard() {
       <Nav />
       <div className="max-w-6xl mx-auto px-6 md:px-10 py-12">
         <div className="flex items-center gap-3 mb-3">
-          <ShieldCheck className="w-4 h-4 text-emerald-500" />
-          <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-zinc-500">Área administrativa</div>
+          <ShieldCheck className="w-4 h-4 text-sapiens-accent" />
+          <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-white/50">Área administrativa</div>
         </div>
-        <h1 className="font-display text-4xl md:text-5xl font-extrabold tracking-tighter text-zinc-950" data-testid="admin-title">
+        <h1 className="font-display text-4xl md:text-5xl font-extrabold tracking-tighter text-white" data-testid="admin-title">
           Painel de administração
         </h1>
-        <p className="mt-3 text-zinc-500 max-w-2xl">
+        <p className="mt-3 text-white/60 max-w-2xl">
           Aqui vive tudo que só admins podem ver: importação de gabaritos, gestão do feed, anotações cognitivas, histórico consolidado dos alunos e permissões.
         </p>
 
@@ -75,8 +75,8 @@ export default function AdminDashboard() {
         </div>
 
         {/* Firestore sync */}
-        <div className="mt-10 bg-white border border-zinc-200 rounded-2xl p-6 flex flex-col md:flex-row md:items-center gap-4">
-          <div className="w-11 h-11 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0">
+        <div className="mt-10 card-sapiens rounded-2xl p-6 flex flex-col md:flex-row md:items-center gap-4">
+          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-sapiens-accent to-sapiens-navy text-white flex items-center justify-center shrink-0">
             <Database className="w-5 h-5" strokeWidth={1.7} />
           </div>
           <div className="flex-1 min-w-0">
@@ -105,10 +105,10 @@ export default function AdminDashboard() {
         <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-4">
           {SECTIONS.map(s => (
             <Link key={s.to} to={s.to}
-              className="lift bg-white border border-zinc-200 hover:border-zinc-900 rounded-2xl p-6 flex items-start gap-4"
+              className="lift card-sapiens hover:border-sapiens-accent rounded-2xl p-6 flex items-start gap-4"
               data-testid={`admin-section-${s.to.replace(/\//g, "-")}`}
             >
-              <div className="w-11 h-11 rounded-xl bg-zinc-950 text-white flex items-center justify-center shrink-0">
+              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-sapiens-accent to-sapiens-navy text-white flex items-center justify-center shrink-0">
                 <s.icon className="w-5 h-5" strokeWidth={1.7} />
               </div>
               <div className="flex-1 min-w-0">

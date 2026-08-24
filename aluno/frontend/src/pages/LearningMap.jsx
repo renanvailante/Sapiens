@@ -26,23 +26,23 @@ export default function LearningMap() {
 
   const nodeById = Object.fromEntries(positioned.map(n => [n.id, n]));
 
-  if (!a) return <div><Nav /><div className="p-10 text-zinc-500">Carregando mapa...</div></div>;
+  if (!a) return <div><Nav /><div className="p-10 text-white/60">Carregando mapa...</div></div>;
 
   return (
     <div className="min-h-screen">
       <Nav />
       <div className="max-w-5xl mx-auto px-6 md:px-10 py-12">
-        <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-zinc-500 mb-4">Mapa de aprendizagem</div>
-        <h1 className="font-display text-4xl md:text-5xl font-extrabold tracking-tighter text-zinc-950" data-testid="map-title">
+        <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-white/50 mb-4">Mapa de aprendizagem</div>
+        <h1 className="font-display text-4xl md:text-5xl font-extrabold tracking-tighter text-white" data-testid="map-title">
           A causa-raiz por trás do erro.
         </h1>
-        <p className="mt-3 text-zinc-500 max-w-lg">Você errou no sintoma. Estude aqui a raiz. Nós conectamos o problema à cadeia de pré-requisitos.</p>
+        <p className="mt-3 text-white/60 max-w-lg">Você errou no sintoma. Estude aqui a raiz. Nós conectamos o problema à cadeia de pré-requisitos.</p>
 
         {positioned.length === 0 ? (
-          <div className="mt-10 text-zinc-500">Mapa em construção.</div>
+          <div className="mt-10 text-white/60">Mapa em construção.</div>
         ) : (
           <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="md:col-span-2 bg-white border border-zinc-200 rounded-2xl p-4">
+            <div className="md:col-span-2 card-sapiens rounded-2xl p-4">
               <svg viewBox="0 0 600 480" className="w-full h-[480px]" data-testid="map-svg">
                 <defs>
                   <marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
@@ -68,7 +68,7 @@ export default function LearningMap() {
                 })}
               </svg>
             </div>
-            <div className="bg-white border border-zinc-200 rounded-2xl p-6">
+            <div className="card-sapiens rounded-2xl p-6">
               <div className="font-mono-alt text-[10px] uppercase tracking-[0.3em] text-zinc-500 mb-3">Nó selecionado</div>
               {selected ? (
                 <div>

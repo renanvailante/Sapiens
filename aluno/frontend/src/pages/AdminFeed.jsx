@@ -73,16 +73,16 @@ export default function AdminFeed() {
     <div className="min-h-screen">
       <Nav />
       <div className="max-w-5xl mx-auto px-6 md:px-10 py-12">
-        <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-zinc-500 mb-3">Admin · Feed</div>
-        <h1 className="font-display text-4xl font-extrabold tracking-tighter text-zinc-950" data-testid="feed-admin-title">
+        <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-white/50 mb-3">Admin · Feed</div>
+        <h1 className="font-display text-4xl font-extrabold tracking-tighter text-white" data-testid="feed-admin-title">
           Gerenciar cards do feed
         </h1>
-        <p className="mt-3 text-zinc-500 max-w-2xl">
+        <p className="mt-3 text-white/60 max-w-2xl">
           Cada card aparece como uma tela cheia no feed vertical. O modelo cognitivo, a variável de dificuldade e o mapeamento de habilidades serão conectados posteriormente por outra camada.
         </p>
 
         {/* Composer */}
-        <div className="mt-8 bg-white border border-zinc-200 rounded-2xl p-6">
+        <div className="mt-8 card-sapiens rounded-2xl p-6">
           <div className="font-display font-bold text-xl tracking-tight text-zinc-950">Novo card</div>
           <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
             <label className="text-xs">
@@ -178,7 +178,7 @@ export default function AdminFeed() {
           <div className="font-display font-bold text-xl tracking-tight text-zinc-950 mb-4">Cards existentes ({items.length})</div>
           <div className="space-y-2">
             {items.map(it => (
-              <div key={it.content_id} className="bg-white border border-zinc-200 rounded-2xl p-4 flex items-center gap-4" data-testid={`feed-admin-row-${it.content_id}`}>
+              <div key={it.content_id} className="card-sapiens rounded-2xl p-4 flex items-center gap-4" data-testid={`feed-admin-row-${it.content_id}`}>
                 <input type="number" defaultValue={it.sequence_order}
                   onBlur={e => { if (Number(e.target.value) !== it.sequence_order) patchOrder(it, e.target.value); }}
                   className="w-16 text-center border border-zinc-200 rounded-lg px-2 py-1 text-sm font-mono-alt"

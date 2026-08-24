@@ -76,7 +76,7 @@ const SAMPLE = `{
 function AnnotationRow({ ann, onDelete }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="bg-white border border-zinc-200 rounded-2xl" data-testid={`ann-row-${ann.item_id}`}>
+    <div className="card-sapiens rounded-2xl" data-testid={`ann-row-${ann.item_id}`}>
       <div className="p-4 flex items-center gap-4">
         <button onClick={() => setOpen(o => !o)} className="p-1 hover:bg-zinc-100 rounded" data-testid={`ann-toggle-${ann.item_id}`}>
           {open ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
@@ -176,61 +176,63 @@ export default function AdminAnnotations() {
     <div className="min-h-screen">
       <Nav />
       <div className="max-w-5xl mx-auto px-6 md:px-10 py-12">
-        <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-zinc-500 mb-3">Admin · Anotações cognitivas</div>
-        <h1 className="font-display text-4xl font-extrabold tracking-tighter text-zinc-950" data-testid="ann-admin-title">
+        <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-white/50 mb-3">Admin · Anotações cognitivas</div>
+        <h1 className="font-display text-4xl font-extrabold tracking-tighter text-white" data-testid="ann-admin-title">
           Importar anotação cognitiva
         </h1>
-        <p className="mt-3 text-zinc-500 max-w-2xl">
+        <p className="mt-3 text-white/60 max-w-2xl">
           Cole o JSON gerado pela IA anotadora. O Sapiens valida a estrutura mínima, armazena o payload
           <b> verbatim </b>e disponibiliza a leitura para todas as features (perfil cognitivo, diagnóstico por processos, plano de estudos, feed adaptativo).
         </p>
-        <p className="mt-2 text-xs text-zinc-500 flex items-center gap-1.5">
-          <ShieldCheck className="w-4 h-4 text-emerald-500" />
+        <p className="mt-2 text-xs text-white/50 flex items-center gap-1.5">
+          <ShieldCheck className="w-4 h-4 text-sapiens-accent" />
           Regra: nunca alteramos, inferimos ou recomputamos os campos anotados. Schema é versionado por <code className="font-mono-alt">schema_version</code>.
         </p>
 
-        <textarea value={raw} onChange={e => setRaw(e.target.value)} placeholder={SAMPLE}
-          className="mt-6 w-full h-[420px] font-mono-alt text-xs border border-zinc-200 rounded-2xl p-4 focus:border-zinc-900 outline-none"
-          data-testid="ann-admin-paste" />
+        <div className="mt-6 card-sapiens rounded-2xl p-6">
+          <textarea value={raw} onChange={e => setRaw(e.target.value)} placeholder={SAMPLE}
+            className="w-full h-[420px] font-mono-alt text-xs border border-zinc-200 rounded-2xl p-4 focus:border-sapiens-accent outline-none"
+            data-testid="ann-admin-paste" />
 
-        <div className="mt-3 flex flex-wrap items-center gap-3">
-          <button disabled={busy} onClick={submit}
-            className="pill inline-flex items-center gap-2 btn-sapiens disabled:opacity-60 text-white px-6 py-3 rounded-full text-sm font-medium"
-            data-testid="ann-admin-submit">
-            <Upload className="w-4 h-4" /> {busy ? "Validando..." : "Ingerir JSON"}
-          </button>
-          <span className="text-xs text-zinc-500">Aceita objeto único, array `[...]` ou envelope `{`{items: [...]}`}`</span>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <button disabled={busy} onClick={submit}
+              className="pill inline-flex items-center gap-2 btn-sapiens disabled:opacity-60 px-6 py-3 rounded-full text-sm font-medium"
+              data-testid="ann-admin-submit">
+              <Upload className="w-4 h-4" /> {busy ? "Validando..." : "Ingerir JSON"}
+            </button>
+            <span className="text-xs text-zinc-500">Aceita objeto único, array `[...]` ou envelope `{`{items: [...]}`}`</span>
+          </div>
         </div>
 
         {/* Filters + list */}
         <div className="mt-12">
-          <div className="flex flex-wrap items-end gap-3">
+          <div className="card-sapiens rounded-2xl p-5 flex flex-wrap items-end gap-3">
             <div>
               <div className="text-[10px] font-mono-alt uppercase tracking-[0.2em] text-zinc-500 mb-1">Banca</div>
               <input value={filter.banca} onChange={e => setFilter(f => ({ ...f, banca: e.target.value }))}
-                className="border border-zinc-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-zinc-900" data-testid="ann-filter-banca" />
+                className="border border-zinc-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-sapiens-accent" data-testid="ann-filter-banca" />
             </div>
             <div>
               <div className="text-[10px] font-mono-alt uppercase tracking-[0.2em] text-zinc-500 mb-1">Ano</div>
               <input value={filter.ano} onChange={e => setFilter(f => ({ ...f, ano: e.target.value }))}
-                className="w-24 border border-zinc-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-zinc-900" data-testid="ann-filter-ano" />
+                className="w-24 border border-zinc-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-sapiens-accent" data-testid="ann-filter-ano" />
             </div>
             <div>
               <div className="text-[10px] font-mono-alt uppercase tracking-[0.2em] text-zinc-500 mb-1">Disciplina</div>
               <input value={filter.disciplina} onChange={e => setFilter(f => ({ ...f, disciplina: e.target.value }))}
-                className="border border-zinc-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-zinc-900" data-testid="ann-filter-disciplina" />
+                className="border border-zinc-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-sapiens-accent" data-testid="ann-filter-disciplina" />
             </div>
             <button onClick={load} className="pill border border-zinc-200 hover:bg-zinc-50 px-4 py-2 rounded-full text-sm font-medium" data-testid="ann-filter-apply">
               Filtrar
             </button>
           </div>
 
-          <div className="mt-4 font-display font-bold text-xl tracking-tight text-zinc-950">
+          <div className="mt-4 font-display font-bold text-xl tracking-tight text-white">
             Anotações no banco ({items.length})
           </div>
           <div className="mt-3 space-y-2">
             {items.length === 0 && (
-              <div className="bg-white border border-zinc-200 rounded-2xl p-8 text-zinc-500 text-sm">
+              <div className="card-sapiens rounded-2xl p-8 text-zinc-500 text-sm">
                 Nenhuma anotação ainda. Cole o primeiro JSON acima.
               </div>
             )}

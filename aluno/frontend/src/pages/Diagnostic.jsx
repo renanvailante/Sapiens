@@ -21,7 +21,7 @@ export default function Diagnostic() {
   if (!a) return (
     <div>
       <Nav />
-      <div className="max-w-3xl mx-auto p-10 text-zinc-500 font-medium">Compondo seu diagnóstico...</div>
+      <div className="max-w-3xl mx-auto p-10 text-white/60 font-medium">Compondo seu diagnóstico...</div>
     </div>
   );
 
@@ -36,11 +36,11 @@ export default function Diagnostic() {
       <div className="max-w-3xl mx-auto px-6 md:px-10 py-14">
         {phase === "insight" ? (
           <div className="reveal">
-            <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-zinc-500 mb-6">Diagnóstico Sapiens</div>
-            <h1 className="font-display text-4xl md:text-5xl font-extrabold tracking-tighter text-zinc-950 leading-[1.02]" data-testid="diag-headline">
+            <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-white/50 mb-6">Diagnóstico Sapiens</div>
+            <h1 className="font-display text-4xl md:text-5xl font-extrabold tracking-tighter text-white leading-[1.02]" data-testid="diag-headline">
               {a.diagnostic_headline || "Seu desempenho revela um padrão que a nota não mostra."}
             </h1>
-            <div className="mt-8 space-y-4 text-lg text-zinc-700 leading-relaxed" data-testid="diag-body">
+            <div className="mt-8 space-y-4 text-lg text-white/70 leading-relaxed" data-testid="diag-body">
               {(a.diagnostic_body || "").split(/\n+/).map((p, i) => <p key={i}>{p}</p>)}
             </div>
 
@@ -69,23 +69,23 @@ export default function Diagnostic() {
               >
                 Ver os números <ArrowRight className="w-4 h-4" />
               </button>
-              <Link to={`/plan/${a.analysis_id}`} className="pill inline-flex items-center gap-2 border border-zinc-200 hover:bg-zinc-50 px-5 py-3 rounded-full text-sm font-medium text-zinc-900" data-testid="diag-see-plan">
+              <Link to={`/plan/${a.analysis_id}`} className="pill inline-flex items-center gap-2 border border-white/20 hover:bg-white/10 px-5 py-3 rounded-full text-sm font-medium text-white" data-testid="diag-see-plan">
                 <Sparkles className="w-4 h-4" /> Meu plano
               </Link>
             </div>
           </div>
         ) : (
           <div className="reveal">
-            <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-zinc-500 mb-6">Nota bruta</div>
+            <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-white/50 mb-6">Nota bruta</div>
             <div className="flex items-baseline gap-6">
-              <div className="font-display text-8xl font-extrabold tracking-tighter text-zinc-950" data-testid="diag-score">
-                {a.score}<span className="text-zinc-300">/{a.total}</span>
+              <div className="font-display text-8xl font-extrabold tracking-tighter text-white" data-testid="diag-score">
+                {a.score}<span className="text-white/30">/{a.total}</span>
               </div>
-              <div className="text-2xl text-zinc-500 font-display font-semibold">{a.percent}%</div>
+              <div className="text-2xl text-white/60 font-display font-semibold">{a.percent}%</div>
             </div>
 
             <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-white border border-zinc-200 rounded-2xl p-6">
+              <div className="card-sapiens rounded-2xl p-6">
                 <div className="font-mono-alt text-[10px] uppercase tracking-[0.3em] text-zinc-500 mb-4">Acertos por área</div>
                 <div className="h-56">
                   <ResponsiveContainer>
@@ -100,7 +100,7 @@ export default function Diagnostic() {
                   </ResponsiveContainer>
                 </div>
               </div>
-              <div className="bg-white border border-zinc-200 rounded-2xl p-6">
+              <div className="card-sapiens rounded-2xl p-6">
                 <div className="font-mono-alt text-[10px] uppercase tracking-[0.3em] text-zinc-500 mb-4">Perfil cognitivo</div>
                 <div className="h-56">
                   <ResponsiveContainer>
@@ -108,7 +108,7 @@ export default function Diagnostic() {
                       <PolarGrid stroke="#e4e4e7" />
                       <PolarAngleAxis dataKey="trait" fontSize={9} stroke="#71717a" />
                       <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
-                      <Radar dataKey="value" stroke="#09090b" fill="#09090b" fillOpacity={0.15} />
+                      <Radar dataKey="value" stroke="#4A85E3" fill="#4A85E3" fillOpacity={0.15} />
                     </RadarChart>
                   </ResponsiveContainer>
                 </div>
@@ -116,13 +116,13 @@ export default function Diagnostic() {
             </div>
 
             <div className="mt-8 flex items-center gap-3">
-              <button onClick={() => nav(`/plan/${a.analysis_id}`)} className="pill btn-sapiens text-white px-6 py-3 rounded-full text-sm font-medium" data-testid="diag-go-plan">
+              <button onClick={() => nav(`/plan/${a.analysis_id}`)} className="pill btn-sapiens px-6 py-3 rounded-full text-sm font-medium" data-testid="diag-go-plan">
                 Ver plano de estudos
               </button>
-              <button onClick={() => nav(`/map/${a.analysis_id}`)} className="pill border border-zinc-200 hover:bg-zinc-50 px-6 py-3 rounded-full text-sm font-medium text-zinc-900" data-testid="diag-go-map">
+              <button onClick={() => nav(`/map/${a.analysis_id}`)} className="pill border border-white/20 hover:bg-white/10 px-6 py-3 rounded-full text-sm font-medium text-white" data-testid="diag-go-map">
                 Mapa de aprendizagem
               </button>
-              <button onClick={() => nav("/dashboard")} className="text-sm text-zinc-500 hover:text-zinc-900 underline" data-testid="diag-go-dash">
+              <button onClick={() => nav("/dashboard")} className="text-sm text-white/50 hover:text-white underline" data-testid="diag-go-dash">
                 Ir para o painel
               </button>
             </div>

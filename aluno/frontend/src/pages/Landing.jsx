@@ -11,8 +11,8 @@ export default function Landing() {
     <div className="min-h-screen grain">
       {/* Top bar */}
       <div className="max-w-6xl mx-auto px-6 md:px-10 pt-6 flex items-center justify-between">
-        <div className="flex items-center gap-2 font-display text-2xl font-extrabold tracking-tighter" data-testid="landing-brand">
-          <BrandMark className="w-6 h-6" tone="dark" />
+        <div className="flex items-center gap-2 font-display text-2xl font-extrabold tracking-tighter text-white" data-testid="landing-brand">
+          <BrandMark className="w-6 h-6" />
           Sapiens
         </div>
         <div className="flex items-center gap-3">
@@ -21,7 +21,7 @@ export default function Landing() {
               Ir para o painel
             </Link>
           ) : (
-            <Link to="/login" className="pill text-sm font-medium text-zinc-900 hover:text-zinc-600 px-3 py-2" data-testid="landing-login">
+            <Link to="/login" className="pill text-sm font-medium text-white/80 hover:text-white px-3 py-2" data-testid="landing-login">
               Entrar
             </Link>
           )}
@@ -30,16 +30,16 @@ export default function Landing() {
 
       {/* Hero */}
       <div className="max-w-3xl mx-auto px-6 md:px-10 pt-24 md:pt-32 pb-16 text-center">
-        <div className="reveal font-mono-alt text-xs uppercase tracking-[0.35em] text-zinc-500 mb-6">
+        <div className="reveal font-mono-alt text-xs uppercase tracking-[0.35em] text-white/50 mb-6">
           Inteligência educacional
         </div>
-        <h1 className="reveal reveal-delay-1 font-display text-6xl md:text-8xl font-extrabold tracking-tighter leading-[0.95] text-zinc-950" data-testid="landing-hero-title">
+        <h1 className="reveal reveal-delay-1 font-display text-6xl md:text-8xl font-extrabold tracking-tighter leading-[0.95]" data-testid="landing-hero-title">
           <span className="shimmer">Sapiens</span>
         </h1>
-        <p className="reveal reveal-delay-2 mt-8 text-2xl md:text-3xl font-display text-zinc-700 tracking-tight" data-testid="landing-hero-subtitle">
+        <p className="reveal reveal-delay-2 mt-8 text-2xl md:text-3xl font-display text-white/90 tracking-tight" data-testid="landing-hero-subtitle">
           Descubra por que você erra.
         </p>
-        <p className="reveal reveal-delay-3 mt-6 max-w-xl mx-auto text-zinc-500 leading-relaxed">
+        <p className="reveal reveal-delay-3 mt-6 max-w-xl mx-auto text-white/60 leading-relaxed">
           Não somos um corretor de provas. Somos o sistema que descobre padrões cognitivos escondidos nos seus erros — e transforma cada prova em um mapa para você evoluir.
         </p>
         <div className="reveal reveal-delay-4 mt-10 flex items-center justify-center gap-3">

@@ -8,24 +8,24 @@ export default function StudyPlan() {
   const { analysisId } = useParams();
   const [a, setA] = useState(null);
   useEffect(() => { api.get(`/analyses/${analysisId}`).then(({ data }) => setA(data)); }, [analysisId]);
-  if (!a) return <div><Nav /><div className="p-10 text-zinc-500">Carregando...</div></div>;
+  if (!a) return <div><Nav /><div className="p-10 text-white/60">Carregando...</div></div>;
   const plan = a.study_plan || [];
   return (
     <div className="min-h-screen">
       <Nav />
       <div className="max-w-3xl mx-auto px-6 md:px-10 py-12">
-        <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-zinc-500 mb-4">Plano de estudos</div>
-        <h1 className="font-display text-4xl md:text-5xl font-extrabold tracking-tighter text-zinc-950" data-testid="plan-title">
+        <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-white/50 mb-4">Plano de estudos</div>
+        <h1 className="font-display text-4xl md:text-5xl font-extrabold tracking-tighter text-white" data-testid="plan-title">
           O que estudar primeiro.
         </h1>
-        <p className="mt-3 text-zinc-500 max-w-lg">Ordenamos pelo maior retorno esperado — não por matéria. Foque no que traz mais pontos, no menor tempo.</p>
+        <p className="mt-3 text-white/60 max-w-lg">Ordenamos pelo maior retorno esperado — não por matéria. Foque no que traz mais pontos, no menor tempo.</p>
 
         {plan.length === 0 ? (
-          <div className="mt-10 text-zinc-500">Ainda não temos um plano personalizado. Faça uma prova para desbloquear.</div>
+          <div className="mt-10 text-white/60">Ainda não temos um plano personalizado. Faça uma prova para desbloquear.</div>
         ) : (
           <div className="mt-10 space-y-3">
             {plan.map((item, i) => (
-              <div key={i} className="lift bg-white border border-zinc-200 rounded-2xl p-6" data-testid={`plan-item-${i}`}>
+              <div key={i} className="lift card-sapiens rounded-2xl p-6" data-testid={`plan-item-${i}`}>
                 <div className="flex items-start gap-4">
                   <div className="font-display font-extrabold text-3xl text-zinc-300 tracking-tighter w-10">{String(i + 1).padStart(2, "0")}</div>
                   <div className="flex-1">

@@ -68,10 +68,10 @@ export default function AnswerInput() {
       <div className="max-w-4xl mx-auto px-6 md:px-10 py-10">
         {exam && (
           <div className="mb-8">
-            <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-zinc-500 mb-3">
+            <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-white/50 mb-3">
               Passo 2 de 3 · {exam.title} · {language === "english" ? "Inglês" : "Espanhol"}
             </div>
-            <h1 className="font-display text-3xl md:text-4xl font-extrabold tracking-tighter text-zinc-950" data-testid="answer-title">
+            <h1 className="font-display text-3xl md:text-4xl font-extrabold tracking-tighter text-white" data-testid="answer-title">
               Como você quer registrar suas respostas?
             </h1>
           </div>
@@ -115,7 +115,7 @@ export default function AnswerInput() {
         {(mode === "manual" || (mode === "photo" && answeredCount > 0)) && (
           <div className="mt-8">
             <div className="mb-4 flex items-center justify-between">
-              <div className="font-mono-alt text-xs uppercase tracking-[0.25em] text-zinc-500">
+              <div className="font-mono-alt text-xs uppercase tracking-[0.25em] text-white/50">
                 Respondidas {answeredCount}/{numbers.length}
               </div>
               <button onClick={submit} disabled={submitting}

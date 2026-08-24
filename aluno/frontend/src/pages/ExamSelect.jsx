@@ -267,7 +267,7 @@ function QuestionRunner({ filtro, onExit }) {
     return <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-rose-700 shadow-[0_20px_50px_-25px_rgba(6,16,36,0.55)]">Erro: {erro}</div>;
   if (itens.length === 0)
     return (
-      <div className="card-sapiens rounded-2xl p-10 text-center shadow-[0_20px_50px_-25px_rgba(6,16,36,0.55)]">
+      <div className="card-sapiens rounded-2xl p-10 text-center">
         <div className="font-display text-2xl font-bold text-zinc-950">Nenhuma questão disponível ainda.</div>
         <p className="mt-2 text-zinc-500">Peça a um admin para sincronizar o Firestore no painel administrativo.</p>
       </div>
@@ -275,7 +275,7 @@ function QuestionRunner({ filtro, onExit }) {
 
   if (resumoSessao)
     return (
-      <div className="card-sapiens rounded-2xl p-6 md:p-8 shadow-[0_20px_50px_-25px_rgba(6,16,36,0.55)]">
+      <div className="card-sapiens rounded-2xl p-6 md:p-8">
         <div className="font-mono-alt text-xs uppercase tracking-[0.3em] text-sapiens-accentDeep mb-2">
           Resumo da sessão · {respostasSessaoRef.current.length} questões
         </div>
@@ -321,7 +321,7 @@ function QuestionRunner({ filtro, onExit }) {
 
   if (idx >= itens.length)
     return (
-      <div className="card-sapiens rounded-2xl p-10 text-center shadow-[0_20px_50px_-25px_rgba(6,16,36,0.55)]">
+      <div className="card-sapiens rounded-2xl p-10 text-center">
         <ProgressoProva respondidas={itens.length} total={itens.length} pulso={false} tone="dark" />
         <div className="font-display text-2xl font-bold text-zinc-950">Você concluiu todas as questões! 🎉</div>
         <p className="mt-2 text-zinc-500">Respostas registradas: {answered}.</p>
@@ -360,7 +360,7 @@ function QuestionRunner({ filtro, onExit }) {
         </div>
       )}
 
-      <article className="card-sapiens rounded-2xl p-6 md:p-8 shadow-[0_20px_50px_-25px_rgba(6,16,36,0.55)]">
+      <article className="card-sapiens rounded-2xl p-6 md:p-8">
         <div className="mb-4 flex flex-wrap gap-2">
           {tags.map((t, i) => (
             <span key={i} className="rounded-full bg-sapiens-accentSoft px-3 py-1 text-xs font-medium text-sapiens-navy">{t}</span>
@@ -544,13 +544,13 @@ function ProvasGrid({ onSelect, onExit }) {
 
   return (
     <div>
-      <button onClick={onExit} className="mb-6 inline-flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-900">
+      <button onClick={onExit} className="mb-6 inline-flex items-center gap-1.5 text-sm text-white/60 hover:text-white">
         <ChevronLeft className="w-4 h-4" /> Voltar
       </button>
 
       {loading && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {[...Array(2)].map((_, i) => <div key={i} className="animate-pulse h-32 bg-zinc-100 rounded-2xl" />)}
+          {[...Array(2)].map((_, i) => <div key={i} className="animate-pulse h-32 bg-white/10 rounded-2xl" />)}
         </div>
       )}
 
@@ -619,9 +619,9 @@ function ExamsByYear() {
 
   const goWithLanguage = (lang) => { nav(`/exam/${selected.exam_id}?lang=${lang}`); setSelected(null); };
 
-  if (loading) return <div className="grid grid-cols-1 md:grid-cols-3 gap-4">{[...Array(3)].map((_, i) => <div key={i} className="animate-pulse h-32 bg-zinc-100 rounded-2xl" />)}</div>;
+  if (loading) return <div className="grid grid-cols-1 md:grid-cols-3 gap-4">{[...Array(3)].map((_, i) => <div key={i} className="animate-pulse h-32 bg-white/10 rounded-2xl" />)}</div>;
   if (years.length === 0)
-    return <div className="text-sm text-zinc-500">Nenhum gabarito importado ainda. <Link to="/admin" className="underline hover:text-zinc-900">Abrir painel admin</Link>.</div>;
+    return <div className="text-sm text-white/60">Nenhum gabarito importado ainda. <Link to="/admin" className="underline hover:text-white">Abrir painel admin</Link>.</div>;
 
   return (
     <div className="space-y-8">
@@ -678,10 +678,9 @@ export default function ExamSelect() {
   const [filtro, setFiltro] = useState(null); // { banca, ano, prova, disciplinas, count }
 
   const escolherProva = (p) => { setFiltro(p); setMode("practice"); };
-  const imersivo = mode === "practice";
 
   return (
-    <div className={`min-h-screen ${imersivo ? "exam-shell" : ""}`}>
+    <div className="min-h-screen">
       <Nav />
       <div className="max-w-3xl mx-auto px-6 md:px-10 py-14">
         {mode === "practice" ? (
@@ -689,22 +688,22 @@ export default function ExamSelect() {
         ) : mode === "provas" ? (
           <>
             <div className="mb-10">
-              <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-zinc-500 mb-3">Provas</div>
-              <h1 className="font-display text-4xl md:text-5xl font-extrabold tracking-tighter text-zinc-950">
+              <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-white/50 mb-3">Provas</div>
+              <h1 className="font-display text-4xl md:text-5xl font-extrabold tracking-tighter text-white">
                 Escolha um caderno
               </h1>
-              <p className="mt-3 text-zinc-500 max-w-lg">Cada caderno é uma prova real, agrupada por banca, ano e cor.</p>
+              <p className="mt-3 text-white/60 max-w-lg">Cada caderno é uma prova real, agrupada por banca, ano e cor.</p>
             </div>
             <ProvasGrid onSelect={escolherProva} onExit={() => setMode("hub")} />
           </>
         ) : (
           <>
             <div className="mb-10">
-              <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-zinc-500 mb-3">Provas</div>
-              <h1 className="font-display text-4xl md:text-5xl font-extrabold tracking-tighter text-zinc-950" data-testid="exam-select-title">
+              <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-white/50 mb-3">Provas</div>
+              <h1 className="font-display text-4xl md:text-5xl font-extrabold tracking-tighter text-white" data-testid="exam-select-title">
                 Pratique questões
               </h1>
-              <p className="mt-3 text-zinc-500 max-w-lg">Questões auditadas, uma de cada vez. Suas respostas são registradas para revelar seus padrões cognitivos.</p>
+              <p className="mt-3 text-white/60 max-w-lg">Questões auditadas, uma de cada vez. Suas respostas são registradas para revelar seus padrões cognitivos.</p>
             </div>
 
             {/* Principal: escolher um caderno (banca/ano/cor) e praticar */}
@@ -726,11 +725,11 @@ export default function ExamSelect() {
             {/* Secundário: praticar por ano (ENEM) */}
             <div className="mt-14">
               <div className="flex items-center gap-3 mb-1">
-                <RotateCw className="w-4 h-4 text-zinc-400" />
-                <div className="font-mono-alt text-xs uppercase tracking-[0.3em] text-zinc-500">Opção secundária</div>
+                <RotateCw className="w-4 h-4 text-white/40" />
+                <div className="font-mono-alt text-xs uppercase tracking-[0.3em] text-white/50">Opção secundária</div>
               </div>
-              <h2 className="font-display text-2xl font-bold tracking-tight text-zinc-950">Praticar por ano (ENEM)</h2>
-              <p className="mt-2 mb-6 text-sm text-zinc-500">Provas oficiais completas por edição do ENEM.</p>
+              <h2 className="font-display text-2xl font-bold tracking-tight text-white">Praticar por ano (ENEM)</h2>
+              <p className="mt-2 mb-6 text-sm text-white/60">Provas oficiais completas por edição do ENEM.</p>
               <ExamsByYear />
             </div>
           </>
