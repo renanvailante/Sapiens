@@ -125,7 +125,8 @@ export default function AdminAnnotations() {
     const { data } = await api.get("/annotations", { params });
     setItems(data.items);
   };
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { load(); }, []);
 
   const submit = async () => {
     if (!raw.trim()) return toast.error("Cole um JSON de anotação.");
