@@ -113,12 +113,13 @@ html, body, #root {
 .pill { transition: transform .18s ease-out, background-color .18s ease-out, box-shadow .18s ease-out; }
 .pill:active { transform: scale(0.97); }
 
-/* Glass */
+/* Glass — vidro escuro, para se fundir ao ambiente imersivo em vez de
+   destoar como uma barra branca sobre o fundo azul-escuro. */
 .glass {
-    background: rgba(255,255,255,0.72);
-    backdrop-filter: saturate(160%) blur(16px);
-    -webkit-backdrop-filter: saturate(160%) blur(16px);
-    border-bottom: 1px solid hsl(var(--border));
+    background: rgba(9,17,31,0.62);
+    backdrop-filter: saturate(140%) blur(16px);
+    -webkit-backdrop-filter: saturate(140%) blur(16px);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
 }
 
 /* Card lift */
