@@ -6,7 +6,7 @@ import {
   Hash, Shapes, Workflow, Network, Languages, Microscope,
   Zap, RefreshCw, TrendingUp, Target, X,
   Trophy, AlertCircle, Flame, Repeat, Clock, ChevronDown, ChevronUp,
-  TrendingDown, Minus, BarChart3,
+  TrendingDown, Minus, BarChart3, LayoutList, Hexagon as HexagonIcon,
 } from "lucide-react";
 import {
   Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer,
@@ -220,6 +220,40 @@ function HubTreeCard({ hub, onLeaves, toggleLeaf }) {
   );
 }
 
+// Visão em lista hierárquica — mesma árvore de <HubTreeCard>, só que como
+// texto indentado (hub > frente > item), pra quem prefere ler a evolução em
+// vez de decifrar o hexágono.
+function HierarchicalList({ hubs }) {
+  return (
+    <div className="card-sapiens rounded-2xl p-5 md:p-6 space-y-6" data-testid="sm-list-view">
+      {(hubs || []).map((hub) => {
+        const Icon = HUB_ICON[hub.hub] || Hash;
+        const color = HUB_COLOR[hub.hub] || "#18181b";
+        return (
+          <div key={hub.hub}>
+            <div className="flex items-center gap-2.5 mb-2">
+              <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-white" style={{ background: color }}>
+                <Icon className="w-3.5 h-3.5" strokeWidth={1.8} />
+              </div>
+              <div className="font-display font-bold text-base text-zinc-950">{hub.label}</div>
+              <div className="ml-auto font-mono-alt text-sm font-bold" style={{ color }}>{hub.mastery}%</div>
+            </div>
+            <div className="ml-3.5 pl-4 border-l border-zinc-200 space-y-1.5">
+              {(hub.branches || []).flatMap((b) => b.leaves || []).map((leaf, i, arr) => (
+                <div key={i} className="flex items-center gap-2 text-sm text-zinc-600">
+                  <span className="text-zinc-300 font-mono-alt">{i === arr.length - 1 ? "└" : "├"}</span>
+                  <span className="flex-1 truncate">{leaf.name}</span>
+                  <span className="font-mono-alt font-bold text-xs" style={{ color }}>{Math.round(leaf.percent)}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function SkillsMap() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -227,6 +261,7 @@ export default function SkillsMap() {
   const [generating, setGenerating] = useState(false);
   const [onLeaves, setOnLeaves] = useState(() => new Set());
   const [activeHub, setActiveHub] = useState(null);
+  const [view, setView] = useState("hexagono"); // 'hexagono' | 'lista'
 
   const load = () => {
     setLoading(true);
@@ -349,7 +384,29 @@ export default function SkillsMap() {
           </div>
         )}
 
-        <div className="mt-6 card-sapiens rounded-2xl p-4 md:p-6" data-testid="sm-radar">
+        <div className="mt-6 inline-flex items-center gap-1 rounded-full border border-white/15 p-1" data-testid="sm-view-toggle">
+          <button
+            onClick={() => setView("hexagono")}
+            className={`pill inline-flex items-center gap-1.5 text-xs font-medium px-3.5 py-1.5 rounded-full ${view === "hexagono" ? "bg-white text-zinc-900" : "text-white/60 hover:text-white"}`}
+            data-testid="sm-view-hexagono"
+          >
+            <HexagonIcon className="w-3.5 h-3.5" /> Hexágono
+          </button>
+          <button
+            onClick={() => setView("lista")}
+            className={`pill inline-flex items-center gap-1.5 text-xs font-medium px-3.5 py-1.5 rounded-full ${view === "lista" ? "bg-white text-zinc-900" : "text-white/60 hover:text-white"}`}
+            data-testid="sm-view-lista"
+          >
+            <LayoutList className="w-3.5 h-3.5" /> Lista
+          </button>
+        </div>
+
+        {view === "lista" ? (
+          <div className="mt-4">
+            <HierarchicalList hubs={data?.hubs} />
+          </div>
+        ) : (
+        <div className="mt-4 card-sapiens rounded-2xl p-4 md:p-6" data-testid="sm-radar">
           <div style={{ width: "100%", height: 360 }}>
             <ResponsiveContainer>
               <RadarChart data={radarData} outerRadius="66%">
@@ -415,6 +472,7 @@ export default function SkillsMap() {
             </div>
           )}
         </div>
+        )}
 
         {feedback && (
           <div className="mt-6 card-sapiens rounded-2xl p-5 md:p-6" data-testid="sm-feedback">

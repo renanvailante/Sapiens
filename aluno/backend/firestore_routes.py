@@ -5,7 +5,9 @@ Todas as rotas sao protegidas pela sessao do proprio backend
 """
 from __future__ import annotations
 
+import asyncio
 import logging
+import re
 from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -13,6 +15,8 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from auth import require_user, require_admin
 from models import User
+import ai_service
+import annotation_service
 import firestore_service as fs
 from feedback_templates import build_feedback
 
@@ -224,6 +228,193 @@ async def register_answer(payload: AnswerPayload, user: User = Depends(require_u
         versao_aplicacao=payload.versao_aplicacao,
     )
     return {"acertou": acertou, "correta": correta_letra, "feedback": feedback}
+
+
+class RespostaSessao(BaseModel):
+    item_id: str
+    alternativa_escolhida: str
+    acertou: Optional[bool] = None
+
+
+class SessaoDiagnosticoPayload(BaseModel):
+    # Mínimo de 10: é o "pelo menos 10 questões" pedido — abaixo disso a
+    # amostra é pequena demais para um padrão dizer algo real.
+    respostas: list[RespostaSessao] = Field(..., min_length=10)
+
+
+@router.post("/students/me/sessao/diagnostico")
+async def diagnostico_sessao(payload: SessaoDiagnosticoPayload, user: User = Depends(require_user)):
+    """Resumo em linguagem natural de uma sessão de prática (mín. 10 respostas).
+
+    Não grava nada — o aluno já respondeu tudo isso via `/students/me/answer`
+    (que já persistiu o evento de behavior de cada uma). Este endpoint só lê
+    o item de cada resposta para montar o contexto e chama o Gemini UMA vez
+    por sessão, com `thinking_level=LOW` (ver `ai_service.diagnose_sessao`).
+    """
+    respostas = [r.model_dump() for r in payload.respostas]
+    contexto = await asyncio.to_thread(annotation_service.montar_contexto_sessao, respostas)
+    return await ai_service.diagnose_sessao(contexto)
+
+
+# ---------- Rodadas (progresso/devolutiva/Sparks) ----------
+#
+# Prova de 45 questões dividida em rodadas de 10 (a última fecha com o
+# restante: 5, para um bloco de 45). Ao fim de cada rodada: devolutiva
+# determinística (sem IA, ver `annotation_service.resumo_rodada`) + Sparks
+# (+1 por acerto da rodada), concedidos no máximo uma vez por rodada.
+
+RODADA_TAMANHO = 10
+
+
+class BlocoRef(BaseModel):
+    """Identifica um bloco/prova de até 45 questões — os mesmos 5 campos que
+    `/api/provas` devolve e o frontend já guarda como `filtro`."""
+    banca: Optional[str] = None
+    ano: Optional[int] = None
+    prova: Optional[str] = None
+    numero_min: Optional[int] = None
+    numero_max: Optional[int] = None
+
+
+class RodadaConcluirPayload(BaseModel):
+    bloco: BlocoRef
+    rodada: int = Field(..., ge=1, le=5)
+
+
+def _round_key(bloco: dict[str, Any], rodada: int) -> str:
+    """Chave determinística e estável de `students/{uid}/sparks_rounds/{key}`.
+
+    Determinística em (aluno, bloco, rodada): a mesma prova+rodada produz
+    sempre a mesma chave, é isso que faz `DocumentReference.create()` (em
+    `firestore_service.grant_round_sparks`) funcionar como trava de
+    idempotência — chamar de novo bate no mesmo documento.
+    """
+    partes = [
+        str(bloco.get("banca") or ""), str(bloco.get("ano") or ""), str(bloco.get("prova") or ""),
+        str(bloco.get("numero_min") or ""), str(bloco.get("numero_max") or ""), f"r{rodada}",
+    ]
+    bruto = "-".join(partes)
+    return re.sub(r"[^A-Za-z0-9_.-]", "_", bruto)[:400] or f"rodada-{rodada}"
+
+
+def _rodada_range(numero_min: int, numero_max: int, rodada: int) -> tuple[int, int]:
+    """`(numero_inicio, numero_fim)` da rodada dentro do bloco. Rodadas 1-4 têm
+    10 questões; a última fecha com o que sobrar (5, para um bloco de 45) —
+    nunca ultrapassa `numero_max`."""
+    inicio = numero_min + (rodada - 1) * RODADA_TAMANHO
+    fim = min(inicio + RODADA_TAMANHO - 1, numero_max)
+    return inicio, fim
+
+
+@router.post("/students/me/rodada/concluir")
+async def concluir_rodada(payload: RodadaConcluirPayload, user: User = Depends(require_user)):
+    """Devolutiva determinística da rodada (sem IA) + concessão idempotente de Sparks.
+
+    Não recebe respostas do cliente: os `item_id`s da rodada são recalculados
+    aqui a partir de `bloco`+`rodada` (mesma faixa `fonte.numero` que
+    `/api/questoes` usa), e o acerto de cada um vem do que já está gravado em
+    `students/{uid}/behavior` — o mesmo evento que `/students/me/answer` já
+    persistiu. Isso evita que o cliente possa inflar Sparks só enviando uma
+    lista de `item_id`s arbitrária.
+
+    Repetir a chamada (retomada, refresh, corrida de rede) nunca credita Sparks
+    duas vezes — ver a garantia atômica em `firestore_service.grant_round_sparks`.
+    """
+    bloco = payload.bloco.model_dump()
+    numero_min, numero_max = bloco.get("numero_min"), bloco.get("numero_max")
+    if numero_min is None or numero_max is None:
+        raise HTTPException(status_code=422, detail="bloco.numero_min e bloco.numero_max são obrigatórios")
+
+    inicio, fim = _rodada_range(numero_min, numero_max, payload.rodada)
+
+    item_ids: list[str] = []
+    if inicio <= fim:
+        filtro: dict[str, Any] = {"fonte.numero": {"$gte": inicio, "$lte": fim}}
+        if bloco.get("banca"):
+            filtro["fonte.banca"] = bloco["banca"]
+        if bloco.get("ano") is not None:
+            filtro["fonte.ano"] = bloco["ano"]
+        if bloco.get("prova"):
+            filtro["fonte.prova"] = bloco["prova"]
+        cursor = _db.questoes_public.find(filtro, {"_id": 0, "item_id": 1}).sort("fonte.numero", 1)
+        item_ids = [doc["item_id"] async for doc in cursor if doc.get("item_id")]
+
+    _safe_call(fs.ensure_student_profile, user.user_id, user.name, user.email)
+    _safe_call(fs.ensure_sparks_balance, user.user_id)
+
+    eventos = _safe_call(fs.get_student_behavior_history, user.user_id, 5000)
+    por_item = {e.get("item_id"): e for e in eventos if e.get("item_id")}
+
+    respostas = [
+        {
+            "item_id": item_id,
+            "alternativa_escolhida": (por_item.get(item_id) or {}).get("resposta", {}).get("alternativa_escolhida"),
+            "acertou": (por_item.get(item_id) or {}).get("resposta", {}).get("acertou"),
+        }
+        for item_id in item_ids
+    ]
+
+    resumo = await asyncio.to_thread(annotation_service.resumo_rodada, respostas)
+
+    round_key = _round_key(bloco, payload.rodada)
+    evolucao = None
+    if payload.rodada > 1:
+        anterior = _safe_call(fs.read_round, user.user_id, _round_key(bloco, payload.rodada - 1))
+        if anterior and anterior.get("percentual_acerto") is not None:
+            evolucao = round(resumo["percentual_acerto"] - anterior["percentual_acerto"], 1)
+
+    resultado = _safe_call(
+        fs.grant_round_sparks,
+        user.user_id,
+        round_key=round_key,
+        bloco=bloco,
+        rodada=payload.rodada,
+        item_ids=item_ids,
+        acertos=resumo["acertos"],
+        erros=resumo["erros"],
+        total=resumo["total"],
+        percentual_acerto=resumo["percentual_acerto"],
+        padroes_de_erro=resumo["padroes_de_erro"],
+    )
+    saldo_atual = _safe_call(fs.read_sparks_balance, user.user_id)
+
+    return {
+        "rodada": payload.rodada,
+        "acertos": resultado.get("acertos", resumo["acertos"]),
+        "erros": resultado.get("erros", resumo["erros"]),
+        "total": resultado.get("total", resumo["total"]),
+        "percentual_acerto": resultado.get("percentual_acerto", resumo["percentual_acerto"]),
+        "evolucao": evolucao,
+        "padroes_de_erro": resultado.get("padroes_de_erro", resumo["padroes_de_erro"]),
+        "sparks_ganhos": resultado.get("sparks_ganhos", 0),
+        "sparks_balance": saldo_atual,
+        "ja_concedido": resultado.get("ja_concedido", False),
+    }
+
+
+@router.get("/students/me/sparks")
+async def meus_sparks(user: User = Depends(require_user)):
+    _safe_call(fs.ensure_student_profile, user.user_id, user.name, user.email)
+    saldo = _safe_call(fs.ensure_sparks_balance, user.user_id)
+    return {"sparks_balance": saldo}
+
+
+@router.get("/students/me/activity")
+async def minha_atividade(user: User = Depends(require_user)):
+    """Datas com atividade registrada (behavior real) — usado pelo painel
+    para sequência de estudos (streak) e progresso semanal."""
+    dates = _safe_call(fs.get_activity_dates, user.user_id, 3000)
+    return {"dates": dates}
+
+
+@router.get("/students/me/rounds")
+async def minhas_rodadas(user: User = Depends(require_user)):
+    """Histórico de rodadas concluídas (10 questões, 5 na última do bloco) —
+    já usado internamente pelo mapa de habilidades; exposto aqui pra
+    `ExamSelect` mostrar tentativas anteriores por caderno (simulados como
+    experiência contínua: progresso, desempenho anterior, comparação)."""
+    rounds = _safe_call(fs.list_sparks_rounds, user.user_id, 300)
+    return {"rounds": rounds}
 
 
 # Admin-only: access by arbitrary uid (e.g. teacher/admin viewing a student)

@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import Nav from "../components/Nav";
 import { toast } from "sonner";
-import { ArrowRight, MoreVertical, Eye, Pencil, Trash2 } from "lucide-react";
+import { ArrowRight, MoreVertical, Eye, Pencil, Trash2, TrendingUp, TrendingDown } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
 } from "../components/ui/dropdown-menu";
@@ -33,6 +33,17 @@ export default function History() {
       load();
     } catch (e) { toast.error("Não foi possível renomear."); }
   };
+  // `items` vem mais recente primeiro (GET /analyses); pra cada tentativa,
+  // compara com a tentativa ANTERIOR do mesmo exame (mesmo exam_label) —
+  // "comparação com tentativas anteriores" pedida pro simulado virar uma
+  // experiência contínua, não um evento isolado.
+  const deltaFor = (a) => {
+    const anteriores = items.filter((x) => x.exam_label === a.exam_label && x.created_at < a.created_at);
+    if (!anteriores.length) return null;
+    const maisRecenteAnterior = anteriores.reduce((m, x) => (x.created_at > m.created_at ? x : m));
+    return a.percent - maisRecenteAnterior.percent;
+  };
+
   const trash = async (a) => {
     try {
       await api.post(`/analyses/${a.analysis_id}/trash`);
@@ -82,7 +93,23 @@ export default function History() {
                   <div className="font-display font-extrabold text-2xl tracking-tighter text-zinc-950">
                     {a.score}<span className="text-zinc-300">/{a.total}</span>
                   </div>
-                  <div className="text-xs text-zinc-500 mt-1">{a.percent}%</div>
+                  <div className="flex items-center justify-end gap-1.5 mt-1">
+                    <span className="text-xs text-zinc-500">{a.percent}%</span>
+                    {(() => {
+                      const delta = deltaFor(a);
+                      if (delta == null || delta === 0) return null;
+                      const up = delta > 0;
+                      return (
+                        <span
+                          className={`inline-flex items-center gap-0.5 text-[10px] font-mono-alt font-bold px-1.5 py-0.5 rounded-full ${up ? "text-emerald-700 bg-emerald-50" : "text-rose-700 bg-rose-50"}`}
+                          data-testid={`history-delta-${a.analysis_id}`}
+                        >
+                          {up ? <TrendingUp className="w-2.5 h-2.5" /> : <TrendingDown className="w-2.5 h-2.5" />}
+                          {up ? "+" : ""}{delta}
+                        </span>
+                      );
+                    })()}
+                  </div>
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>

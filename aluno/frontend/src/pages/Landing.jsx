@@ -1,7 +1,9 @@
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, Sparkles, Brain, Network } from "lucide-react";
+import { ArrowRight, Sparkles, Brain, Network, ChevronRight } from "lucide-react";
 import { useAuth } from "../lib/auth";
 import BrandMark from "../components/BrandMark";
+
+const CYCLE = ["Resolver", "Observar", "Estimar estado cognitivo", "Identificar lacunas", "Adaptar", "Evoluir"];
 
 export default function Landing() {
   const nav = useNavigate();
@@ -50,6 +52,23 @@ export default function Landing() {
           >
             Analisar uma prova <ArrowRight className="w-4 h-4" />
           </button>
+        </div>
+      </div>
+
+      {/* O ciclo cognitivo */}
+      <div className="max-w-4xl mx-auto px-6 md:px-10 pb-24 text-center">
+        <p className="font-display text-xl md:text-2xl text-white/90 tracking-tight" data-testid="landing-tagline">
+          O Sapiens aprende como você aprende.
+        </p>
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-x-1.5 gap-y-4" data-testid="landing-cycle">
+          {CYCLE.map((step, i) => (
+            <div key={step} className="flex items-center gap-1.5">
+              <span className="font-mono-alt text-xs md:text-sm text-white/70 bg-white/5 border border-white/10 rounded-full px-4 py-2">
+                {step}
+              </span>
+              {i < CYCLE.length - 1 && <ChevronRight className="w-4 h-4 text-white/25 shrink-0" />}
+            </div>
+          ))}
         </div>
       </div>
 

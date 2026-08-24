@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { api, errMsg} from "../lib/api";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { api, API, errMsg} from "../lib/api";
 import Nav from "../components/Nav";
 import { ArrowRight, Check, X, RotateCw, Sparkles, BookOpen, ChevronLeft } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
@@ -109,6 +109,7 @@ function QuestionRunner({ filtro, onExit }) {
     if (filtro?.prova) params.set("prova", filtro.prova);
     if (filtro?.numero_min) params.set("numero_min", filtro.numero_min);
     if (filtro?.numero_max) params.set("numero_max", filtro.numero_max);
+    if (filtro?.area) params.set("area", filtro.area);
 
     Promise.all([
       api.get(`/questoes?${params.toString()}`),
@@ -169,8 +170,11 @@ function QuestionRunner({ filtro, onExit }) {
       // janela em que um fechamento de aba perderia a rodada) — mas só
       // EXIBE ao clicar em avançar, para não interromper o aluno no meio da
       // leitura do feedback desta questão.
+      // Prática por área (lacuna recomendada, sem `banca`) cruza cadernos e
+      // não tem identidade de bloco — rodada/Sparks de bloco não se aplicam,
+      // só a prática avulsa com feedback imediato por questão.
       const posicao = idx + 1;
-      const rodadaNum = filtro && rodadaNaPosicao(posicao, itens.length);
+      const rodadaNum = filtro?.banca && rodadaNaPosicao(posicao, itens.length);
       if (rodadaNum && !rodadasProcessadasRef.current.has(rodadaNum)) {
         rodadasProcessadasRef.current.add(rodadaNum);
         try {
@@ -371,13 +375,14 @@ function QuestionRunner({ filtro, onExit }) {
           {q.enunciado || "(Sem enunciado)"}
         </p>
 
-        {q.recursos?.imagens?.length > 0 && (
+        {q.recursos?.imagens?.some((img) => img?.arquivo) && (
           <img
             key={item.item_id}
-            src={`/exam-images/${item.item_id}.png`}
+            src={`${API}/exam-images/${item.item_id}`}
             alt="Imagem da questão"
             className="mt-4 max-w-full rounded-lg border border-zinc-200"
             data-testid="questao-imagem"
+            loading="lazy"
             onError={(e) => { e.currentTarget.style.display = "none"; }}
           />
         )}
@@ -528,10 +533,44 @@ function QuestionRunner({ filtro, onExit }) {
 // grupo é um caderno real já sincronizado do Firestore (nunca inventado
 // aqui). `onSelect` recebe exatamente esses 3 campos, usados como filtro em
 // <QuestionRunner>.
+const MINUTOS_POR_QUESTAO = 1.5; // heurística fixa, só para uma estimativa de tempo — não vem de telemetria real.
+
+function _blocoKey(p) {
+  return [p.banca || "", p.ano || "", p.prova || "", p.numero_min || "", p.numero_max || ""].join("|");
+}
+
+// Agrega o histórico de rodadas (cada uma já é uma tentativa real, com
+// acertos/total) por caderno — a base de "desempenho anterior" e "comparação
+// com tentativas anteriores" pedida pro simulado virar uma experiência
+// contínua, sem inventar nada além do que já foi respondido.
+function _statsPorBloco(rounds) {
+  const byBloco = {};
+  for (const r of rounds || []) {
+    const key = _blocoKey(r.bloco || {});
+    const list = (byBloco[key] = byBloco[key] || []);
+    list.push(r);
+  }
+  const stats = {};
+  for (const [key, list] of Object.entries(byBloco)) {
+    const ordered = [...list].sort((a, b) => (a.created_at || "").localeCompare(b.created_at || ""));
+    const last = ordered[ordered.length - 1];
+    const best = ordered.reduce((m, r) => Math.max(m, r.percentual_acerto || 0), 0);
+    stats[key] = {
+      roundsCompleted: new Set(ordered.map((r) => r.rodada)).size,
+      lastAccuracy: last?.percentual_acerto ?? null,
+      bestAccuracy: best,
+      previousAccuracy: ordered.length > 1 ? ordered[ordered.length - 2].percentual_acerto : null,
+      attempts: ordered.length,
+    };
+  }
+  return stats;
+}
+
 function ProvasGrid({ onSelect, onExit }) {
   const [provas, setProvas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
+  const [roundStats, setRoundStats] = useState({});
 
   useEffect(() => {
     let ativo = true;
@@ -539,6 +578,9 @@ function ProvasGrid({ onSelect, onExit }) {
       .then(({ data }) => { if (ativo) setProvas(data.provas || []); })
       .catch((e) => { if (ativo) setErro(e?.message || "Falha ao carregar"); })
       .finally(() => { if (ativo) setLoading(false); });
+    api.get("/firestore/students/me/rounds")
+      .then(({ data }) => { if (ativo) setRoundStats(_statsPorBloco(data.rounds)); })
+      .catch(() => {});
     return () => { ativo = false; };
   }, []);
 
@@ -567,36 +609,61 @@ function ProvasGrid({ onSelect, onExit }) {
 
       {!loading && !erro && provas.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {provas.map((p, i) => (
-            <button
-              key={`${p.banca}-${p.ano}-${p.prova}-${p.numero_min}-${i}`}
-              onClick={() => onSelect(p)}
-              data-testid={`prova-card-${p.banca}-${p.ano}-${p.prova}-${p.numero_min}`}
-              className="lift card-sapiens text-left rounded-2xl p-6 hover:border-sapiens-accent"
-            >
-              <div className="flex items-center gap-2">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sapiens-accent to-sapiens-navy text-white flex items-center justify-center shrink-0">
-                  <BookOpen className="w-5 h-5" strokeWidth={1.7} />
-                </div>
-                <div className="min-w-0">
-                  <div className="font-display font-bold text-lg tracking-tight text-zinc-950 truncate">
-                    {p.banca} {p.ano} · Caderno {capitalizar(p.prova)}
+          {provas.map((p, i) => {
+            const stats = roundStats[_blocoKey(p)];
+            const expectedRounds = Math.ceil((p.count || 0) / 10);
+            const remaining = Math.max(0, (p.count || 0) - (stats?.roundsCompleted || 0) * 10);
+            const etaMin = Math.max(1, Math.round(remaining * MINUTOS_POR_QUESTAO));
+            const delta = stats && stats.previousAccuracy != null ? Math.round(stats.lastAccuracy - stats.previousAccuracy) : null;
+            return (
+              <button
+                key={`${p.banca}-${p.ano}-${p.prova}-${p.numero_min}-${i}`}
+                onClick={() => onSelect(p)}
+                data-testid={`prova-card-${p.banca}-${p.ano}-${p.prova}-${p.numero_min}`}
+                className="lift card-sapiens text-left rounded-2xl p-6 hover:border-sapiens-accent"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sapiens-accent to-sapiens-navy text-white flex items-center justify-center shrink-0">
+                    <BookOpen className="w-5 h-5" strokeWidth={1.7} />
                   </div>
-                  <div className="text-xs text-zinc-500">
-                    {p.disciplinas.join(" e ") || "Disciplina não informada"} · Questões {p.numero_min}–{p.numero_max}
+                  <div className="min-w-0">
+                    <div className="font-display font-bold text-lg tracking-tight text-zinc-950 truncate">
+                      {p.banca} {p.ano} · Caderno {capitalizar(p.prova)}
+                    </div>
+                    <div className="text-xs text-zinc-500">
+                      {p.disciplinas.join(" e ") || "Disciplina não informada"} · Questões {p.numero_min}–{p.numero_max}
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="mt-4 flex items-center justify-between">
-                <span className="text-xs font-mono-alt text-zinc-400">
-                  {p.count}{p.total_bloco && p.count < p.total_bloco ? ` de ${p.total_bloco}` : ""} questão(ões)
-                </span>
-                <span className="inline-flex items-center gap-1.5 text-sm text-zinc-900 font-medium">
-                  Praticar <ArrowRight className="w-4 h-4" />
-                </span>
-              </div>
-            </button>
-          ))}
+
+                {stats && (
+                  <div className="mt-4 flex flex-wrap items-center gap-2" data-testid={`prova-stats-${p.banca}-${p.ano}-${p.prova}-${p.numero_min}`}>
+                    <span className="text-[11px] font-mono-alt font-bold text-sapiens-accentDeep bg-sapiens-accentSoft px-2 py-1 rounded-full">
+                      última: {stats.lastAccuracy}%
+                    </span>
+                    {delta != null && delta !== 0 && (
+                      <span className={`text-[11px] font-mono-alt font-bold px-2 py-1 rounded-full ${delta > 0 ? "text-emerald-700 bg-emerald-50" : "text-rose-700 bg-rose-50"}`}>
+                        {delta > 0 ? "+" : ""}{delta} p.p. vs. anterior
+                      </span>
+                    )}
+                    <span className="text-[11px] font-mono-alt text-zinc-500 bg-zinc-100 px-2 py-1 rounded-full">
+                      {stats.roundsCompleted}/{expectedRounds} rodadas
+                    </span>
+                  </div>
+                )}
+
+                <div className="mt-4 flex items-center justify-between">
+                  <span className="text-xs font-mono-alt text-zinc-400">
+                    {p.count}{p.total_bloco && p.count < p.total_bloco ? ` de ${p.total_bloco}` : ""} questão(ões)
+                    {remaining > 0 && ` · ~${etaMin} min`}
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 text-sm text-zinc-900 font-medium">
+                    {stats?.roundsCompleted ? "Continuar" : "Praticar"} <ArrowRight className="w-4 h-4" />
+                  </span>
+                </div>
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
@@ -674,8 +741,11 @@ function ExamsByYear() {
 }
 
 export default function ExamSelect() {
-  const [mode, setMode] = useState("hub"); // 'hub' | 'provas' | 'practice'
-  const [filtro, setFiltro] = useState(null); // { banca, ano, prova, disciplinas, count }
+  const [params] = useSearchParams();
+  const areaParam = params.get("area");
+  const nav = useNavigate();
+  const [mode, setMode] = useState(areaParam ? "practice" : "hub"); // 'hub' | 'provas' | 'practice'
+  const [filtro, setFiltro] = useState(areaParam ? { area: areaParam } : null); // { banca, ano, prova, disciplinas, count } | { area }
 
   const escolherProva = (p) => { setFiltro(p); setMode("practice"); };
 
@@ -683,8 +753,16 @@ export default function ExamSelect() {
     <div className="min-h-screen">
       <Nav />
       <div className="max-w-3xl mx-auto px-6 md:px-10 py-14">
+        {mode === "practice" && filtro?.area && (
+          <div className="mb-6" data-testid="practice-area-header">
+            <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-white/50 mb-3">Lacuna recomendada</div>
+            <h1 className="font-display text-3xl md:text-4xl font-extrabold tracking-tighter text-white">
+              Praticando {filtro.area}
+            </h1>
+          </div>
+        )}
         {mode === "practice" ? (
-          <QuestionRunner filtro={filtro} onExit={() => setMode("provas")} />
+          <QuestionRunner filtro={filtro} onExit={() => (filtro?.area ? nav("/dashboard") : setMode("provas"))} />
         ) : mode === "provas" ? (
           <>
             <div className="mb-10">

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import secrets
 from pathlib import Path
 from typing import Any
@@ -28,11 +29,13 @@ settings.exigir_config_valida()
 
 import auth as auth_module
 import exam_routes as exam_module
+import exam_images_routes as exam_images_module
 import feed_routes as feed_module
 import annotation_routes as annotation_module
 import admin_routes as admin_module
 import events_routes as events_module
 import firestore_routes as firestore_module
+import skills_map_routes as skills_map_module
 from enem_seed import migrate_and_seed
 from feed_seed import seed_feed
 from firestore_service import seed_all_students as _firestore_seed_students
@@ -42,6 +45,7 @@ db = client[settings.DB_NAME]
 
 auth_module.set_db(db)
 exam_module.set_db(db)
+exam_images_module.set_db(db)
 feed_module.set_db(db)
 annotation_module.set_db(db)
 admin_module.set_db(db)
@@ -71,6 +75,7 @@ async def list_questoes_publico(
     prova: str | None = None,
     numero_min: int | None = None,
     numero_max: int | None = None,
+    area: str | None = None,
 ):
     """Endpoint PUBLICO (sem autenticacao) do ALUNO.
     Le APENAS a colecao filtrada 'questoes_public' do Mongo (versao sem
@@ -80,8 +85,11 @@ async def list_questoes_publico(
     `numero_min`/`numero_max`, quando presentes, restringem a UM bloco de até
     45 questões dentro do caderno — uma prova/área real do ENEM (1-45,
     46-90, 91-135, 136-180); um caderno de dia inteiro (90 questões, 2 áreas)
-    não é uma prova só. Os mesmos campos agrupam `/api/provas`. Sem nenhum
-    filtro, devolve tudo (comportamento anterior, preservado).
+    não é uma prova só. Os mesmos campos agrupam `/api/provas`. `area`
+    restringe pela área ENEM canônica (`_AREAS_ENEM`) inferida de
+    `fonte.disciplina`, cruzando cadernos — usado pela prática de lacuna
+    recomendada no painel (uma área fraca, não um caderno específico). Sem
+    nenhum filtro, devolve tudo (comportamento anterior, preservado).
     """
     try:
         limit = max(1, min(int(limit), 500))
@@ -101,6 +109,12 @@ async def list_questoes_publico(
         if numero_max is not None:
             cond["$lte"] = numero_max
         filtro["fonte.numero"] = cond
+    if area:
+        pistas = [p for p, a in _AREAS_ENEM if a == area]
+        if pistas:
+            filtro["fonte.disciplina"] = {"$regex": "|".join(pistas), "$options": "i"}
+        else:
+            filtro["fonte.disciplina"] = area  # área desconhecida: match exato, devolve vazio se não bater
     cursor = db.questoes_public.find(
         filtro, {"_id": 0, "master_id": 0}
     ).sort("fonte.numero", 1).limit(limit)
@@ -202,11 +216,13 @@ async def list_provas_publico():
 
 api_router.include_router(auth_module.router)
 api_router.include_router(exam_module.router)
+api_router.include_router(exam_images_module.router)
 api_router.include_router(feed_module.router)
 api_router.include_router(annotation_module.router)
 api_router.include_router(admin_module.router)
 api_router.include_router(events_module.router)
 api_router.include_router(firestore_module.router)
+api_router.include_router(skills_map_module.router)
 app.include_router(api_router)
 
 
@@ -295,6 +311,35 @@ app.add_middleware(
 )
 
 
+# Sincronização automática Firestore -> questoes_public. Sem isto, uma prova
+# nova processada no pipeline só aparece para o aluno depois de um admin
+# clicar em "Sincronizar Firestore" em /admin — o que já causou o problema
+# relatado de "nenhuma questão disponível" com dado real já existente no
+# Firestore. 300s (5min) por padrão: frequente o bastante para não incomodar
+# quem processou uma prova agora, raro o bastante para não pressionar a cota
+# de leitura do Firestore (50k/dia no plano gratuito) à toa.
+FIRESTORE_AUTO_SYNC_SECONDS = int(os.environ.get("FIRESTORE_AUTO_SYNC_SECONDS", "300") or 300)
+
+
+async def _auto_sync_loop():
+    """Roda para sempre. Uma falha de sincronização (Firestore fora do ar,
+    credencial expirada) é logada e o laço tenta de novo no próximo
+    intervalo — nunca derruba o processo nem para de tentar."""
+    while True:
+        await asyncio.sleep(FIRESTORE_AUTO_SYNC_SECONDS)
+        try:
+            resultado = await admin_module.run_firestore_sync(db)
+            logger.info(
+                "Auto-sync Firestore: %d itens (master), %d publicados.",
+                resultado["master_count"], resultado["public_count"],
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(
+                "Auto-sync Firestore falhou (tentando de novo em %ds): %s",
+                FIRESTORE_AUTO_SYNC_SECONDS, exc,
+            )
+
+
 @app.on_event("startup")
 async def _startup():
     if settings.SEED_DEMO_DATA:
@@ -315,7 +360,11 @@ async def _startup():
             logger.warning("Firestore student seed skipped: %s", exc)
 
     asyncio.create_task(_safe_firestore_seed())
-    logger.info("Sapiens ready · %s", settings.resumo())
+    asyncio.create_task(_auto_sync_loop())
+    logger.info(
+        "Sapiens ready · %s · auto-sync Firestore a cada %ds",
+        settings.resumo(), FIRESTORE_AUTO_SYNC_SECONDS,
+    )
 
 
 @app.on_event("shutdown")

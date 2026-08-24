@@ -20,6 +20,7 @@ from typing import Any, Optional
 
 import firebase_admin
 from firebase_admin import credentials, firestore
+from google.api_core import exceptions as gcloud_exceptions
 
 logger = logging.getLogger("sapiens.firestore")
 
@@ -177,6 +178,9 @@ def _behavior_collection_ref(uid: str):
     return _student_doc_ref(uid).collection("behavior")
 
 
+SPARKS_INITIAL_BALANCE = 255  # saldo inicial de todo aluno novo (Sparks — economia de recompensa).
+
+
 def ensure_student_profile(uid: str, name: Optional[str] = None, email: Optional[str] = None) -> bool:
     """Cria o documento de profile do aluno em students/{uid} se ainda não existir.
     Deve ser chamado no login (via provisionamento já existente). Retorna True se criou.
@@ -188,8 +192,29 @@ def ensure_student_profile(uid: str, name: Optional[str] = None, email: Optional
         "nome": name,
         "email": email,
         "created_at": _now_iso(),
+        "sparks_balance": SPARKS_INITIAL_BALANCE,
     })
     return True
+
+
+def ensure_sparks_balance(uid: str) -> int:
+    """Garante que students/{uid} tenha `sparks_balance`, inicializando com
+    `SPARKS_INITIAL_BALANCE` se ausente — cobre perfis criados antes desta
+    feature existir. Idempotente: não sobrescreve um saldo já existente.
+    Retorna o saldo atual (após garantir que existe).
+    """
+    ref = _student_doc_ref(uid)
+    snap = ref.get()
+    data = snap.to_dict() or {}
+    if "sparks_balance" in data:
+        return data["sparks_balance"]
+    ref.set({"sparks_balance": SPARKS_INITIAL_BALANCE}, merge=True)
+    return SPARKS_INITIAL_BALANCE
+
+
+def read_sparks_balance(uid: str) -> int:
+    snap = _student_doc_ref(uid).get()
+    return (snap.to_dict() or {}).get("sparks_balance", SPARKS_INITIAL_BALANCE)
 
 
 def compute_item_hash(item_content: Any) -> str:
@@ -299,6 +324,17 @@ def get_student_behavior_history(uid: str, limit: int = 1000) -> list[dict[str, 
     return [d.to_dict() for d in docs]
 
 
+def get_activity_dates(uid: str, limit: int = 3000) -> list[str]:
+    """Datas (YYYY-MM-DD, UTC) em que o aluno respondeu ao menos uma questão,
+    mais recente primeiro — derivado do `timestamp` de cada evento de behavior.
+    Base para sequência de estudos (streak) e progresso semanal no painel;
+    nunca inventa atividade que não tenha evento real por trás.
+    """
+    eventos = get_student_behavior_history(uid, limit)
+    dates = {e["timestamp"][:10] for e in eventos if e.get("timestamp")}
+    return sorted(dates, reverse=True)
+
+
 def list_students_with_behavior(limit: int = 500) -> list[dict[str, Any]]:
     """Agrega, via collection group query, todos os alunos com pelo menos um
     evento de behavior registrado (schema canônico), com contagem e último evento."""
@@ -316,3 +352,136 @@ def list_students_with_behavior(limit: int = 500) -> list[dict[str, Any]]:
             agg["last_at"] = ts
     rows = sorted(by_student.values(), key=lambda r: r["last_at"] or "", reverse=True)
     return rows[:limit]
+
+
+# ======================================================================
+# Sparks — recompensa por rodada (10 questões; a última rodada do bloco de
+# 45 fecha com 5). Estrutura:
+#   students/{uid}.sparks_balance              -> saldo corrente (int)
+#   students/{uid}/sparks_rounds/{round_key}   -> UM doc por rodada concluída,
+#                                                  auditável (prova/rodada/itens)
+#                                                  e a própria prova de que a
+#                                                  rodada já foi paga.
+# ======================================================================
+
+def _sparks_round_ref(uid: str, round_key: str):
+    return _student_doc_ref(uid).collection("sparks_rounds").document(round_key)
+
+
+def read_round(uid: str, round_key: str) -> Optional[dict[str, Any]]:
+    snap = _sparks_round_ref(uid, round_key).get()
+    return snap.to_dict() if snap.exists else None
+
+
+def list_sparks_rounds(uid: str, limit: int = 200) -> list[dict[str, Any]]:
+    """Histórico de resumos de rodada (10 questões, 5 na última do bloco) do
+    aluno, mais recente primeiro — cada doc já tem `created_at`, `bloco`
+    (banca/ano/prova) e `padroes_de_erro`, gravados por `grant_round_sparks`.
+    """
+    docs = (
+        _student_doc_ref(uid)
+        .collection("sparks_rounds")
+        .order_by("created_at", direction=firestore.Query.DESCENDING)
+        .limit(limit)
+        .stream()
+    )
+    return [d.to_dict() for d in docs]
+
+
+def grant_round_sparks(
+    uid: str,
+    *,
+    round_key: str,
+    bloco: dict[str, Any],
+    rodada: int,
+    item_ids: list[str],
+    acertos: int,
+    erros: int,
+    total: int,
+    percentual_acerto: float,
+    padroes_de_erro: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Credita +1 Spark por acerto da rodada, UMA única vez, de forma atômica.
+
+    A garantia de "nunca duplicar" não vem de uma checagem prévia no cliente
+    nem de uma transação — vem de `DocumentReference.create()`: o Firestore só
+    deixa UMA chamada concorrente criar com sucesso um documento num caminho
+    que ainda não existe; todas as outras recebem `AlreadyExists` e não
+    escrevem nada. Isso cobre retomada, refresh e corrida de requisições
+    repetidas com a mesma garantia (create é atômico no servidor).
+    """
+    ref = _sparks_round_ref(uid, round_key)
+    round_doc = {
+        "round_key": round_key,
+        "student_id": uid,
+        "bloco": bloco,
+        "rodada": rodada,
+        "item_ids": item_ids,
+        "acertos": acertos,
+        "erros": erros,
+        "total": total,
+        "percentual_acerto": percentual_acerto,
+        "padroes_de_erro": padroes_de_erro,
+        "sparks_ganhos": acertos,
+        "created_at": _now_iso(),
+    }
+    try:
+        ref.create(round_doc)
+    except gcloud_exceptions.AlreadyExists:
+        existente = ref.get().to_dict() or {}
+        return {"ja_concedido": True, **existente}
+
+    if acertos:
+        _student_doc_ref(uid).update({"sparks_balance": firestore.Increment(acertos)})
+    return {"ja_concedido": False, **round_doc}
+
+
+class InsufficientSparksError(Exception):
+    """Saldo de Sparks do aluno é menor que o custo da ação."""
+
+    def __init__(self, balance: int, needed: int):
+        self.balance = balance
+        self.needed = needed
+        super().__init__(f"saldo insuficiente: {balance} < {needed}")
+
+
+def deduct_sparks(uid: str, amount: int) -> int:
+    """Debita `amount` Sparks do saldo do aluno, atomicamente (transação
+    Firestore) para evitar corrida entre requisições concorrentes. Lança
+    `InsufficientSparksError` se o saldo não cobrir o custo. Retorna o novo
+    saldo.
+    """
+    ref = _student_doc_ref(uid)
+    transaction = get_firestore().transaction()
+
+    @firestore.transactional
+    def _run(transaction):
+        snap = ref.get(transaction=transaction)
+        balance = (snap.to_dict() or {}).get("sparks_balance", SPARKS_INITIAL_BALANCE)
+        if balance < amount:
+            raise InsufficientSparksError(balance, amount)
+        new_balance = balance - amount
+        transaction.update(ref, {"sparks_balance": new_balance})
+        return new_balance
+
+    return _run(transaction)
+
+
+# ======================================================================
+# Mapa de Habilidades — camada cosmética de gamificação (ver
+# cosmetic_skills_map.py). Persistido separado de qualquer dado real da
+# ontologia: students/{uid}.skills_map = {hexagon, updated_at}.
+# ======================================================================
+
+def read_skills_map(uid: str) -> Optional[dict[str, Any]]:
+    snap = _student_doc_ref(uid).get()
+    return (snap.to_dict() or {}).get("skills_map")
+
+
+def write_skills_map(uid: str, hexagon: list[dict[str, Any]], feedback: dict[str, Any]) -> str:
+    updated_at = _now_iso()
+    _student_doc_ref(uid).set(
+        {"skills_map": {"hexagon": hexagon, "feedback": feedback, "updated_at": updated_at}},
+        merge=True,
+    )
+    return updated_at

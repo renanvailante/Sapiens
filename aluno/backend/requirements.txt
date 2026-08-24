@@ -33,6 +33,10 @@ google-cloud-firestore>=2.11.0
 # --- Gemini API (substitui o proxy emergentintegrations, removido 2026-08-21) ---
 google-genai>=2.12.1
 
+# --- Figuras de questão (proxy servidor-a-servidor para o pipeline) ---
+httpx==0.28.1
+
 # --- Suporte ---
 python-dotenv>=1.0.1
 tzdata>=2024.2
+

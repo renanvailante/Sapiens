@@ -124,34 +124,45 @@ def _build_public_doc(master: dict) -> dict:
     }
 
 
-@router.post("/firestore/sync")
-async def firestore_sync(admin: User = Depends(require_admin)):
-    """Le TODAS as questoes (colecao 'itens') e schema completo do Firestore,
-    salva o schema COMPLETO em 'questoes_master' (visivel/editavel so no admin)
-    e (re)gera a versao FILTRADA em 'questoes_public' (consumida pelo aluno).
+async def run_firestore_sync(db) -> dict:
+    """Lê TODAS as questões (coleção 'itens') e schema completo do Firestore,
+    salva o schema COMPLETO em 'questoes_master' (visível/editável só no admin)
+    e (re)gera a versão FILTRADA em 'questoes_public' (consumida pelo aluno).
+
+    Extraída da rota `POST /admin/firestore/sync` para ser reusada também
+    pelo laço automático em `server.py` (`_auto_sync_loop`) — mesma lógica,
+    duas formas de disparar: clique manual do admin, ou de tempos em tempos
+    sozinho, para uma prova nova aparecer para o aluno sem exigir o clique.
     """
-    try:
-        items = await asyncio.to_thread(_read_all_firestore, "itens")
-    except Exception as exc:  # noqa: BLE001
-        raise HTTPException(status_code=502, detail=f"Firestore error: {exc}")
+    items = await asyncio.to_thread(_read_all_firestore, "itens")
 
     # 1) master = schema completo (upsert por id original)
     for it in items:
-        await _db.questoes_master.update_one(
+        await db.questoes_master.update_one(
             {"id": it.get("id")}, {"$set": it}, upsert=True
         )
 
     # 2) public = versao filtrada regenerada a partir do master
-    await _db.questoes_public.delete_many({})
+    await db.questoes_public.delete_many({})
     publics = [_build_public_doc(it) for it in items]
     if publics:
-        await _db.questoes_public.insert_many(publics)
+        await db.questoes_public.insert_many(publics)
 
     return {
         "ok": True,
         "master_count": len(items),
         "public_count": len(publics),
     }
+
+
+@router.post("/firestore/sync")
+async def firestore_sync(admin: User = Depends(require_admin)):
+    try:
+        return await run_firestore_sync(_db)
+    except HTTPException:
+        raise
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=502, detail=f"Firestore error: {exc}")
 
 
 def _read_all_firestore(collection: str) -> list[dict]:

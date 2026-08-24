@@ -80,24 +80,40 @@ def _extract_json(text: str) -> Any:
     raise ValueError("Não foi possível extrair JSON da resposta do modelo.")
 
 
+_THINKING_VALIDOS = {"MINIMAL", "LOW", "MEDIUM", "HIGH"}
+
+
 async def _generate_json(
     system_instruction: str,
     user_text: str,
     parts: list | None = None,
     model: str | None = None,
+    thinking_level: str | None = None,
 ) -> Any:
+    """`thinking_level`, quando presente, limita o raciocínio da chamada.
+
+    A auditoria de custo do pipeline (2026-08-22) mediu `gemini-3-flash-
+    preview` sem limite chegando a dezenas de milhares de tokens de
+    "thinking" numa única chamada — o app aluno usa o mesmo modelo, então
+    chamadas novas e recorrentes aqui (ex.: resumo de sessão, gerado por
+    aluno ativo) herdam o mesmo risco se ninguém configurar isto.
+    """
     client = _client()
     chosen = model or _model()
     contents = list(parts or [])
     contents.append(types.Part.from_text(text=user_text))
+    config_kwargs: dict[str, Any] = {
+        "system_instruction": system_instruction,
+        "response_mime_type": "application/json",
+        "temperature": 0.2,
+    }
+    nivel = (thinking_level or "").strip().upper()
+    if nivel in _THINKING_VALIDOS:
+        config_kwargs["thinking_config"] = types.ThinkingConfig(thinking_level=types.ThinkingLevel(nivel))
     resp = await client.aio.models.generate_content(
         model=chosen,
         contents=contents,
-        config=types.GenerateContentConfig(
-            system_instruction=system_instruction,
-            response_mime_type="application/json",
-            temperature=0.2,
-        ),
+        config=types.GenerateContentConfig(**config_kwargs),
     )
     return _extract_json(resp.text or "")
 
@@ -176,6 +192,67 @@ async def diagnose(payload: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(result, dict):
         return dict(_DIAGNOSTIC_FALLBACK)
     return {**_DIAGNOSTIC_FALLBACK, **result}
+
+
+# ---------- Resumo de sessão de prática (Schema 2.2 / Firestore behavior) ----------
+#
+# Mesma fronteira de contrato do cabeçalho deste módulo, aplicada à prática
+# questão-por-questão: a entrada (`annotation_service.montar_contexto_sessao`)
+# já vem sem ID de catálogo, então mesmo que o modelo ignorasse a instrução
+# abaixo, não haveria ID para vazar. Narrativa de padrão, não atribuição.
+
+SESSAO_DIAGNOSTIC_SYSTEM = """Você é o Sapiens — um analista de aprendizagem que revela padrões
+cognitivos ao final de uma sessão de prática de questões.
+
+Você recebe uma lista de questões respondidas nesta sessão, cada uma com:
+- se o aluno acertou ou errou;
+- os processos/domínios/competências cognitivos que a questão exercitava (nomes em
+  português — não são IDs de catálogo, não use identificadores como "PROC-01");
+- quando errou, a explicação (escrita por quem elaborou a questão) de por que a
+  alternativa escolhida é um engano plausível — isso descreve um padrão de erro
+  POSSÍVEL para a questão, não uma certeza sobre o que este aluno pensou.
+
+Sua tarefa é apontar PADRÕES em linguagem simples e empática, como hipóteses de
+estudo — nunca como diagnóstico definitivo. NUNCA comece pela contagem de
+acertos. Comece por um padrão que possa surpreender o aluno. Nunca use um ID de
+catálogo em texto nenhum.
+
+Responda EXCLUSIVAMENTE com JSON no formato:
+{
+  "headline": "frase curta e provocativa (máx 90 caracteres)",
+  "body": "1-2 parágrafos sobre os padrões observados nesta sessão",
+  "pontos_fortes": ["processo/domínio/competência com bom desempenho", "..."],
+  "pontos_de_atencao": ["processo/domínio/competência com mais erro", "..."],
+  "padroes_de_erro": ["tipo de engano recorrente, em linguagem natural", "..."]
+}
+Sem markdown, sem prefixos, apenas o JSON."""
+
+_SESSAO_FALLBACK = {
+    "headline": "Sessão registrada.",
+    "body": "Continue praticando — o resumo de padrões volta a aparecer a cada 10 questões respondidas.",
+    "pontos_fortes": [],
+    "pontos_de_atencao": [],
+    "padroes_de_erro": [],
+}
+
+
+async def diagnose_sessao(contexto: list[dict[str, Any]]) -> dict[str, Any]:
+    """Narrativa de padrões de uma sessão de prática. Degrada para texto neutro.
+
+    `thinking_level="LOW"`: a entrada é pequena (10+ questões resumidas, sem
+    enunciado nem alternativas) — não é uma tarefa que precise de raciocínio
+    "alto" do modelo, e essa chamada roda toda vez que um aluno termina uma
+    sessão, não uma vez por lote como a anotação do pipeline.
+    """
+    prompt = "Questões respondidas nesta sessão:\n" + json.dumps(contexto, ensure_ascii=False, indent=2)
+    try:
+        result = await _generate_json(SESSAO_DIAGNOSTIC_SYSTEM, prompt, thinking_level="LOW")
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Resumo de sessão indisponível: %s", exc)
+        return dict(_SESSAO_FALLBACK)
+    if not isinstance(result, dict):
+        return dict(_SESSAO_FALLBACK)
+    return {**_SESSAO_FALLBACK, **result}
 
 
 # ---------- Visão: leitura do cartão-resposta ----------
