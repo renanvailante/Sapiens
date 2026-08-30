@@ -99,6 +99,52 @@ class TestListProvasPublico:
         for p in r["provas"]:
             assert p["count"] <= 45
 
+    def test_disciplina_minoritaria_nao_contamina_o_titulo_do_bloco(self, monkeypatch):
+        """Um bloco de 45 é, por estrutura do ENEM, sempre 1 área só — 1-2
+        itens com `fonte.disciplina` extraída errado (ruído de anotação
+        automática) não podem virar "Ciências da Natureza e Matemática" num
+        bloco que é 100% Matemática. A área do bloco é a MODA, não a união.
+
+        Não escreve no Mongo real (`--dist loadscope` só isola por
+        classe/módulo — escrever no `questoes_public` compartilhado correria
+        contra os testes de `TestListQuestoesPublicoFiltro`, agendados num
+        worker separado): injeta os 45 itens sintéticos direto no cursor.
+        """
+        banca, ano, prova = "TESTE-MODA", 2099, "UNICA"
+        extras = [
+            {"item_id": f"TESTE-MODA-{i}",
+             "fonte": {"banca": banca, "ano": ano, "prova": prova, "numero": i,
+                       "disciplina": "Física" if i == 1 else "Matemática"}}
+            for i in range(1, 46)
+        ]
+        real_collection = server.db.questoes_public
+
+        class _CursorComExtras:
+            def __init__(self, real_cursor):
+                self._real_cursor = real_cursor
+                self._extras = iter(extras)
+
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self):
+                async for doc in self._real_cursor:
+                    return doc
+                try:
+                    return next(self._extras)
+                except StopIteration:
+                    raise StopAsyncIteration
+
+        class _ColecaoComExtras:
+            def find(self, *args, **kwargs):
+                return _CursorComExtras(real_collection.find(*args, **kwargs))
+
+        monkeypatch.setattr(server.db, "questoes_public", _ColecaoComExtras())
+        r = _run(server.list_provas_publico())
+        alvo = next(p for p in r["provas"] if p["banca"] == banca)
+        assert alvo["count"] == 45
+        assert alvo["disciplinas"] == ["Matemática"]
+
 
 class TestListQuestoesPublicoFiltro:
     def test_filtro_por_prova_inexistente_devolve_vazio(self):

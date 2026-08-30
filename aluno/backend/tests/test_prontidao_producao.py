@@ -23,6 +23,8 @@ _BASE_PROD = {
     "GEMINI_API_KEY": "chave-gemini",
     "FIREBASE_SERVICE_ACCOUNT_PATH": "/secrets/sa.json",
     "ADMIN_EMAILS": "admin@exemplo.app",
+    "MERCADOPAGO_ACCESS_TOKEN": "APP_USR-token",
+    "MERCADOPAGO_WEBHOOK_SECRET": "webhook-secret",
     "SEED_DEMO_DATA": "false",
     "COOKIE_SECURE": "true",
     "COOKIE_SAMESITE": "none",
@@ -78,6 +80,7 @@ def test_desenvolvimento_nao_exige_nada_de_producao(monkeypatch):
     s = _settings(
         monkeypatch, APP_ENV="development", CORS_ORIGINS=None, GEMINI_API_KEY=None,
         FIREBASE_SERVICE_ACCOUNT_PATH=None, ADMIN_EMAILS=None,
+        MERCADOPAGO_ACCESS_TOKEN=None, MERCADOPAGO_WEBHOOK_SECRET=None,
         COOKIE_SECURE=None, COOKIE_SAMESITE=None, SEED_DEMO_DATA=None,
     )
     assert s.validar() == []
@@ -149,6 +152,16 @@ def test_sem_admin_declarado_e_recusado_em_producao(monkeypatch):
     assert "ADMIN_EMAILS" in _problemas(monkeypatch, ADMIN_EMAILS=None)
 
 
+def test_mercadopago_access_token_ausente_e_recusado_em_producao(monkeypatch):
+    """Sem ele a loja de Sparks não cria pagamento nem assinatura nenhuma."""
+    assert "MERCADOPAGO_ACCESS_TOKEN" in _problemas(monkeypatch, MERCADOPAGO_ACCESS_TOKEN=None)
+
+
+def test_mercadopago_webhook_secret_ausente_e_recusado_em_producao(monkeypatch):
+    """Sem ele /api/sparks/webhook não valida que a notificação veio do MP."""
+    assert "MERCADOPAGO_WEBHOOK_SECRET" in _problemas(monkeypatch, MERCADOPAGO_WEBHOOK_SECRET=None)
+
+
 # ------------------------------------------------------------ dados de demo
 def test_seed_de_demonstracao_e_recusado_em_producao(monkeypatch):
     assert "demonstração" in _problemas(monkeypatch, SEED_DEMO_DATA="true")
@@ -161,8 +174,12 @@ def test_seed_desligado_por_padrao_em_producao(monkeypatch):
 # ------------------------------------------------------------------- segredos
 def test_resumo_nao_revela_segredo(monkeypatch):
     s = _settings(monkeypatch)
-    assert _BASE_PROD["GEMINI_API_KEY"] not in json.dumps(s.resumo())
+    resumo_json = json.dumps(s.resumo())
+    assert _BASE_PROD["GEMINI_API_KEY"] not in resumo_json
+    assert _BASE_PROD["MERCADOPAGO_ACCESS_TOKEN"] not in resumo_json
+    assert _BASE_PROD["MERCADOPAGO_WEBHOOK_SECRET"] not in resumo_json
     assert s.resumo()["gemini_configurado"] is True
+    assert s.resumo()["mercadopago_configurado"] is True
 
 
 def test_boot_aborta_com_configuracao_invalida(monkeypatch):

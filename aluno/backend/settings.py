@@ -81,6 +81,26 @@ SESSION_TTL_DAYS = int(_env("SESSION_TTL_DAYS", "7") or 7)
 MAX_UPLOAD_MB = int(_env("MAX_UPLOAD_MB", "10") or 10)
 MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024
 
+# Figuras de questão: o aluno nunca acessa o storage binário do pipeline
+# diretamente (decisão documentada em requirements.txt — "os artefatos
+# binários são do pipeline, que permanece privado"). `/api/exam-images/{id}`
+# busca os bytes servidor-a-servidor via `PIPELINE_URL` + `PIPELINE_API_KEY`
+# (mesmo par que já protege `pipeline/backend`'s `/api/*`). Opcional: sem
+# isso configurado, o endpoint responde 503 em vez de derrubar o boot — a
+# entrega de imagens é um extra sobre o fluxo de prova, não um requisito dele.
+PIPELINE_URL = _env("PIPELINE_URL")
+PIPELINE_API_KEY = _env("PIPELINE_API_KEY")
+
+# Mercado Pago — loja de Sparks (compra avulsa + recarga automática por
+# assinatura/calendário). Sem isto configurado, /api/sparks/* responde 503 em
+# vez de derrubar o boot, mesmo padrão de PIPELINE_URL logo acima.
+MERCADOPAGO_ACCESS_TOKEN = _env("MERCADOPAGO_ACCESS_TOKEN")
+MERCADOPAGO_PUBLIC_KEY = _env("MERCADOPAGO_PUBLIC_KEY")
+# Gerado pelo painel do Mercado Pago ao cadastrar a URL de notificação
+# (Webhooks > Configurar notificações) — não é o mesmo par de ACCESS_TOKEN/
+# PUBLIC_KEY, só existe depois de a URL do webhook estar cadastrada lá.
+MERCADOPAGO_WEBHOOK_SECRET = _env("MERCADOPAGO_WEBHOOK_SECRET")
+
 
 class ConfigError(RuntimeError):
     """Configuração ausente ou inválida — o processo não deve subir."""
@@ -140,6 +160,23 @@ def validar() -> list[str]:
                 "ADMIN_EMAILS ausente em produção — ninguém conseguiria acessar "
                 "as telas administrativas."
             )
+        if bool(PIPELINE_URL) != bool(PIPELINE_API_KEY):
+            problemas.append(
+                "PIPELINE_URL e PIPELINE_API_KEY devem ser configurados juntos "
+                "ou nenhum dos dois — só um dos dois presente deixa "
+                "/api/exam-images sempre respondendo 503."
+            )
+        if not MERCADOPAGO_ACCESS_TOKEN:
+            problemas.append(
+                "MERCADOPAGO_ACCESS_TOKEN ausente em produção — a loja de "
+                "Sparks não consegue criar pagamento nem assinatura nenhuma."
+            )
+        if not MERCADOPAGO_WEBHOOK_SECRET:
+            problemas.append(
+                "MERCADOPAGO_WEBHOOK_SECRET ausente em produção — sem ele "
+                "/api/sparks/webhook não tem como validar que a notificação "
+                "veio mesmo do Mercado Pago, e Sparks nunca seriam creditados."
+            )
 
     return problemas
 
@@ -165,4 +202,6 @@ def resumo() -> dict:
         "gemini_configurado": bool(GEMINI_API_KEY),
         "firebase_configurado": bool(GOOGLE_CREDENTIALS or FIREBASE_SERVICE_ACCOUNT_JSON),
         "admins_declarados": len(ADMIN_EMAILS),
+        "pipeline_imagens_configurado": bool(PIPELINE_URL and PIPELINE_API_KEY),
+        "mercadopago_configurado": bool(MERCADOPAGO_ACCESS_TOKEN and MERCADOPAGO_WEBHOOK_SECRET),
     }

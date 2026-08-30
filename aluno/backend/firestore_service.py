@@ -312,6 +312,50 @@ def write_behavior_event(
     return event
 
 
+def count_answers_for_item(uid: str, item_id: str) -> int:
+    """Quantos eventos de resposta (`status="respondida"`) este aluno já tem
+    para ESTE item — a base de `numero_tentativas` (1ª vez, 2ª vez, ...).
+
+    Nunca confia no cliente para esse número: reiniciar uma prova (opção do
+    aluno no card do caderno, `ExamSelect.jsx`) produz um NOVO evento a cada
+    resposta — o histórico nunca é apagado nem sobrescrito —, então contar
+    os eventos já gravados é a única forma de saber em qual tentativa o
+    aluno está.
+    """
+    docs = (
+        _behavior_collection_ref(uid)
+        .where(filter=firestore.FieldFilter("item_id", "==", item_id))
+        .where(filter=firestore.FieldFilter("status", "==", "respondida"))
+        .stream()
+    )
+    return sum(1 for _ in docs)
+
+
+# Bloco canônico ENEM (45 questões por prova/área). Compartilhado entre
+# `server.py` (`/api/provas`, agrupamento público) e `firestore_routes.py`
+# (`/students/me/provas-progresso`, mesmo agrupamento cruzado com o que o
+# aluno já respondeu) — mora aqui pra nenhum dos dois importar o outro.
+BLOCO_TAMANHO = 45
+
+
+def bloco_enem(numero: Optional[int]) -> Optional[tuple[int, int]]:
+    """`(inicio, fim)` do bloco canônico de 45 que contém `numero` — sempre
+    `(1,45)`, `(46,90)`, `(91,135)`, `(136,180)`, ... nunca o min/max do que
+    por acaso está persistido (uma questão faltando não deve encolher o
+    bloco nem misturá-lo com o vizinho)."""
+    if numero is None:
+        return None
+    try:
+        n = int(numero)
+    except (TypeError, ValueError):
+        return None
+    if n < 1:
+        return None
+    idx = (n - 1) // BLOCO_TAMANHO
+    inicio = idx * BLOCO_TAMANHO + 1
+    return (inicio, inicio + BLOCO_TAMANHO - 1)
+
+
 def get_student_behavior_history(uid: str, limit: int = 1000) -> list[dict[str, Any]]:
     """Lê o histórico de eventos de behavior (schema canônico) de um aluno,
     do mais recente para o mais antigo."""
@@ -434,6 +478,52 @@ def grant_round_sparks(
     if acertos:
         _student_doc_ref(uid).update({"sparks_balance": firestore.Increment(acertos)})
     return {"ja_concedido": False, **round_doc}
+
+
+def _purchase_ref(uid: str, payment_id: str):
+    return _student_doc_ref(uid).collection("sparks_purchases").document(payment_id)
+
+
+def grant_purchase_sparks(
+    uid: str,
+    *,
+    payment_id: str,
+    package_id: str,
+    sparks_amount: int,
+    price_cents: int,
+    currency: str,
+    source: str,
+) -> dict[str, Any]:
+    """Credita Sparks de uma compra (avulsa ou ciclo de recarga automática)
+    aprovada no Mercado Pago, UMA única vez, de forma atômica.
+
+    Mesma garantia de `grant_round_sparks`: `payment_id` (id do pagamento no
+    Mercado Pago, globalmente único) vira a chave do documento, e só a
+    primeira chamada de `DocumentReference.create()` para esse caminho tem
+    sucesso — webhook entregue mais de uma vez, ou dois processos
+    concorrentes tratando a mesma notificação, não creditam Sparks duas
+    vezes. Chamar isto só depois de confirmar `status == "approved"` no
+    próprio Mercado Pago (nunca a partir do corpo bruto do webhook).
+    """
+    ref = _purchase_ref(uid, payment_id)
+    doc = {
+        "payment_id": payment_id,
+        "student_id": uid,
+        "package_id": package_id,
+        "sparks_amount": sparks_amount,
+        "price_cents": price_cents,
+        "currency": currency,
+        "source": source,
+        "created_at": _now_iso(),
+    }
+    try:
+        ref.create(doc)
+    except gcloud_exceptions.AlreadyExists:
+        existente = ref.get().to_dict() or {}
+        return {"ja_creditado": True, **existente}
+
+    _student_doc_ref(uid).update({"sparks_balance": firestore.Increment(sparks_amount)})
+    return {"ja_creditado": False, **doc}
 
 
 class InsufficientSparksError(Exception):

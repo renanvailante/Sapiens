@@ -298,3 +298,15 @@ async def ocr_answer_sheet(
     if isinstance(parsed, list):
         return parsed
     return (parsed or {}).get("answers", [])
+
+
+# ---------- Ponto de entrada público para outros módulos do app ----------
+
+async def generate_json(
+    system_instruction: str, user_text: str, *, model: str | None = None, thinking_level: str | None = None,
+) -> Any:
+    """Mesmo `_generate_json` usado por `diagnose`/`diagnose_sessao` acima,
+    exposto para reuso por outros módulos do app (ex.:
+    `redacao/escalonamento_redacao.py`) sem duplicar a integração com o SDK
+    do Gemini nem depender de um nome "privado" fora deste arquivo."""
+    return await _generate_json(system_instruction, user_text, model=model, thinking_level=thinking_level)

@@ -8,6 +8,7 @@ from pydantic import BaseModel
 
 from auth import require_admin
 from models import User
+import annotation_service
 import firestore_service as fs
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -111,6 +112,7 @@ def _build_public_doc(master: dict) -> dict:
             "enunciado": q.get("enunciado"),
             "alternativas": alternativas,
             "recursos": q.get("recursos") or {},
+            "visual_assets": q.get("visual_assets") or [],
         },
         "fonte": {
             "disciplina": f.get("disciplina"),
@@ -147,6 +149,13 @@ async def run_firestore_sync(db) -> dict:
     publics = [_build_public_doc(it) for it in items]
     if publics:
         await db.questoes_public.insert_many(publics)
+
+    # O índice item_id/item_hash -> estrutura_cognitiva (annotation_service)
+    # fica cacheado em memória entre syncs — sem invalidar aqui, um item
+    # sincronizado agora nunca casaria com o behavior de quem o responder,
+    # e o mapa de habilidades / devolutiva de rodada ficariam travados no
+    # snapshot anterior pelo resto da vida do processo.
+    annotation_service.invalidate_item_index()
 
     return {
         "ok": True,
