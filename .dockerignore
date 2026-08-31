@@ -1,0 +1,16 @@
+# Build context é a raiz do repo (ver aluno/backend/fly.toml). Sem este
+# arquivo NA RAIZ, o Docker ignora o .dockerignore que existe dentro de
+# aluno/backend/ (Docker só lê .dockerignore do diretório do build context) —
+# e `COPY aluno/backend/ /app/` empacotava o `.env` real (segredos e config
+# de dev local, ex. MONGO_URL=127.0.0.1, FIRESTORE_AUTO_SYNC_SECONDS=0) direto
+# na imagem de produção. Padrões sem "/" na frente casam em qualquer profundidade.
+.env
+.env.*
+!.env.example
+venv/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+node_modules/
+.git/

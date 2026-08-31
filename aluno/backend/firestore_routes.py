@@ -18,7 +18,6 @@ from models import User
 import ai_service
 import annotation_service
 import firestore_service as fs
-import circulacao
 from feedback_templates import build_feedback
 
 logger = logging.getLogger("sapiens.firestore.routes")
@@ -37,6 +36,7 @@ class AnswerPayload(BaseModel):
     item_id: str
     alternativa_escolhida: str
     tempo_resposta_segundos: float = 0
+    numero_tentativas: int = 1
     mudou_resposta: bool = False
     contexto_tipo: str = "pratica_questoes"
     prova_id: Optional[str] = None
@@ -181,16 +181,6 @@ async def register_answer(payload: AnswerPayload, user: User = Depends(require_u
     momento. Recalcular o hash aqui produziria um valor que só por acaso
     coincidiria com o do item, e o casamento item↔evento falharia em silêncio.
     """
-    if circulacao.esta_bloqueado(payload.item_id):
-        # Saneamento em curso: o item saiu da prova, mas um cliente com a tela
-        # já carregada ainda consegue postar. Recusar aqui é o que impede um
-        # evento novo de behavior nascer contra um gabarito sabidamente errado.
-        raise HTTPException(
-            status_code=409,
-            detail=("Esta questão está temporariamente fora de circulação para "
-                    "correção de gabarito. Sua resposta não foi registrada."),
-        )
-
     doc = await _db.questoes_public.find_one({"item_id": payload.item_id}, {"_id": 0})
     if not doc:
         raise HTTPException(status_code=404, detail="Questão não encontrada")
@@ -219,11 +209,6 @@ async def register_answer(payload: AnswerPayload, user: User = Depends(require_u
     feedback = build_feedback(master, payload.alternativa_escolhida, acertou)
 
     _safe_call(fs.ensure_student_profile, user.user_id, user.name, user.email)
-    # `numero_tentativas` é a 1ª, 2ª, 3ª... vez que o aluno responde ESTE
-    # item — nunca o valor que o cliente mandar (reiniciar uma prova não
-    # apaga o histórico, só acrescenta eventos; contar os já gravados é a
-    # única forma correta de saber em qual tentativa esta resposta está).
-    numero_tentativas = _safe_call(fs.count_answers_for_item, user.user_id, payload.item_id) + 1
     _safe_call(
         fs.write_behavior_event,
         user.user_id,
@@ -237,12 +222,12 @@ async def register_answer(payload: AnswerPayload, user: User = Depends(require_u
         contexto_tipo=payload.contexto_tipo,
         prova_id=payload.prova_id,
         tempo_resposta_segundos=payload.tempo_resposta_segundos,
-        numero_tentativas=numero_tentativas,
+        numero_tentativas=payload.numero_tentativas,
         mudou_resposta=payload.mudou_resposta,
         dispositivo=payload.dispositivo,
         versao_aplicacao=payload.versao_aplicacao,
     )
-    return {"acertou": acertou, "correta": correta_letra, "feedback": feedback, "numero_tentativas": numero_tentativas}
+    return {"acertou": acertou, "correta": correta_letra, "feedback": feedback}
 
 
 class RespostaSessao(BaseModel):
@@ -351,9 +336,7 @@ async def concluir_rodada(payload: RodadaConcluirPayload, user: User = Depends(r
             filtro["fonte.ano"] = bloco["ano"]
         if bloco.get("prova"):
             filtro["fonte.prova"] = bloco["prova"]
-        cursor = _db.questoes_public.find(
-            circulacao.aplicar(filtro), {"_id": 0, "item_id": 1}
-        ).sort("fonte.numero", 1)
+        cursor = _db.questoes_public.find(filtro, {"_id": 0, "item_id": 1}).sort("fonte.numero", 1)
         item_ids = [doc["item_id"] async for doc in cursor if doc.get("item_id")]
 
     _safe_call(fs.ensure_student_profile, user.user_id, user.name, user.email)
@@ -432,40 +415,6 @@ async def minhas_rodadas(user: User = Depends(require_user)):
     experiência contínua: progresso, desempenho anterior, comparação)."""
     rounds = _safe_call(fs.list_sparks_rounds, user.user_id, 300)
     return {"rounds": rounds}
-
-
-@router.get("/students/me/provas-progresso")
-async def minhas_provas_progresso(user: User = Depends(require_user)):
-    """Quantas questões de CADA prova/bloco (mesmo agrupamento de `/api/provas`)
-    este aluno já respondeu — a barra de progresso real do card de seleção de
-    prova, em vez do tamanho fixo do bloco. `respondidas` conta qualquer
-    evento de behavior (inclusive de uma prova reiniciada), nunca inventa.
-    """
-    eventos = _safe_call(fs.get_student_behavior_history, user.user_id, 5000)
-    respondidos = {e.get("item_id") for e in eventos if e.get("item_id")}
-
-    grupos: dict[tuple, dict[str, int]] = {}
-    cursor = _db.questoes_public.find(circulacao.aplicar({}), {"_id": 0, "item_id": 1, "fonte": 1})
-    async for doc in cursor:
-        fonte = doc.get("fonte") or {}
-        bloco = fs.bloco_enem(fonte.get("numero"))
-        if bloco is None:
-            continue
-        chave = (fonte.get("banca"), fonte.get("ano"), fonte.get("prova"), bloco[0], bloco[1])
-        g = grupos.setdefault(chave, {"total": 0, "respondidas": 0})
-        g["total"] += 1
-        if doc.get("item_id") in respondidos:
-            g["respondidas"] += 1
-
-    provas = [
-        {
-            "banca": banca, "ano": ano, "prova": prova,
-            "numero_min": numero_min, "numero_max": numero_max,
-            "total": g["total"], "respondidas": g["respondidas"],
-        }
-        for (banca, ano, prova, numero_min, numero_max), g in grupos.items()
-    ]
-    return {"provas": provas}
 
 
 # Admin-only: access by arbitrary uid (e.g. teacher/admin viewing a student)

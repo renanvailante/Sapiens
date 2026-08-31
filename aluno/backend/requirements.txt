@@ -40,8 +40,3 @@ httpx==0.28.1
 python-dotenv>=1.0.1
 tzdata>=2024.2
 
-# --- Mercado Pago (loja de Sparks) ---
-mercadopago==3.5.0
-
-# --- Corretor de redação (Nivel 2 local — checagem ortografica de COMP-I) ---
-pyspellchecker>=0.8.1

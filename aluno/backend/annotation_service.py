@@ -11,7 +11,6 @@ from collections import defaultdict
 from typing import Any
 
 import firestore_service as fs
-import portao_crenca
 from cognitive_ontology import build_ontology_tree, ontology_version
 
 logger = logging.getLogger("sapiens.cognitive")
@@ -68,14 +67,6 @@ def _build_item_index(force: bool = False) -> dict[str, dict]:
     global _ITEM_INDEX
     if _ITEM_INDEX is not None and not force:
         return _ITEM_INDEX
-    # NOTA (2026-08-25): este índice ficava cacheado para sempre depois da
-    # 1ª chamada, mesmo com `_auto_sync_loop` (server.py) trazendo itens
-    # novos do Firestore a cada 5min — qualquer questão sincronizada depois
-    # da 1ª geração de perfil cognitivo nunca casava com o índice, e o mapa
-    # de habilidades / devolutiva de rodada ficavam travados no snapshot
-    # antigo pro resto da vida do processo. `invalidate_item_index()` é
-    # chamada por `admin_routes.run_firestore_sync` toda vez que itens novos
-    # chegam, então o índice nunca fica mais velho que a última sincronização.
     mapping: dict[str, dict] = {}
     client = fs.get_firestore()
     for snap in client.collection("itens").stream():
@@ -94,15 +85,6 @@ def _build_item_index(force: bool = False) -> dict[str, dict]:
                 mapping[chave] = item
     _ITEM_INDEX = mapping
     return mapping
-
-
-def invalidate_item_index() -> None:
-    """Descarta o cache de `_build_item_index`. Chamar sempre que itens novos
-    chegarem ao Firestore (ver `admin_routes.run_firestore_sync`) — sem isto,
-    questões sincronizadas depois da 1ª leitura nunca casam com nenhum
-    evento de behavior, pelo resto da vida do processo."""
-    global _ITEM_INDEX
-    _ITEM_INDEX = None
 
 
 def _read_firestore_answered(user_id: str) -> dict[str, Any]:
@@ -130,23 +112,10 @@ def _read_firestore_answered(user_id: str) -> dict[str, Any]:
     domain_stats: dict[str, dict[str, int]] = defaultdict(lambda: {"respondidas": 0, "acertos": 0})
     total_events = 0
     unmatched = 0
-    barrados_pelo_portao = 0
 
-    eventos = [e.to_dict() or {} for e in
-               client.collection("students").document(user_id).collection("behavior").stream()]
-
-    # Saneamento 2026-08-26: um evento gravado contra gabarito errado não é
-    # editado — recebe um evento de RETIFICAÇÃO que o referencia. Aqui o
-    # agregado honra essa correção: o `acertou` da retificação substitui o do
-    # original, e o evento de retificação NÃO conta como resposta nova (senão
-    # o aluno apareceria tendo respondido a mesma questão duas vezes).
-    retificacoes = {
-        (ev.get("retificacao") or {}).get("retifica_event_id"): ev
-        for ev in eventos
-        if ev.get("status") == "retificada" and (ev.get("retificacao") or {}).get("retifica_event_id")
-    }
-
-    for ev in eventos:
+    events = client.collection("students").document(user_id).collection("behavior").stream()
+    for e in events:
+        ev = e.to_dict() or {}
         # considera apenas eventos de resposta efetiva
         if ev.get("status") not in (None, "respondida"):
             continue
@@ -160,15 +129,8 @@ def _read_firestore_answered(user_id: str) -> dict[str, Any]:
         if not ec:
             unmatched += 1
             continue
-        # EXT-WP1-1.0 L13b: um item sem revisão humana pode ser praticado, e
-        # não pode mover o estado cognitivo do aluno. É aqui que o portão tem
-        # efeito — no agregado, não na tela.
-        if not portao_crenca.pode_alimentar_crenca(item):
-            barrados_pelo_portao += 1
-            continue
         matched_items.add(chave)
-        efetivo = retificacoes.get(ev.get("event_id"), ev)
-        acertou = bool((efetivo.get("resposta") or {}).get("acertou"))
+        acertou = bool((ev.get("resposta") or {}).get("acertou"))
         for p in ec.get("processos", []) or []:
             pid = p.get("id") if isinstance(p, dict) else p
             if pid:
@@ -193,8 +155,6 @@ def _read_firestore_answered(user_id: str) -> dict[str, Any]:
         "domain_stats": dict(domain_stats),
         "answered_items": len(matched_items),
         "total_events": total_events,
-        "barrados_pelo_portao": barrados_pelo_portao,
-        "eventos_retificados": len(retificacoes),
         "unmatched_events": unmatched,
     }
 

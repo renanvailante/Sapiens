@@ -4,6 +4,7 @@ import { api, API, errMsg} from "../lib/api";
 import Nav from "../components/Nav";
 import { ArrowRight, Check, X, RotateCw, Sparkles, BookOpen, ChevronLeft } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
+import FormulaMath from "../components/FormulaMath";
 
 const APP_VERSION = "sapiens-web-1.0";
 
@@ -13,9 +14,10 @@ const capitalizar = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCa
 // ---------------- Rodadas de 10 (a última fecha com o que sobrar: 5, num
 // bloco de 45) — os mesmos limites que o backend usa em `_rodada_range`
 // (firestore_routes.py). `total=45` -> [10,20,30,40,45].
+const RODADA_TAMANHO = 10;
 function limitesDeRodada(total) {
   const limites = [];
-  for (let b = 10; b < total; b += 10) limites.push(b);
+  for (let b = RODADA_TAMANHO; b < total; b += RODADA_TAMANHO) limites.push(b);
   if (total > 0) limites.push(total);
   return limites;
 }
@@ -71,7 +73,32 @@ function ProgressoProva({ respondidas, total, pulso, tone = "light" }) {
 // reabrir o mesmo bloco, cruzamos os itens dele com
 // GET /students/me/respondidas e pulamos para o primeiro item ainda sem
 // resposta. "Onde ele parou" = "o próximo item sem evento de behavior".
+// Dimensões intrínsecas a partir da `ancora` verificada no saneamento
+// (Fase 3): bbox em pontos do PDF + dpi medido do recorte. Sem isto o
+// navegador não sabe a proporção antes de baixar a imagem e a página salta.
+// Assets `incerta` não têm âncora — e aí não se inventa dimensão nenhuma.
+// Elementos visuais (imagem/gráfico/tabela/fórmula) são endereçados por
+// conteúdo (`asset.src` = "{sha256}.png"), já enviados junto do próprio
+// deploy do frontend em /exam-assets — recortes de provas do ENEM já
+// públicas pelo INEP, não dado do aluno. Sem proxy autenticado pelo backend:
+// não há backend do pipeline em produção pra servir esses bytes hoje.
+function urlAssetVisual(asset) {
+  return asset?.src ? `/exam-assets/${asset.src}` : null;
+}
+
+function dimensoesIntrinsecas(asset) {
+  const a = asset?.ancora;
+  const bbox = a?.bbox;
+  const dpi = parseFloat(a?.dpi);
+  if (!Array.isArray(bbox) || bbox.length !== 4 || !Number.isFinite(dpi) || dpi <= 0) return {};
+  const [x0, y0, x1, y1] = bbox;
+  const w = Math.round(((x1 - x0) * dpi) / 72);
+  const h = Math.round(((y1 - y0) * dpi) / 72);
+  return w > 0 && h > 0 ? { width: w, height: h } : {};
+}
+
 function QuestionRunner({ filtro, onExit }) {
+  const [lightbox, setLightbox] = useState(null);
   const [itens, setItens] = useState([]);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
@@ -81,17 +108,14 @@ function QuestionRunner({ filtro, onExit }) {
   const [result, setResult] = useState(null); // { acertou, correta }
   const [submitting, setSubmitting] = useState(false);
   const [answered, setAnswered] = useState(0);
-  const [resumoSessao, setResumoSessao] = useState(null); // resposta de /sessao/diagnostico
-  const [carregandoResumo, setCarregandoResumo] = useState(false);
-  const [rodadaResumo, setRodadaResumo] = useState(null); // devolutiva determinística da rodada (10/10, 5/5 etc.)
+  const [rodadaResumo, setRodadaResumo] = useState(null); // devolutiva unificada da rodada (10/10, 5/5 etc.): Sparks + IA juntos
   const [pulso, setPulso] = useState(false); // destaque breve na barra ao responder
   const [sparks, setSparks] = useState(null);
   const startRef = useRef(Date.now());
   const changesRef = useRef(0);
   const respostasSessaoRef = useRef([]); // [{item_id, alternativa_escolhida, acertou}], só desta sessão
-  const resumoMostradoParaRef = useRef(0); // evita mostrar o mesmo resumo 2x
   const rodadaPendenteRef = useRef(null); // devolutiva de rodada já buscada, aguardando o clique em "avançar"
-  const rodadasProcessadasRef = useRef(new Set()); // evita chamar /rodada/concluir 2x pela mesma rodada nesta sessão
+  const rodadasProcessadasRef = useRef(new Set()); // evita chamar /rodada/concluir e /sessao/diagnostico 2x pela mesma rodada nesta sessão
 
   useEffect(() => {
     let ativo = true;
@@ -118,9 +142,16 @@ function QuestionRunner({ filtro, onExit }) {
       .then(([{ data }, { data: prog }]) => {
         if (!ativo) return;
         const lista = data.items || [];
-        const respondidasSet = new Set(prog.item_ids || []);
-        const primeiraPendente = lista.findIndex((it) => !respondidasSet.has(it.item_id));
-        const comeco = primeiraPendente === -1 ? lista.length : primeiraPendente;
+        // Reiniciar a prova ignora de propósito o que já foi respondido: o
+        // aluno quer refazer do zero. Cada resposta ainda vira um evento
+        // NOVO em `/students/me/answer` (nunca sobrescreve nem apaga o
+        // histórico), só não repete Sparks de rodadas já concedidas.
+        let comeco = 0;
+        if (!filtro?.reiniciar) {
+          const respondidasSet = new Set(prog.item_ids || []);
+          const primeiraPendente = lista.findIndex((it) => !respondidasSet.has(it.item_id));
+          comeco = primeiraPendente === -1 ? lista.length : primeiraPendente;
+        }
         setItens(lista);
         setIdx(comeco);
         setRetomado(comeco);
@@ -135,6 +166,16 @@ function QuestionRunner({ filtro, onExit }) {
   const q = item?.questao || {};
   const fonte = item?.fonte || {};
   const alternativas = Array.isArray(q.alternativas) ? q.alternativas : [];
+  const todosVisualAssets = Array.isArray(q.visual_assets) ? q.visual_assets : [];
+  // Figura-por-alternativa (Q158/163/165/178 do saneamento de 2022): asset
+  // com `papel === "alternativa_figura"` + `letra` renderiza dentro do botão
+  // da própria alternativa, não na lista geral de figuras do enunciado.
+  const figurasPorAlternativa = todosVisualAssets
+    .filter((a) => a.papel === "alternativa_figura" && a.letra)
+    .reduce((acc, a) => { acc[a.letra] = a; return acc; }, {});
+  const figurasPrincipais = [...todosVisualAssets]
+    .filter((a) => a.papel !== "alternativa_figura")
+    .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
 
   const pick = (letra) => {
     if (result) return;
@@ -150,7 +191,6 @@ function QuestionRunner({ filtro, onExit }) {
         item_id: item.item_id,
         alternativa_escolhida: selected,
         tempo_resposta_segundos: Math.round((Date.now() - startRef.current) / 1000),
-        numero_tentativas: 1,
         mudou_resposta: changesRef.current > 0,
         contexto_tipo: "pratica_questoes",
         prova_id: fonte.prova || null,
@@ -165,31 +205,67 @@ function QuestionRunner({ filtro, onExit }) {
         item_id: item.item_id, alternativa_escolhida: selected, acertou: data.acertou,
       });
 
-      // Fim de rodada (10/10, ..., ou 5/5 na última): busca a devolutiva +
-      // Sparks já aqui (mesmo request-cycle da resposta, para minimizar a
-      // janela em que um fechamento de aba perderia a rodada) — mas só
-      // EXIBE ao clicar em avançar, para não interromper o aluno no meio da
-      // leitura do feedback desta questão.
-      // Prática por área (lacuna recomendada, sem `banca`) cruza cadernos e
-      // não tem identidade de bloco — rodada/Sparks de bloco não se aplicam,
-      // só a prática avulsa com feedback imediato por questão.
+      // Fim de rodada (10/10, ..., ou 5/5 na última): busca a devolutiva já
+      // aqui (mesmo request-cycle da resposta, para minimizar a janela em
+      // que um fechamento de aba perderia a rodada) — mas só EXIBE ao
+      // clicar em avançar, para não interromper o aluno no meio da leitura
+      // do feedback desta questão.
+      //
+      // Um único checkpoint (posição geral no bloco/lista, não contagem de
+      // respostas desta sessão) alimenta a MESMA devolutiva com duas fontes
+      // independentes, disparadas em paralelo:
+      //  - Sparks + estatística determinística do bloco (só quando há
+      //    `banca`: prática por área não tem identidade de bloco);
+      //  - narrativa de IA (`/sessao/diagnostico`), quando a janela desta
+      //    rodada já tem as 10 respostas exigidas pelo endpoint.
+      // Cada fonte falha de forma independente e nunca bloqueia a prática —
+      // sempre sobra pelo menos a devolutiva local computada abaixo.
       const posicao = idx + 1;
-      const rodadaNum = filtro?.banca && rodadaNaPosicao(posicao, itens.length);
+      const rodadaNum = rodadaNaPosicao(posicao, itens.length);
       if (rodadaNum && !rodadasProcessadasRef.current.has(rodadaNum)) {
         rodadasProcessadasRef.current.add(rodadaNum);
-        try {
-          const { data: rd } = await api.post("/firestore/students/me/rodada/concluir", {
-            bloco: {
-              banca: filtro.banca, ano: filtro.ano, prova: filtro.prova,
-              numero_min: filtro.numero_min, numero_max: filtro.numero_max,
-            },
-            rodada: rodadaNum,
-          });
-          rodadaPendenteRef.current = rd;
+
+        const janela = respostasSessaoRef.current.slice(-RODADA_TAMANHO);
+        const acertosJanela = janela.filter((r) => r.acertou).length;
+        let devolutiva = {
+          rodada: rodadaNum,
+          acertos: acertosJanela,
+          total: janela.length,
+          percentual_acerto: janela.length > 0 ? Math.round((100 * acertosJanela) / janela.length) : 0,
+          evolucao: null,
+          padroes_de_erro: [],
+          sparks_ganhos: 0,
+          sparks_balance: sparks,
+        };
+
+        const pedidoRodada = filtro?.banca
+          ? api.post("/firestore/students/me/rodada/concluir", {
+              bloco: {
+                banca: filtro.banca, ano: filtro.ano, prova: filtro.prova,
+                numero_min: filtro.numero_min, numero_max: filtro.numero_max,
+              },
+              rodada: rodadaNum,
+            })
+          : null;
+        const pedidoIA = janela.length >= 10
+          ? api.post("/firestore/students/me/sessao/diagnostico", { respostas: janela })
+          : null;
+
+        const [resRodada, resIA] = await Promise.allSettled([pedidoRodada, pedidoIA]);
+
+        if (resRodada?.status === "fulfilled" && resRodada.value) {
+          const rd = resRodada.value.data;
+          devolutiva = { ...devolutiva, ...rd };
           if (typeof rd.sparks_balance === "number") setSparks(rd.sparks_balance);
-        } catch {
-          // nunca bloqueia a prática — mesmo princípio do resumo de sessão
         }
+        if (resIA?.status === "fulfilled" && resIA.value) {
+          // `padroes_de_erro` da IA é uma lista de strings; a da rodada
+          // (acima) é uma lista de objetos `{nome}` — nunca sobrescrever.
+          const { padroes_de_erro: _padroesIA, ...iaCampos } = resIA.value.data;
+          devolutiva = { ...devolutiva, ...iaCampos };
+        }
+
+        rodadaPendenteRef.current = devolutiva;
       }
     } catch (e) {
       setErro(errMsg(e, "Não foi possível registrar a resposta."));
@@ -206,63 +282,21 @@ function QuestionRunner({ filtro, onExit }) {
     setIdx((i) => i + 1);
   };
 
-  // A cada 10 respostas DESTA sessão (não conta o que já vinha de uma
-  // retomada), busca o resumo de padrões antes de seguir para a próxima
-  // questão. Nunca bloqueia a prática: se o resumo falhar (ex.: Gemini
-  // fora do ar), segue direto sem mostrar nada — é um bônus, não um
-  // requisito para continuar respondendo.
-  //
-  // Quando a devolutiva da rodada (determinística, sem IA) e este resumo de
-  // sessão (LLM) caem na MESMA resposta — o caso comum de quem começa o
-  // bloco do zero, já que ambos os contadores começam em 0 juntos — a
-  // devolutiva da rodada é a experiência principal: mostra ela e marca este
-  // checkpoint de 10 como já tratado, para NUNCA chamar `diagnose_sessao` (e
-  // gastar Gemini) nem duplicar feedback nesse momento. Fora dessa
-  // coincidência — por exemplo, retomando o bloco no meio, onde a 10ª
-  // resposta desta sessão cai numa posição que não é limite de rodada — o
-  // resumo de sessão continua funcionando exatamente como antes.
-  const avancar = async () => {
+  // A devolutiva (Sparks + IA) já foi buscada em `responder()`, no mesmo
+  // checkpoint — aqui só decide se ela está pronta pra mostrar ou se já foi
+  // consumida (então é só avançar pra próxima questão).
+  const avancar = () => {
     if (rodadaPendenteRef.current) {
       const rd = rodadaPendenteRef.current;
       rodadaPendenteRef.current = null;
-      const nAgora = respostasSessaoRef.current.length;
-      if (nAgora > 0 && nAgora % 10 === 0) resumoMostradoParaRef.current = nAgora;
       setRodadaResumo(rd);
       return;
     }
-    const n = respostasSessaoRef.current.length;
-    if (n > 0 && n % 10 === 0 && resumoMostradoParaRef.current !== n) {
-      resumoMostradoParaRef.current = n;
-      setCarregandoResumo(true);
-      try {
-        const { data } = await api.post("/firestore/students/me/sessao/diagnostico", {
-          respostas: respostasSessaoRef.current,
-        });
-        setSelected(null);
-        setResult(null);
-        changesRef.current = 0;
-        startRef.current = Date.now();
-        setResumoSessao(data);
-      } catch {
-        proxima();
-      } finally {
-        setCarregandoResumo(false);
-      }
-      return;
-    }
-    proxima();
-  };
-
-  const continuarAposResumo = () => {
-    setResumoSessao(null);
     proxima();
   };
 
   const continuarAposRodada = () => {
     setRodadaResumo(null);
-    // Reentra em avancar(): o checkpoint de 10 já foi marcado como tratado
-    // (ver comentário acima) quando os dois coincidem, então isto NUNCA
-    // dispara o resumo de sessão logo em seguida — só avança a questão.
     avancar();
   };
 
@@ -274,52 +308,6 @@ function QuestionRunner({ filtro, onExit }) {
       <div className="card-sapiens rounded-2xl p-10 text-center">
         <div className="font-display text-2xl font-bold text-zinc-950">Nenhuma questão disponível ainda.</div>
         <p className="mt-2 text-zinc-500">Peça a um admin para sincronizar o Firestore no painel administrativo.</p>
-      </div>
-    );
-
-  if (resumoSessao)
-    return (
-      <div className="card-sapiens rounded-2xl p-6 md:p-8">
-        <div className="font-mono-alt text-xs uppercase tracking-[0.3em] text-sapiens-accentDeep mb-2">
-          Resumo da sessão · {respostasSessaoRef.current.length} questões
-        </div>
-        <div className="font-display text-2xl font-bold tracking-tight text-zinc-950" data-testid="resumo-sessao-headline">
-          {resumoSessao.headline}
-        </div>
-        <p className="mt-3 text-[15px] leading-relaxed text-zinc-700 whitespace-pre-line">{resumoSessao.body}</p>
-
-        {resumoSessao.pontos_fortes?.length > 0 && (
-          <div className="mt-5">
-            <div className="text-xs font-bold uppercase tracking-wide text-emerald-700">Pontos fortes</div>
-            <ul className="mt-1.5 space-y-1 text-sm text-zinc-700">
-              {resumoSessao.pontos_fortes.map((p, i) => <li key={i}>· {p}</li>)}
-            </ul>
-          </div>
-        )}
-        {resumoSessao.pontos_de_atencao?.length > 0 && (
-          <div className="mt-4">
-            <div className="text-xs font-bold uppercase tracking-wide text-amber-700">Pontos de atenção</div>
-            <ul className="mt-1.5 space-y-1 text-sm text-zinc-700">
-              {resumoSessao.pontos_de_atencao.map((p, i) => <li key={i}>· {p}</li>)}
-            </ul>
-          </div>
-        )}
-        {resumoSessao.padroes_de_erro?.length > 0 && (
-          <div className="mt-4">
-            <div className="text-xs font-bold uppercase tracking-wide text-rose-700">Padrões de erro</div>
-            <ul className="mt-1.5 space-y-1 text-sm text-zinc-700">
-              {resumoSessao.padroes_de_erro.map((p, i) => <li key={i}>· {p}</li>)}
-            </ul>
-          </div>
-        )}
-
-        <button
-          onClick={continuarAposResumo}
-          data-testid="btn-continuar-apos-resumo"
-          className="pill btn-sapiens inline-flex items-center gap-2 mt-6 px-6 py-3 rounded-full text-sm font-medium"
-        >
-          Continuar praticando <ArrowRight className="w-4 h-4" />
-        </button>
       </div>
     );
 
@@ -375,16 +363,54 @@ function QuestionRunner({ filtro, onExit }) {
           {q.enunciado || "(Sem enunciado)"}
         </p>
 
-        {q.recursos?.imagens?.some((img) => img?.arquivo) && (
-          <img
-            key={item.item_id}
-            src={`${API}/exam-images/${item.item_id}`}
-            alt="Imagem da questão"
-            className="mt-4 max-w-full rounded-lg border border-zinc-200"
-            data-testid="questao-imagem"
-            loading="lazy"
-            onError={(e) => { e.currentTarget.style.display = "none"; }}
-          />
+        {/* `papel === "alternativa_figura"` renderiza DENTRO do botão da
+            alternativa correspondente (abaixo), não aqui — senão a mesma
+            imagem apareceria duas vezes. */}
+        {Array.isArray(figurasPrincipais) && figurasPrincipais.length > 0 ? (
+          figurasPrincipais.map((asset) => {
+            const visualSrc = urlAssetVisual(asset);
+            const visualAlt = `${asset.type || "Elemento visual"} da questão`;
+            if (asset.type === "formula") {
+              return (
+                <FormulaMath
+                  key={asset.asset_id}
+                  asset={asset}
+                  imgSrc={visualSrc}
+                  imgAlt={visualAlt}
+                  className="mt-4 max-w-full cursor-zoom-in rounded-lg border border-zinc-200"
+                  testId="questao-visual-asset-formula"
+                  imgProps={dimensoesIntrinsecas(asset)}
+                  onClick={() => setLightbox({ src: visualSrc, alt: visualAlt })}
+                  onError={(e) => { e.currentTarget.style.display = "none"; }}
+                />
+              );
+            }
+            return (
+              <img
+                key={asset.asset_id}
+                src={visualSrc}
+                alt={visualAlt}
+                className="mt-4 max-w-full cursor-zoom-in rounded-lg border border-zinc-200"
+                data-testid="questao-visual-asset"
+                loading="lazy"
+                {...dimensoesIntrinsecas(asset)}
+                onClick={() => setLightbox({ src: visualSrc, alt: visualAlt })}
+                onError={(e) => { e.currentTarget.style.display = "none"; }}
+              />
+            );
+          })
+        ) : (
+          q.recursos?.imagens?.some((img) => img?.arquivo) && (
+            <img
+              key={item.item_id}
+              src={`${API}/exam-images/${item.item_id}`}
+              alt="Imagem da questão"
+              className="mt-4 max-w-full rounded-lg border border-zinc-200"
+              data-testid="questao-imagem"
+              loading="lazy"
+              onError={(e) => { e.currentTarget.style.display = "none"; }}
+            />
+          )
         )}
 
         <div className="mt-6 grid gap-2">
@@ -393,6 +419,7 @@ function QuestionRunner({ filtro, onExit }) {
             const isSelected = selected === letra;
             const isCorrect = result && letra === result.correta;
             const isWrongChoice = result && isSelected && !result.acertou;
+            const figuraAlt = figurasPorAlternativa[letra];
             let cls = "border-zinc-200 bg-white hover:border-sapiens-accent hover:shadow-sm";
             if (isCorrect) cls = "border-emerald-400 bg-emerald-50";
             else if (isWrongChoice) cls = "border-rose-400 bg-rose-50";
@@ -401,7 +428,7 @@ function QuestionRunner({ filtro, onExit }) {
               <button
                 key={letra}
                 onClick={() => pick(letra)}
-                disabled={!!result}
+                disabled={!!result || !alt.texto}
                 data-testid={`alt-${letra}`}
                 className={`flex items-start gap-3 rounded-xl border px-4 py-3 text-left transition ${cls} ${isSelected && !result ? "select-pop" : ""}`}
               >
@@ -410,11 +437,52 @@ function QuestionRunner({ filtro, onExit }) {
                 }`}>
                   {isCorrect ? <Check className="w-4 h-4" /> : isWrongChoice ? <X className="w-4 h-4" /> : letra}
                 </span>
-                <span className="text-zinc-700">{alt.texto}</span>
+                <span className="flex flex-col gap-2">
+                  {figuraAlt && (
+                    <img
+                      src={urlAssetVisual(figuraAlt)}
+                      alt={`Alternativa ${letra}`}
+                      className="max-w-[220px] cursor-zoom-in rounded-lg border border-zinc-200 bg-white"
+                      loading="lazy"
+                      data-testid={`alt-${letra}-figura`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setLightbox({
+                          src: urlAssetVisual(figuraAlt),
+                          alt: `Alternativa ${letra}`,
+                        });
+                      }}
+                      onError={(e) => { e.currentTarget.style.display = "none"; }}
+                    />
+                  )}
+                  {alt.texto ? (
+                    <span className="text-zinc-700">{alt.texto}</span>
+                  ) : (
+                    // EST-02: 18 itens do corpus têm alternativa sem texto. Antes
+                    // disto o botão vinha em branco, clicável, e o aluno podia
+                    // "responder" uma alternativa que não existe na prova.
+                    <span className="text-zinc-400 italic">
+                      Alternativa indisponível — esta questão está em correção.
+                    </span>
+                  )}
+                </span>
               </button>
             );
           })}
         </div>
+
+        {lightbox && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+            onClick={() => setLightbox(null)}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Elemento visual ampliado"
+            data-testid="visual-lightbox"
+          >
+            <img src={lightbox.src} alt={lightbox.alt} className="max-h-full max-w-full rounded-lg bg-white" />
+          </div>
+        )}
 
         {result && (
           <div className={`mt-5 rounded-xl px-4 py-4 reveal ${result.acertou ? "bg-emerald-50" : "bg-rose-50"}`} data-testid="result-banner">
@@ -441,12 +509,12 @@ function QuestionRunner({ filtro, onExit }) {
           ) : (
             <button
               onClick={avancar}
-              disabled={carregandoResumo}
+              disabled={submitting}
               data-testid="btn-proxima"
               className="pill btn-sapiens inline-flex items-center gap-2 disabled:opacity-40 px-6 py-3 rounded-full text-sm font-medium"
             >
-              {carregandoResumo
-                ? "Analisando padrões desta sessão…"
+              {submitting
+                ? "Preparando devolutiva…"
                 : idx + 1 < itens.length ? "Próxima questão" : "Concluir"} <ArrowRight className="w-4 h-4" />
             </button>
           )}
@@ -454,7 +522,7 @@ function QuestionRunner({ filtro, onExit }) {
       </article>
 
       <Dialog open={!!rodadaResumo} onOpenChange={(v) => { if (!v) continuarAposRodada(); }}>
-        <DialogContent className="rounded-2xl max-w-md" data-testid="rodada-devolutiva">
+        <DialogContent className="rounded-2xl max-w-md max-h-[85vh] overflow-y-auto" data-testid="rodada-devolutiva">
           {rodadaResumo && (
             <>
               <DialogHeader>
@@ -507,6 +575,31 @@ function QuestionRunner({ filtro, onExit }) {
                   <div className="text-xs font-bold uppercase tracking-wide text-rose-700">Padrões observados nesta rodada</div>
                   <ul className="mt-1.5 space-y-1 text-sm text-zinc-700">
                     {rodadaResumo.padroes_de_erro.map((p, i) => <li key={i}>· {p.nome}</li>)}
+                  </ul>
+                </div>
+              )}
+
+              {rodadaResumo.headline && (
+                <div data-testid="rodada-resumo-ia">
+                  <div className="font-display text-base font-bold text-zinc-900">{rodadaResumo.headline}</div>
+                  {rodadaResumo.body && (
+                    <p className="mt-1.5 text-sm leading-relaxed text-zinc-700 whitespace-pre-line">{rodadaResumo.body}</p>
+                  )}
+                </div>
+              )}
+              {rodadaResumo.pontos_fortes?.length > 0 && (
+                <div>
+                  <div className="text-xs font-bold uppercase tracking-wide text-emerald-700">Pontos fortes</div>
+                  <ul className="mt-1.5 space-y-1 text-sm text-zinc-700">
+                    {rodadaResumo.pontos_fortes.map((p, i) => <li key={i}>· {p}</li>)}
+                  </ul>
+                </div>
+              )}
+              {rodadaResumo.pontos_de_atencao?.length > 0 && (
+                <div>
+                  <div className="text-xs font-bold uppercase tracking-wide text-amber-700">Pontos de atenção</div>
+                  <ul className="mt-1.5 space-y-1 text-sm text-zinc-700">
+                    {rodadaResumo.pontos_de_atencao.map((p, i) => <li key={i}>· {p}</li>)}
                   </ul>
                 </div>
               )}
@@ -566,11 +659,30 @@ function _statsPorBloco(rounds) {
   return stats;
 }
 
+// Progresso REAL de cada bloco (quantas o aluno já respondeu, de
+// `/students/me/provas-progresso`) — nunca o tamanho do bloco sincronizado,
+// que é só o total disponível, não quanto já foi feito.
+function _progressoPorBloco(provasProgresso) {
+  const stats = {};
+  for (const p of provasProgresso || []) {
+    stats[_blocoKey(p)] = { respondidas: p.respondidas || 0, total: p.total || 0 };
+  }
+  return stats;
+}
+
 function ProvasGrid({ onSelect, onExit }) {
   const [provas, setProvas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
   const [roundStats, setRoundStats] = useState({});
+  const [progresso, setProgresso] = useState({});
+  const [resetAlvo, setResetAlvo] = useState(null); // prova aguardando confirmação de reinício
+
+  const carregarProgresso = () => {
+    api.get("/firestore/students/me/provas-progresso")
+      .then(({ data }) => setProgresso(_progressoPorBloco(data.provas)))
+      .catch(() => {});
+  };
 
   useEffect(() => {
     let ativo = true;
@@ -581,8 +693,15 @@ function ProvasGrid({ onSelect, onExit }) {
     api.get("/firestore/students/me/rounds")
       .then(({ data }) => { if (ativo) setRoundStats(_statsPorBloco(data.rounds)); })
       .catch(() => {});
+    carregarProgresso();
     return () => { ativo = false; };
   }, []);
+
+  const confirmarReinicio = () => {
+    const p = resetAlvo;
+    setResetAlvo(null);
+    onSelect(p, { reiniciar: true });
+  };
 
   return (
     <div>
@@ -611,61 +730,116 @@ function ProvasGrid({ onSelect, onExit }) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {provas.map((p, i) => {
             const stats = roundStats[_blocoKey(p)];
+            const prog = progresso[_blocoKey(p)];
+            const respondidas = Math.min(prog?.respondidas || 0, p.count || 0);
+            const pct = p.count > 0 ? Math.round((100 * respondidas) / p.count) : 0;
+            const concluida = p.count > 0 && respondidas >= p.count;
             const expectedRounds = Math.ceil((p.count || 0) / 10);
             const remaining = Math.max(0, (p.count || 0) - (stats?.roundsCompleted || 0) * 10);
             const etaMin = Math.max(1, Math.round(remaining * MINUTOS_POR_QUESTAO));
             const delta = stats && stats.previousAccuracy != null ? Math.round(stats.lastAccuracy - stats.previousAccuracy) : null;
             return (
-              <button
+              <div
                 key={`${p.banca}-${p.ano}-${p.prova}-${p.numero_min}-${i}`}
-                onClick={() => onSelect(p)}
-                data-testid={`prova-card-${p.banca}-${p.ano}-${p.prova}-${p.numero_min}`}
-                className="lift card-sapiens text-left rounded-2xl p-6 hover:border-sapiens-accent"
+                className="relative lift card-sapiens rounded-2xl p-6"
               >
-                <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sapiens-accent to-sapiens-navy text-white flex items-center justify-center shrink-0">
-                    <BookOpen className="w-5 h-5" strokeWidth={1.7} />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="font-display font-bold text-lg tracking-tight text-zinc-950 truncate">
-                      {p.banca} {p.ano} · Caderno {capitalizar(p.prova)}
-                    </div>
-                    <div className="text-xs text-zinc-500">
-                      {p.disciplinas.join(" e ") || "Disciplina não informada"} · Questões {p.numero_min}–{p.numero_max}
-                    </div>
-                  </div>
-                </div>
-
-                {stats && (
-                  <div className="mt-4 flex flex-wrap items-center gap-2" data-testid={`prova-stats-${p.banca}-${p.ano}-${p.prova}-${p.numero_min}`}>
-                    <span className="text-[11px] font-mono-alt font-bold text-sapiens-accentDeep bg-sapiens-accentSoft px-2 py-1 rounded-full">
-                      última: {stats.lastAccuracy}%
-                    </span>
-                    {delta != null && delta !== 0 && (
-                      <span className={`text-[11px] font-mono-alt font-bold px-2 py-1 rounded-full ${delta > 0 ? "text-emerald-700 bg-emerald-50" : "text-rose-700 bg-rose-50"}`}>
-                        {delta > 0 ? "+" : ""}{delta} p.p. vs. anterior
-                      </span>
-                    )}
-                    <span className="text-[11px] font-mono-alt text-zinc-500 bg-zinc-100 px-2 py-1 rounded-full">
-                      {stats.roundsCompleted}/{expectedRounds} rodadas
-                    </span>
-                  </div>
+                {respondidas > 0 && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setResetAlvo(p); }}
+                    title="Reiniciar prova"
+                    data-testid={`prova-reset-${p.banca}-${p.ano}-${p.prova}-${p.numero_min}`}
+                    className="absolute top-4 right-4 z-10 text-zinc-300 hover:text-rose-500 transition-colors"
+                  >
+                    <RotateCw className="w-4 h-4" />
+                  </button>
                 )}
+                <button
+                  onClick={() => onSelect(p)}
+                  data-testid={`prova-card-${p.banca}-${p.ano}-${p.prova}-${p.numero_min}`}
+                  className="w-full text-left"
+                >
+                  <div className="flex items-center gap-2 pr-6">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sapiens-accent to-sapiens-navy text-white flex items-center justify-center shrink-0">
+                      <BookOpen className="w-5 h-5" strokeWidth={1.7} />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="font-display font-bold text-lg tracking-tight text-zinc-950 truncate">
+                        {p.banca} {p.ano} · Caderno {capitalizar(p.prova)}
+                      </div>
+                      <div className="text-xs text-zinc-500">
+                        {p.disciplinas.join(" e ") || "Disciplina não informada"} · Questões {p.numero_min}–{p.numero_max}
+                      </div>
+                    </div>
+                  </div>
 
-                <div className="mt-4 flex items-center justify-between">
-                  <span className="text-xs font-mono-alt text-zinc-400">
-                    {p.count}{p.total_bloco && p.count < p.total_bloco ? ` de ${p.total_bloco}` : ""} questão(ões)
-                    {remaining > 0 && ` · ~${etaMin} min`}
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 text-sm text-zinc-900 font-medium">
-                    {stats?.roundsCompleted ? "Continuar" : "Praticar"} <ArrowRight className="w-4 h-4" />
-                  </span>
-                </div>
-              </button>
+                  {stats && (
+                    <div className="mt-4 flex flex-wrap items-center gap-2" data-testid={`prova-stats-${p.banca}-${p.ano}-${p.prova}-${p.numero_min}`}>
+                      <span className="text-[11px] font-mono-alt font-bold text-sapiens-accentDeep bg-sapiens-accentSoft px-2 py-1 rounded-full">
+                        última: {stats.lastAccuracy}%
+                      </span>
+                      {delta != null && delta !== 0 && (
+                        <span className={`text-[11px] font-mono-alt font-bold px-2 py-1 rounded-full ${delta > 0 ? "text-emerald-700 bg-emerald-50" : "text-rose-700 bg-rose-50"}`}>
+                          {delta > 0 ? "+" : ""}{delta} p.p. vs. anterior
+                        </span>
+                      )}
+                      <span className="text-[11px] font-mono-alt text-zinc-500 bg-zinc-100 px-2 py-1 rounded-full">
+                        {stats.roundsCompleted}/{expectedRounds} rodadas
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="mt-4" data-testid={`prova-progresso-${p.banca}-${p.ano}-${p.prova}-${p.numero_min}`}>
+                    <div className="mb-1.5 flex items-center justify-between text-xs font-mono-alt text-zinc-400">
+                      <span>{respondidas}/{p.count} respondidas{remaining > 0 && !concluida ? ` · ~${etaMin} min` : ""}</span>
+                      <span>{pct}%</span>
+                    </div>
+                    <div className="h-1.5 w-full rounded-full bg-zinc-100 overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-sapiens-accentSoft to-sapiens-accent transition-all duration-500 ease-out"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-3 flex items-center justify-end">
+                    <span className="inline-flex items-center gap-1.5 text-sm text-zinc-900 font-medium">
+                      {concluida ? "Ver resultado" : respondidas > 0 ? "Continuar" : "Praticar"} <ArrowRight className="w-4 h-4" />
+                    </span>
+                  </div>
+                </button>
+              </div>
             );
           })}
         </div>
       )}
+
+      <Dialog open={!!resetAlvo} onOpenChange={(v) => !v && setResetAlvo(null)}>
+        <DialogContent className="rounded-2xl" data-testid="dialog-reiniciar-prova">
+          <DialogHeader>
+            <DialogTitle className="font-display text-2xl tracking-tight">Reiniciar esta prova?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-zinc-600 leading-relaxed">
+            Você vai poder responder {resetAlvo?.banca} {resetAlvo?.ano} · Caderno {resetAlvo && capitalizar(resetAlvo.prova)} do começo.
+            Questões já respondidas não dão Sparks de novo, e seu histórico de respostas nunca é apagado — cada tentativa fica registrada.
+          </p>
+          <DialogFooter>
+            <button
+              onClick={() => setResetAlvo(null)}
+              data-testid="btn-cancelar-reinicio"
+              className="pill inline-flex items-center justify-center px-5 py-2.5 rounded-full text-sm font-medium border border-zinc-200 text-zinc-700 hover:border-zinc-300"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={confirmarReinicio}
+              data-testid="btn-confirmar-reinicio"
+              className="pill btn-sapiens inline-flex items-center justify-center px-5 py-2.5 rounded-full text-sm font-medium"
+            >
+              Reiniciar prova
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -747,7 +921,7 @@ export default function ExamSelect() {
   const [mode, setMode] = useState(areaParam ? "practice" : "hub"); // 'hub' | 'provas' | 'practice'
   const [filtro, setFiltro] = useState(areaParam ? { area: areaParam } : null); // { banca, ano, prova, disciplinas, count } | { area }
 
-  const escolherProva = (p) => { setFiltro(p); setMode("practice"); };
+  const escolherProva = (p, opts) => { setFiltro({ ...p, reiniciar: !!opts?.reiniciar }); setMode("practice"); };
 
   return (
     <div className="min-h-screen">
