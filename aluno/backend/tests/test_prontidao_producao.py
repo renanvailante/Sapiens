@@ -153,14 +153,29 @@ def test_sem_admin_declarado_e_recusado_em_producao(monkeypatch):
     assert "ADMIN_EMAILS" in _problemas(monkeypatch, ADMIN_EMAILS=None)
 
 
-def test_mercadopago_access_token_ausente_e_recusado_em_producao(monkeypatch):
-    """Sem ele a loja de Sparks não cria pagamento nem assinatura nenhuma."""
-    assert "MERCADOPAGO_ACCESS_TOKEN" in _problemas(monkeypatch, MERCADOPAGO_ACCESS_TOKEN=None)
+def test_loja_desligada_nao_impede_o_boot(monkeypatch):
+    """Abrir o beta sem a loja de Sparks é uma escolha legítima: o resto do
+    produto (prática, redação, diagnóstico) funciona igual, e a compra aparece
+    como indisponível. Não pode derrubar o processo inteiro."""
+    assert _settings(
+        monkeypatch,
+        MERCADOPAGO_ACCESS_TOKEN=None,
+        MERCADOPAGO_PUBLIC_KEY=None,
+        MERCADOPAGO_WEBHOOK_SECRET=None,
+    ).validar() == []
 
 
 def test_mercadopago_webhook_secret_ausente_e_recusado_em_producao(monkeypatch):
-    """Sem ele /api/sparks/webhook não valida que a notificação veio do MP."""
+    """Configuração PELA METADE é o estado perigoso: com token e sem segredo de
+    webhook, o cartão é cobrado e a confirmação é rejeitada por assinatura
+    inválida — o dinheiro sai e os Sparks nunca entram, em silêncio."""
     assert "MERCADOPAGO_WEBHOOK_SECRET" in _problemas(monkeypatch, MERCADOPAGO_WEBHOOK_SECRET=None)
+
+
+def test_public_key_ausente_com_loja_ligada_e_recusada(monkeypatch):
+    """Sem a public key o Brick não monta no navegador — a loja apareceria mas
+    o formulário de pagamento ficaria vazio."""
+    assert "MERCADOPAGO_PUBLIC_KEY" in _problemas(monkeypatch, MERCADOPAGO_PUBLIC_KEY=None)
 
 
 def test_credencial_de_teste_do_mercadopago_e_recusada_em_producao(monkeypatch):

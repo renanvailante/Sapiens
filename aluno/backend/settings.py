@@ -149,28 +149,46 @@ def validar() -> list[str]:
                 "ADMIN_EMAILS ausente em produção — ninguém conseguiria acessar "
                 "as telas administrativas."
             )
-        if not MERCADOPAGO_ACCESS_TOKEN:
-            problemas.append(
-                "MERCADOPAGO_ACCESS_TOKEN ausente — a loja de Sparks não cria "
-                "pagamento nem assinatura nenhuma, e o aluno vê a compra como "
-                "indisponível sem entender por quê."
-            )
-        elif MERCADOPAGO_ACCESS_TOKEN.startswith("TEST-"):
-            problemas.append(
-                "MERCADOPAGO_ACCESS_TOKEN é credencial de teste (prefixo TEST-) "
-                "em produção — cobranças reais não seriam processadas."
-            )
-        if MERCADOPAGO_PUBLIC_KEY and MERCADOPAGO_PUBLIC_KEY.startswith("TEST-"):
-            problemas.append(
-                "MERCADOPAGO_PUBLIC_KEY é credencial de teste (prefixo TEST-) em "
-                "produção — o Checkout Brick abriria em modo sandbox."
-            )
-        if not MERCADOPAGO_WEBHOOK_SECRET:
-            problemas.append(
-                "MERCADOPAGO_WEBHOOK_SECRET ausente — /api/sparks/webhook não "
-                "conseguiria validar que a notificação veio mesmo do Mercado "
-                "Pago, e qualquer um poderia forjar um crédito de Sparks."
-            )
+        # A loja de Sparks é opcional: sem `MERCADOPAGO_ACCESS_TOKEN` ela
+        # simplesmente não abre (`_require_mp_configured` devolve 503 e o
+        # frontend mostra "compra indisponível"), e o resto do produto —
+        # prática, redação, diagnóstico — funciona igual. Abrir o beta com
+        # pagamento desligado é uma escolha legítima, então isso NÃO impede o
+        # boot.
+        #
+        # O que impede o boot é a configuração PELA METADE. Com token e sem
+        # webhook secret, o checkout cobra o cartão do aluno e a notificação de
+        # confirmação é rejeitada por assinatura inválida: o dinheiro sai e os
+        # Sparks nunca entram. É o pior estado possível, e é silencioso — daí
+        # ser melhor não subir do que subir assim.
+        if MERCADOPAGO_ACCESS_TOKEN:
+            if MERCADOPAGO_ACCESS_TOKEN.startswith("TEST-"):
+                problemas.append(
+                    "MERCADOPAGO_ACCESS_TOKEN é credencial de teste (prefixo "
+                    "TEST-) em produção — o checkout abriria, o cartão seria "
+                    "'aceito' e nenhum dinheiro entraria."
+                )
+            if not MERCADOPAGO_WEBHOOK_SECRET:
+                problemas.append(
+                    "MERCADOPAGO_WEBHOOK_SECRET ausente com a loja de Sparks "
+                    "LIGADA. O crédito de Sparks só acontece no webhook, e sem "
+                    "o segredo toda notificação é rejeitada por assinatura "
+                    "inválida: o aluno paga e nunca recebe. Crie a assinatura "
+                    "secreta em Mercado Pago > Suas integrações > Webhooks e "
+                    "publique com `fly secrets set MERCADOPAGO_WEBHOOK_SECRET=...`, "
+                    "ou remova MERCADOPAGO_ACCESS_TOKEN para abrir o beta com a "
+                    "loja desligada."
+                )
+            if not MERCADOPAGO_PUBLIC_KEY:
+                problemas.append(
+                    "MERCADOPAGO_PUBLIC_KEY ausente com a loja LIGADA — o "
+                    "Checkout Brick não consegue montar no navegador."
+                )
+            elif MERCADOPAGO_PUBLIC_KEY.startswith("TEST-"):
+                problemas.append(
+                    "MERCADOPAGO_PUBLIC_KEY é credencial de teste (prefixo "
+                    "TEST-) em produção — o Brick abriria em modo sandbox."
+                )
 
     return problemas
 
