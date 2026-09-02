@@ -29,6 +29,10 @@ class User(BaseModel):
     provider: str = "email"
     password_hash: str | None = None
     is_admin: bool = False
+    # Prova de posse do e-mail: só o login com Google ou a redefinição de senha
+    # por link a concedem. Sem ela, uma senha criada por terceiro é invalidada
+    # no primeiro login Google da dona real (ver `auth.google_sign_in`).
+    email_verificado: bool = False
     created_at: str = Field(default_factory=_now_iso)
 
 
@@ -135,15 +139,21 @@ class Analysis(BaseModel):
 
 # ---------- Request / Response schemas ----------
 
+# Limites de tamanho: sem eles o mínimo de 6 caracteres da senha existia só
+# como atributo HTML do input — uma requisição direta criava conta com senha
+# vazia — e os campos de texto livre aceitavam qualquer volume.
 class SignupRequest(BaseModel):
     email: EmailStr
-    name: str
-    password: str
+    name: str = Field(..., min_length=1, max_length=120)
+    password: str = Field(..., min_length=8, max_length=200)
 
 
 class LoginRequest(BaseModel):
     email: EmailStr
-    password: str
+    # Sem `min_length` aqui de propósito: no login, uma senha curta é
+    # credencial errada (401), não erro de validação (422) — 422 revelaria a
+    # regra de senha para quem só está sondando.
+    password: str = Field(..., max_length=200)
 
 
 class SubmitExamRequest(BaseModel):
@@ -191,10 +201,10 @@ class AulaParticularRequest(BaseModel):
 
 
 class CreateAulaParticularRequest(BaseModel):
-    nome_completo: str
-    whatsapp: str
-    areas: list[str]
-    descricao: str = ""
+    nome_completo: str = Field(..., min_length=1, max_length=200)
+    whatsapp: str = Field(..., min_length=8, max_length=30)
+    areas: list[str] = Field(..., min_length=1, max_length=10)
+    descricao: str = Field(default="", max_length=2_000)
 
 
 class UpdateAulaParticularStatusRequest(BaseModel):

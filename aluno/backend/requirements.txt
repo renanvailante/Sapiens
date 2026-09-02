@@ -33,6 +33,11 @@ google-cloud-firestore>=2.11.0
 # --- Gemini API (substitui o proxy emergentintegrations, removido 2026-08-21) ---
 google-genai>=2.12.1
 
+# --- Pagamentos (loja de Sparks) ---
+# SDK oficial. Só o access token e o webhook secret vivem no backend; Client
+# ID/Secret são do fluxo OAuth de marketplace, que este produto não usa.
+mercadopago==3.5.0
+
 # --- Figuras de questão (proxy servidor-a-servidor para o pipeline) ---
 httpx==0.28.1
 

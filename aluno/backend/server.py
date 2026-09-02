@@ -10,7 +10,7 @@ from collections import Counter
 from typing import Any
 
 from dotenv import load_dotenv
-from fastapi import APIRouter, FastAPI, Request
+from fastapi import APIRouter, Depends, FastAPI, Request
 from fastapi.responses import JSONResponse
 from motor.motor_asyncio import AsyncIOMotorClient
 from starlette.middleware.cors import CORSMiddleware
@@ -29,6 +29,8 @@ logger = logging.getLogger("sapiens")
 settings.exigir_config_valida()
 
 import auth as auth_module
+from auth import require_user
+from models import User
 import exam_routes as exam_module
 import exam_images_routes as exam_images_module
 import feed_routes as feed_module
@@ -38,6 +40,9 @@ import events_routes as events_module
 import firestore_routes as firestore_module
 import skills_map_routes as skills_map_module
 import aulas_particulares_routes as aulas_particulares_module
+import sparks_routes as sparks_module
+import redacao_routes as redacao_module
+import db_indexes
 from enem_seed import migrate_and_seed
 from feed_seed import seed_feed
 from firestore_service import seed_all_students as _firestore_seed_students
@@ -53,6 +58,8 @@ annotation_module.set_db(db)
 admin_module.set_db(db)
 firestore_module.set_db(db)
 aulas_particulares_module.set_db(db)
+sparks_module.set_db(db)
+redacao_module.set_db(db)
 
 app = FastAPI(
     title="Sapiens",
@@ -70,6 +77,22 @@ async def root():
     return {"app": "Sapiens", "status": "ok"}
 
 
+# Projeção obrigatória de toda leitura de `questoes_public` que vai para o
+# cliente. `alternativas.$[].correta` é o GABARITO: com ele na resposta, o
+# aluno lê a alternativa certa na aba Rede do navegador antes de responder, e
+# qualquer pessoa sem login baixa o banco inteiro com as respostas.
+#
+# Quem decide certo/errado é o servidor, em `POST /students/me/answer`
+# (`firestore_routes.register_answer`), que lê a coleção direto e nunca depende
+# do que o cliente afirma — então esconder o campo aqui não muda nada no fluxo
+# de prática, só fecha o vazamento.
+PROJECAO_SEM_GABARITO = {
+    "_id": 0,
+    "master_id": 0,
+    "questao.alternativas.correta": 0,
+}
+
+
 @api_router.get("/questoes")
 async def list_questoes_publico(
     limit: int = 100,
@@ -79,8 +102,17 @@ async def list_questoes_publico(
     numero_min: int | None = None,
     numero_max: int | None = None,
     area: str | None = None,
+    _: User = Depends(require_user),
 ):
-    """Endpoint PUBLICO (sem autenticacao) do ALUNO.
+    """Questões para a prática do aluno — **exige sessão** e nunca inclui o
+    gabarito (ver `PROJECAO_SEM_GABARITO`).
+
+    Era aberto e devolvia `correta` em cada alternativa: um `curl` sem login
+    baixava o banco inteiro com as respostas, e o próprio aluno via o gabarito
+    na aba Rede antes de responder. Os enunciados do ENEM são públicos (o INEP
+    os publica), mas a anotação e o gabarito consolidados aqui não são, e
+    Sparks — moeda comprada com dinheiro — são creditados por acerto.
+
     Le APENAS a colecao filtrada 'questoes_public' do Mongo (versao sem
     metadados internos). NUNCA le do Firestore nem da colecao master.
 
@@ -119,7 +151,7 @@ async def list_questoes_publico(
         else:
             filtro["fonte.disciplina"] = area  # área desconhecida: match exato, devolve vazio se não bater
     cursor = db.questoes_public.find(
-        filtro, {"_id": 0, "master_id": 0}
+        filtro, PROJECAO_SEM_GABARITO
     ).sort("fonte.numero", 1).limit(limit)
     items = await cursor.to_list(length=limit)
     return {"items": items, "count": len(items)}
@@ -195,8 +227,10 @@ def _bloco_enem(numero: int | None) -> tuple[int, int] | None:
 
 
 @api_router.get("/provas")
-async def list_provas_publico():
-    """Endpoint PUBLICO — agrupa 'questoes_public' por (banca, ano, prova,
+async def list_provas_publico(_: User = Depends(require_user)):
+    """Cadernos disponíveis para prática — **exige sessão**, como `/questoes`:
+    é o índice do mesmo acervo e não faz sentido expor a composição do banco a
+    quem não entrou. Agrupa 'questoes_public' por (banca, ano, prova,
     bloco de 45 questões), a visão de 'prova' que o aluno escolhe antes de
     praticar. Mesma regra de fonte de dados de `/questoes`: só
     `questoes_public`, nunca Firestore nem a coleção master.
@@ -247,6 +281,8 @@ api_router.include_router(events_module.router)
 api_router.include_router(firestore_module.router)
 api_router.include_router(skills_map_module.router)
 api_router.include_router(aulas_particulares_module.router)
+api_router.include_router(sparks_module.router)
+api_router.include_router(redacao_module.router)
 app.include_router(api_router)
 
 
@@ -377,6 +413,15 @@ async def _auto_sync_loop():
 
 @app.on_event("startup")
 async def _startup():
+    # Antes de qualquer outra coisa: sem os índices, toda requisição
+    # autenticada varre `user_sessions` inteira e o dedupe do webhook do
+    # Mercado Pago não tem a trava atômica de que depende.
+    resultado_indices = await db_indexes.criar_indices(db)
+    logger.info(
+        "Índices MongoDB: %d criados/confirmados, %d falharam.",
+        resultado_indices["criados"], resultado_indices["falhas"],
+    )
+
     if settings.SEED_DEMO_DATA:
         # Gabaritos de exemplo e conteúdo de feed autoral. Em produção isso
         # injetaria dado fictício no banco real — daí o gate.

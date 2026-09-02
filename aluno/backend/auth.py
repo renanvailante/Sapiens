@@ -19,15 +19,20 @@ quem entrou por Google é indistinguível de quem entrou por senha daí em diant
 """
 from __future__ import annotations
 
+import logging
 import os
+import secrets
 import uuid
 from datetime import datetime, timedelta, timezone
 
 import bcrypt
-from fastapi import APIRouter, Body, Cookie, HTTPException, Request, Response
+from fastapi import APIRouter, Body, Cookie, Depends, HTTPException, Request, Response
 
+import rate_limit
 import settings
 from models import LoginRequest, SignupRequest, User, UserSession
+
+logger = logging.getLogger("sapiens.auth")
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -67,7 +72,13 @@ async def _create_session(user_id: str) -> str:
     token = _new_session_token()
     expires_at = datetime.now(timezone.utc) + timedelta(days=SESSION_TTL_DAYS)
     session = UserSession(user_id=user_id, session_token=token, expires_at=expires_at.isoformat())
-    await _db.user_sessions.insert_one(session.model_dump())
+    doc = session.model_dump()
+    # `expires_at` é string ISO (contrato do modelo, lido por `_resolve_user`).
+    # O TTL do Mongo só age sobre um campo BSON de data e ignora string em
+    # silêncio — daí este campo paralelo, escrito só para o índice
+    # `sessao_ttl` (ver `db_indexes.py`). O contrato do modelo fica intacto.
+    doc["expires_at_dt"] = expires_at
+    await _db.user_sessions.insert_one(doc)
     return token
 
 
@@ -136,7 +147,11 @@ async def require_admin(request: Request) -> User:
 
 
 @router.post("/signup")
-async def signup(payload: SignupRequest, response: Response):
+async def signup(
+    payload: SignupRequest,
+    response: Response,
+    _: None = Depends(rate_limit.por_ip("signup")),
+):
     existing = await _db.users.find_one({"email": payload.email}, {"_id": 0})
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -156,7 +171,11 @@ async def signup(payload: SignupRequest, response: Response):
 
 
 @router.post("/login")
-async def login(payload: LoginRequest, response: Response):
+async def login(
+    payload: LoginRequest,
+    response: Response,
+    _: None = Depends(rate_limit.por_ip("login")),
+):
     doc = await _db.users.find_one({"email": payload.email}, {"_id": 0})
     if not doc or not doc.get("password_hash"):
         raise HTTPException(status_code=401, detail="Invalid credentials")
@@ -210,16 +229,38 @@ async def google_sign_in(response: Response, id_token: str = Body(..., embed=Tru
     existente = await _db.users.find_one({"email": email}, {"_id": 0})
     if existente:
         user_id = existente["user_id"]
-        # `provider` passa a "google" para refletir a última via de entrada; a
-        # senha existente é PRESERVADA, para que os dois caminhos continuem
-        # abertos para a mesma pessoa.
-        await _db.users.update_one(
-            {"user_id": user_id},
-            {"$set": {"name": existente.get("name") or nome, "picture": foto,
-                      "provider": "google", "is_admin": admin}},
-        )
+        campos = {"name": existente.get("name") or nome, "picture": foto,
+                  "provider": "google", "is_admin": admin}
+
+        # Sequestro de conta ANTES do cadastro (pre-hijacking): como
+        # `/auth/signup` não verifica e-mail, alguém podia registrar o
+        # endereço de outra pessoa com uma senha própria; quando a dona real
+        # entrasse com Google, cairia NESSA conta e o atacante continuaria
+        # com a senha, lendo todo o histórico e os Sparks dela.
+        #
+        # A verificação do Google prova quem é a dona do endereço. Uma senha
+        # criada sem essa prova não pode sobreviver ao encontro: ela é
+        # invalidada aqui, e voltar a ter senha exige o fluxo de recuperação
+        # (`/auth/password/forgot`), que passa pelo e-mail. Uma senha definida
+        # DEPOIS de a conta já estar verificada é preservada — quem provou ser
+        # dona pode manter os dois caminhos abertos.
+        if existente.get("password_hash") and not existente.get("email_verificado"):
+            campos["password_hash"] = None
+            campos["senha_invalidada_em"] = datetime.now(timezone.utc).isoformat()
+            logger.warning(
+                "Senha não verificada invalidada ao vincular %s ao Google "
+                "(possível conta criada por terceiro antes do cadastro real).",
+                user_id,
+            )
+            # Sessões abertas com aquela senha morrem junto: manter uma delas
+            # viva deixaria o acesso do atacante de pé mesmo sem a senha.
+            await _db.user_sessions.delete_many({"user_id": user_id})
+
+        campos["email_verificado"] = True
+        await _db.users.update_one({"user_id": user_id}, {"$set": campos})
     else:
-        novo = User(email=email, name=nome, picture=foto, provider="google", is_admin=admin)
+        novo = User(email=email, name=nome, picture=foto, provider="google",
+                    is_admin=admin, email_verificado=True)
         await _db.users.insert_one(novo.model_dump())
         user_id = novo.user_id
 
@@ -235,6 +276,148 @@ async def me(request: Request):
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
     return user.model_dump(exclude={"password_hash"})
+
+
+# ---------------------------------------------------------------------------
+# Recuperação de senha
+#
+# Não existia: quem entrava por e-mail/senha e esquecia a senha perdia a conta,
+# com histórico e Sparks comprados dentro, e a única saída era editar o banco
+# na mão. Numa base de estudantes isso é a primeira demanda de suporte.
+#
+# O fluxo é o padrão: token de uso único, com validade curta, guardado apenas
+# como hash (um vazamento da coleção não permite redefinir a senha de
+# ninguém), e resposta idêntica para e-mail existente ou não — senão a rota
+# vira um oráculo que diz quem tem conta aqui.
+#
+# ENTREGA DO E-MAIL: este backend não tem provedor de e-mail configurado, e
+# inventar um seria inventar infraestrutura. `_entregar_link_de_reset` é o
+# ponto único de integração: hoje registra o link no log do servidor (o admin
+# consegue destravar um aluno), e passa a enviar de verdade assim que houver
+# provedor. Ver RESET_DE_SENHA.md.
+# ---------------------------------------------------------------------------
+
+PASSWORD_RESET_TTL_MINUTOS = 30
+
+
+def _hash_token(token: str) -> str:
+    """SHA-256 — o token tem 256 bits de entropia vinda de `secrets`, então
+    não há o que uma tabela pré-computada acelere; bcrypt aqui só adicionaria
+    custo por requisição sem ganho."""
+    import hashlib
+
+    return hashlib.sha256(token.encode()).hexdigest()
+
+
+async def _entregar_link_de_reset(email: str, token: str) -> None:
+    """Ponto ÚNICO de entrega do link de redefinição.
+
+    Enquanto não há provedor de e-mail, o link vai para o log em nível WARNING
+    (visível em `fly logs`), o que mantém o fluxo completo e auditável sem
+    fingir um envio que não acontece. Trocar por SendGrid/SES/Resend é
+    substituir o corpo desta função — nada mais no fluxo muda.
+    """
+    base = (settings.CORS_ORIGINS or ["http://localhost:3000"])[0].rstrip("/")
+    link = f"{base}/redefinir-senha?token={token}"
+    logger.warning(
+        "[RESET DE SENHA] Nenhum provedor de e-mail configurado. "
+        "Link para %s (válido por %d min): %s",
+        email, PASSWORD_RESET_TTL_MINUTOS, link,
+    )
+
+
+@router.post("/password/forgot")
+async def solicitar_reset_de_senha(
+    response: Response,
+    email: str = Body(..., embed=True),
+    _: None = Depends(rate_limit.por_ip("password_reset")),
+):
+    """Sempre devolve a mesma coisa, exista ou não a conta.
+
+    Dizer "e-mail não encontrado" transformaria esta rota num verificador de
+    quem estuda aqui — uma lista de menores de idade, para quem quisesse
+    coletá-la.
+    """
+    resposta = {
+        "ok": True,
+        "mensagem": "Se houver uma conta com esse e-mail, enviamos um link para redefinir a senha.",
+    }
+    alvo = (email or "").strip().lower()
+    if not alvo:
+        return resposta
+
+    doc = await _db.users.find_one({"email": alvo}, {"_id": 0, "user_id": 1})
+    if not doc:
+        return resposta
+
+    token = secrets.token_urlsafe(32)
+    expira = datetime.now(timezone.utc) + timedelta(minutes=PASSWORD_RESET_TTL_MINUTOS)
+    # Um pedido novo invalida os anteriores: dois links válidos ao mesmo tempo
+    # dobram a janela de exposição sem nenhum ganho para o aluno.
+    await _db.password_resets.delete_many({"user_id": doc["user_id"]})
+    await _db.password_resets.insert_one({
+        "user_id": doc["user_id"],
+        "token_hash": _hash_token(token),
+        "expires_at": expira.isoformat(),
+        "expires_at_dt": expira,   # campo BSON para o índice TTL
+        "usado": False,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    })
+    await _entregar_link_de_reset(alvo, token)
+    return resposta
+
+
+@router.post("/password/reset")
+async def redefinir_senha(
+    response: Response,
+    token: str = Body(...),
+    nova_senha: str = Body(..., min_length=8, max_length=200),
+    _: None = Depends(rate_limit.por_ip("password_reset")),
+):
+    """Consome o token e troca a senha. O token morre no uso."""
+    registro = await _db.password_resets.find_one({"token_hash": _hash_token(token)}, {"_id": 0})
+    if not registro or registro.get("usado"):
+        raise HTTPException(status_code=400, detail="Link inválido ou já utilizado.")
+
+    expira = registro["expires_at"]
+    if isinstance(expira, str):
+        expira = datetime.fromisoformat(expira)
+    if expira.tzinfo is None:
+        expira = expira.replace(tzinfo=timezone.utc)
+    if expira < datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="Link expirado. Peça um novo.")
+
+    await _db.users.update_one(
+        {"user_id": registro["user_id"]},
+        # Redefinir por e-mail PROVA a posse do endereço — é o mesmo nível de
+        # verificação que o login com Google dá, então a conta passa a contar
+        # como verificada (ver o tratamento de pre-hijacking em /auth/google).
+        {"$set": {"password_hash": _hash_password(nova_senha), "email_verificado": True}},
+    )
+    await _db.password_resets.update_one(
+        {"token_hash": _hash_token(token)}, {"$set": {"usado": True}},
+    )
+    # Trocar a senha derruba TODA sessão aberta: se a conta estava tomada, é
+    # exatamente aqui que o acesso do invasor precisa terminar.
+    await _db.user_sessions.delete_many({"user_id": registro["user_id"]})
+    return {"ok": True, "mensagem": "Senha redefinida. Você já pode entrar."}
+
+
+@router.post("/logout-all")
+async def logout_de_todos_os_dispositivos(request: Request, response: Response):
+    """Encerra todas as sessões da conta.
+
+    `/auth/logout` apaga só o token atual — quem entrou num computador
+    emprestado ou desconfia de acesso indevido não tinha como fechar as
+    outras portas.
+    """
+    user = await require_user(request)
+    resultado = await _db.user_sessions.delete_many({"user_id": user.user_id})
+    response.delete_cookie(
+        "session_token", path="/", domain=settings.COOKIE_DOMAIN,
+        secure=settings.COOKIE_SECURE, samesite=settings.COOKIE_SAMESITE,
+    )
+    return {"ok": True, "sessoes_encerradas": resultado.deleted_count}
 
 
 @router.post("/logout")

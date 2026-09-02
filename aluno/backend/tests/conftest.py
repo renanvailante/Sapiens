@@ -43,6 +43,11 @@ class FakeUpdateResult:
         self.matched_count = matched_count
 
 
+class FakeDeleteResult:
+    def __init__(self, deleted_count: int):
+        self.deleted_count = deleted_count
+
+
 class FakeCollection:
     """Suporte mínimo: find_one/update_one(upsert)/insert_one/find. Consultas
     são casamento exato de campo — suficiente para os testes deste módulo,
@@ -80,6 +85,18 @@ class FakeCollection:
             self.docs.append(novo)
             return FakeUpdateResult(matched_count=0)
         return FakeUpdateResult(matched_count=0)
+
+    async def delete_many(self, query: dict):
+        antes = len(self.docs)
+        self.docs = [d for d in self.docs if not self._bate(d, query)]
+        return FakeDeleteResult(antes - len(self.docs))
+
+    async def delete_one(self, query: dict):
+        for i, d in enumerate(self.docs):
+            if self._bate(d, query):
+                del self.docs[i]
+                return FakeDeleteResult(1)
+        return FakeDeleteResult(0)
 
     def find(self, query: dict | None = None, projection: dict | None = None):
         query = query or {}
