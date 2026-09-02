@@ -1,15 +1,32 @@
-import { useEffect, useState } from "react";
+
 import { useParams, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import Nav from "../components/Nav";
+import EstadoDeErro from "../components/EstadoDeErro";
+import { useCarregamento } from "../hooks/useCarregamento";
 import { TrendingUp, Clock, ArrowRight, Target } from "lucide-react";
 
 export default function StudyPlan() {
   const { analysisId } = useParams();
-  const [a, setA] = useState(null);
   const nav = useNavigate();
-  useEffect(() => { api.get(`/analyses/${analysisId}`).then(({ data }) => setA(data)); }, [analysisId]);
-  if (!a) return <div><Nav /><div className="p-10 text-white/60">Carregando...</div></div>;
+  const { dados: a, carregando, erro, recarregar } = useCarregamento(
+    async () => (await api.get(`/analyses/${analysisId}`)).data,
+    [analysisId],
+  );
+  if (carregando) return <div><Nav /><div className="p-10 text-white/60">Carregando...</div></div>;
+  if (erro || !a) return (
+    <div className="min-h-screen">
+      <Nav />
+      <div className="max-w-3xl mx-auto px-6 md:px-10 py-14">
+        <EstadoDeErro
+          mensagem={erro || "Este plano não existe mais ou o link está incompleto."}
+          aoTentarNovamente={recarregar}
+          voltarPara="/history"
+          voltarLabel="Ver meu histórico"
+        />
+      </div>
+    </div>
+  );
   const plan = a.study_plan || [];
   return (
     <div className="min-h-screen">

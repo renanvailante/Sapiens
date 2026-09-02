@@ -15,6 +15,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [busyGoogle, setBusyGoogle] = useState(false);
+  const [aceitouTermos, setAceitouTermos] = useState(false);
 
   const comGoogle = async () => {
     setBusyGoogle(true);
@@ -114,12 +115,30 @@ export default function Login() {
             />
             <input
               required type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-              placeholder="Senha (mín 6 caracteres)" minLength={6}
+              placeholder={mode === "signup" ? "Senha (mín 8 caracteres)" : "Sua senha"}
+              minLength={mode === "signup" ? 8 : undefined}
               className="w-full border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:border-sapiens-accent outline-none"
               data-testid="login-password"
             />
+            {mode === "signup" && (
+              <label className="flex items-start gap-2.5 pt-1 text-xs text-zinc-500 leading-relaxed cursor-pointer">
+                <input
+                  type="checkbox"
+                  required
+                  checked={aceitouTermos}
+                  onChange={(e) => setAceitouTermos(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded border-zinc-300 accent-sapiens-accent shrink-0"
+                  data-testid="login-aceite-termos"
+                />
+                <span>
+                  Li e aceito os <Link to="/termos" target="_blank" className="text-zinc-900 underline">Termos de Uso</Link>{" "}
+                  e a <Link to="/privacidade" target="_blank" className="text-zinc-900 underline">Política de Privacidade</Link>.
+                  Se eu tiver menos de 18 anos, confirmo ter autorização do meu responsável.
+                </span>
+              </label>
+            )}
             <button
-              type="submit" disabled={busy}
+              type="submit" disabled={busy || (mode === "signup" && !aceitouTermos)}
               className="pill btn-sapiens w-full disabled:opacity-60 rounded-full py-3 font-medium"
               data-testid="login-submit"
             >
@@ -127,12 +146,26 @@ export default function Login() {
             </button>
           </form>
 
+          {mode === "login" && (
+            <div className="mt-3 text-center">
+              <Link to="/esqueci-senha" className="text-sm text-zinc-500 hover:text-zinc-900 hover:underline" data-testid="login-esqueci-senha">
+                Esqueci minha senha
+              </Link>
+            </div>
+          )}
+
           <div className="mt-6 text-sm text-zinc-500 text-center">
             {mode === "login" ? (
               <>Ainda não tem conta? <button className="text-zinc-900 font-medium hover:underline" onClick={() => setMode("signup")} data-testid="login-switch-signup">Criar conta</button></>
             ) : (
               <>Já tem conta? <button className="text-zinc-900 font-medium hover:underline" onClick={() => setMode("login")} data-testid="login-switch-login">Entrar</button></>
             )}
+          </div>
+
+          <div className="mt-8 pt-6 border-t border-zinc-100 text-center text-xs text-zinc-400">
+            <Link to="/termos" className="hover:text-zinc-600 hover:underline">Termos de Uso</Link>
+            <span className="mx-2">·</span>
+            <Link to="/privacidade" className="hover:text-zinc-600 hover:underline">Privacidade</Link>
           </div>
         </div>
       </div>

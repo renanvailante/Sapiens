@@ -1,13 +1,17 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { api } from "../lib/api";
 import Nav from "../components/Nav";
+import EstadoDeErro from "../components/EstadoDeErro";
+import { useCarregamento } from "../hooks/useCarregamento";
 
 export default function LearningMap() {
   const { analysisId } = useParams();
-  const [a, setA] = useState(null);
   const [selected, setSelected] = useState(null);
-  useEffect(() => { api.get(`/analyses/${analysisId}`).then(({ data }) => setA(data)); }, [analysisId]);
+  const { dados: a, carregando, erro, recarregar } = useCarregamento(
+    async () => (await api.get(`/analyses/${analysisId}`)).data,
+    [analysisId],
+  );
 
   const { nodes, edges } = useMemo(() => {
     const lm = a?.learning_map || { nodes: [], edges: [] };
@@ -26,7 +30,20 @@ export default function LearningMap() {
 
   const nodeById = Object.fromEntries(positioned.map(n => [n.id, n]));
 
-  if (!a) return <div><Nav /><div className="p-10 text-white/60">Carregando mapa...</div></div>;
+  if (carregando) return <div><Nav /><div className="p-10 text-white/60">Carregando mapa...</div></div>;
+  if (erro || !a) return (
+    <div className="min-h-screen">
+      <Nav />
+      <div className="max-w-3xl mx-auto px-6 md:px-10 py-14">
+        <EstadoDeErro
+          mensagem={erro || "Este mapa não existe mais ou o link está incompleto."}
+          aoTentarNovamente={recarregar}
+          voltarPara="/history"
+          voltarLabel="Ver meu histórico"
+        />
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen">

@@ -2,6 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, Sparkles, Brain, Network, ChevronRight } from "lucide-react";
 import { useAuth } from "../lib/auth";
 import BrandMark from "../components/BrandMark";
+import { OPERADOR } from "../lib/operador";
 
 const CYCLE = ["Resolver", "Observar", "Estimar estado cognitivo", "Identificar lacunas", "Adaptar", "Evoluir"];
 
@@ -86,6 +87,21 @@ export default function Landing() {
           </div>
         ))}
       </div>
+
+      {/* Rodapé legal — exigido para publicar: identificação de quem opera o
+          serviço, documentos e um canal de contato (CDC art. 31, LGPD art. 9). */}
+      <footer className="border-t border-white/10">
+        <div className="max-w-5xl mx-auto px-6 md:px-10 py-10 flex flex-col md:flex-row items-center justify-between gap-4 text-sm">
+          <div className="text-white/40">
+            © {new Date().getFullYear()} {OPERADOR.razaoSocial || OPERADOR.nomeFantasia}
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-white/50">
+            <Link to="/termos" className="hover:text-white transition-colors">Termos de Uso</Link>
+            <Link to="/privacidade" className="hover:text-white transition-colors">Privacidade</Link>
+            <a href={`mailto:${OPERADOR.emailContato}`} className="hover:text-white transition-colors">Contato</a>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

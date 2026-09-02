@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { api, errMsg } from "../lib/api";
 import Nav from "../components/Nav";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { toast } from "sonner";
 import {
   Hash, Shapes, Workflow, Network, Languages, Microscope,
@@ -262,6 +263,9 @@ export default function SkillsMap() {
   const [onLeaves, setOnLeaves] = useState(() => new Set());
   const [activeHub, setActiveHub] = useState(null);
   const [view, setView] = useState("hexagono"); // 'hexagono' | 'lista'
+  // Sparks são comprados com dinheiro: um clique acidental (ou um toque duplo
+  // no celular) não pode gastar o saldo sem perguntar.
+  const [confirmando, setConfirmando] = useState(false);
 
   const load = () => {
     setLoading(true);
@@ -276,6 +280,7 @@ export default function SkillsMap() {
   useEffect(load, []);
 
   const generate = async () => {
+    setConfirmando(false);
     setGenerating(true);
     try {
       const res = await api.post("/skills-map/generate");
@@ -339,8 +344,11 @@ export default function SkillsMap() {
 
   const hasMap = Boolean(data?.hexagon);
   const balance = data?.sparks_balance ?? 0;
-  const cost = data?.cost ?? 500;
-  const canAfford = balance >= cost;
+  // Antes o fallback era 500, enquanto o custo real é 10: com `/skills-map`
+  // falhando, o botão anunciava um preço que não existe. `null` faz o botão
+  // ficar desabilitado até o custo real chegar.
+  const cost = data?.cost ?? null;
+  const canAfford = cost != null && balance >= cost;
   const feedback = data?.feedback;
 
   return (
@@ -369,20 +377,51 @@ export default function SkillsMap() {
             )}
           </div>
           <button
-            onClick={generate}
+            onClick={() => setConfirmando(true)}
             disabled={generating || !canAfford}
             className="pill btn-sapiens flex items-center gap-2 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed px-4 py-2.5 rounded-full"
             data-testid="sm-generate-btn"
           >
             <RefreshCw className={"w-4 h-4 " + (generating ? "animate-spin" : "")} />
-            {hasMap ? "Atualizar mapa" : "Gerar mapa"} · {cost} Sparks
+            {hasMap ? "Atualizar mapa" : "Gerar mapa"}{cost != null && ` · ${cost} Sparks`}
           </button>
         </div>
-        {!canAfford && (
+        {cost != null && !canAfford && (
           <div className="mt-2 text-xs text-red-400" data-testid="sm-insufficient-sparks">
             Saldo insuficiente para gerar o mapa ({balance} / {cost} Sparks).
           </div>
         )}
+
+        <Dialog open={confirmando} onOpenChange={(v) => !v && setConfirmando(false)}>
+          <DialogContent className="rounded-2xl" data-testid="sm-confirmar-geracao">
+            <DialogHeader>
+              <DialogTitle className="font-display text-2xl tracking-tight">
+                {hasMap ? "Atualizar seu mapa?" : "Gerar seu mapa?"}
+              </DialogTitle>
+            </DialogHeader>
+            <p className="text-sm text-zinc-600 leading-relaxed">
+              Isto custa <strong>{cost} Sparks</strong>. Seu saldo passa de {balance} para{" "}
+              <strong>{balance - (cost || 0)}</strong>.
+              {" "}Se algo der errado no meio, os Sparks voltam automaticamente.
+            </p>
+            <DialogFooter>
+              <button
+                onClick={() => setConfirmando(false)}
+                className="pill inline-flex items-center justify-center px-5 py-2.5 rounded-full text-sm font-medium border border-zinc-200 text-zinc-700 hover:border-zinc-300"
+                data-testid="sm-cancelar-geracao"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={generate}
+                className="pill btn-sapiens inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium"
+                data-testid="sm-confirmar-btn"
+              >
+                <Zap className="w-4 h-4" /> {hasMap ? "Atualizar" : "Gerar"} por {cost} Sparks
+              </button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         <div className="mt-6 inline-flex items-center gap-1 rounded-full border border-white/15 p-1" data-testid="sm-view-toggle">
           <button

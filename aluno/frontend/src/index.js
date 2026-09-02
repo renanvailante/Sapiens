@@ -4,6 +4,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "@/index.css";
 import "katex/dist/katex.min.css";
 import App from "@/App";
+import { instalarCapturaGlobal } from "@/lib/monitoring";
+
+// Captura o que escapa de todo tratamento local. Sem isto, uma tela branca
+// só chegava à equipe se o aluno avisasse.
+instalarCapturaGlobal();
 
 const queryClient = new QueryClient({
   defaultOptions: {

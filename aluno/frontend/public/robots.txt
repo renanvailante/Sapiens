@@ -1,0 +1,23 @@
+# A área do aluno exige login e não deve ser indexada; a landing e as páginas
+# legais, sim.
+User-agent: *
+Allow: /$
+Allow: /termos
+Allow: /privacidade
+Disallow: /dashboard
+Disallow: /exams
+Disallow: /exam/
+Disallow: /analysis/
+Disallow: /plan/
+Disallow: /map/
+Disallow: /history
+Disallow: /trash
+Disallow: /sparks
+Disallow: /feed
+Disallow: /questoes
+Disallow: /redacao
+Disallow: /cognitive-profile
+Disallow: /admin
+Disallow: /redefinir-senha
+
+Sitemap: https://sapiens-aluno.pages.dev/sitemap.xml

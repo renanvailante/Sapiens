@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { api, API, errMsg} from "../lib/api";
 import Nav from "../components/Nav";
 import { ArrowRight, Check, X, RotateCw, Sparkles, BookOpen, ChevronLeft } from "lucide-react";
@@ -225,7 +225,12 @@ function QuestionRunner({ filtro, onExit }) {
       if (rodadaNum && !rodadasProcessadasRef.current.has(rodadaNum)) {
         rodadasProcessadasRef.current.add(rodadaNum);
 
-        const janela = respostasSessaoRef.current.slice(-RODADA_TAMANHO);
+        // A janela precisa ser a da RODADA, não a da sessão: quem retomava na
+        // questão 26 e chegava na 30 fechava a "rodada 3" com 5 respostas, e o
+        // resumo de IA (que exige 10) era simplesmente pulado. `posicao` já é a
+        // posição no bloco, então o começo da rodada sai dela.
+        const inicioRodada = Math.max(0, posicao - RODADA_TAMANHO);
+        const janela = respostasSessaoRef.current.slice(-(posicao - inicioRodada));
         const acertosJanela = janela.filter((r) => r.acertou).length;
         let devolutiva = {
           rodada: rodadaNum,
@@ -274,6 +279,31 @@ function QuestionRunner({ filtro, onExit }) {
     }
   };
 
+  // Atalhos: A-E escolhem, Enter responde/avança. Quem faz 45 questões
+  // seguidas passa a maior parte do tempo aqui, e tirar a mão do teclado a
+  // cada questão é atrito puro.
+  useEffect(() => {
+    const aoTeclar = (e) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const alvo = e.target?.tagName;
+      if (alvo === "INPUT" || alvo === "TEXTAREA") return;
+
+      const letra = e.key.toUpperCase();
+      if (!result && "ABCDE".includes(letra) && letra.length === 1) {
+        const existe = alternativas.some((a) => a.letra === letra && a.texto);
+        if (existe) { e.preventDefault(); pick(letra); }
+        return;
+      }
+      if (e.key === "Enter") {
+        e.preventDefault();
+        if (!result && selected && !submitting) responder();
+        else if (result && !submitting) avancar();
+      }
+    };
+    window.addEventListener("keydown", aoTeclar);
+    return () => window.removeEventListener("keydown", aoTeclar);
+  });
+
   const proxima = () => {
     setSelected(null);
     setResult(null);
@@ -307,7 +337,7 @@ function QuestionRunner({ filtro, onExit }) {
     return (
       <div className="card-sapiens rounded-2xl p-10 text-center">
         <div className="font-display text-2xl font-bold text-zinc-950">Nenhuma questão disponível ainda.</div>
-        <p className="mt-2 text-zinc-500">Peça a um admin para sincronizar o Firestore no painel administrativo.</p>
+        <p className="mt-2 text-zinc-500">Estamos preparando novas provas. Volte em breve.</p>
       </div>
     );
 
@@ -480,6 +510,16 @@ function QuestionRunner({ filtro, onExit }) {
             aria-label="Elemento visual ampliado"
             data-testid="visual-lightbox"
           >
+            {/* Fechar visível + Esc: clicar no fundo funcionava, mas não é
+                descobrível, e no celular a imagem costuma ocupar a tela toda. */}
+            <button
+              onClick={(e) => { e.stopPropagation(); setLightbox(null); }}
+              className="absolute top-4 right-4 text-white/70 hover:text-white bg-white/10 rounded-full p-2"
+              aria-label="Fechar imagem"
+              data-testid="lightbox-fechar"
+            >
+              <X className="w-5 h-5" />
+            </button>
             <img src={lightbox.src} alt={lightbox.alt} className="max-h-full max-w-full rounded-lg bg-white" />
           </div>
         )}
@@ -505,6 +545,7 @@ function QuestionRunner({ filtro, onExit }) {
               className="pill btn-sapiens inline-flex items-center gap-2 disabled:opacity-40 px-6 py-3 rounded-full text-sm font-medium"
             >
               {submitting ? "Registrando…" : "Responder"}
+              <kbd className="hidden md:inline text-[10px] opacity-60 font-mono-alt">Enter</kbd>
             </button>
           ) : (
             <button
@@ -722,7 +763,7 @@ function ProvasGrid({ onSelect, onExit }) {
       {!loading && !erro && provas.length === 0 && (
         <div className="card-sapiens rounded-2xl p-10 text-center">
           <div className="font-display text-2xl font-bold text-zinc-950">Nenhuma prova disponível ainda.</div>
-          <p className="mt-2 text-zinc-500">Peça a um admin para sincronizar o Firestore no painel administrativo.</p>
+          <p className="mt-2 text-zinc-500">Estamos preparando novas provas. Volte em breve.</p>
         </div>
       )}
 
@@ -862,7 +903,7 @@ function ExamsByYear() {
 
   if (loading) return <div className="grid grid-cols-1 md:grid-cols-3 gap-4">{[...Array(3)].map((_, i) => <div key={i} className="animate-pulse h-32 bg-white/10 rounded-2xl" />)}</div>;
   if (years.length === 0)
-    return <div className="text-sm text-white/60">Nenhum gabarito importado ainda. <Link to="/admin" className="underline hover:text-white">Abrir painel admin</Link>.</div>;
+    return <div className="text-sm text-white/60">Nenhuma prova completa disponível ainda. Use a prática por caderno acima.</div>;
 
   return (
     <div className="space-y-8">

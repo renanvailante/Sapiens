@@ -42,6 +42,9 @@ LIMITES: dict[str, tuple[int, int]] = {
     "acervo": (120, 60),
     # Criação de pagamento: dinheiro real, e cada tentativa toca o MP.
     "pagamento": (10, 600),
+    # Relato de erro de frontend: generoso (uma tela quebrada gera vários),
+    # mas o suficiente para a rota não virar depósito de lixo.
+    "client_error": (30, 300),
 }
 
 _eventos: dict[str, deque[float]] = defaultdict(deque)

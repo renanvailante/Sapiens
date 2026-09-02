@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { api } from "../lib/api";
+import { api, errMsg } from "../lib/api";
 import Nav from "../components/Nav";
+import EstadoDeErro from "../components/EstadoDeErro";
 import { toast } from "sonner";
 import { ArrowRight, MoreVertical, Eye, Pencil, Trash2, TrendingUp, TrendingDown } from "lucide-react";
 import {
@@ -14,13 +15,20 @@ import {
 export default function History() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [erro, setErro] = useState(null);
   const [renameTarget, setRenameTarget] = useState(null);
   const [newLabel, setNewLabel] = useState("");
   const nav = useNavigate();
 
+  // Sem o `.catch`, uma falha de rede deixava a tela em "Carregando..." para
+  // sempre — sem mensagem e sem saída.
   const load = () => {
     setLoading(true);
-    api.get("/analyses").then(({ data }) => { setItems(data); setLoading(false); });
+    setErro(null);
+    api.get("/analyses")
+      .then(({ data }) => setItems(data))
+      .catch((e) => setErro(errMsg(e, "Não foi possível carregar seu histórico.")))
+      .finally(() => setLoading(false));
   };
   useEffect(() => { load(); }, []);
 
@@ -71,7 +79,8 @@ export default function History() {
 
         <div className="mt-10 space-y-3">
           {loading && <div className="text-white/60">Carregando...</div>}
-          {!loading && items.length === 0 && (
+          {!loading && erro && <EstadoDeErro mensagem={erro} aoTentarNovamente={load} />}
+          {!loading && !erro && items.length === 0 && (
             <div className="card-sapiens rounded-2xl p-10 text-center">
               <div className="font-display text-2xl font-bold text-zinc-950">Sem tentativas ainda.</div>
               <p className="mt-2 text-zinc-500">Analise sua primeira prova para começar seu histórico.</p>
@@ -80,7 +89,7 @@ export default function History() {
               </button>
             </div>
           )}
-          {items.map(a => (
+          {!erro && items.map(a => (
             <div key={a.analysis_id} className="lift card-sapiens rounded-2xl p-5 md:p-6" data-testid={`history-item-${a.analysis_id}`}>
               <div className="flex items-center justify-between gap-4">
                 <button onClick={() => nav(`/analysis/${a.analysis_id}`)} className="flex-1 text-left">

@@ -89,6 +89,10 @@ INDICES: list[tuple[str, list[tuple[str, int]], dict]] = [
     ("redacao_avaliacoes", [("redacao_id", pymongo.ASCENDING)], {"name": "avaliacao_por_redacao"}),
     ("aulas_particulares", [("created_at", pymongo.DESCENDING)], {"name": "aulas_recentes"}),
 
+    # --- monitoramento ---
+    ("client_errors", [("recebido_em_dt", pymongo.ASCENDING)],
+     {"name": "client_errors_ttl", "expireAfterSeconds": 30 * 24 * 3600}),
+
     # --- recuperação de senha ---
     ("password_resets", [("token_hash", pymongo.ASCENDING)],
      {"name": "reset_token_unico", "unique": True}),

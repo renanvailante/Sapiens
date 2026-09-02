@@ -1,40 +1,57 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import Nav from "../components/Nav";
 import OnboardingTour from "../components/OnboardingTour";
 import AulasParticularesModal from "../components/AulasParticularesModal";
-import { ArrowRight, Sparkles, Flame, Zap, Target, Network, Trophy, ListChecks, Medal, Award, CheckCircle2, GraduationCap } from "lucide-react";
+import { ArrowRight, Sparkles, Flame, Zap, Target, Network, Trophy, ListChecks, Medal, Award, CheckCircle2, GraduationCap, CloudOff, RotateCw } from "lucide-react";
 import { useAuth } from "../lib/auth";
 
 // ---------------- Streak / progresso semanal ----------------
 // Nunca inventa atividade: ambos derivam só de `dates` (dias com pelo menos
 // um evento de behavior real), vindo de GET /firestore/students/me/activity.
 
+// Tudo aqui é calculado no fuso de São Paulo, não em UTC. O Brasil está em
+// UTC-3: em UTC, quem respondia depois das 21h tinha a atividade contada no dia
+// seguinte — a bolinha de "hoje" ficava apagada depois de estudar e a sequência
+// podia zerar sozinha. É exatamente o horário em que vestibulando estuda, e a
+// sequência é a mecânica que o traz de volta. O backend grava as datas no mesmo
+// fuso (`firestore_service.dia_local`), então os dois lados combinam.
+const FUSO_BR = "America/Sao_Paulo";
+
+/** `YYYY-MM-DD` no fuso do aluno. `en-CA` porque é o locale cuja data curta já
+ *  sai nesse formato — evita montar a string à mão a partir das partes. */
+function diaLocal(data = new Date()) {
+  return data.toLocaleDateString("en-CA", { timeZone: FUSO_BR });
+}
+
+/** Dia local deslocado de `dias` (negativo = passado). O deslocamento é feito
+ *  ao meio-dia UTC para que o horário de verão, quando existir, nunca faça o
+ *  passo de 24h cair no mesmo dia ou pular um. */
+function diaLocalDeslocado(dias) {
+  const base = new Date(`${diaLocal()}T12:00:00Z`);
+  base.setUTCDate(base.getUTCDate() + dias);
+  return base.toISOString().slice(0, 10);
+}
+
 function computeStreak(dates) {
   if (!dates?.length) return 0;
   const set = new Set(dates);
-  const today = new Date();
-  const cursor = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
   // Se ainda não estudou hoje, o streak conta a partir de ontem (ainda "vivo").
-  const todayKey = cursor.toISOString().slice(0, 10);
-  if (!set.has(todayKey)) cursor.setUTCDate(cursor.getUTCDate() - 1);
+  let offset = set.has(diaLocal()) ? 0 : -1;
   let streak = 0;
-  while (set.has(cursor.toISOString().slice(0, 10))) {
+  while (set.has(diaLocalDeslocado(offset))) {
     streak += 1;
-    cursor.setUTCDate(cursor.getUTCDate() - 1);
+    offset -= 1;
   }
   return streak;
 }
 
 function computeWeek(dates) {
   const set = new Set(dates || []);
-  const today = new Date();
   const days = [];
   for (let i = 6; i >= 0; i--) {
-    const d = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
-    d.setUTCDate(d.getUTCDate() - i);
-    const key = d.toISOString().slice(0, 10);
+    const key = diaLocalDeslocado(-i);
     days.push({ key, active: set.has(key), isToday: i === 0 });
   }
   return days;
@@ -97,25 +114,40 @@ export default function Dashboard() {
   const [totalRespondidas, setTotalRespondidas] = useState(0);
   const [rounds, setRounds] = useState([]);
   const [loaded, setLoaded] = useState(false);
+  const [falhou, setFalhou] = useState(false);
   const [showTour, setShowTour] = useState(false);
   const [showAulasModal, setShowAulasModal] = useState(false);
   const nav = useNavigate();
 
-  useEffect(() => {
-    Promise.all([
-      api.get("/analyses").then(({ data }) => data).catch(() => []),
-      api.get("/firestore/students/me/sparks").then(({ data }) => data.sparks_balance).catch(() => null),
-      api.get("/firestore/students/me/activity").then(({ data }) => data.dates || []).catch(() => []),
-      api.get("/skills-map").then(({ data }) => data.hubs || []).catch(() => []),
-      api.get("/firestore/students/me/respondidas").then(({ data }) => (data.item_ids || []).length).catch(() => 0),
-      api.get("/firestore/students/me/rounds").then(({ data }) => data.rounds || []).catch(() => []),
-    ]).then(([a, s, dates, h, respondidas, r]) => {
-      setAnalyses(a);
-      setSparks(s);
-      setTotalRespondidas(respondidas);
-      setActivityDates(dates);
-      setHubs(h);
-      setRounds(r);
+  // Cada chamada tinha `.catch(() => valorVazio)`: com o backend fora do ar, o
+  // painel carregava normalmente mostrando "0 dias de sequência", "Sparks —" e
+  // "Ainda reunindo dados", e o aluno não tinha como distinguir isso de "meu
+  // progresso sumiu". Alguém que acabou de estudar duas horas concluía que o
+  // produto tinha perdido o trabalho dele.
+  //
+  // `allSettled` mantém a página utilizável quando UMA das chamadas falha, mas
+  // agora registra que houve falha, para a tela dizer isso em vez de mostrar um
+  // zero convincente.
+  const carregar = useCallback(() => {
+    setFalhou(false);
+    Promise.allSettled([
+      api.get("/analyses").then(({ data }) => data),
+      api.get("/firestore/students/me/sparks").then(({ data }) => data.sparks_balance),
+      api.get("/firestore/students/me/activity").then(({ data }) => data.dates || []),
+      api.get("/skills-map").then(({ data }) => data.hubs || []),
+      api.get("/firestore/students/me/respondidas").then(({ data }) => (data.item_ids || []).length),
+      api.get("/firestore/students/me/rounds").then(({ data }) => data.rounds || []),
+    ]).then((resultados) => {
+      const [a, s, dates, h, respondidas, r] = resultados;
+      const valor = (res, vazio) => (res.status === "fulfilled" ? res.value : vazio);
+
+      setAnalyses(valor(a, []));
+      setSparks(valor(s, null));
+      setActivityDates(valor(dates, []));
+      setHubs(valor(h, []));
+      setTotalRespondidas(valor(respondidas, 0));
+      setRounds(valor(r, []));
+      setFalhou(resultados.some((res) => res.status === "rejected"));
       setLoaded(true);
     });
     // Tour de boas-vindas: só na primeira vez (`flags.onboarded === false` no
@@ -126,6 +158,8 @@ export default function Dashboard() {
       .then(({ data }) => { if (data?.flags?.onboarded === false) setShowTour(true); })
       .catch(() => {});
   }, []);
+
+  useEffect(() => { carregar(); }, [carregar]);
 
   const latest = analyses[0];
   const streak = computeStreak(activityDates);
@@ -165,6 +199,26 @@ export default function Dashboard() {
             Olá, {user?.name?.split(" ")[0] || "aluno"}.
           </h1>
         </div>
+
+        {falhou && (
+          <div
+            className="mb-4 rounded-2xl border border-amber-300 bg-amber-50 px-5 py-4 flex flex-wrap items-center gap-3"
+            data-testid="dash-erro-parcial"
+          >
+            <CloudOff className="w-5 h-5 text-amber-600 shrink-0" />
+            <div className="flex-1 min-w-0 text-sm text-amber-900">
+              <strong>Não conseguimos carregar tudo.</strong> Alguns números abaixo podem estar
+              incompletos — isto é uma falha de conexão nossa, não perda do seu progresso.
+            </div>
+            <button
+              onClick={carregar}
+              className="pill inline-flex items-center gap-2 bg-amber-950 text-amber-50 hover:brightness-110 px-4 py-2 rounded-full text-xs font-semibold shrink-0"
+              data-testid="dash-erro-retry"
+            >
+              <RotateCw className="w-3.5 h-3.5" /> Tentar de novo
+            </button>
+          </div>
+        )}
 
         {/* Hero: continuar de onde parou */}
         {!latest ? (

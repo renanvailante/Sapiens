@@ -1,57 +1,105 @@
 import "./App.css";
+import { Suspense, lazy } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "sonner";
 import { AuthProvider } from "./lib/auth";
-import Landing from "./pages/Landing";
-import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import ExamSelect from "./pages/ExamSelect";
-import AnswerInput from "./pages/AnswerInput";
-import Diagnostic from "./pages/Diagnostic";
-import StudyPlan from "./pages/StudyPlan";
-import LearningMap from "./pages/LearningMap";
-import History from "./pages/History";
-import Trash from "./pages/Trash";
-import Admin from "./pages/Admin";
-import AdminDashboard from "./pages/AdminDashboard";
-import AdminUsers from "./pages/AdminUsers";
-import AdminFeed from "./pages/AdminFeed";
-import AdminAnnotations from "./pages/AdminAnnotations";
-import AdminAulasParticulares from "./pages/AdminAulasParticulares";
-import StudentHistory from "./pages/StudentHistory";
-import SkillsMap from "./pages/SkillsMap";
-import SparksStore from "./pages/SparksStore";
-import Feed from "./pages/Feed";
-import Questoes from "./pages/Questoes";
+import ErrorBoundary from "./components/ErrorBoundary";
+import TituloDaPagina from "./components/TituloDaPagina";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
 import FirestoreStudentProvisioner from "./components/FirestoreStudentProvisioner";
 
+// Entrada e prática vêm no bundle principal: são o caminho que todo aluno
+// percorre, e adiar o carregamento delas trocaria peso por um flash de
+// carregamento logo no primeiro clique.
+import Landing from "./pages/Landing";
+import Login from "./pages/Login";
+import Dashboard from "./pages/Dashboard";
+import ExamSelect from "./pages/ExamSelect";
+import NaoEncontrada from "./pages/NaoEncontrada";
+
+// O resto é carregado sob demanda. O bundle único de 413 kB gzip trazia
+// `recharts`, `firebase`, `katex` e TODAS as telas de admin para um aluno que
+// só queria responder questões no 4G. Cada `lazy` abaixo é uma tela que a
+// maioria dos alunos nunca abre, ou abre depois de já estar usando o produto.
+const AnswerInput = lazy(() => import("./pages/AnswerInput"));
+const Diagnostic = lazy(() => import("./pages/Diagnostic"));
+const StudyPlan = lazy(() => import("./pages/StudyPlan"));
+const LearningMap = lazy(() => import("./pages/LearningMap"));
+const History = lazy(() => import("./pages/History"));
+const Trash = lazy(() => import("./pages/Trash"));
+const SkillsMap = lazy(() => import("./pages/SkillsMap"));
+const SparksStore = lazy(() => import("./pages/SparksStore"));
+const Feed = lazy(() => import("./pages/Feed"));
+const Questoes = lazy(() => import("./pages/Questoes"));
+const Redacao = lazy(() => import("./pages/Redacao"));
+const EsqueciSenha = lazy(() => import("./pages/EsqueciSenha"));
+const RedefinirSenha = lazy(() => import("./pages/RedefinirSenha"));
+const Termos = lazy(() => import("./pages/Termos"));
+const Privacidade = lazy(() => import("./pages/Privacidade"));
+
+const Admin = lazy(() => import("./pages/Admin"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const AdminUsers = lazy(() => import("./pages/AdminUsers"));
+const AdminFeed = lazy(() => import("./pages/AdminFeed"));
+const AdminAnnotations = lazy(() => import("./pages/AdminAnnotations"));
+const AdminAulasParticulares = lazy(() => import("./pages/AdminAulasParticulares"));
+const StudentHistory = lazy(() => import("./pages/StudentHistory"));
+
+function Carregando() {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="w-8 h-8 rounded-full border-2 border-white/15 border-t-sapiens-accent animate-spin" />
+    </div>
+  );
+}
+
+/** Uma rota = um título de aba. Antes toda página se chamava "Sapiens", o que
+ *  torna várias abas abertas indistinguíveis e o histórico do navegador inútil. */
+function Pagina({ titulo, children }) {
+  return (
+    <>
+      <TituloDaPagina titulo={titulo} />
+      {children}
+    </>
+  );
+}
+
 function AppRouter() {
   return (
     <Routes>
-      <Route path="/" element={<Landing />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/questoes" element={<Questoes />} />
-      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-      <Route path="/exams" element={<ProtectedRoute><ExamSelect /></ProtectedRoute>} />
-      <Route path="/exam/:examId" element={<ProtectedRoute><AnswerInput /></ProtectedRoute>} />
-      <Route path="/analysis/:analysisId" element={<ProtectedRoute><Diagnostic /></ProtectedRoute>} />
-      <Route path="/plan/:analysisId" element={<ProtectedRoute><StudyPlan /></ProtectedRoute>} />
-      <Route path="/map/:analysisId" element={<ProtectedRoute><LearningMap /></ProtectedRoute>} />
-      <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
-      <Route path="/trash" element={<ProtectedRoute><Trash /></ProtectedRoute>} />
-      <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-      <Route path="/admin/answer-keys" element={<AdminRoute><Admin /></AdminRoute>} />
-      <Route path="/admin/feed" element={<AdminRoute><AdminFeed /></AdminRoute>} />
-      <Route path="/admin/annotations" element={<AdminRoute><AdminAnnotations /></AdminRoute>} />
-      <Route path="/admin/aulas-particulares" element={<AdminRoute><AdminAulasParticulares /></AdminRoute>} />
-      <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
-      <Route path="/admin/history" element={<AdminRoute><StudentHistory /></AdminRoute>} />
-      <Route path="/cognitive-profile" element={<ProtectedRoute><SkillsMap /></ProtectedRoute>} />
-      <Route path="/sparks" element={<ProtectedRoute><SparksStore /></ProtectedRoute>} />
-      <Route path="/feed" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
-      <Route path="*" element={<Landing />} />
+      <Route path="/" element={<Pagina titulo="Descubra por que você erra"><Landing /></Pagina>} />
+      <Route path="/login" element={<Pagina titulo="Entrar"><Login /></Pagina>} />
+      <Route path="/esqueci-senha" element={<Pagina titulo="Recuperar senha"><EsqueciSenha /></Pagina>} />
+      <Route path="/redefinir-senha" element={<Pagina titulo="Nova senha"><RedefinirSenha /></Pagina>} />
+      <Route path="/termos" element={<Pagina titulo="Termos de Uso"><Termos /></Pagina>} />
+      <Route path="/privacidade" element={<Pagina titulo="Política de Privacidade"><Privacidade /></Pagina>} />
+
+      <Route path="/questoes" element={<ProtectedRoute><Pagina titulo="Banco de questões"><Questoes /></Pagina></ProtectedRoute>} />
+      <Route path="/dashboard" element={<ProtectedRoute><Pagina titulo="Painel"><Dashboard /></Pagina></ProtectedRoute>} />
+      <Route path="/exams" element={<ProtectedRoute><Pagina titulo="Praticar questões"><ExamSelect /></Pagina></ProtectedRoute>} />
+      <Route path="/exam/:examId" element={<ProtectedRoute><Pagina titulo="Registrar respostas"><AnswerInput /></Pagina></ProtectedRoute>} />
+      <Route path="/analysis/:analysisId" element={<ProtectedRoute><Pagina titulo="Diagnóstico"><Diagnostic /></Pagina></ProtectedRoute>} />
+      <Route path="/plan/:analysisId" element={<ProtectedRoute><Pagina titulo="Plano de estudos"><StudyPlan /></Pagina></ProtectedRoute>} />
+      <Route path="/map/:analysisId" element={<ProtectedRoute><Pagina titulo="Mapa de aprendizagem"><LearningMap /></Pagina></ProtectedRoute>} />
+      <Route path="/history" element={<ProtectedRoute><Pagina titulo="Histórico"><History /></Pagina></ProtectedRoute>} />
+      <Route path="/trash" element={<ProtectedRoute><Pagina titulo="Lixeira"><Trash /></Pagina></ProtectedRoute>} />
+      <Route path="/cognitive-profile" element={<ProtectedRoute><Pagina titulo="Mapa cognitivo"><SkillsMap /></Pagina></ProtectedRoute>} />
+      <Route path="/sparks" element={<ProtectedRoute><Pagina titulo="Sparks"><SparksStore /></Pagina></ProtectedRoute>} />
+      <Route path="/feed" element={<ProtectedRoute><Pagina titulo="Feed"><Feed /></Pagina></ProtectedRoute>} />
+      <Route path="/redacao" element={<ProtectedRoute><Pagina titulo="Redação"><Redacao /></Pagina></ProtectedRoute>} />
+
+      <Route path="/admin" element={<AdminRoute><Pagina titulo="Admin"><AdminDashboard /></Pagina></AdminRoute>} />
+      <Route path="/admin/answer-keys" element={<AdminRoute><Pagina titulo="Admin · Gabaritos"><Admin /></Pagina></AdminRoute>} />
+      <Route path="/admin/feed" element={<AdminRoute><Pagina titulo="Admin · Feed"><AdminFeed /></Pagina></AdminRoute>} />
+      <Route path="/admin/annotations" element={<AdminRoute><Pagina titulo="Admin · Anotações"><AdminAnnotations /></Pagina></AdminRoute>} />
+      <Route path="/admin/aulas-particulares" element={<AdminRoute><Pagina titulo="Admin · Aulas particulares"><AdminAulasParticulares /></Pagina></AdminRoute>} />
+      <Route path="/admin/users" element={<AdminRoute><Pagina titulo="Admin · Usuários"><AdminUsers /></Pagina></AdminRoute>} />
+      <Route path="/admin/history" element={<AdminRoute><Pagina titulo="Admin · Histórico"><StudentHistory /></Pagina></AdminRoute>} />
+
+      {/* Antes caía na landing: uma URL errada levava a pessoa para a página de
+          marketing sem dizer que a página não existe, inclusive já logada. */}
+      <Route path="*" element={<Pagina titulo="Página não encontrada"><NaoEncontrada /></Pagina>} />
     </Routes>
   );
 }
@@ -62,7 +110,11 @@ export default function App() {
       <BrowserRouter>
         <AuthProvider>
           <FirestoreStudentProvisioner />
-          <AppRouter />
+          <ErrorBoundary>
+            <Suspense fallback={<Carregando />}>
+              <AppRouter />
+            </Suspense>
+          </ErrorBoundary>
           <Toaster position="top-center" richColors closeButton />
         </AuthProvider>
       </BrowserRouter>

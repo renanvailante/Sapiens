@@ -42,6 +42,7 @@ import skills_map_routes as skills_map_module
 import aulas_particulares_routes as aulas_particulares_module
 import sparks_routes as sparks_module
 import redacao_routes as redacao_module
+import client_errors_routes as client_errors_module
 import db_indexes
 from enem_seed import migrate_and_seed
 from feed_seed import seed_feed
@@ -60,6 +61,7 @@ firestore_module.set_db(db)
 aulas_particulares_module.set_db(db)
 sparks_module.set_db(db)
 redacao_module.set_db(db)
+client_errors_module.set_db(db)
 
 app = FastAPI(
     title="Sapiens",
@@ -283,6 +285,7 @@ api_router.include_router(skills_map_module.router)
 api_router.include_router(aulas_particulares_module.router)
 api_router.include_router(sparks_module.router)
 api_router.include_router(redacao_module.router)
+api_router.include_router(client_errors_module.router)
 app.include_router(api_router)
 
 

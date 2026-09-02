@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { api } from "../lib/api";
 import Nav from "../components/Nav";
+import EstadoDeErro from "../components/EstadoDeErro";
+import { useCarregamento } from "../hooks/useCarregamento";
 import { ArrowRight, Sparkles } from "lucide-react";
 import {
   Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer, PolarRadiusAxis,
@@ -10,20 +12,39 @@ import {
 
 export default function Diagnostic() {
   const { analysisId } = useParams();
-  const [a, setA] = useState(null);
   const [phase, setPhase] = useState("insight"); // 'insight' | 'score'
   const nav = useNavigate();
+  const { dados: a, carregando, erro, recarregar } = useCarregamento(
+    async () => (await api.get(`/analyses/${analysisId}`)).data,
+    [analysisId],
+  );
 
-  useEffect(() => {
-    api.get(`/analyses/${analysisId}`).then(({ data }) => setA(data));
-  }, [analysisId]);
-
-  if (!a) return (
+  if (carregando) return (
     <div>
       <Nav />
       <div className="max-w-3xl mx-auto p-10 text-white/60 font-medium">Compondo seu diagnóstico...</div>
     </div>
   );
+
+  if (erro || !a) return (
+    <div className="min-h-screen">
+      <Nav />
+      <div className="max-w-3xl mx-auto px-6 md:px-10 py-14">
+        <EstadoDeErro
+          mensagem={erro || "Esta análise não existe mais ou o link está incompleto."}
+          aoTentarNovamente={recarregar}
+          voltarPara="/history"
+          voltarLabel="Ver meu histórico"
+        />
+      </div>
+    </div>
+  );
+
+  // `strengths` e `weaknesses` são opcionais na resposta. A condição aceitava
+  // uma lista preenchida e a outra nula, e o corpo chamava `.map` nas duas —
+  // com `weaknesses` presente e `strengths` ausente, a tela inteira quebrava.
+  const strengths = a.strengths || [];
+  const weaknesses = a.weaknesses || [];
 
   const areaData = Object.entries(a.by_area || {}).map(([area, v]) => ({
     area, correct: v.correct, total: v.total, pct: v.total ? Math.round(100 * v.correct / v.total) : 0,
@@ -44,18 +65,18 @@ export default function Diagnostic() {
               {(a.diagnostic_body || "").split(/\n+/).map((p, i) => <p key={i}>{p}</p>)}
             </div>
 
-            {(a.strengths?.length || a.weaknesses?.length) ? (
+            {(strengths.length || weaknesses.length) ? (
               <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-6">
                   <div className="font-mono-alt text-[10px] uppercase tracking-[0.3em] text-emerald-700">Domínios</div>
                   <ul className="mt-3 space-y-2 text-sm text-zinc-800">
-                    {a.strengths.map((s, i) => <li key={i}>· {s}</li>)}
+                    {strengths.map((s, i) => <li key={i}>· {s}</li>)}
                   </ul>
                 </div>
                 <div className="bg-rose-50 border border-rose-100 rounded-2xl p-6">
                   <div className="font-mono-alt text-[10px] uppercase tracking-[0.3em] text-rose-700">Padrões de erro</div>
                   <ul className="mt-3 space-y-2 text-sm text-zinc-800">
-                    {a.weaknesses.map((s, i) => <li key={i}>· {s}</li>)}
+                    {weaknesses.map((s, i) => <li key={i}>· {s}</li>)}
                   </ul>
                 </div>
               </div>
