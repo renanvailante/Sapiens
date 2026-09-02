@@ -332,6 +332,15 @@ async def ready() -> JSONResponse:
         ok = False
 
     checks["gemini_configurado"] = bool(settings.GEMINI_API_KEY)
+    # Só booleanos e o ambiente — nunca a credencial. É como se confere, de
+    # fora, que as variáveis do Mercado Pago chegaram ao processo e que são as
+    # de produção, sem precisar abrir o painel do Fly.
+    checks["mercadopago"] = {
+        "access_token": settings.resumo()["mercadopago_configurado"],
+        "public_key": settings.resumo()["mercadopago_public_key_configurada"],
+        "webhook_secret": settings.resumo()["mercadopago_webhook_configurado"],
+        "ambiente": settings.resumo()["mercadopago_ambiente"],
+    }
 
     return JSONResponse(
         status_code=200 if ok else 503,

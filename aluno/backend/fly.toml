@@ -23,6 +23,19 @@ primary_region = "gru"          # São Paulo: menor latência para o piloto
   # Nunca semear dado fictício num banco que recebe aluno real.
   SEED_DEMO_DATA = "false"
   GEMINI_MODEL = "gemini-3-flash-preview"
+  # Sincronização Firestore -> questoes_public. Explícito de propósito: a
+  # máquina de desenvolvimento roda com 0 (congelamento do saneamento do
+  # corpus) e produção herdava o default de 300 do código — a divergência não
+  # aparecia em lugar nenhum. O Firestore é a fonte da verdade do acervo, e
+  # 300s é frequente o bastante para uma prova nova aparecer sem clique manual,
+  # raro o bastante para não pressionar a cota de leitura.
+  FIRESTORE_AUTO_SYNC_SECONDS = "300"
+  # Teto de espera das chamadas ao Gemini (ver ai_service).
+  GEMINI_TIMEOUT_SEGUNDOS = "30"
+  GEMINI_TIMEOUT_VISION_SEGUNDOS = "60"
+  # Foto do cartão-resposta: o frontend já redimensiona, isto é a rede de
+  # segurança do servidor.
+  MAX_UPLOAD_MB = "8"
   # Corpus canônico dentro da imagem (ver Dockerfile).
   SAPIENS_ONTOLOGY_PATH = "/app/contracts/ontology/ontology_v1.4.json"
   SAPIENS_CONTRACTS_PATH = "/app/contracts"

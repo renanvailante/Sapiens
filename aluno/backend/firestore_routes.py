@@ -13,6 +13,7 @@ from typing import Any, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field
 
+import rate_limit
 from auth import require_user, require_admin
 from models import User
 import ai_service
@@ -135,9 +136,8 @@ async def minhas_respondidas(user: User = Depends(require_user)):
     instante em que é enviada (`POST /students/me/answer`), então abandonar
     no meio nunca perde progresso: só não respondeu o que não respondeu.
     """
-    eventos = _safe_call(fs.get_student_behavior_history, user.user_id, 5000)
-    item_ids = sorted({e.get("item_id") for e in eventos if e.get("item_id")})
-    return {"item_ids": item_ids}
+    agregado = _safe_call(fs.ler_agregado, user.user_id) or {}
+    return {"item_ids": sorted(agregado.get("item_ids_respondidos") or [])}
 
 
 @router.get("/students/me/behavior")
@@ -243,7 +243,11 @@ class SessaoDiagnosticoPayload(BaseModel):
 
 
 @router.post("/students/me/sessao/diagnostico")
-async def diagnostico_sessao(payload: SessaoDiagnosticoPayload, user: User = Depends(require_user)):
+async def diagnostico_sessao(
+    payload: SessaoDiagnosticoPayload,
+    user: User = Depends(require_user),
+    _: None = Depends(rate_limit.por_usuario("llm")),
+):
     """Resumo em linguagem natural de uma sessão de prática (mín. 10 respostas).
 
     Não grava nada — o aluno já respondeu tudo isso via `/students/me/answer`
@@ -342,8 +346,10 @@ async def concluir_rodada(payload: RodadaConcluirPayload, user: User = Depends(r
     _safe_call(fs.ensure_student_profile, user.user_id, user.name, user.email)
     _safe_call(fs.ensure_sparks_balance, user.user_id)
 
-    eventos = _safe_call(fs.get_student_behavior_history, user.user_id, 5000)
-    por_item = {e.get("item_id"): e for e in eventos if e.get("item_id")}
+    # Só os ~10 itens desta rodada, não o histórico inteiro: era uma leitura de
+    # até 5.000 documentos do Firestore a cada rodada concluída — o custo
+    # crescia com o engajamento do aluno, justamente quem mais fecha rodadas.
+    por_item = _safe_call(fs.get_behavior_events_for_items, user.user_id, item_ids) or {}
 
     respostas = [
         {

@@ -14,3 +14,19 @@ __pycache__/
 .pytest_cache/
 node_modules/
 .git/
+
+# Segredos e dados locais NUNCA precisam ir para o builder. O contexto do build
+# é a raiz do repo e o Fly usa builder remoto: sem estas linhas, a chave privada
+# da service account do Firebase (.secrets/) viajava para uma máquina remota a
+# cada deploy, e 99 MB de dados do Mongo local iam junto, deixando todo deploy
+# lento. Nada disto é COPY-ado pelo Dockerfile — o problema é o envio, não a
+# imagem.
+.secrets/
+.mongodb-data/
+.saneamento/
+.wrangler/
+.logs/
+auditoria/
+test_reports/
+cadernos enem/
+*.log

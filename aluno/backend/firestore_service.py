@@ -18,6 +18,7 @@ import re
 import uuid
 from datetime import datetime, timezone
 from typing import Any, Optional
+from zoneinfo import ZoneInfo
 
 import firebase_admin
 from firebase_admin import credentials, firestore
@@ -310,7 +311,97 @@ def write_behavior_event(
     }
 
     _behavior_collection_ref(uid).document(event_id).set(event)
+    if status == "respondida":
+        _atualizar_agregado(uid, item_id=item_id, timestamp=event["timestamp"])
     return event
+
+
+# ---------------------------------------------------------------------------
+# Agregado do aluno — o que o painel lê em vez de varrer o histórico
+#
+# `/students/me/respondidas` e `/students/me/activity` liam TODO o histórico de
+# eventos (limites de 5.000 e 3.000 documentos) só para derivar uma lista de
+# `item_id`s e um conjunto de datas. O painel dispara as duas a cada
+# carregamento, então o custo de leitura no Firestore crescia junto com o
+# engajamento: um aluno com 500 questões respondidas gerava mais de mil
+# leituras por abertura de painel, e cem alunos ativos passavam com folga das
+# 50 mil leituras/dia do plano gratuito.
+#
+# O agregado é mantido no ato da escrita (uma operação a mais por resposta) e
+# lido como UM documento. Nunca é fonte de verdade: o histórico de eventos
+# continua sendo, e `reconstruir_agregado` o recompõe a partir dele — é o que
+# roda para alunos que já respondiam antes deste campo existir.
+# ---------------------------------------------------------------------------
+
+# Fuso do aluno. O streak e o calendário da semana eram calculados em UTC, e o
+# Brasil está em UTC-3: quem respondia depois das 21h tinha a atividade contada
+# no dia seguinte, a bolinha de "hoje" ficava apagada depois de estudar e a
+# sequência podia zerar sem motivo — exatamente o horário em que vestibulando
+# estuda, e a sequência é a mecânica que o traz de volta.
+ZONA_BRASIL = ZoneInfo("America/Sao_Paulo")
+
+
+def dia_local(timestamp_iso: str | None = None) -> str:
+    """`YYYY-MM-DD` no fuso do aluno, a partir de um timestamp ISO em UTC."""
+    if timestamp_iso:
+        momento = datetime.fromisoformat(timestamp_iso)
+        if momento.tzinfo is None:
+            momento = momento.replace(tzinfo=timezone.utc)
+    else:
+        momento = datetime.now(timezone.utc)
+    return momento.astimezone(ZONA_BRASIL).date().isoformat()
+
+
+def _atualizar_agregado(uid: str, *, item_id: str, timestamp: str) -> None:
+    """Acrescenta ao agregado o efeito de uma resposta. Idempotente por
+    natureza: `ArrayUnion` não duplica, então reprocessar não distorce."""
+    try:
+        _student_doc_ref(uid).set(
+            {
+                "agregado": {
+                    "item_ids_respondidos": firestore.ArrayUnion([item_id]),
+                    "dias_ativos": firestore.ArrayUnion([dia_local(timestamp)]),
+                    "total_respostas": firestore.Increment(1),
+                    "atualizado_em": _now_iso(),
+                }
+            },
+            merge=True,
+        )
+    except Exception as exc:  # noqa: BLE001
+        # O evento já foi gravado — que é o dado que importa. Um agregado
+        # desatualizado é recuperável (`reconstruir_agregado`); perder a
+        # resposta do aluno não é.
+        logger.warning("Agregado de %s não pôde ser atualizado: %s", uid, exc)
+
+
+def reconstruir_agregado(uid: str, limite: int = 5000) -> dict[str, Any]:
+    """Recompõe o agregado lendo o histórico — o caminho caro, de propósito.
+
+    Roda uma vez por aluno: na primeira leitura de quem já respondia antes do
+    agregado existir, e em qualquer suspeita de divergência.
+    """
+    eventos = get_student_behavior_history(uid, limite)
+    respondidos = {e["item_id"] for e in eventos if e.get("item_id") and e.get("status") == "respondida"}
+    dias = {dia_local(e["timestamp"]) for e in eventos if e.get("timestamp")}
+    agregado = {
+        "item_ids_respondidos": sorted(respondidos),
+        "dias_ativos": sorted(dias, reverse=True),
+        "total_respostas": len(eventos),
+        "atualizado_em": _now_iso(),
+        "reconstruido_em": _now_iso(),
+    }
+    _student_doc_ref(uid).set({"agregado": agregado}, merge=True)
+    return agregado
+
+
+def ler_agregado(uid: str) -> dict[str, Any]:
+    """Agregado do aluno em UMA leitura, reconstruindo na primeira vez."""
+    snap = _student_doc_ref(uid).get()
+    dados = (snap.to_dict() or {}) if snap.exists else {}
+    agregado = dados.get("agregado")
+    if agregado is None:
+        return reconstruir_agregado(uid)
+    return agregado
 
 
 def get_student_behavior_history(uid: str, limit: int = 1000) -> list[dict[str, Any]]:
@@ -325,15 +416,49 @@ def get_student_behavior_history(uid: str, limit: int = 1000) -> list[dict[str, 
     return [d.to_dict() for d in docs]
 
 
-def get_activity_dates(uid: str, limit: int = 3000) -> list[str]:
-    """Datas (YYYY-MM-DD, UTC) em que o aluno respondeu ao menos uma questão,
-    mais recente primeiro — derivado do `timestamp` de cada evento de behavior.
-    Base para sequência de estudos (streak) e progresso semanal no painel;
-    nunca inventa atividade que não tenha evento real por trás.
+def get_behavior_events_for_items(uid: str, item_ids: list[str]) -> dict[str, dict[str, Any]]:
+    """Último evento de behavior de cada item da lista — `{item_id: evento}`.
+
+    Substitui a varredura do histórico inteiro em `/rodada/concluir`, que lia
+    até 5.000 documentos para consultar ~10. O `in` do Firestore aceita no
+    máximo 30 valores por consulta, então a lista é fatiada; uma rodada tem 10
+    itens, então na prática é sempre uma consulta só.
+
+    "Último" importa porque reiniciar uma prova acrescenta um evento novo sem
+    apagar o anterior: a rodada tem que refletir a tentativa mais recente.
     """
-    eventos = get_student_behavior_history(uid, limit)
-    dates = {e["timestamp"][:10] for e in eventos if e.get("timestamp")}
-    return sorted(dates, reverse=True)
+    if not item_ids:
+        return {}
+    encontrados: dict[str, dict[str, Any]] = {}
+    for inicio in range(0, len(item_ids), 30):
+        fatia = item_ids[inicio:inicio + 30]
+        docs = (
+            _behavior_collection_ref(uid)
+            .where(filter=firestore.FieldFilter("item_id", "in", fatia))
+            .stream()
+        )
+        for doc in docs:
+            evento = doc.to_dict() or {}
+            item_id = evento.get("item_id")
+            if not item_id:
+                continue
+            anterior = encontrados.get(item_id)
+            if anterior is None or (evento.get("timestamp") or "") >= (anterior.get("timestamp") or ""):
+                encontrados[item_id] = evento
+    return encontrados
+
+
+def get_activity_dates(uid: str, limit: int = 3000) -> list[str]:
+    """Datas (YYYY-MM-DD, **fuso de São Paulo**) em que o aluno respondeu ao
+    menos uma questão, mais recente primeiro. Base da sequência de estudos e do
+    progresso semanal; nunca inventa atividade sem evento real por trás.
+
+    Lê o agregado (1 documento) em vez de varrer o histórico — ver
+    `_atualizar_agregado`. `limit` fica na assinatura porque a reconstrução
+    ainda o usa quando o agregado não existe.
+    """
+    dias = ler_agregado(uid).get("dias_ativos") or []
+    return sorted(dias, reverse=True)[:limit]
 
 
 def list_students_with_behavior(limit: int = 500) -> list[dict[str, Any]]:

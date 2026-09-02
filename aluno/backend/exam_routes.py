@@ -8,8 +8,12 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
+import logging
+
+import rate_limit
+import settings
 from auth import require_admin, require_user
-from ai_service import diagnose, ocr_answer_sheet
+from ai_service import GeminiIndisponivelError, diagnose, ocr_answer_sheet
 from enem_seed import import_pasted_key
 from models import (
     Analysis,
@@ -20,6 +24,8 @@ from models import (
     VisionOCRRequest,
     area_for,
 )
+
+logger = logging.getLogger("sapiens.exams")
 
 router = APIRouter(prefix="", tags=["exams"])
 
@@ -62,7 +68,31 @@ async def get_exam(exam_id: str, language: str = Query("english")):
 # ---------- Vision ----------
 
 @router.post("/vision/answer-sheet")
-async def vision_ocr(payload: VisionOCRRequest, user: User = Depends(require_user)):
+async def vision_ocr(
+    payload: VisionOCRRequest,
+    user: User = Depends(require_user),
+    _: None = Depends(rate_limit.por_usuario("llm")),
+):
+    """OCR do cartão-resposta.
+
+    `MAX_UPLOAD_BYTES` existia em `settings.py` e não era usado em lugar
+    nenhum: a rota aceitava base64 de qualquer tamanho dentro de um JSON. Uma
+    foto de 12 MP vira ~11 MB de base64 na memória de uma VM de 512 MB que
+    aceita 80 requisições simultâneas — alguns envios juntos derrubavam a
+    instância. O frontend agora redimensiona antes de enviar; esta checagem é
+    a rede de segurança do servidor, que não depende do cliente colaborar.
+    """
+    tamanho = len(payload.image_base64 or "")
+    if tamanho > settings.MAX_UPLOAD_BYTES:
+        raise HTTPException(
+            status_code=413,
+            detail=(
+                f"Imagem grande demais ({tamanho // (1024 * 1024)} MB). "
+                f"O limite é {settings.MAX_UPLOAD_MB} MB — tire a foto mais de perto "
+                "ou use uma resolução menor."
+            ),
+        )
+
     exam = await _db.exams.find_one({"exam_id": payload.exam_id}, {"_id": 0})
     if not exam:
         raise HTTPException(status_code=404, detail="Exam not found")
@@ -74,8 +104,19 @@ async def vision_ocr(payload: VisionOCRRequest, user: User = Depends(require_use
         raise HTTPException(status_code=400, detail="Prova sem gabarito.")
     try:
         answers = await ocr_answer_sheet(payload.image_base64, len(numbers), start_number=numbers[0])
+    except GeminiIndisponivelError as exc:
+        # Timeout do modelo: o aluno pode tentar de novo ou digitar. Dizer isso
+        # é melhor que um 500 genérico depois de uma espera longa.
+        raise HTTPException(
+            status_code=504,
+            detail="A leitura do cartão demorou demais. Tente de novo ou digite as respostas.",
+        ) from exc
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Vision error: {e}")
+        logger.exception("OCR do cartão-resposta falhou para %s", user.user_id)
+        raise HTTPException(
+            status_code=502,
+            detail="Não conseguimos ler o cartão. Tente outra foto ou digite as respostas.",
+        ) from e
     got = {a.get("number"): (a.get("letter") or "").upper() for a in answers}
     normalized = [{"number": n, "letter": got.get(n, "")} for n in numbers]
     return {"answers": normalized}
