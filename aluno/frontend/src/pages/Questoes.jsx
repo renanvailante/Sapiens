@@ -1,27 +1,23 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { ArrowRight } from "lucide-react";
+import { api, errMsg } from "../lib/api";
 
-// Página PÚBLICA do aluno — exibe as questões vindas do Firestore (coleção "itens")
-// através do endpoint público GET /api/questoes. NÃO usa nenhuma autenticação:
-// nem Firebase Auth, nem GIS, nem token/cookie. Apenas um fetch normal.
+// Navegação do acervo de questões — EXIGE SESSÃO.
+//
+// Era pública e usava `fetch` cru, sem credencial, contra um `/api/questoes`
+// que também era aberto e devolvia `alternativas[].correta`: o gabarito do
+// banco inteiro estava a um clique de qualquer pessoa, e esta página ainda
+// tinha um botão "Ver resposta" para exibi-lo.
+//
+// Agora usa o cliente `api` (que envia a sessão) e o gabarito não vem mais na
+// resposta — quem decide certo/errado é o servidor, na prática, quando o aluno
+// responde de fato.
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-
-function Alternativa({ alt, revelar }) {
-  const correta = alt?.correta === true;
-  const base =
-    "flex items-start gap-3 rounded-xl border px-4 py-3 text-left transition";
-  const cls = revelar && correta
-    ? "border-emerald-400 bg-emerald-50"
-    : "border-slate-200 bg-white hover:border-indigo-300";
+function Alternativa({ alt }) {
   return (
-    <div className={`${base} ${cls}`}>
-      <span
-        className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
-          revelar && correta
-            ? "bg-emerald-500 text-white"
-            : "bg-slate-100 text-slate-600"
-        }`}
-      >
+    <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-left">
+      <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-600">
         {alt?.letra}
       </span>
       <span className="text-slate-700">{alt?.texto}</span>
@@ -30,7 +26,6 @@ function Alternativa({ alt, revelar }) {
 }
 
 function QuestaoCard({ item, index }) {
-  const [revelar, setRevelar] = useState(false);
   // `questoes_public` é plano: `questao` e `fonte` no topo do documento. O
   // caminho `item.pipeline.questao` era resíduo do Formato A, aninhamento que
   // esta coleção nunca teve — e, por ser testado primeiro, teria mascarado a
@@ -62,18 +57,19 @@ function QuestaoCard({ item, index }) {
 
       <div className="mt-4 grid gap-2">
         {alternativas.map((alt, i) => (
-          <Alternativa key={i} alt={alt} revelar={revelar} />
+          <Alternativa key={i} alt={alt} />
         ))}
       </div>
 
-      {alternativas.length > 0 && (
-        <button
-          onClick={() => setRevelar((v) => !v)}
-          className="mt-4 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700"
-        >
-          {revelar ? "Ocultar resposta" : "Ver resposta"}
-        </button>
-      )}
+      {/* Sem "Ver resposta": o gabarito não é mais enviado ao navegador. Para
+          saber se acertou, o caminho é responder de verdade na prática, onde a
+          correção acontece no servidor e o resultado vira progresso. */}
+      <Link
+        to="/exams"
+        className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-indigo-700 hover:underline"
+      >
+        Responder na prática <ArrowRight className="w-3.5 h-3.5" />
+      </Link>
     </article>
   );
 }
@@ -85,21 +81,11 @@ export default function Questoes() {
 
   useEffect(() => {
     let ativo = true;
-    (async () => {
-      try {
-        const res = await fetch(`${BACKEND_URL}/api/questoes?limit=100`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        if (ativo) setItens(Array.isArray(data.items) ? data.items : []);
-      } catch (e) {
-        if (ativo) setErro(e.message || "Falha ao carregar questões");
-      } finally {
-        if (ativo) setLoading(false);
-      }
-    })();
-    return () => {
-      ativo = false;
-    };
+    api.get("/questoes?limit=100")
+      .then(({ data }) => { if (ativo) setItens(Array.isArray(data.items) ? data.items : []); })
+      .catch((e) => { if (ativo) setErro(errMsg(e, "Falha ao carregar questões.")); })
+      .finally(() => { if (ativo) setLoading(false); });
+    return () => { ativo = false; };
   }, []);
 
   return (
@@ -108,7 +94,7 @@ export default function Questoes() {
         <div className="mx-auto max-w-3xl px-4 py-6">
           <h1 className="text-2xl font-bold text-slate-900">Questões</h1>
           <p className="text-sm text-slate-500">
-            Banco de questões — acesso livre, sem login.
+            Navegue pelo acervo. Para responder e registrar progresso, use a prática.
           </p>
         </div>
       </header>
