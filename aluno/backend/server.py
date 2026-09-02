@@ -338,11 +338,16 @@ async def ready() -> JSONResponse:
     # Só booleanos e o ambiente — nunca a credencial. É como se confere, de
     # fora, que as variáveis do Mercado Pago chegaram ao processo e que são as
     # de produção, sem precisar abrir o painel do Fly.
+    resumo = settings.resumo()
     checks["mercadopago"] = {
-        "access_token": settings.resumo()["mercadopago_configurado"],
-        "public_key": settings.resumo()["mercadopago_public_key_configurada"],
-        "webhook_secret": settings.resumo()["mercadopago_webhook_configurado"],
-        "ambiente": settings.resumo()["mercadopago_ambiente"],
+        "access_token": resumo["mercadopago_configurado"],
+        "public_key": resumo["mercadopago_public_key_configurada"],
+        "webhook_secret": resumo["mercadopago_webhook_configurado"],
+        "ambiente": resumo["mercadopago_ambiente"],
+        # Loja desligada NÃO derruba a prontidão: o produto serve prática,
+        # redação e diagnóstico sem vender nada.
+        "loja_habilitada": resumo["loja_habilitada"],
+        "loja_motivo": resumo["loja_motivo"],
     }
 
     return JSONResponse(
@@ -453,6 +458,20 @@ async def _startup():
 
     asyncio.create_task(_safe_firestore_seed())
     asyncio.create_task(_auto_sync_loop())
+    if not settings.MERCADOPAGO_HABILITADO:
+        # Alto e claro: a loja fechada é uma condição operacional silenciosa —
+        # o site funciona, ninguém reclama, e a receita é zero. Tem que estar
+        # visível em `fly logs` no primeiro minuto.
+        logger.warning(
+            "LOJA DE SPARKS DESLIGADA (%s). O produto sobe normalmente e toda "
+            "rota de compra devolve 503; o aluno segue ganhando Sparks "
+            "praticando. Nenhuma cobrança é possível neste estado.",
+            settings.MERCADOPAGO_MOTIVO_DESLIGADA,
+        )
+    else:
+        logger.info("Loja de Sparks HABILITADA (ambiente: %s).",
+                    settings.resumo()["mercadopago_ambiente"])
+
     logger.info(
         "Sapiens ready · %s · auto-sync Firestore a cada %ds",
         settings.resumo(), FIRESTORE_AUTO_SYNC_SECONDS,

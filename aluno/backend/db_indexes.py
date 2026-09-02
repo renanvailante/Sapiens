@@ -101,6 +101,31 @@ INDICES: list[tuple[str, list[tuple[str, int]], dict]] = [
 ]
 
 
+async def _equivalente_ja_existe(db, colecao: str, chaves: list[tuple[str, int]], kwargs: dict) -> bool:
+    """Já existe um índice com as MESMAS chaves e a mesma unicidade, só que com
+    outro nome?
+
+    Acontece quando o índice foi criado antes deste módulo existir (à mão, ou
+    por uma versão anterior do código): o Mongo gera nomes como `dedupe_key_1`
+    e recusa recriá-lo com nome diferente. A garantia que importa — as chaves e
+    o `unique` — está de pé, então isso é sucesso, não falha.
+
+    Só o nome é ignorado. Um índice com as mesmas chaves mas SEM `unique`
+    continua sendo falha, porque aí a trava de verdade não existe.
+    """
+    try:
+        existentes = await db[colecao].index_information()
+    except Exception:  # noqa: BLE001
+        return False
+    alvo_chaves = [list(par) for par in chaves]
+    alvo_unico = bool(kwargs.get("unique", False))
+    for info in existentes.values():
+        mesmas_chaves = [list(par) for par in info.get("key", [])] == alvo_chaves
+        if mesmas_chaves and bool(info.get("unique", False)) == alvo_unico:
+            return True
+    return False
+
+
 async def criar_indices(db) -> dict[str, int]:
     """Cria (idempotentemente) todos os índices. Devolve quantos foram
     processados e quantos falharam — o chamador loga, ninguém aborta."""
@@ -111,6 +136,16 @@ async def criar_indices(db) -> dict[str, int]:
             await db[colecao].create_index(chaves, **kwargs)
             criados += 1
         except Exception as exc:  # noqa: BLE001
+            # Conflito de NOME com um índice equivalente não é problema — e
+            # deixá-lo virar WARNING a cada boot afogaria a falha que importa
+            # no meio do ruído.
+            if await _equivalente_ja_existe(db, colecao, chaves, kwargs):
+                criados += 1
+                logger.info(
+                    "Índice %s.%s já existe sob outro nome — garantia mantida.",
+                    colecao, kwargs.get("name", chaves),
+                )
+                continue
             falhas += 1
             # Causa mais comum: dado pré-existente que viola um índice único
             # (ex.: dois usuários com o mesmo e-mail criados antes desta

@@ -154,9 +154,9 @@ def test_sem_admin_declarado_e_recusado_em_producao(monkeypatch):
 
 
 def test_loja_desligada_nao_impede_o_boot(monkeypatch):
-    """Abrir o beta sem a loja de Sparks é uma escolha legítima: o resto do
-    produto (prática, redação, diagnóstico) funciona igual, e a compra aparece
-    como indisponível. Não pode derrubar o processo inteiro."""
+    """Uma feature opcional não pode derrubar o produto inteiro. Sem nenhuma
+    credencial do Mercado Pago o app sobe normalmente — prática, redação,
+    diagnóstico e histórico funcionam igual, só não há venda."""
     assert _settings(
         monkeypatch,
         MERCADOPAGO_ACCESS_TOKEN=None,
@@ -165,32 +165,62 @@ def test_loja_desligada_nao_impede_o_boot(monkeypatch):
     ).validar() == []
 
 
-def test_mercadopago_webhook_secret_ausente_e_recusado_em_producao(monkeypatch):
-    """Configuração PELA METADE é o estado perigoso: com token e sem segredo de
-    webhook, o cartão é cobrado e a confirmação é rejeitada por assinatura
-    inválida — o dinheiro sai e os Sparks nunca entram, em silêncio."""
-    assert "MERCADOPAGO_WEBHOOK_SECRET" in _problemas(monkeypatch, MERCADOPAGO_WEBHOOK_SECRET=None)
+def test_configuracao_pela_metade_tambem_nao_impede_o_boot(monkeypatch):
+    """Este é o caso real de hoje: token e public key publicados, webhook
+    secret ainda não. Antes isto RECUSAVA o boot e teria tirado o site do ar
+    num deploy — a proteção correta é fechar a loja, não derrubar tudo."""
+    s = _settings(monkeypatch, MERCADOPAGO_WEBHOOK_SECRET=None)
+    assert s.validar() == []
+    assert s.MERCADOPAGO_HABILITADO is False
 
 
-def test_public_key_ausente_com_loja_ligada_e_recusada(monkeypatch):
-    """Sem a public key o Brick não monta no navegador — a loja apareceria mas
-    o formulário de pagamento ficaria vazio."""
-    assert "MERCADOPAGO_PUBLIC_KEY" in _problemas(monkeypatch, MERCADOPAGO_PUBLIC_KEY=None)
+# ------------------------------------------------- loja de Sparks: ligada?
+# A regra é uma só: as TRÊS variáveis são exigidas juntas, porque uma compra só
+# termina bem com as três (token cria o pagamento, public key monta o
+# formulário, webhook secret valida a confirmação que credita).
+
+def test_loja_ligada_apenas_com_as_tres_credenciais(monkeypatch):
+    assert _settings(monkeypatch).MERCADOPAGO_HABILITADO is True
 
 
-def test_credencial_de_teste_do_mercadopago_e_recusada_em_producao(monkeypatch):
-    """Deixar a credencial `TEST-` em produção não falha visivelmente: o
-    checkout abre, o cartão é "aceito" e nenhum dinheiro entra. O boot precisa
-    recusar, senão o erro só aparece na conciliação financeira."""
-    p = _problemas(monkeypatch, MERCADOPAGO_ACCESS_TOKEN="TEST-123")
-    assert "MERCADOPAGO_ACCESS_TOKEN" in p and "teste" in p
+@pytest.mark.parametrize(
+    "ausente",
+    ["MERCADOPAGO_ACCESS_TOKEN", "MERCADOPAGO_PUBLIC_KEY", "MERCADOPAGO_WEBHOOK_SECRET"],
+)
+def test_qualquer_credencial_faltando_desliga_a_loja(monkeypatch, ausente):
+    s = _settings(monkeypatch, **{ausente: None})
+    assert s.MERCADOPAGO_HABILITADO is False
+    assert ausente in s.MERCADOPAGO_MOTIVO_DESLIGADA
 
 
-def test_public_key_de_teste_do_mercadopago_e_recusada_em_producao(monkeypatch):
-    """O Brick monta com a public key; se ela for de teste, o formulário roda
-    em sandbox mesmo com o backend em produção."""
-    p = _problemas(monkeypatch, MERCADOPAGO_PUBLIC_KEY="TEST-abc")
-    assert "MERCADOPAGO_PUBLIC_KEY" in p and "teste" in p
+def test_credencial_de_teste_desliga_a_loja_em_producao(monkeypatch):
+    """Deixar `TEST-` em produção não falha visivelmente: o checkout abriria, o
+    cartão seria 'aceito' e nenhum dinheiro entraria. Vale como ausência."""
+    s = _settings(monkeypatch, MERCADOPAGO_ACCESS_TOKEN="TEST-123")
+    assert s.MERCADOPAGO_HABILITADO is False
+    assert "teste" in s.MERCADOPAGO_MOTIVO_DESLIGADA
+
+
+def test_public_key_de_teste_desliga_a_loja_em_producao(monkeypatch):
+    s = _settings(monkeypatch, MERCADOPAGO_PUBLIC_KEY="TEST-abc")
+    assert s.MERCADOPAGO_HABILITADO is False
+
+
+def test_credencial_de_teste_e_normal_fora_de_producao(monkeypatch):
+    """Em desenvolvimento a credencial de teste é exatamente o que se quer."""
+    s = _settings(
+        monkeypatch, APP_ENV="development",
+        MERCADOPAGO_ACCESS_TOKEN="TEST-123", MERCADOPAGO_PUBLIC_KEY="TEST-abc",
+        MERCADOPAGO_WEBHOOK_SECRET="segredo",
+    )
+    assert s.MERCADOPAGO_HABILITADO is True
+
+
+def test_motivo_da_loja_desligada_nao_revela_segredo(monkeypatch):
+    """O motivo vai para o log e para /ready — só nomes de variáveis."""
+    s = _settings(monkeypatch, MERCADOPAGO_WEBHOOK_SECRET=None)
+    assert _BASE_PROD["MERCADOPAGO_ACCESS_TOKEN"] not in s.MERCADOPAGO_MOTIVO_DESLIGADA
+    assert _BASE_PROD["MERCADOPAGO_PUBLIC_KEY"] not in s.MERCADOPAGO_MOTIVO_DESLIGADA
 
 
 # ------------------------------------------------------------ dados de demo
@@ -211,6 +241,7 @@ def test_resumo_nao_revela_segredo(monkeypatch):
     assert _BASE_PROD["MERCADOPAGO_WEBHOOK_SECRET"] not in resumo_json
     assert s.resumo()["gemini_configurado"] is True
     assert s.resumo()["mercadopago_configurado"] is True
+    assert s.resumo()["loja_habilitada"] is True
 
 
 def test_boot_aborta_com_configuracao_invalida(monkeypatch):

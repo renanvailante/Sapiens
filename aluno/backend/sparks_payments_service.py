@@ -194,7 +194,11 @@ async def get_auto_recharge(db, user_id: str) -> dict | None:
             doc["next_payment_date"] = (live.get("auto_recurring") or {}).get("next_payment_date")
             doc["transaction_amount"] = (live.get("auto_recurring") or {}).get("transaction_amount")
             doc["active"] = live.get("status") == "authorized"
-        except mp.MercadoPagoError:
+        except (mp.MercadoPagoError, mp.MercadoPagoNotConfiguredError):
+            # `MercadoPagoNotConfiguredError` é RuntimeError, não
+            # MercadoPagoError: escapava daqui e transformava uma LEITURA em
+            # 500 sempre que a loja estivesse desligada. Cair para o documento
+            # local é a degradação correta — mostra o que sabemos, sem inventar.
             logger.warning("Falha ao reler assinatura %s no Mercado Pago.", doc["mp_preapproval_id"])
     return doc
 

@@ -33,8 +33,30 @@ def set_db(db):
 
 
 def _require_mp_configured():
-    if not settings.MERCADOPAGO_ACCESS_TOKEN:
-        raise HTTPException(status_code=503, detail="Pagamentos indisponíveis no momento.")
+    """Portão único de tudo que mexe em dinheiro.
+
+    Checa a configuração COMPLETA (`settings.MERCADOPAGO_HABILITADO`), não só o
+    access token: com token mas sem webhook secret, `create_payment` cobraria o
+    cartão e a notificação que credita os Sparks seria rejeitada por assinatura
+    inválida — o aluno pagaria e nunca receberia.
+
+    A mensagem é deliberadamente genérica para o cliente. O motivo real
+    (que variável falta) fica no log e em `/ready`, que exigem acesso ao
+    servidor — nunca numa resposta HTTP pública, que diria a um atacante
+    exatamente qual metade da configuração está aberta.
+    """
+    if not settings.MERCADOPAGO_HABILITADO:
+        logger.warning(
+            "Compra recusada — loja de Sparks desligada (%s).",
+            settings.MERCADOPAGO_MOTIVO_DESLIGADA,
+        )
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "A compra de Sparks está temporariamente indisponível. "
+                "Você continua ganhando Sparks praticando questões."
+            ),
+        )
 
 
 # ---------------------------------------------------------------- catálogo
@@ -144,6 +166,9 @@ async def my_auto_recharge(user: User = Depends(require_user)):
 
 @router.patch("/auto-recharge")
 async def patch_auto_recharge(payload: AutoRechargeUpdateRequest, user: User = Depends(require_user)):
+    # Trocar o pacote muda o valor cobrado no Mercado Pago — mutação de
+    # dinheiro, mesmo portão da criação.
+    _require_mp_configured()
     try:
         return await svc.update_auto_recharge(_db, user, package_id=payload.package_id, baseline=payload.baseline)
     except svc.NoActiveAutoRechargeError:
@@ -160,6 +185,20 @@ async def deactivate_auto_recharge(user: User = Depends(require_user)):
         await svc.cancel_auto_recharge(_db, user)
     except svc.NoActiveAutoRechargeError:
         raise HTTPException(status_code=404, detail="Nenhuma recarga automática ativa.")
+    except mp.MercadoPagoNotConfiguredError:
+        # Cancelar não é bloqueado por política — quem tem cobrança recorrente
+        # ativa jamais pode ficar preso nela. Mas sem credencial não há como
+        # falar com o Mercado Pago, e um 500 mudo deixaria o aluno achando que
+        # cancelou. Melhor dizer a verdade e dar um caminho.
+        logger.error("Cancelamento pedido com a loja desligada (%s) — user=%s",
+                     settings.MERCADOPAGO_MOTIVO_DESLIGADA, user.user_id)
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Não conseguimos falar com o Mercado Pago agora. Sua recarga NÃO foi "
+                "cancelada — cancele direto no app do Mercado Pago ou fale com o suporte."
+            ),
+        )
     except mp.MercadoPagoError as exc:
         raise HTTPException(status_code=502, detail=f"Mercado Pago recusou o cancelamento: {exc.message or exc.error}")
     return {"ok": True}
