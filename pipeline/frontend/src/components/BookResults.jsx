@@ -22,6 +22,14 @@ import api from "@/lib/api";
 import { runInParallel } from "@/lib/parallel";
 import JsonViewer from "@/components/JsonViewer";
 
+// Item anotado no Schema Sapiens 2.2. `item` e a chave canonica; `pipeline` e a
+// forma anterior, lida para nao quebrar a visualizacao de documentos gerados
+// antes da migracao.
+const annotated = (result) => result?.item || result?.pipeline || {};
+const correctLetter = (questao) =>
+  (questao?.alternativas || []).find((a) => a.correta === true)?.letra;
+
+
 const statusStyles = {
   pending: { color: "#52525B", icon: Loader2, label: "Aguardando", spin: false },
   processing: { color: "#002FA7", icon: Loader2, label: "Processando…", spin: true },
@@ -29,12 +37,21 @@ const statusStyles = {
   error: { color: "#E11D48", icon: AlertCircle, label: "Erro", spin: false },
 };
 
+const THINKING_LEVELS = [
+  { value: "LOW", label: "LOW — menor custo", hint: "Mais barato (~86% menos que HIGH nos testes). Padrão." },
+  { value: "MEDIUM", label: "MEDIUM — equilíbrio", hint: "Custo/qualidade intermediários (~52% menos que HIGH)." },
+  { value: "HIGH", label: "HIGH — maior custo", hint: "Comportamento antigo, sem limite de raciocínio do modelo." },
+];
+
 export default function BookResults({ book, concurrency = 3, onReset, onUpdate }) {
   const [phase, setPhase] = useState("manifest"); // manifest | processing | done
   const [expanded, setExpanded] = useState(new Set());
   const [editing, setEditing] = useState(null);
   const [editText, setEditText] = useState("");
   const [busy, setBusy] = useState(false);
+  // Vale só para este caderno/execução — nunca é gravado como padrão global
+  // (ver GEMINI_THINKING_LEVEL / cognitive_engine.DEFAULT_THINKING_LEVEL).
+  const [thinkingLevel, setThinkingLevel] = useState("LOW");
 
   const items = book.items;
 
@@ -92,6 +109,7 @@ export default function BookResults({ book, concurrency = 3, onReset, onUpdate }
           {
             question_number: it.question_number,
             question_title: it.question_title,
+            thinking_level: thinkingLevel,
           },
           { timeout: 300000 },
         );
@@ -126,7 +144,7 @@ export default function BookResults({ book, concurrency = 3, onReset, onUpdate }
         question_title: it.question_title,
         pipeline_id: it.result?.id,
         ontology_version: it.result?.ontology_version,
-        pipeline: it.result?.pipeline,
+        item: annotated(it.result),
       }));
 
   const copySelected = async () => {
@@ -157,6 +175,7 @@ export default function BookResults({ book, concurrency = 3, onReset, onUpdate }
         {
           question_number: items[i].question_number,
           question_title: items[i].question_title,
+          thinking_level: thinkingLevel,
         },
         { timeout: 300000 },
       );
@@ -209,7 +228,7 @@ export default function BookResults({ book, concurrency = 3, onReset, onUpdate }
 
   const startEdit = (i) => {
     setEditing(i);
-    setEditText(JSON.stringify(items[i].result.pipeline, null, 2));
+    setEditText(JSON.stringify(annotated(items[i].result), null, 2));
   };
   const cancelEdit = () => {
     setEditing(null);
@@ -218,7 +237,7 @@ export default function BookResults({ book, concurrency = 3, onReset, onUpdate }
   const saveEdit = async (i) => {
     try {
       const parsed = JSON.parse(editText);
-      const r = await api.put(`/pipeline/${items[i].result.id}`, { pipeline: parsed });
+      const r = await api.put(`/pipeline/${items[i].result.id}`, { item: parsed });
       setItem(i, { result: r.data });
       setEditing(null);
       toast.success("JSON atualizado.");
@@ -257,6 +276,11 @@ export default function BookResults({ book, concurrency = 3, onReset, onUpdate }
               </div>
               <div className="mt-1 text-xs font-mono text-muted-foreground">
                 book_id: {book.book_id}
+                {(book.banca || book.ano || book.prova) && (
+                  <span data-testid="book-fonte-header">
+                    {" "}· {book.banca} {book.ano} · Caderno {book.prova}
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -270,6 +294,25 @@ export default function BookResults({ book, concurrency = 3, onReset, onUpdate }
                 className="h-4 w-4 accent-primary"
               />
               Selecionar todos ({selectedCount}/{total})
+            </label>
+            <label
+              className="flex items-center gap-1.5 text-xs font-medium"
+              title="Nível de raciocínio do modelo, só para este processamento — não altera o padrão global."
+            >
+              Thinking:
+              <select
+                value={thinkingLevel}
+                onChange={(e) => setThinkingLevel(e.target.value)}
+                disabled={busy}
+                data-testid="book-thinking-level"
+                className="border border-border px-2 py-1.5 text-xs font-mono bg-white disabled:opacity-50"
+              >
+                {THINKING_LEVELS.map((opt) => (
+                  <option key={opt.value} value={opt.value} title={opt.hint}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
             </label>
             <button
               onClick={processSelected}
@@ -302,8 +345,10 @@ export default function BookResults({ book, concurrency = 3, onReset, onUpdate }
           const isErr = item.status === "error";
           const isExp = expanded.has(i);
           const isEditing = editing === i;
-          const q = item.result?.pipeline?.questao || {};
-          const cls = item.result?.pipeline?.classificacao || {};
+          const ann = annotated(item.result);
+          const q = ann.questao || {};
+          const fonte = ann.fonte || {};
+          const ec = ann.estrutura_cognitiva || {};
 
           return (
             <div key={item.key} className="border-b border-border last:border-b-0" data-testid={`book-item-${i}`}>
@@ -329,8 +374,8 @@ export default function BookResults({ book, concurrency = 3, onReset, onUpdate }
                     {item.paginas?.length > 0 && (
                       <span className="text-xs text-muted-foreground">· p. {item.paginas.join(", ")}</span>
                     )}
-                    {isDone && q.disciplina && (
-                      <span className="text-xs text-muted-foreground">· {q.disciplina}</span>
+                    {isDone && fonte.disciplina && (
+                      <span className="text-xs text-muted-foreground">· {fonte.disciplina}</span>
                     )}
                   </div>
                   {item.error && (
@@ -368,11 +413,11 @@ export default function BookResults({ book, concurrency = 3, onReset, onUpdate }
               {isDone && isExp && !isEditing && (
                 <div className="px-6 pb-6 pt-2 border-t border-border bg-secondary/40">
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
-                    <MiniStat label="Resposta" value={q.resposta_correta || "—"} mono />
-                    <MiniStat label="Domínios" value={(cls.dominios || []).join(", ") || "—"} mono />
-                    <MiniStat label="Processos" value={(cls.processos_cognitivos || []).map((p) => p.id).join(", ") || "—"} mono />
+                    <MiniStat label="Resposta" value={correctLetter(q) || "—"} mono />
+                    <MiniStat label="Domínios" value={(ec.dominios || []).map((d) => d.id).join(", ") || "—"} mono />
+                    <MiniStat label="Processos" value={(ec.processos || []).map((p) => p.id).join(", ") || "—"} mono />
                   </div>
-                  <JsonViewer data={item.result.pipeline} testId={`book-json-${i}`} />
+                  <JsonViewer data={annotated(item.result)} testId={`book-json-${i}`} />
                 </div>
               )}
               {isDone && isEditing && (

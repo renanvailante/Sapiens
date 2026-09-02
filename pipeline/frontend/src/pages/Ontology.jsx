@@ -70,11 +70,11 @@ export default function Ontology() {
   };
 
   const handleReset = async () => {
-    if (!window.confirm("Restaurar a ontologia semente (versão 1.0.0-seed)?")) return;
+    if (!window.confirm("Restaurar a ontologia canônica (pipeline/docs/ontology, v1.4.1)?")) return;
     setBusy(true);
     try {
       await api.post("/ontology/reset");
-      toast.success("Ontologia restaurada para a versão 1.0.0-seed");
+      toast.success("Ontologia restaurada para a versão canônica");
       await load();
     } catch (e) {
       toast.error(e?.response?.data?.detail || "Falha ao restaurar ontologia");
@@ -176,9 +176,9 @@ export default function Ontology() {
             onClick={handleReset}
             disabled={busy}
             className="flex items-center gap-2 border border-border bg-white px-4 py-2.5 text-sm font-medium hover:bg-foreground hover:text-white disabled:opacity-60"
-            title="Restaura a ontologia semente original"
+            title="Restaura a ontologia canônica (pipeline/docs/ontology)"
           >
-            <RotateCcw className="h-4 w-4" /> Resetar para versão 1.0
+            <RotateCcw className="h-4 w-4" /> Resetar para versão canônica
           </button>
           <button
             data-testid="ontology-reload"
@@ -270,9 +270,9 @@ export default function Ontology() {
                           <span className="flex-1 text-sm font-medium">
                             {it.nome || it.name || "(sem nome)"}
                           </span>
-                          {it.dominio && (
+                          {(it.dominios?.[0] || it.dominio || it.competencia) && (
                             <span className="font-mono text-[10px] text-muted-foreground">
-                              {it.dominio}
+                              {it.dominios?.[0] || it.dominio || it.competencia}
                             </span>
                           )}
                           {opened ? (
@@ -283,10 +283,28 @@ export default function Ontology() {
                         </button>
                         {opened && (
                           <div className="px-6 pb-4 pt-1 text-sm text-muted-foreground leading-relaxed border-l-2 ml-6" style={{ borderColor: s.accent }}>
-                            {it.descricao || it.description || "Sem descrição."}
-                            {it.categoria && (
+                            {it.descricao || it.definicao_operacional || it.mecanismo || it.description || "Sem descrição."}
+                            {it.evidencia_observavel && (
+                              <div className="mt-2">evidência observável · {it.evidencia_observavel}</div>
+                            )}
+                            {(it.processos || it.processos_cognitivos)?.length > 0 && (
                               <div className="mt-2 overline text-muted-foreground">
-                                categoria · {it.categoria}
+                                processos · {(it.processos || it.processos_cognitivos).join(", ")}
+                              </div>
+                            )}
+                            {it.tipos_erro?.length > 0 && (
+                              <div className="mt-2 overline text-muted-foreground">
+                                tipos de erro · {it.tipos_erro.join(", ")}
+                              </div>
+                            )}
+                            {it.intervencao && (
+                              <div className="mt-2 overline text-muted-foreground">
+                                intervenção · {it.intervencao}
+                              </div>
+                            )}
+                            {it.origem_v1_3?.length > 0 && (
+                              <div className="mt-2 overline text-muted-foreground">
+                                origem v1.3 · {it.origem_v1_3.join(", ")}
                               </div>
                             )}
                           </div>
@@ -325,8 +343,10 @@ export default function Ontology() {
             <div>
               <div className="font-bold">Schema de Anotação (JSON)</div>
               <div className="text-xs text-muted-foreground mt-0.5">
-                Estrutura JSON que o motor cognitivo usa para produzir cada
-                pipeline. Independente da ontologia.
+                Contrato do item anotado — <strong>Schema Sapiens 2.2</strong>.
+                Versionado à parte da ontologia. Um schema importado substitui
+                apenas a instrução de forma enviada ao modelo: a normalização e
+                a validação contra o catálogo continuam sendo aplicadas.
               </div>
             </div>
           </div>

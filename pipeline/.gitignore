@@ -87,3 +87,7 @@ credentials.json
 *.key
 .credentials
 firebase-credentials.json
+
+# os exemplos de .env SAO versionados: sao a documentacao das variaveis
+!.env.example
+!*.env.example

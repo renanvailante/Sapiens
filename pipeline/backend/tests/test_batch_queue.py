@@ -184,6 +184,11 @@ class TestDrainSucesso:
         pipeline_doc = _run(db.pipelines.find_one({"id": doc["result_pipeline_id"]}))
         assert pipeline_doc["schema_version"] == "2.2"
 
+        # O staging da fila (queue/{item_id}) não serve mais a nada depois do
+        # sucesso — o conteúdo já foi persistido (deduplicado) no artefato
+        # final — e não deve ficar órfão para sempre.
+        assert not storage.object_exists(doc["files"][0]["path"])
+
     def test_drain_sem_itens_devidos_nao_faz_nada(self, db):
         summary = _run(batch_queue.drain(
             db, ontology=DEFAULT_ONTOLOGY, schema=DEFAULT_PIPELINE_SCHEMA, limit=10,

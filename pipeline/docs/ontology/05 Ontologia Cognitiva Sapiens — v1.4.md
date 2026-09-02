@@ -1,8 +1,12 @@
-# Ontologia Cognitiva Sapiens — v1.4
+## id: ONT-1.4.1 titulo: Ontologia Cognitiva Sapiens versao: 1.4.1 estado: congelado camada: C3 criado_em: 2026-08-17T02:56:52Z atualizado_em: 2026-08-17T04:40:27Z supersedes: ["1.4"] superseded_by: null derivado_de: null governado_por: GOV-1.0 governed_by_conteudo: ["White Paper Sapiens 2.0", "Constituição da Ontologia Sapiens"] cni_membros: ["ontology_v1.4.json"] cni_status: "CONSISTENTE — ambos os membros na versão 1.4.1" changelog_ref: TX-2026-08-17T043240Z-patch-err13 remissoes_pendentes: []
+
+# Ontologia Cognitiva Sapiens — v1.4.1
 
 ### Primeira versão operacional (MVP)
 
 Documentos normativos aplicados: White Paper Sapiens 2.0 (restrição conceitual) e Constituição da Ontologia Sapiens (regra de engenharia). As três decisões deixadas pendentes ao fim da Auditoria v1.3 foram resolvidas abaixo, por princípio constitucional, sem pausa para validação — conforme diretriz de continuidade.
+
+> **Nota de versão.** A v1.4.1 é uma correção de fidelidade (GOV-1.0 §3.3, Classe I) sobre a v1.4. **Nenhum Domínio, Competência, Processo, Habilidade, Tipo de Erro ou Intervenção foi criado, removido ou redefinido.** O catálogo é idêntico ao da v1.4 em cardinalidade e em conjunto de identificadores. As alterações estão listadas no changelog ao final e detalhadas em `TX-2026-08-17T043240Z-patch-err13`.
 
 **Decisões de fronteira, resolvidas:**
 
@@ -47,7 +51,7 @@ Cada entrada segue: definição operacional · o que não é · domínio(s) · c
 
 ### DOM-QUANT
 
-**PROC-QUANT-01 — Comparar e ordenar grandezas.** Estabelecer relação de maior/menor/igual entre valores ou razões. Não é operação aritmética específica — é o julgamento relacional que a antecede. _Competência:_ COMP-01. _Erro:_ nenhum dedicado nesta versão (ver §9). _Manifestação:_ ordenar medidas em física, comparar concentrações em química, comparar frequências em genética.
+**PROC-QUANT-01 — Comparar e ordenar grandezas.** Estabelecer relação de maior/menor/igual entre valores ou razões. Não é operação aritmética específica — é o julgamento relacional que a antecede. _Competência:_ COMP-01. _Erro:_ nenhum dedicado nesta versão (ver §10). _Manifestação:_ ordenar medidas em física, comparar concentrações em química, comparar frequências em genética.
 
 **PROC-QUANT-02 — Inferir e aplicar relação proporcional entre grandezas.** Reconhecer e operar sobre uma relação multiplicativa constante entre duas grandezas, direta ou inversa. Não é "regra de três" (procedimento escolar específico) — é a estrutura cognitiva que qualquer procedimento proporcional instancia; não exige que o aluno use um algoritmo nomeado. _Competência:_ COMP-01. _Erro:_ ERR-05. _Manifestação:_ escala em mapas, razão estequiométrica, taxa populacional, diluição em química.
 
@@ -57,27 +61,27 @@ Cada entrada segue: definição operacional · o que não é · domínio(s) · c
 
 ### DOM-ESPACO
 
-**PROC-ESPACO-01 — Interpretar figura geométrica e extrair relações métricas.** Extrair informação métrica e relacional (lados, ângulos, semelhança) de uma representação espacial. Não é aplicação de teorema nomeado — é a leitura estrutural que antecede qualquer cálculo. _Competência:_ COMP-02. _Erro:_ nenhum dedicado (ver §9). _Manifestação:_ geometria plana, leitura de diagramas de circuito, leitura de mapas.
+**PROC-ESPACO-01 — Interpretar figura geométrica e extrair relações métricas.** Extrair informação métrica e relacional (lados, ângulos, semelhança) de uma representação espacial. Não é aplicação de teorema nomeado — é a leitura estrutural que antecede qualquer cálculo. _Competência:_ COMP-02. _Erro:_ nenhum dedicado nesta versão (ver §10). _Manifestação:_ geometria plana, leitura de diagramas de circuito, leitura de mapas.
 
-**PROC-ESPACO-02 — Quantificar extensão/capacidade por decomposição em partes conhecidas.** Decompor uma forma em componentes de extensão conhecida e agregar. Não é fórmula específica de área/volume — é a estratégia de decomposição-agregação. _Competência:_ COMP-02. _Erro:_ nenhum dedicado. _Manifestação:_ área composta em geometria, volume de recipiente em química, capacidade em problemas de engenharia.
+**PROC-ESPACO-02 — Quantificar extensão/capacidade por decomposição em partes conhecidas.** Decompor uma forma em componentes de extensão conhecida e agregar. Não é fórmula específica de área/volume — é a estratégia de decomposição-agregação. _Competência:_ COMP-02. _Erro:_ nenhum dedicado nesta versão (ver §10). _Manifestação:_ área composta em geometria, volume de recipiente em química, capacidade em problemas de engenharia.
 
-**PROC-ESPACO-03 — Relacionar estrutura a função.** Inferir o papel funcional de um componente a partir de sua organização espacial/estrutural dentro de um sistema maior. Processo-flagship desta versão: fusão de um padrão que aparecia disperso em pelo menos seis pontos da v1.3. Não é conhecimento de uma anatomia/molécula específica — é o raciocínio estrutura→função em si; o conteúdo (qual organela, qual molécula) é Habilidade, não o Processo. _Competência:_ COMP-03. _Erro:_ ERR-14 _(nota: renumerado ERR-13 na tabela final por reorganização — ver tabela §5)_. _Manifestação:_ organela↔função celular, estrutura molecular↔propriedade química, arranjo espacial de ecossistema↔papel funcional de uma espécie, forma de asa↔aerodinâmica em física.
+**PROC-ESPACO-03 — Relacionar estrutura a função.** Inferir o papel funcional de um componente a partir de sua organização espacial/estrutural dentro de um sistema maior. Processo-flagship desta versão: fusão de um padrão que aparecia disperso em pelo menos seis pontos da v1.3. Não é conhecimento de uma anatomia/molécula específica — é o raciocínio estrutura→função em si; o conteúdo (qual organela, qual molécula) é Habilidade, não o Processo. _Competência:_ COMP-03. _Erro:_ **nenhum dedicado nesta versão** — a associação a um Tipo de Erro próprio permanece candidata à próxima revisão (ver a nota ao final do §6 e o item 3 do §10). _Manifestação:_ organela↔função celular, estrutura molecular↔propriedade química, arranjo espacial de ecossistema↔papel funcional de uma espécie, forma de asa↔aerodinâmica em física.
 
 ### DOM-MUDANCA
 
-**PROC-MUD-01 — Reconhecer e quantificar relação de covariação entre grandezas.** Identificar e calcular como a variação de uma grandeza se relaciona à variação de outra ao longo do tempo ou de um parâmetro. Fusão de "descrever trajetória", "força e movimento" (componente causal removido para PROC-CAUSAL-01) e "dependência entre variáveis" da v1.3. Não é fórmula cinemática específica — é o reconhecimento do padrão de covariação. _Competência:_ COMP-04. _Erro:_ nenhum dedicado. _Manifestação:_ velocidade/aceleração em cinemática, crescimento populacional em biologia, decaimento radioativo, farmacocinética.
+**PROC-MUD-01 — Reconhecer e quantificar relação de covariação entre grandezas.** Identificar e calcular como a variação de uma grandeza se relaciona à variação de outra ao longo do tempo ou de um parâmetro. Fusão de "descrever trajetória", "força e movimento" (componente causal removido para PROC-CAUSAL-01) e "dependência entre variáveis" da v1.3. Não é fórmula cinemática específica — é o reconhecimento do padrão de covariação. _Competência:_ COMP-04. _Erro:_ nenhum dedicado nesta versão (ver §10). _Manifestação:_ velocidade/aceleração em cinemática, crescimento populacional em biologia, decaimento radioativo, farmacocinética.
 
-**PROC-MUD-02 — Rastrear invariante durante transformação.** Verificar que uma grandeza (massa, energia) permanece constante antes e depois de uma transformação. Fusão da duplicata mais direta encontrada na auditoria (conservação, antes espalhada em três processos). Não é lei nomeada de conservação — é o ato de rastrear o invariante em si. _Competência:_ COMP-04. _Erro:_ nenhum dedicado (ver §9). _Manifestação:_ conservação de massa em reação química, conservação de energia em sistema térmico ou mecânico, balanço de matéria em processo biológico.
+**PROC-MUD-02 — Rastrear invariante durante transformação.** Verificar que uma grandeza (massa, energia) permanece constante antes e depois de uma transformação. Fusão da duplicata mais direta encontrada na auditoria (conservação, antes espalhada em três processos). Não é lei nomeada de conservação — é o ato de rastrear o invariante em si. _Competência:_ COMP-04. _Erro:_ nenhum dedicado nesta versão (ver §10). _Manifestação:_ conservação de massa em reação química, conservação de energia em sistema térmico ou mecânico, balanço de matéria em processo biológico.
 
 ### DOM-INCERTEZA
 
-**PROC-INC-01 — Interpretar probabilidade condicional.** Avaliar como a ocorrência de um evento altera a probabilidade de outro. _Competência:_ COMP-05. _Erro:_ nenhum dedicado. _Manifestação:_ diagnóstico médico, genética, jogos de azar.
+**PROC-INC-01 — Interpretar probabilidade condicional.** Avaliar como a ocorrência de um evento altera a probabilidade de outro. _Competência:_ COMP-05. _Erro:_ nenhum dedicado nesta versão (ver §10). _Manifestação:_ diagnóstico médico, genética, jogos de azar.
 
-**PROC-INC-02 — Sintetizar conjunto de dados por medida de tendência central.** Resumir uma distribuição de dados por um valor representativo (média, mediana ou moda), incluindo julgar qual medida é mais apropriada ao caso. Consolidado a partir de três processos da v1.3, hoje mantido como um só por ausência de evidência de mecanismo de erro distinto entre as três operações (§2.4) — três Habilidades distintas cobrem a diferença de procedimento. _Competência:_ COMP-05. _Erro:_ nenhum dedicado. _Manifestação:_ estatística descritiva em qualquer domínio de dados experimentais.
+**PROC-INC-02 — Sintetizar conjunto de dados por medida de tendência central.** Resumir uma distribuição de dados por um valor representativo (média, mediana ou moda), incluindo julgar qual medida é mais apropriada ao caso. Consolidado a partir de três processos da v1.3, hoje mantido como um só por ausência de evidência de mecanismo de erro distinto entre as três operações (§2.4) — três Habilidades distintas cobrem a diferença de procedimento. _Competência:_ COMP-05. _Erro:_ nenhum dedicado nesta versão (ver §10). _Manifestação:_ estatística descritiva em qualquer domínio de dados experimentais.
 
 **PROC-INC-03 — Analisar dispersão de dados.** Avaliar variabilidade de uma distribuição (amplitude, desvio). _Competência:_ COMP-05. _Erro:_ ERR-08 (compartilhado). _Manifestação:_ variabilidade experimental, dispersão populacional.
 
-**PROC-INC-04 — Aplicar raciocínio probabilístico combinatório a processo gerador.** Prever proporções esperadas de resultado a partir de um modelo probabilístico de geração combinatória. Não é "quadro de Punnett" — é a estrutura combinatória-probabilística que esse procedimento instancia. _Competência:_ COMP-05. _Erro:_ nenhum dedicado. _Manifestação:_ genética mendeliana, combinatória matemática pura, modelos de urna.
+**PROC-INC-04 — Aplicar raciocínio probabilístico combinatório a processo gerador.** Prever proporções esperadas de resultado a partir de um modelo probabilístico de geração combinatória. Não é "quadro de Punnett" — é a estrutura combinatória-probabilística que esse procedimento instancia. _Competência:_ COMP-05. _Erro:_ nenhum dedicado nesta versão (ver §10). _Manifestação:_ genética mendeliana, combinatória matemática pura, modelos de urna.
 
 ### DOM-CAUSAL
 
@@ -99,19 +103,19 @@ Cada entrada segue: definição operacional · o que não é · domínio(s) · c
 
 **PROC-TEXT-02 — Inferir informação implícita.** Deduzir dado não literal a partir de pistas textuais ou visuais. _Competência:_ COMP-09. _Erro:_ ERR-02, ERR-06 (compartilhado). _Manifestação:_ qualquer disciplina.
 
-**PROC-TEXT-03 — Sintetizar múltiplas fontes de informação.** Combinar informação de texto, tabela e imagem em uma conclusão única. _Competência:_ COMP-09. _Erro:_ nenhum dedicado. _Manifestação:_ questões que integram gráfico e enunciado em qualquer disciplina.
+**PROC-TEXT-03 — Sintetizar múltiplas fontes de informação.** Combinar informação de texto, tabela e imagem em uma conclusão única. _Competência:_ COMP-09. _Erro:_ nenhum dedicado nesta versão (ver §10). _Manifestação:_ questões que integram gráfico e enunciado em qualquer disciplina.
 
 ### DOM-EXPERIMENTAL
 
-**PROC-EXP-01 — Formular hipótese testável.** Propor explicação passível de verificação empírica a partir de observação. _Competência:_ COMP-10. _Erro:_ nenhum dedicado. _Manifestação:_ método científico em qualquer ciência experimental.
+**PROC-EXP-01 — Formular hipótese testável.** Propor explicação passível de verificação empírica a partir de observação. _Competência:_ COMP-10. _Erro:_ nenhum dedicado nesta versão (ver §10). _Manifestação:_ método científico em qualquer ciência experimental.
 
 **PROC-EXP-02 — Controlar variáveis em desenho experimental.** Identificar e isolar variáveis dependente, independente e de controle. Processo com maior facilidade operacional de mensuração do catálogo — ação observável e erro identificável de forma inequívoca. _Competência:_ COMP-10. _Erro:_ ERR-09. _Manifestação:_ qualquer desenho experimental em física, química ou biologia.
 
 ### DOM-SISTEMICO
 
-**PROC-SIST-01 — Prever direção de resposta de um sistema a perturbação.** Determinar o sentido em que um sistema se ajusta após alteração de um de seus parâmetros. Generalização de "equilíbrio químico" da v1.3 para incluir qualquer sistema regulatório/homeostático, não só reações químicas. _Competência:_ COMP-11. _Erro:_ nenhum dedicado. _Manifestação:_ deslocamento de equilíbrio químico (Le Chatelier), homeostase biológica, resposta de sistema climático a perturbação.
+**PROC-SIST-01 — Prever direção de resposta de um sistema a perturbação.** Determinar o sentido em que um sistema se ajusta após alteração de um de seus parâmetros. Generalização de "equilíbrio químico" da v1.3 para incluir qualquer sistema regulatório/homeostático, não só reações químicas. _Competência:_ COMP-11. _Erro:_ nenhum dedicado nesta versão (ver §10). _Manifestação:_ deslocamento de equilíbrio químico (Le Chatelier), homeostase biológica, resposta de sistema climático a perturbação.
 
-**PROC-SIST-02 — Analisar fluxo e interdependência entre componentes de um sistema.** Relacionar fluxo de matéria/energia/informação entre partes interdependentes. Fusão de "cadeia alimentar" e "ciclo biogeoquímico" da v1.3, por ausência de evidência de mecanismo distinto entre os dois. _Competência:_ COMP-11. _Erro:_ nenhum dedicado. _Manifestação:_ cadeia trófica, ciclo do carbono, fluxo em sistema econômico ou hidrológico.
+**PROC-SIST-02 — Analisar fluxo e interdependência entre componentes de um sistema.** Relacionar fluxo de matéria/energia/informação entre partes interdependentes. Fusão de "cadeia alimentar" e "ciclo biogeoquímico" da v1.3, por ausência de evidência de mecanismo distinto entre os dois. _Competência:_ COMP-11. _Erro:_ nenhum dedicado nesta versão (ver §10). _Manifestação:_ cadeia trófica, ciclo do carbono, fluxo em sistema econômico ou hidrológico.
 
 ### DOM-CLASSIF
 
@@ -225,7 +229,7 @@ Cada Habilidade acrescenta formato de estímulo, tipo de ação, ou restrição 
 |ERR-12|Falha de validade lógica/falácia|PROC-LOGICO-01|Aceita conclusão que não decorre logicamente das premissas|Estrutura do argumento é inválida independentemente do conteúdo|INT-05|
 |ERR-13|Classificação por critério superficial|PROC-CLASSIF-01|Agrupa por aparência, não por critério estrutural/funcional|Classificação ignora propriedade definidora em favor de traço saliente|INT-11|
 
-_Nota, referente à PROC-ESPACO-03 (§3): a associação deste processo a um Tipo de Erro dedicado — "atribuir função a estrutura sem justificativa mecanística" — fica registrada como candidata para a próxima revisão (§9), não incluída na tabela acima nesta rodada para não expandir a contagem final sem antes fechar sua intervenção correspondente._
+_Nota, referente à PROC-ESPACO-03 (§3): a associação deste processo a um Tipo de Erro dedicado — "atribuir função a estrutura sem justificativa mecanística" — fica registrada como candidata para a próxima revisão (§10, item 3), não incluída na tabela acima nesta rodada para não expandir a contagem final sem antes fechar sua intervenção correspondente._
 
 ---
 
@@ -253,7 +257,7 @@ Todo Tipo de Erro ativo possui ao menos uma Intervenção correspondente (Consti
 
 Implementadas exatamente conforme Constituição, Capítulo 4 — nenhuma relação nova foi criada, nenhuma foi omitida:
 
-- **Processo ↔ Domínio** (N:M, obrigatória, heterárquica): implementada nesta versão majoritariamente como 1:1 por simplicidade do MVP; multiplicidade real de pertencimento fica registrada como refinamento futuro (§9), não como violação — a Constituição permite, não exige, múltiplo pertencimento.
+- **Processo ↔ Domínio** (N:M, obrigatória, heterárquica): implementada nesta versão majoritariamente como 1:1 por simplicidade do MVP; multiplicidade real de pertencimento fica registrada como refinamento futuro (§10), não como violação — a Constituição permite, não exige, múltiplo pertencimento.
 - **Processo ↔ Competência** (N:M, obrigatória): implementada de forma 1:N nesta versão (cada Processo pertence a exatamente uma Competência) — a relação em si está presente, corrigindo o defeito estrutural mais crítico identificado na v1.3.
 - **Processo ↔ Habilidade** (N:M, obrigatória, peso quando N>1): todas as 56 Habilidades mapeiam a exatamente um Processo nesta versão; nenhuma exige peso ainda por não haver casos N>1 no MVP.
 - **Processo ↔ Processo** (tipada, opcional): **não populada nesta versão.** A taxonomia de tipos de aresta permanece questão aberta desde o White Paper 2.0 (múltiplas propostas concorrentes, nunca arbitradas) — populá-la agora seria decisão arquitetural nova, vedada pela diretriz de continuidade.
@@ -271,8 +275,10 @@ Implementadas exatamente conforme Constituição, Capítulo 4 — nenhuma relaç
 |Competências|26|12|Consolidação — a maioria fundida por ausência de evidência de independência (§2.4)|
 |Processos Cognitivos|50|25|~12 removidos por serem conteúdo/procedimento nomeado; ~13 fundidos em ~6 processos gerais; 25 sobrevivem/emergem|
 |Habilidades Observáveis|85|56|Reduzidas por remoção em cascata (processos removidos) e fusão de pares redundantes|
-|Tipos de Erro|13|13|1 removido (ERR-05 algébrico, processo-base removido), 1 realocado para fora da ontologia (distrator plausível → item), 1 novo (falha lógica)|
+|Tipos de Erro|13|13|**2 removidos** (ERR-05 algébrico, por remoção do processo-base; ERR-13 "distrator plausível", realocado para fora da ontologia por ser propriedade do item) e **2 criados** (ERR-12 falha de validade lógica; ERR-13 classificação por critério superficial). Saldo: 13 − 2 + 2 = 13|
 |Intervenções Pedagógicas|7|11|4 novas, para fechar lacunas de cobertura erro→intervenção identificadas na auditoria|
+
+> **Nota de rastreabilidade (v1.4.1).** Duas observações registradas, sem alteração de conteúdo: **(i)** A linha "Tipos de Erro" torna visível que os identificadores `ERR-05` e `ERR-13` foram **reutilizados** com significados diferentes entre a v1.3 e a v1.4. A prática é vedada prospectivamente por GOV-1.0 §5.3; o caso está registrado como `MAP-INC-06` em `09 Mapa de Rastreabilidade de IDs`. **(ii)** A linha "Processos Cognitivos" usa aproximações (`~`) e não fecha aritmeticamente os 50 processos de origem. A reconciliação depende do documento da v1.3, ausente do corpus canônico; registrado como `MAP-INC-02`. A linha é preservada como está, sem correção especulativa.
 
 **Elementos removidos e motivo** (lista completa, não exaustiva de habilidades em cascata): PROC-08, 17, 24, 28, 31, 32, 33, 35, 36, 37 — nomeiam lei/procedimento/conteúdo específico sem operação cognitiva abstraível (violação direta de Constituição §2.2/§3.3); DOM-MATERIA — domínio de conteúdo, não de operação (§3.1); COMP-09, 10, 14, 15 — guarda-chuva sem operação própria ou vazamento de escopo de Humanas (§1.3); ERR-13 (distrator plausível) — propriedade do item, não do aluno (§3.5); ERR-05 — processo-base removido.
 
@@ -286,7 +292,7 @@ Nenhuma decisão de arquitetura fica pendente aqui — apenas questões cuja res
 
 1. **Limiares numéricos de granularidade** (§3.7.2 da Constituição) permanecem não fixados — quantas Habilidades bastam por Processo, quão distinto um padrão de erro precisa ser para justificar separação. A calibrar com dados do piloto de anotação dupla.
 2. **PROC-INC-02** (tendência central, 3-em-1) é candidato a nova divisão em três processos se dados do piloto revelarem padrões de erro genuinamente distintos entre calcular média, mediana e moda — decisão adiada por falta de evidência, não por convicção de que a fusão é definitiva.
-3. **Cobertura parcial de Tipo de Erro**: PROC-QUANT-01, PROC-ESPACO-01, PROC-ESPACO-02, PROC-ESPACO-03, PROC-MUD-01, PROC-MUD-02, PROC-INC-01, PROC-INC-02, PROC-INC-04, PROC-TEXT-03, PROC-EXP-01, PROC-SIST-01, PROC-SIST-02 ainda não têm Tipo de Erro dedicado. Cobertura foi priorizada para os processos de maior frequência esperada no banco-piloto (Matemática básica, leitura, causalidade) — os demais devem ser populados a partir de padrões de erro reais observados na anotação, não inventados especulativamente agora.
+3. **Cobertura parcial de Tipo de Erro**: PROC-QUANT-01, PROC-ESPACO-01, PROC-ESPACO-02, PROC-ESPACO-03, PROC-MUD-01, PROC-MUD-02, PROC-INC-01, PROC-INC-02, PROC-INC-04, PROC-TEXT-03, PROC-EXP-01, PROC-SIST-01, PROC-SIST-02 ainda não têm Tipo de Erro dedicado — **treze processos dos vinte e cinco**. Cobertura foi priorizada para os processos de maior frequência esperada no banco-piloto (Matemática básica, leitura, causalidade) — os demais devem ser populados a partir de padrões de erro reais observados na anotação, não inventados especulativamente agora.
 4. **Multiplicidade real de pertencimento Processo↔Domínio**: esta versão implementa majoritariamente 1:1 por simplicidade; candidatos claros a pertencimento múltiplo (ex.: PROC-QUANT-02 também em DOM-MUDANCA quando aplicado a taxas; PROC-CLASSIF-01 também em DOM-ESPACO quando o critério é estrutural) devem ser avaliados após o piloto revelar se essa riqueza adicional melhora ou apenas complica a anotação.
 5. **Taxonomia de aresta Processo↔Processo** permanece integralmente em aberto — herdada do White Paper 2.0, não resolvida nesta versão por estar fora do escopo autorizado desta rodada.
 6. **DOM-CLASSIF** permanece o domínio mais estreito (1 processo). Se o piloto mostrar que classificação por critério estrutural (hoje parte de PROC-ESPACO-03) e por critério de propriedade físico-química (PROC-CLASSIF-01) geram padrões de erro distintos, a fronteira entre os dois domínios deve ser revisitada.
@@ -294,4 +300,16 @@ Nenhuma decisão de arquitetura fica pendente aqui — apenas questões cuja res
 
 ---
 
-_Fim do documento. Estrutura pronta para transposição direta a schema JSON — ver arquivo `sapiens_ontologia_v1.4.json` anexo._
+## 11. Changelog
+
+|TX|Timestamp|Classe|Alteração|
+|---|---|---|---|
+|`TX-2026-08-17T043240Z-patch-err13`|2026-08-17T04:40:27Z|I — Correção de Fidelidade|**(a)** §3, PROC-ESPACO-03: removida a atribuição a um Tipo de Erro — o texto anterior citava um identificador inexistente no catálogo, anotado como renumerado para o identificador de outro processo. Passa a declarar "nenhum dedicado nesta versão", em acordo com a nota do §6, com o item 3 do §10 e com o artefato JSON. **(b)** §3: uniformizada, em todos os processos sem erro dedicado, a remissão à seção de questões em aberto (antes apontava para a seção de mapeamento de mudanças). **(c)** §6, nota: mesma correção de remissão, agora para "§10, item 3". **(d)** §9: reconciliada a aritmética da linha "Tipos de Erro" (13 − 2 + 2 = 13) e acrescentada nota de rastreabilidade sobre `MAP-INC-06` e `MAP-INC-02`. **(e)** §10, item 3: acrescentada a contagem explícita "treze processos dos vinte e cinco". **(f)** Encerramento: corrigido o nome do artefato JSON. **(g)** Metadados: versão 1.4.1, cabeçalho canônico conforme GOV-1.0 §7.1.|
+
+| `TX-2026-08-17T174623Z-manual-v1.1` | 2026-08-17T17:46:23Z | II — Errata (co-alteração) | **Pendência de arbitragem registrada**, sem alteração de conteúdo do catálogo. O Manual de Anotação v1.1 adotou, como convenção **provisória** de camada operacional, regras de desempate para duas fronteiras que esta Ontologia mantém explicitamente em aberto: `DOM-CAUSAL` × `DOM-EXPERIMENTAL` (§10, item 7) e `PROC-CLASSIF-01` × `PROC-ESPACO-03` (§10, item 6). Registro exigido pela terceira condição de GOV-1.0 §1.3. As convenções **não vinculam** esta Ontologia nem a Constituição; a arbitragem definitiva pertence à Constituição e à evidência de piloto. Ver `G-CONF-06`. |
+
+Nenhum Domínio, Competência, Processo, Habilidade, Tipo de Erro ou Intervenção foi criado, removido ou redefinido em nenhuma das correções acima.
+
+---
+
+_Fim do documento. Estrutura pronta para transposição direta a schema JSON — ver o artefato `ontology_v1.4.json`, membro do mesmo Conjunto Normativo Indivisível (GOV-1.0 §4.2). O número de versão do catálogo é declarado no campo `version` do artefato, não em seu nome de arquivo._

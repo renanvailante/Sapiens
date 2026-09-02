@@ -22,7 +22,7 @@ from cognitive_engine import run_cognitive_pipeline_adaptive
 from firestore_sync import create_question_sync
 from item_contract import index_fields, normalize_item, validate as validate_item
 from ontology_validator import OntologyRegistry
-from storage import build_path, put_object
+from storage import build_path, put_object, put_object_deduped
 
 logger = logging.getLogger("sapiens.annotation_pipeline")
 
@@ -44,10 +44,9 @@ async def persist_artifacts(
 ) -> dict:
     original_paths: list[dict] = []
     for filename, data, content_type in files:
-        p = build_path("original", question_id, filename)
-        put_object(p, data, content_type)
+        result = put_object_deduped(data, content_type, filename)
         original_paths.append(
-            {"filename": filename, "path": p, "content_type": content_type, "size": len(data)}
+            {"filename": filename, "path": result["path"], "content_type": content_type, "size": len(data)}
         )
     extraction_path = build_path("extraction", question_id, "extraction.json")
     put_object(

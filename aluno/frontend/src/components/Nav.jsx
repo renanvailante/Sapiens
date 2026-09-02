@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { api } from "../lib/api";
-import { LogOut, Compass, History, Zap, Brain, ShieldCheck, MoreHorizontal, Trash2, LayoutGrid } from "lucide-react";
+import { LogOut, Compass, History, Zap, Brain, ShieldCheck, MoreHorizontal, Trash2, LayoutGrid, GraduationCap } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTitle, SheetDescription } from "./ui/sheet";
 import BrandMark from "./BrandMark";
+import AulasParticularesModal from "./AulasParticularesModal";
 
 // Única fonte da lista de navegação — usada tanto nos links visíveis em
 // desktop (+ dropdown "mais") quanto no menu mobile, pra nunca divergir.
@@ -46,7 +47,7 @@ function SparksChip() {
 // Histórico/Feed/Lixeira + Admin/Sair), num painel deslizante — no desktop a
 // largura sobra pra links soltos na barra, no mobile não, então isto é a
 // única forma de alcançar as mesmas telas ali.
-function MobileMenu({ user, onLogout, open, setOpen }) {
+function MobileMenu({ user, onLogout, open, setOpen, onOpenAulas }) {
   const nav = useNavigate();
   const go = (to) => { setOpen(false); nav(to); };
 
@@ -64,6 +65,16 @@ function MobileMenu({ user, onLogout, open, setOpen }) {
         <div className="px-5 pt-6 pb-4 flex items-center gap-2 font-display text-2xl font-extrabold tracking-tighter text-white">
           <BrandMark className="w-6 h-6" />
           Sapiens
+        </div>
+
+        <div className="px-3">
+          <button
+            onClick={() => { setOpen(false); onOpenAulas(); }}
+            className="w-full flex items-center gap-3 text-left text-[15px] font-semibold text-amber-950 bg-gradient-to-r from-amber-300 to-amber-400 hover:brightness-105 px-3 py-3.5 rounded-xl transition-all mb-2"
+            data-testid="nav-mobile-aulas-particulares"
+          >
+            <GraduationCap className="w-4.5 h-4.5" /> Tenha aulas conosco
+          </button>
         </div>
 
         <div className="px-3 flex-1 overflow-y-auto">
@@ -106,6 +117,7 @@ export default function Nav() {
   const { user, logout } = useAuth();
   const nav = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showAulasModal, setShowAulasModal] = useState(false);
   const doLogout = async () => { await logout(); nav("/"); };
 
   return (
@@ -156,6 +168,14 @@ export default function Nav() {
               </DropdownMenuContent>
             </DropdownMenu>
 
+            <button
+              onClick={() => setShowAulasModal(true)}
+              className="pill hidden md:inline-flex items-center gap-2 text-xs md:text-sm font-semibold text-amber-950 bg-gradient-to-r from-amber-300 to-amber-400 hover:brightness-105 px-3.5 py-2 rounded-full"
+              data-testid="nav-aulas-particulares"
+            >
+              <GraduationCap className="w-4 h-4" /> Tenha aulas conosco
+            </button>
+
             <SparksChip />
 
             {user.is_admin && (
@@ -171,10 +191,17 @@ export default function Nav() {
               <LogOut className="w-4 h-4" /> <span className="hidden sm:inline">Sair</span>
             </button>
 
-            <MobileMenu user={user} onLogout={doLogout} open={menuOpen} setOpen={setMenuOpen} />
+            <MobileMenu
+              user={user}
+              onLogout={doLogout}
+              open={menuOpen}
+              setOpen={setMenuOpen}
+              onOpenAulas={() => setShowAulasModal(true)}
+            />
           </div>
         )}
       </div>
+      <AulasParticularesModal open={showAulasModal} onClose={() => setShowAulasModal(false)} />
     </div>
   );
 }

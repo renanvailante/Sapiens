@@ -17,8 +17,10 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminUsers from "./pages/AdminUsers";
 import AdminFeed from "./pages/AdminFeed";
 import AdminAnnotations from "./pages/AdminAnnotations";
+import AdminAulasParticulares from "./pages/AdminAulasParticulares";
 import StudentHistory from "./pages/StudentHistory";
 import SkillsMap from "./pages/SkillsMap";
+import SparksStore from "./pages/SparksStore";
 import Feed from "./pages/Feed";
 import Questoes from "./pages/Questoes";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -43,9 +45,11 @@ function AppRouter() {
       <Route path="/admin/answer-keys" element={<AdminRoute><Admin /></AdminRoute>} />
       <Route path="/admin/feed" element={<AdminRoute><AdminFeed /></AdminRoute>} />
       <Route path="/admin/annotations" element={<AdminRoute><AdminAnnotations /></AdminRoute>} />
+      <Route path="/admin/aulas-particulares" element={<AdminRoute><AdminAulasParticulares /></AdminRoute>} />
       <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
       <Route path="/admin/history" element={<AdminRoute><StudentHistory /></AdminRoute>} />
       <Route path="/cognitive-profile" element={<ProtectedRoute><SkillsMap /></ProtectedRoute>} />
+      <Route path="/sparks" element={<ProtectedRoute><SparksStore /></ProtectedRoute>} />
       <Route path="/feed" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
       <Route path="*" element={<Landing />} />
     </Routes>

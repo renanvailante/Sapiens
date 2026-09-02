@@ -38,6 +38,11 @@ const MODES = [
   },
 ];
 
+// Banca fixa para o caderno: hoje esta ferramenta só processa ENEM, e a
+// procedência tem que ser registrada exatamente como "ENEM" — nunca "Enem",
+// "INEP" ou uma variante digitada à mão.
+const BOOK_BANCA = "ENEM";
+
 export default function PipelineGenerator() {
   const [mode, setMode] = useState("single");
   const [files, setFiles] = useState([]);
@@ -45,6 +50,10 @@ export default function PipelineGenerator() {
   const [result, setResult] = useState(null);
   const [batch, setBatch] = useState(null);
   const [book, setBook] = useState(null); // {book_id, files, manifest, items}
+  const [bookAno, setBookAno] = useState("");
+  const [bookCor, setBookCor] = useState("");
+
+  const bookMetaValid = mode !== "book" || (bookAno.trim() !== "" && bookCor.trim() !== "");
 
   const onSelect = (list) => {
     const arr = Array.from(list || []).filter((f) => {
@@ -125,9 +134,16 @@ export default function PipelineGenerator() {
   };
 
   const uploadBook = async () => {
+    if (!bookMetaValid) {
+      toast.error("Preencha ano e cor do caderno antes de enviar.");
+      return;
+    }
     setBusy(true);
     const fd = new FormData();
     files.forEach((f) => fd.append("files", f));
+    fd.append("banca", BOOK_BANCA);
+    fd.append("ano", bookAno.trim());
+    fd.append("prova", bookCor.trim());
     try {
       toast.info("Enviando caderno para o servidor…");
       const up = await api.post("/book/upload", fd, {
@@ -147,6 +163,9 @@ export default function PipelineGenerator() {
       setBook({
         book_id: up.data.id,
         files: up.data.files,
+        banca: up.data.banca,
+        ano: up.data.ano,
+        prova: up.data.prova,
         manifest,
         items: manifest.map((q, i) => ({
           key: `${up.data.id}-${q.numero || i}`,
@@ -174,12 +193,18 @@ export default function PipelineGenerator() {
       toast.error("Anexe pelo menos um arquivo.");
       return;
     }
+    if (mode === "book" && !bookMetaValid) {
+      toast.error("Preencha ano e cor do caderno antes de enviar.");
+      return;
+    }
     if (mode === "single") return generateSingle();
     if (mode === "batch") return generateBatch();
     if (mode === "book") return uploadBook();
   };
 
   const reset = () => {
+    setBookAno("");
+    setBookCor("");
     setResult(null);
     setBatch(null);
     setBook(null);
@@ -222,6 +247,52 @@ export default function PipelineGenerator() {
               );
             })}
           </div>
+
+          {/* Metadados obrigatórios do caderno — procedência autoritativa,
+              nunca inferida pelo modelo (Manual §8). */}
+          {mode === "book" && (
+            <div className="mt-6 border border-border bg-white p-6" data-testid="book-metadata-form">
+              <div className="overline text-muted-foreground">Procedência do caderno</div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Obrigatório antes do envio. Estes valores são gravados como fornecidos e
+                nunca substituídos pelo que o modelo inferir do conteúdo.
+              </p>
+              <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground">Banca</label>
+                  <input
+                    type="text"
+                    value={BOOK_BANCA}
+                    disabled
+                    data-testid="book-banca-input"
+                    className="mt-1 w-full border border-border bg-secondary px-3 py-2 text-sm font-mono text-muted-foreground"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground">Ano *</label>
+                  <input
+                    type="number"
+                    placeholder="ex.: 2023"
+                    value={bookAno}
+                    onChange={(e) => setBookAno(e.target.value)}
+                    data-testid="book-ano-input"
+                    className="mt-1 w-full border border-border bg-white px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground">Cor do caderno *</label>
+                  <input
+                    type="text"
+                    placeholder="ex.: Azul, Amarelo, Rosa, Cinza"
+                    value={bookCor}
+                    onChange={(e) => setBookCor(e.target.value)}
+                    data-testid="book-cor-input"
+                    className="mt-1 w-full border border-border bg-white px-3 py-2 text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Upload */}
           <div
@@ -298,7 +369,7 @@ export default function PipelineGenerator() {
             <button
               data-testid="generate-pipeline-btn"
               onClick={generate}
-              disabled={busy || files.length === 0}
+              disabled={busy || files.length === 0 || !bookMetaValid}
               className="flex items-center gap-2 bg-primary text-white px-6 py-3 text-sm font-bold hover:bg-foreground disabled:opacity-50"
             >
               <Sparkles className="h-4 w-4" />

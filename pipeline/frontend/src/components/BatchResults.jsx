@@ -19,6 +19,14 @@ import {
 import api from "@/lib/api";
 import JsonViewer from "@/components/JsonViewer";
 
+// Item anotado no Schema Sapiens 2.2. `item` e a chave canonica; `pipeline` e a
+// forma anterior, lida para nao quebrar a visualizacao de documentos gerados
+// antes da migracao.
+const annotated = (result) => result?.item || result?.pipeline || {};
+const correctLetter = (questao) =>
+  (questao?.alternativas || []).find((a) => a.correta === true)?.letra;
+
+
 const statusStyles = {
   pending: { color: "#52525B", icon: Loader2, label: "Aguardando", spin: false },
   processing: { color: "#002FA7", icon: Loader2, label: "Processando…", spin: true },
@@ -65,7 +73,7 @@ export default function BatchResults({ items, busy, onReset, onItemUpdate, onIte
         source_file: it.filename,
         pipeline_id: it.result?.id,
         ontology_version: it.result?.ontology_version,
-        pipeline: it.result?.pipeline,
+        item: annotated(it.result),
       }));
 
   const copySelected = async () => {
@@ -138,7 +146,7 @@ export default function BatchResults({ items, busy, onReset, onItemUpdate, onIte
 
   const startEdit = (item) => {
     setEditing(item.idx);
-    setEditText(JSON.stringify(item.result.pipeline, null, 2));
+    setEditText(JSON.stringify(annotated(item.result), null, 2));
   };
   const cancelEdit = () => {
     setEditing(null);
@@ -147,7 +155,7 @@ export default function BatchResults({ items, busy, onReset, onItemUpdate, onIte
   const saveEdit = async (item) => {
     try {
       const parsed = JSON.parse(editText);
-      const r = await api.put(`/pipeline/${item.result.id}`, { pipeline: parsed });
+      const r = await api.put(`/pipeline/${item.result.id}`, { item: parsed });
       onItemUpdate(item.idx, { result: r.data });
       setEditing(null);
       toast.success("JSON atualizado.");
@@ -219,8 +227,10 @@ export default function BatchResults({ items, busy, onReset, onItemUpdate, onIte
           const isSel = selected.has(i);
           const isExp = expanded.has(i);
           const isEditing = editing === i;
-          const q = item.result?.pipeline?.questao || {};
-          const cls = item.result?.pipeline?.classificacao || {};
+          const ann = annotated(item.result);
+          const q = ann.questao || {};
+          const fonte = ann.fonte || {};
+          const ec = ann.estrutura_cognitiva || {};
 
           return (
             <div key={item.key} className="border-b border-border last:border-b-0" data-testid={`batch-item-${i}`}>
@@ -239,11 +249,11 @@ export default function BatchResults({ items, busy, onReset, onItemUpdate, onIte
                       #{String(i + 1).padStart(2, "0")}
                     </span>
                     <span className="font-medium truncate">{item.filename}</span>
-                    {isDone && q.disciplina && (
-                      <span className="text-xs text-muted-foreground">· {q.disciplina}</span>
+                    {isDone && fonte.disciplina && (
+                      <span className="text-xs text-muted-foreground">· {fonte.disciplina}</span>
                     )}
-                    {isDone && q.tema && (
-                      <span className="text-xs text-muted-foreground">· {q.tema}</span>
+                    {isDone && fonte.tema && (
+                      <span className="text-xs text-muted-foreground">· {fonte.tema}</span>
                     )}
                   </div>
                   {item.error && (
@@ -295,19 +305,19 @@ export default function BatchResults({ items, busy, onReset, onItemUpdate, onIte
               {isDone && isExp && !isEditing && (
                 <div className="px-6 pb-6 pt-2 border-t border-border bg-secondary/40">
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
-                    <MiniStat label="Resposta" value={q.resposta_correta || "—"} mono />
+                    <MiniStat label="Resposta" value={correctLetter(q) || "—"} mono />
                     <MiniStat
                       label="Domínios"
-                      value={(cls.dominios || []).join(", ") || "—"}
+                      value={(ec.dominios || []).map((d) => d.id).join(", ") || "—"}
                       mono
                     />
                     <MiniStat
                       label="Processos"
-                      value={(cls.processos_cognitivos || []).map((p) => p.id).join(", ") || "—"}
+                      value={(ec.processos || []).map((p) => p.id).join(", ") || "—"}
                       mono
                     />
                   </div>
-                  <JsonViewer data={item.result.pipeline} testId={`batch-json-${i}`} />
+                  <JsonViewer data={annotated(item.result)} testId={`batch-json-${i}`} />
                 </div>
               )}
 

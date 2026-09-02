@@ -69,6 +69,39 @@ if (config.enableHealthCheck) {
   healthPluginInstance = new WebpackHealthPlugin();
 }
 
+// ---------------------------------------------------------------------------
+// Guarda de build: NUNCA embutir a chave da API do pipeline num bundle publico
+// ---------------------------------------------------------------------------
+// `REACT_APP_PIPELINE_API_KEY` e o segredo compartilhado que protege TODAS as
+// rotas do backend do pipeline. O Create React App substitui `REACT_APP_*` no
+// bundle em tempo de build — isto e, a chave sai em texto claro num arquivo .js
+// servido publicamente. Qualquer visitante abriria o bundle, leria a chave e
+// teria acesso total ao anotador: gerar, editar e apagar itens.
+//
+// O painel do pipeline e uma ferramenta INTERNA. Publica-lo abertamente exige
+// antes uma camada de autenticacao propria (sessao por usuario), que ainda nao
+// existe. Ate la, uma build de producao com a chave presente e recusada aqui.
+//
+// Para operar hoje, escolha um destes:
+//   1. Nao exponha o painel a internet publica — rode-o localmente contra o
+//      backend publicado, ou por tras da autenticacao da plataforma de hosting
+//      (Cloudflare Access, autenticacao de rede privada, VPN).
+//   2. Publique-o com PIPELINE_UI_PUBLICA=true e ciente do risco, apenas se o
+//      backend estiver inacessivel a partir da internet.
+if (process.env.NODE_ENV === "production" && process.env.REACT_APP_PIPELINE_API_KEY) {
+  if (process.env.PIPELINE_UI_PUBLICA !== "true") {
+    throw new Error(
+      "\n\n[build recusada] REACT_APP_PIPELINE_API_KEY seria embutida no bundle " +
+        "publico, expondo o segredo que protege todas as rotas do pipeline.\n" +
+        "Ver o comentario em pipeline/frontend/craco.config.js para as opcoes.\n"
+    );
+  }
+  console.warn(
+    "\n[AVISO] Build de producao com a chave da API embutida (PIPELINE_UI_PUBLICA=true).\n" +
+      "So faca isso se o backend do pipeline NAO estiver acessivel pela internet publica.\n"
+  );
+}
+
 let webpackConfig = {
   eslint: {
     configure: {
@@ -127,22 +160,6 @@ webpackConfig.devServer = (devServerConfig) => {
 
   return devServerConfig;
 };
-
-// Wrap with visual edits (automatically adds babel plugin, dev server, and overlay in dev mode)
-if (isDevServer) {
-  try {
-    const { withVisualEdits } = require("@emergentbase/visual-edits/craco");
-    webpackConfig = withVisualEdits(webpackConfig);
-  } catch (err) {
-    if (err.code === 'MODULE_NOT_FOUND' && err.message.includes('@emergentbase/visual-edits/craco')) {
-      console.warn(
-        "[visual-edits] @emergentbase/visual-edits not installed — visual editing disabled."
-      );
-    } else {
-      throw err;
-    }
-  }
-}
 
 const configureDevServer = webpackConfig.devServer;
 webpackConfig.devServer = (devServerConfig) =>

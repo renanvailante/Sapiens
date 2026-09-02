@@ -1,3 +1,21 @@
+# =========================================================================
+# [CONTRATO SUPERSEDED — NAO REATIVAR SEM REESCREVER]
+#
+# Esta suite assere o Formato A (`questao`/`classificacao`/`meta`),
+# substituido em 2026-08-21 pelo Schema Sapiens 2.2.
+#
+# Ela tambem nunca chega a rodar: exige `REACT_APP_BACKEND_URL` e um servidor
+# no ar, e falha na COLETA — inclusive antes desta migracao.
+#
+# Preservada em vez de apagada porque documenta o comportamento anterior, mas
+# **suas asercoes estao erradas contra o contrato atual**. Reativa-la sem
+# reescrever produziria falha legitima lida como regressao, ou pior, passaria a
+# exigir de volta a forma que os documentos removeram.
+#
+# Cobertura equivalente, que roda offline e sem infraestrutura:
+#   * pipeline/backend/tests/test_contratos_canonicos.py
+#   * aluno/backend/tests/test_contratos_aluno.py
+# =========================================================================
 """End-to-end backend tests for Sapiens Cognitive Annotator."""
 import io
 import json
@@ -7,8 +25,11 @@ import pytest
 import requests
 from reportlab.pdfgen import canvas
 
-BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "").rstrip("/") or \
-           "https://view-preview-14.preview.emergentagent.com"
+BASE_URL = (
+    os.environ.get("SAPIENS_BACKEND_URL")
+    or os.environ.get("REACT_APP_BACKEND_URL")
+    or "http://localhost:8001"
+).rstrip("/")
 API = f"{BASE_URL}/api"
 
 
@@ -37,7 +58,7 @@ class TestOntology:
         r = s.get(f"{API}/ontology", timeout=30)
         assert r.status_code == 200
         d = r.json()
-        assert d["version"] == "1.0.0-seed"
+        assert d["version"] == "1.4"
         assert len(d["dominios"]) == 8
         assert len(d["competencias"]) == 16
         assert len(d["processos_cognitivos"]) == 28
@@ -48,7 +69,7 @@ class TestOntology:
         r = s.get(f"{API}/ontology/summary", timeout=30)
         assert r.status_code == 200
         d = r.json()
-        assert d["version"] == "1.0.0-seed"
+        assert d["version"] == "1.4"
         assert d["source_filename"] == "seed_default.json"
         assert d["counts"]["dominios"] == 8
         assert d["counts"]["processos_cognitivos"] == 28
@@ -58,7 +79,7 @@ class TestOntology:
         assert r.status_code == 200
         d = r.json()
         assert "total_pipelines" in d
-        assert d["ontology"]["version"] == "1.0.0-seed"
+        assert d["ontology"]["version"] == "1.4"
 
     def test_import_and_reactivate_seed(self, s):
         payload = {
@@ -77,10 +98,10 @@ class TestOntology:
 
         # find seed id and re-activate
         versions = s.get(f"{API}/ontology/versions", timeout=30).json()
-        seed = next(v for v in versions if v["version"] == "1.0.0-seed")
+        seed = next(v for v in versions if v["version"] == "1.4")
         r3 = s.post(f"{API}/ontology/activate/{seed['id']}", timeout=30)
         assert r3.status_code == 200
-        assert r3.json()["version"] == "1.0.0-seed"
+        assert r3.json()["version"] == "1.4"
 
 
 # ---------------- Pipeline ----------------

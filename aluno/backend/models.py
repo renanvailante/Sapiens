@@ -203,7 +203,10 @@ class AulaParticularRequest(BaseModel):
 class CreateAulaParticularRequest(BaseModel):
     nome_completo: str = Field(..., min_length=1, max_length=200)
     whatsapp: str = Field(..., min_length=8, max_length=30)
-    areas: list[str] = Field(..., min_length=1, max_length=10)
+    # Sem `min_length`: a rota já recusa lista vazia com uma mensagem que o
+    # aluno entende ("Selecione ao menos uma área"); o 422 do Pydantic
+    # chegaria antes e seria pior de ler.
+    areas: list[str] = Field(..., max_length=10)
     descricao: str = Field(default="", max_length=2_000)
 
 

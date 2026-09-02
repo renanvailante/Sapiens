@@ -5,6 +5,7 @@ import hmac
 import json
 import logging
 import os
+import re
 import secrets
 import uuid
 from datetime import datetime, timezone
@@ -34,6 +35,7 @@ from cognitive_engine import (
     run_cognitive_pipeline,
     run_cognitive_pipeline_adaptive,
 )
+from figure_extractor import extract_and_attach_figures
 from firestore_sync import (
     create_question_sync,
     delete_question_sync,
@@ -50,7 +52,15 @@ from item_contract import (
 from ontology_seed import DEFAULT_ONTOLOGY
 from ontology_validator import OntologyRegistry
 import settings
-from storage import APP_NAME, build_path, delete_prefix, get_object, init_storage, put_object
+from storage import (
+    APP_NAME,
+    build_path,
+    delete_prefix,
+    get_object,
+    init_storage,
+    put_object,
+    put_object_deduped,
+)
 
 logging.basicConfig(
     level=getattr(logging, settings.LOG_LEVEL, logging.INFO),
@@ -525,17 +535,21 @@ def _persist_annotation(
 async def _persist_artifacts(
     question_id: str, files: list[tuple[str, bytes, str]], extraction: dict, pipeline_json: dict
 ) -> dict:
-    """Upload the 3 artifacts and return their storage paths."""
+    """Upload the 3 artifacts and return their storage paths.
+
+    O original é gravado com `put_object_deduped`: mesmo conteúdo (mesmo
+    caderno reprocessado por questão, ou mesmo arquivo reenviado) reaproveita
+    o objeto já gravado em vez de duplicá-lo — ver `storage.build_blob_path`.
+    """
     original_paths: list[dict] = []
     for filename, data, content_type in files:
-        p = build_path("original", question_id, filename)
         try:
-            put_object(p, data, content_type)
+            result = put_object_deduped(data, content_type, filename)
         except Exception as exc:
             logger.exception("Falha ao subir artefato original: %s", exc)
             raise HTTPException(status_code=500, detail=f"Falha ao salvar original: {exc}")
         original_paths.append(
-            {"filename": filename, "path": p, "content_type": content_type, "size": len(data)}
+            {"filename": filename, "path": result["path"], "content_type": content_type, "size": len(data)}
         )
 
     extraction_bytes = json.dumps(extraction, ensure_ascii=False, indent=2).encode()
@@ -558,8 +572,11 @@ def _discard_artifacts(question_id: str) -> None:
 
     Enquanto o storage era da Emergent, apagar um item deixava os artefatos
     órfãos numa infraestrutura fora de alcance. Agora o storage é nosso, então
-    apagar um item apaga também os arquivos dele. Best-effort: uma falha aqui
-    não pode desfazer a remoção do registro, que já ocorreu.
+    apagar um item apaga também os arquivos dele — exceto o "original": esse
+    vive em `blobs/{hash}` (`storage.put_object_deduped`), endereçado por
+    conteúdo e potencialmente compartilhado com outras questões do mesmo
+    caderno, então apagar uma questão não pode levar o blob junto. Best-effort:
+    uma falha aqui não pode desfazer a remoção do registro, que já ocorreu.
     """
     try:
         removed = delete_prefix(f"{APP_NAME}/questions/{question_id}")
@@ -1039,6 +1056,17 @@ async def book_process_question(book_id: str, payload: BookProcessRequest) -> di
         fonte_conhecida=fonte_conhecida, registry=registry,
     )
 
+    # Extração determinística de figura (PyMuPDF + Pillow, sem Gemini): só
+    # roda quando o manifesto do caderno já sinalizou `tem_figura=true` para
+    # esta questão. Nunca bloqueia o item cognitivo (já pago ao Gemini) por
+    # falha na extração — ver `figure_extractor.extract_and_attach_figures`.
+    figure_result = extract_and_attach_figures(item, incoming, book.get("manifest"), payload.question_number)
+    if figure_result["figures_attached"]:
+        logger.info(
+            "Figura(s) extraída(s) para %s (questão %s): %d anexada(s)",
+            item.get("item_id"), payload.question_number, figure_result["figures_attached"],
+        )
+
     extraction = {
         "questao": item.get("questao"),
         "arquivos": [n for n, _, _ in incoming],
@@ -1166,6 +1194,37 @@ async def download_artifact(pipeline_id: str, kind: str, index: int = 0):
         data, _ = get_object(artifacts["pipeline"])
         return Response(content=data, media_type="application/json")
     raise HTTPException(status_code=400, detail="Tipo inválido. Use original|extraction|pipeline.")
+
+
+_BLOB_DIGEST_RE = re.compile(r"^[0-9a-f]{64}$")
+_BLOB_EXT_RE = re.compile(r"^[A-Za-z0-9]{1,8}$")
+
+
+@api_router.get("/blobs/{digest}.{ext}")
+async def download_blob(digest: str, ext: str):
+    """Serve um blob endereçado por conteúdo (`storage.build_blob_path`).
+
+    Usado pelo backend do aluno para buscar a figura de uma questão sem ter
+    acesso direto ao bucket do pipeline — só o `item_id` → `arquivo`
+    (`{sha256}.{ext}`) atravessa o espelho Firestore. `digest`/`ext` são
+    validados por regex antes de compor o caminho porque `storage._local_path`
+    só bloqueia `..`; um separador de path aqui ainda poderia escapar do
+    prefixo `blobs/`.
+    """
+    if not _BLOB_DIGEST_RE.match(digest) or not _BLOB_EXT_RE.match(ext):
+        raise HTTPException(status_code=400, detail="Identificador de blob inválido.")
+    path = f"{APP_NAME}/blobs/{digest}.{ext}"
+    try:
+        data, content_type = get_object(path)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Blob não encontrado.")
+    return Response(
+        content=data,
+        media_type=content_type,
+        # Endereçado por conteúdo: o mesmo digest nunca muda de bytes, então
+        # cache-para-sempre é seguro (sem necessidade de revalidação).
+        headers={"Cache-Control": "public, max-age=31536000, immutable"},
+    )
 
 
 # ----------------------------------------------------------------------------

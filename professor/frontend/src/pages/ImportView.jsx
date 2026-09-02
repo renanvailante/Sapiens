@@ -20,7 +20,7 @@ const SAMPLE = `{
       "aluno_id": "A101",
       "nome": "João Pereira",
       "erros_por_no": [
-        {"no_id":"MAT.NUM.01","no_label":"Interpretação de números racionais","disciplina":"Matemática","taxa_erro":0.42,"num_questoes":6}
+        {"no_id":"PROC-QUANT-02","no_label":"Inferir e aplicar relação proporcional entre grandezas","disciplina":"Quantificação e Raciocínio Numérico","taxa_erro":0.42,"num_questoes":6}
       ]
     }
   ]

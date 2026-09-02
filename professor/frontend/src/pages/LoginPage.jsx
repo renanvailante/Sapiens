@@ -112,9 +112,6 @@ export default function LoginPage() {
             </form>
           </Tabs>
 
-          <div className="mt-6 pt-6 border-t border-border text-xs text-muted-foreground font-mono">
-            Conta de demonstração: <span className="text-foreground">admin@sapiens.edu</span> / <span className="text-foreground">admin123</span>
-          </div>
         </div>
       </div>
     </div>

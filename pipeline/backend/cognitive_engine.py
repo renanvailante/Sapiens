@@ -353,9 +353,14 @@ DEFAULT_PIPELINE_SCHEMA: dict[str, Any] = {
         "tempo_estimado_segundos": None,
         "nivel_dificuldade": "facil|medio|dificil|null",
     },
+    # `revisado` NÃO aparece aqui, e é de propósito. Campo oferecido ao modelo
+    # é campo que o modelo preenche: enquanto ele estava no schema, o Gemini
+    # devolvia `revisado: true` e abria sozinho o portão da camada de crença
+    # (223 dos 268 itens do corpus). Mesma lição já aprendida com `banca`,
+    # `ano`, `prova` e `arquivo`: o que o servidor carimba nunca entra no
+    # schema entregue ao modelo.
     "qualidade": {
         "confianca_global": "alta|media|baixa",
-        "revisado": False,
         "observacoes": "notas do motor sobre limites de leitura. NÃO usar para incerteza",
     },
 }

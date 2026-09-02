@@ -86,3 +86,7 @@ android-sdk/
 credentials.json
 *.key
 .credentials
+
+# os exemplos de .env SAO versionados: sao a documentacao das variaveis
+!.env.example
+!*.env.example

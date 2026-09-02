@@ -3,7 +3,7 @@ import os
 import pytest
 import requests
 
-BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://taxonomia-visual.preview.emergentagent.com").rstrip("/")
+BASE_URL = os.environ.get("SAPIENS_BACKEND_URL", "http://localhost:8002").rstrip("/")
 LOGIN = f"{BASE_URL}/api/auth/login"
 ME = f"{BASE_URL}/api/auth/me"
 TURMA = f"{BASE_URL}/api/turma"

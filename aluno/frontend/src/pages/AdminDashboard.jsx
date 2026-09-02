@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { api, errMsg} from "../lib/api";
 import Nav from "../components/Nav";
-import { FileText, Zap, Brain, Users, ClipboardList, ArrowRight, ShieldCheck, RefreshCw, Database } from "lucide-react";
+import { FileText, Zap, Brain, Users, ClipboardList, ArrowRight, ShieldCheck, RefreshCw, Database, GraduationCap } from "lucide-react";
 
 function StatCard({ label, value, hint }) {
   return (
@@ -22,6 +22,8 @@ const SECTIONS = [
     desc: "Criar, editar, publicar e reordenar os cards do feed vertical." },
   { to: "/admin/annotations", icon: Brain, title: "Anotações cognitivas",
     desc: "Ingerir JSONs anotados por IA especializada — versionados, verbatim." },
+  { to: "/admin/aulas-particulares", icon: GraduationCap, title: "Aulas particulares",
+    desc: "Ver e responder solicitações de aula particular dos alunos." },
   { to: "/admin/history", icon: ClipboardList, title: "Histórico do Aluno",
     desc: "Response Event Store — histórico append-only por aluno com filtros." },
   { to: "/admin/users", icon: Users, title: "Usuários & permissões",

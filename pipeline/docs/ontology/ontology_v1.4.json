@@ -1,6 +1,6 @@
 {
-  "version": "1.4",
-  "name": "Ontologia Cognitiva Sapiens (Matematica + Ciencias da Natureza) - v1.4",
+  "version": "1.4.1",
+  "name": "Ontologia Cognitiva Sapiens (Matematica + Ciencias da Natureza) - v1.4.1",
   "description": "Primeira versao operacional (MVP), reconstruida a partir da auditoria da v1.3, sob a Constituicao da Ontologia Sapiens e o White Paper 2.0. Corrige: elo Competencia-Processo agora explicito; conflacao processo/conteudo removida; taxonomia de erro sem mistura de niveis; cobertura completa Erro->Intervencao.",
   "dominios": [
     {
@@ -153,9 +153,7 @@
         "DOM-ESPACO"
       ],
       "competencia": "COMP-03",
-      "tipos_erro": [
-        "ERR-13"
-      ],
+      "tipos_erro": [],
       "origem_v1_3": [
         "COMP-19",
         "COMP-21",
@@ -1140,11 +1138,20 @@
       ]
     }
   ],
-  "id": "1.4",
+  "id": "1.4.1",
   "based_on": "1.3",
+  "supersedes": "1.4",
   "governed_by": [
     "White Paper Sapiens 2.0",
-    "Constituicao da Ontologia Sapiens"
+    "Constituicao da Ontologia Sapiens",
+    "GOV-1.0"
   ],
+  "estado": "congelado",
+  "valid_from": "2026-08-17T04:32:40Z",
+  "cni_membros": [
+    "05 Ontologia Cognitiva Sapiens - v1.4.md"
+  ],
+  "cni_status": "PENDENTE - membro em prosa ainda nao atualizado; transacao aberta ate a Etapa 5",
+  "changelog_ref": "TX-2026-08-17T043240Z-patch-err13",
   "is_active": true
 }

@@ -1,8 +1,18 @@
+---
+
+## id: WP-2.0.1 titulo: White Paper Sapiens versao: 2.0.1 estado: congelado camada: C1 criado_em: 2026-08-17T02:58:05Z atualizado_em: 2026-08-17T18:44:58Z supersedes: ["WP-1.0"] superseded_by: null derivado_de: null governado_por: GOV-1.0 aparato_de_referencias: "herdado do White Paper 1.0 (blocos de Referências dos Capítulos 1, 2 e 4). Ver §21." geracao_de_ids: "G0 e G1 — os identificadores citados na Parte V NÃO são resolvíveis contra o catálogo vigente. Ver §21.2." changelog_ref: TX-2026-08-17T184458Z-wp2-errata remissoes_pendentes: []
+
+# White Paper Sapiens — v2.0.1
+
+> **Natureza desta versão.** A 2.0.1 é uma **errata** (GOV-1.0 §3.3, Classes I e II) sobre a 2.0. **Nenhum axioma foi alterado. Nenhum grau de confiança foi reponderado. Nenhum Grau de Liberdade foi fechado ou aberto.** As correções incidem sobre afirmações de fato que a auditoria integral do corpus verificou como incorretas ou vencidas, sobre remissões, e sobre o aparato de referências. Cada uma aparece em bloco marcado **`[Errata 2.0.1]`**, sem remover o texto original — para que o registro do que foi afirmado, e quando, seja preservado. Detalhe em `TX-2026-08-17T184458Z-wp2-errata`.
+
 # Estrutura Consolidada do Documento
 
 ## Axiomas
 
 Dois, mais um espaço deliberadamente vazio. Axioma da Crença Calibrada (confiança: 90%); Axioma da Fatoração (confiança: 90%); independência mútua estabelecida por contraexemplo (confiança: 85%); nenhum axioma unificador encontrado após duas tentativas (confiança de inexistência: 70%); função objetivo da camada de decisão — não é um terceiro axioma, é lacuna reconhecida sem conteúdo.
+
+> **`[Errata 2.0.1]`** A expressão "lacuna reconhecida **sem conteúdo**" é imprecisa e está corrigida em §6.3. O conteúdo existia no White Paper 1.0 e não foi examinado nesta consolidação. A lacuna é de **derivação axiomática**, não de conteúdo.
 
 ## Definições
 
@@ -57,6 +67,8 @@ Equivalência funcional demonstrada entre quatro famílias candidatas para a ver
 
 Em aberto: se existem regimes de velocidade genuinamente distintos e quantos (GL-5a); se decaimento é propriedade obrigatória ou apenas compatível com o axioma (GL-7). Nenhuma das duas perguntas decidida.
 
+> **`[Errata 2.0.1]`** Registro de proveniência, sem efeito sobre o estado de GL-5a e GL-7, que **permanecem abertos**: o White Paper 1.0 §2.9.1 propunha uma resposta operacional candidata a ambos — um enum de estado de maestria com os valores `automatizado` e `esquecimento_provavel`, ancorado em Fitts & Posner (1967). Essa proposta não foi examinada nesta consolidação. Ela é **hipótese candidata a teste**, não resposta. Registrada em `EXT-WP1-1.0`, item L11.
+
 ---
 
 ## 5. Axioma da Fatoração
@@ -110,6 +122,18 @@ _Grau de confiança de que nenhum axioma unificador existe: 70%_ — busca limit
 ### 6.3 A função objetivo da camada de decisão — slot deliberadamente vazio
 
 Os dois axiomas especificam inteiramente a metade "representação de crença" de um sistema adaptativo. Nenhuma evidência no corpus examinado sustenta uma formulação de como o sistema deveria selecionar a próxima ação pedagógica a partir dessa crença. Este documento registra a ausência como lacuna reconhecida — não como axioma a inventar, nem como conteúdo implicitamente coberto pelos dois axiomas existentes.
+
+> **`[Errata 2.0.1]` — correção de afirmação de fato.**
+> 
+> A frase _"nenhuma evidência no corpus examinado sustenta uma formulação de como o sistema deveria selecionar a próxima ação pedagógica"_ é **incorreta em relação ao White Paper 1.0**, e a auditoria integral do corpus (`AUD-2026-08-17T03:42:31Z`) a verificou como tal.
+> 
+> O White Paper 1.0 especificava duas políticas concretas, com ancoragem em literatura: o **motor de recomendação** (§2.9.3, item 5) — seleciona o próximo processo entre os nós cujos pré-requisitos estão acima do limiar de domínio e cujo próprio valor está abaixo, como proxy computacional explícito da Zona de Desenvolvimento Proximal, ancorado em Doignon & Falmagne (1985) e Vygotsky (1978) — e o **agendador de revisão espaçada** (§2.9.3, item 6), com curva de esquecimento parametrizada por Cepeda et al. (2006) e interleaving conforme Rohrer & Taylor (2007). As features de entrada estão em §2.9.7.
+> 
+> **A conclusão substantiva desta seção permanece válida e não muda**: essas políticas **não são deriváveis dos dois axiomas**. São `[DE]` — decisão de engenharia. O erro estava em declará-las inexistentes em vez de **rebaixadas**.
+> 
+> Sob GOV-1.0 §9.2, o status correto do elemento na transição 1.0 → 2.0 é **`rebaixado`**: deixou de ser especificação e passou a ser proposta de engenharia não derivada dos axiomas. Esse status não existia como categoria disponível na época da consolidação, e o elemento foi tratado como inexistente.
+> 
+> **Estado após esta errata:** o slot permanece vazio quanto à **função objetivo** — o critério pelo qual o sistema escolhe. Uma política particular não fornece uma função objetivo, e nada aqui a fornece. O que se corrige é a alegação de ausência de conteúdo. Registro completo em `EXT-WP1-1.0`, item L10.
 
 ---
 
@@ -185,6 +209,8 @@ Nove perguntas, ordenadas por valor de informação esperado sob critérios pura
 
 Um décimo item — GL-10 em sua forma de RCT local, por par de fatores — não entra nesta lista principal: é investimento condicionado ao resultado do item 1.
 
+> **`[Errata 2.0.1]`** Nota de estado, sem alteração da lista nem de sua ordem: **GL-14 permanece aberto**. A `Especificação do Error Trace v1.0` exige atribuição ponderada e não determinística de causa de erro — mas essa exigência decorre da Constituição §4.4, não de GL-14 resolvido. Nenhum contrato operacional do corpus decide entre atribuição suave e dura no sentido de GL-14.
+
 ## 11. Decisões de escopo dentro do mapa
 
 GL-1, GL-2, GL-3 e GL-16 não são graus de liberdade no mesmo sentido dos nove acima — nenhum experimento os resolve, porque nenhum deles é uma pergunta sobre como o mundo é. São escolhas sobre o que a teoria se propõe a modelar. Aparecem aqui apenas para completude do mapa; seu conteúdo e justificativa pertencem à Parte I.
@@ -215,9 +241,13 @@ GL-1, GL-2, GL-3 e GL-16 não são graus de liberdade no mesmo sentido dos nove 
 - **Escolha de engenharia**: forma funcional específica dessa verossimilhança.
 - **Hipóteses ainda abertas**: se o modelo de evidência é fixado por julgamento especialista ou aprendido de dados (GL-15); se a atribuição de uma observação específica a múltiplas causas candidatas deve ser suave ou dura (GL-14 — estatuto especial: a própria pergunta depende de uma releitura de escopo do Axioma da Crença ainda não feita, não apenas de evidência empírica).
 
+> **`[Errata 2.0.1]`** Registro de contrato existente, sem efeito sobre GL-14 nem GL-3: o objeto de saída desta camada — a cadeia causal de erro — passou a ter contrato canônico na `Especificação do Error Trace v1.0`, documento de camada C4. Antes desta errata, a Constituição §4.3 remetia sua especificação a uma "Especificação Técnica" inexistente no corpus.
+
 ### 12.4 Camada de decisão — vazia
 
 Algo precisa consumir os estados de 12.1–12.3 para selecionar a próxima ação pedagógica. Sua existência é consequência prática de haver um sistema adaptativo; sua função objetivo não é. Este documento não propõe conteúdo para esta camada — é o slot vazio de §6.3, repetido aqui para que a lacuna apareça também no nível arquitetural, não apenas no axiomático.
+
+> **`[Errata 2.0.1]`** Mesma correção de §6.3, aplicada ao nível arquitetural: **a camada não está vazia de conteúdo, está vazia de derivação axiomática**. Duas políticas concretas, ancoradas em literatura, existiam no White Paper 1.0 §2.9.3 (itens 5 e 6) e §2.9.7, e estão registradas como `rebaixadas` a `[DE]` não derivada dos axiomas em `EXT-WP1-1.0`, item L10. A **função objetivo** permanece ausente. Nota adicional de executabilidade: o motor de recomendação daquela proposta opera sobre arestas de pré-requisito, e a relação `Processo ↔ Processo` **não está populada** na ontologia vigente (Ontologia v1.4.1 §8) — portanto a política, mesmo recuperada como proposta, não é executável no estado atual do catálogo.
 
 ### 12.5 Camada de interface
 
@@ -225,7 +255,15 @@ Tradução entre linguagem natural e as estruturas formais de 12.1–12.4. Não 
 
 ---
 
-ARTE V — APLICAÇÃO EMPÍRICA PRELIMINAR
+# PARTE V — APLICAÇÃO EMPÍRICA PRELIMINAR
+
+> **`[Errata 2.0.1]` — SUPERSESSÃO PARCIAL.**
+> 
+> Os Capítulos 13 e 14 desta Parte estão **`[SUPERSEDED por ONT-1.4.1 — TX-2026-08-17T184458Z-wp2-errata]`** quanto ao seu **inventário** de domínios, competências e processos cognitivos. Sob GOV-1.0 §8.3, a seção superada **deixa de ter força normativa imediatamente**, mesmo permanecendo no texto.
+> 
+> O inventário aqui apresentado — 8 domínios, 16 competências, 28 processos — é o da derivação-piloto original. O catálogo vigente é o da **Ontologia Cognitiva Sapiens v1.4.1**: 11 domínios, 12 competências, 25 processos, 56 habilidades, 13 tipos de erro, 11 intervenções. Divergências estruturais entre os dois, todas registradas em `09 Mapa de Rastreabilidade de IDs`: `DOM-ESTRUTURA` não existe no catálogo vigente; `DOM-LOGICO`, `DOM-SIMBOLICO`, `DOM-TEXTUAL` e `DOM-CLASSIF` não existem aqui; e **sete identificadores `DOM-*` são idênticos nos dois com extensão comprovadamente divergente** (colisão `NS-4`).
+> 
+> **O que permanece vigente nesta Parte:** a nota metodológica do §13.1 (a derivação é condicionada a GL-12a), a advertência do §13.4, as limitações do §14.2, e todo o Capítulo 15 (Ativos Protegidos), que não é inventário.
 
 ## 13. Domínios Derivados: Matemática
 
@@ -258,6 +296,8 @@ Os exemplos a seguir são apresentados como ilustração da estrutura pretendida
 
 Ao menos um processo da derivação original (distinção entre arranjo, combinação e permutação) mistura, de forma reconhecida, capacidade cognitiva geral com conteúdo procedural específico de domínio — o próprio tipo de confusão que o Axioma da Fatoração (§5.2) instrui a evitar. Este documento não corrige esse nó agora: fazê-lo exigiria resolver primeiro GL-9 (curadoria vs. descoberta) e a Questão Central §5.6, ambos em aberto. O nó permanece registrado como item pendente de revisão, não como erro silenciosamente reparado.
 
+> **`[Errata 2.0.1]`** Registro de estado: a Ontologia v1.4.1 absorveu essa distinção em `PROC-INC-04` ("aplicar raciocínio probabilístico combinatório a processo gerador"), removendo o nó autônomo. A limitação apontada aqui foi, portanto, endereçada no catálogo vigente. Nenhuma decisão nova; registro de que a pendência mudou de estado.
+
 ## 14. Domínios Derivados: Ciências da Natureza
 
 ### 14.1 Domínios cognitivos
@@ -281,9 +321,21 @@ Quatro domínios [EC/IT — ancorados em NRC/NGSS Framework for K-12 Science Edu
 
 Duas conexões, preservadas da derivação original: (i) o eixo taxa de variação → interpretação estatística → interpretação experimental, ligando processos de mudança (Matemática), incerteza (Matemática) e investigação experimental (Ciências); (ii) reconhecimento de padrão como mecanismo de transferência, ligando PROC-MUD-003 a PROC-ESTR-001 — padrão matemático (linear, exponencial, quadrático) e padrão científico (estrutura recorrente entre fenômenos).
 
+> **`[Errata 2.0.1]` — INCIDENTE ABERTO, correção de afirmação de fato.**
+> 
+> A aresta (ii) é apresentada como **preservada**. Verificação exaustiva sobre os 25 processos da Ontologia v1.4.1: **`PROC-ESTR-001` não tem correspondente no catálogo vigente.** Não existe processo cujo objeto seja o reconhecimento de padrão estrutural recorrente entre fenômenos de superfície distinta. O candidato mais próximo, `PROC-ESPACO-03`, é estrutura→função — que nesta Parte é `PROC-ESTR-002`, o outro nó.
+> 
+> A afirmação de preservação é, portanto, **incorreta quanto a (ii)**. Registrado como incidente `MAP-INC-03` em `09 Mapa de Rastreabilidade de IDs` §3.4.
+> 
+> Esta errata **não recria o nó** — isso seria mudança de estrutura do catálogo, Classe IV, que exige evidência de piloto (GOV-1.0 §11.2, Classe B). Ela apenas substitui uma afirmação falsa por um incidente registrado, para que a decisão seja tomada explicitamente na próxima versão da ontologia e não por omissão. Observação de relevância, registrada sem decidir: `PROC-ESTR-001` é o nó cuja função declarada é a transferência estrutural — o mecanismo que a Constituição §2.3 usa para definir a admissibilidade de um Processo Cognitivo.
+> 
+> A aresta (i) não foi verificada nesta errata.
+
 ### 14.4 Escopo total da derivação-piloto
 
 A derivação original, somando Matemática e Ciências da Natureza, produziu 8 domínios, 16 competências e 28 processos cognitivos. Este capítulo e o anterior apresentam apenas subconjunto ilustrativo desse total (ver Pendências, item 2).
+
+> **`[Errata 2.0.1]`** Duas correções de fato, sem efeito sobre o texto vigente desta Parte. **(a)** A "derivação original" é o **Capítulo 4 do White Paper 1.0**, documento que integra o corpus canônico. A atribuição de fonte, ausente na 2.0, fica aqui registrada. **(b)** O inventário daquele capítulo declara 28 processos e **enumera 29** — incidente `MAP-INC-04`. O número 28 é reproduzido acima como citação da fonte, não como contagem verificada.
 
 ## 15. Ativos Protegidos
 
@@ -298,6 +350,20 @@ Os elementos a seguir foram avaliados de forma consistentemente favorável em to
 - **Disciplina epistemológica [EC]/[IT]/[DE]**, agora estendida às afirmações centrais dos próprios axiomas (§3.2).
 - **Campo de grau de transferência** — único ativo desta lista com ressalva anexada: a ideia de registrar transferência como propriedade explícita é preservada; sua formalização como categoria otimista fixa (alto/médio/baixo) permanece sob revisão, matéria de GL-10.
 
+> **`[Errata 2.0.1]` — estado de preservação de cada ativo.**
+> 
+> A cláusula _"qualquer arquitetura futura derivada deste documento deve preservá-los"_ permanece integralmente em vigor. A auditoria integral verificou o estado real de preservação, e o registro abaixo existe porque **três destes ativos não estavam preservados** no momento da auditoria:
+> 
+> |Ativo|Estado verificado|
+> |---|---|
+> |**Error Trace**|**Restaurado.** Havia perdido sua propriedade definidora — a ordem causal — em dois saltos (Constituição §4.3 removeu a ordem; Schema 2.1 reduziu a um erro único por alternativa). A `Especificação do Error Trace v1.0` restabelece a cadeia ordenada com confiança obrigatória por elo|
+> |**Falsa proficiência**|**Ativo sem implementação.** Preservado como categoria; o critério operacional que o torna detectável não existe em nenhum documento canônico. Registrado em `EXT-WP1-1.0` item L4, com o critério e o algoritmo originais preservados|
+> |**Cinco nós prioritários**|**Um foi rebaixado.** "Leitura de gráficos" deixou de ser nó e passou a Habilidade na Ontologia v1.4 (`HAB-44`, `HAB-46`, sob `PROC-TEXT-01/02`). A decisão é defensável sob a Constituição §3.7.3, mas contraria a cláusula de preservação acima e não havia sido registrada. Registrada agora|
+> |**Campo de grau de transferência**|**Não existe no catálogo vigente.** A Ontologia v1.4.1 não tem o campo em forma alguma. A ressalva desta seção — sobre a escala fixa — permanece válida e continua condicionada a GL-10. Registrado em `EXT-WP1-1.0` item L5|
+> |`ItemCognitiveMapping`, Inversão disciplinar, Derivação a partir de literatura, Disciplina EC/IT/DE|Preservados|
+> 
+> Nenhuma decisão de conteúdo é tomada aqui. O quadro substitui uma afirmação genérica de preservação por um estado verificado, item a item.
+
 ---
 
 # PARTE VI — PROTOCOLO DE VALIDAÇÃO
@@ -309,6 +375,8 @@ Este documento declara, como condição para qualquer reivindicação de superio
 Esta exigência não é uma preferência metodológica externa aos Axiomas da Parte II — é corolário direto do Axioma da Crença Calibrada (§4.1b): reivindicar superioridade sem a evidência correspondente violaria a própria condição de calibração que o axioma impõe a todo o sistema.
 
 **Metodologia mínima declarada**: (i) constituição de banco-piloto de itens a partir de fontes já existentes (exames padronizados, itens autorais); (ii) anotação dupla e independente por especialistas; (iii) medição de concordância interavaliador (coeficiente kappa), identificação de processos de baixa separabilidade e de processos excessivamente amplos; (iv) ajuste da ontologia com base nesses resultados; (v) apenas então, expansão de escopo. Esta sequência é condição de entrada para qualquer expansão de domínio (incluindo a agenda do Capítulo 20), não uma recomendação entre outras.
+
+> **`[Errata 2.0.1]`** Duas notas de estado, sem alteração da exigência, que **permanece integralmente em vigor**. **(a)** A "trajetória de evolução" mencionada no modelo proposto depende de arestas de pré-requisito entre processos, e a relação `Processo ↔ Processo` não está populada na ontologia vigente (Ontologia v1.4.1 §8) — o quinto elo do modelo a comparar não é computável no estado atual do catálogo. **(b)** Este capítulo fixa os requisitos mínimos do protocolo, e não sua forma operacional: amostra por processo, número de anotadores e limiar de kappa não estão fixados em nenhum documento do corpus. O Manual §12, regra 5, remete a um "Plano de Validação" que não existe — remissão pendente `G-CONF-13`.
 
 ## 17. Sequência Ótima de Investigação
 
@@ -342,6 +410,8 @@ Para uso por leitor externo avaliando o documento, esta lista é declarativa e e
 - Não estabelece validade de construto para nenhum processo cognitivo específico apresentado na Parte V; toda a aplicação a domínios ali descrita é condicionada à Questão Central (§5.6) permanecer, por ora, em aberto.
 - Não testou alternativas à unidade de análise individual (§2.1) nem a canais de evidência além de resposta a item (§2.2).
 
+> **`[Errata 2.0.1]`** O quarto item é preciso quanto ao **mecanismo de decisão** e permanece como está. A leitura de que a camada é vazia **de conteúdo** é corrigida em §6.3 e §12.4: vazia de derivação axiomática e de função objetivo, não de conteúdo herdado.
+
 ## 19. Riscos Identificados
 
 **Circularidade epistemológica no uso de inteligência artificial para autovalidação.** Identificado de forma independente em relação a dois nós distintos da arquitetura (origem dos fatores, §5.3; calibração da função de verossimilhança, §5.4) — em ambos os casos, comparar julgamento humano contra dado que o próprio julgamento ajudou a produzir invalida a comparação. Qualquer protocolo de validação executado sob o Capítulo 16 deve garantir proveniência independente da evidência de referência.
@@ -351,6 +421,14 @@ Para uso por leitor externo avaliando o documento, esta lista é declarativa e e
 **Excesso de abstração sem critério operacional.** Identificado especificamente quanto a três pontos: o critério de distinguibilidade empírica que resolveria granularidade (§5.5) é nomeado sem quantificação; as escalas temporais de crença (§4.4) são nomeadas sem constante de tempo; a função objetivo da camada de decisão (§6.3) permanece inteiramente indefinida.
 
 **Construção de teoria perfeita antes de validação de utilidade.** Risco estrutural do próprio processo que produziu este documento — quatro etapas de refinamento conceitual precederam qualquer contato com dado real de estudante. O Capítulo 16 existe precisamente para que esse risco não se estenda além deste ponto.
+
+> **`[Errata 2.0.1]` — quinto risco, materializado e verificado.**
+> 
+> **Perda silenciosa entre documentos.** A auditoria integral do corpus identificou um mecanismo de falha recorrente e o verificou em três instâncias: **um documento declara preservar algo que o documento seguinte já havia removido, e nada no processo detecta a divergência.** As três instâncias estão nesta versão: o Error Trace (§15), `PROC-ESTR-001` (§14.3) e a camada de decisão (§6.3).
+> 
+> É o mesmo mecanismo que a Constituição §1.1 identifica como o defeito original da v1.3 — redundância e perda silenciosas por ausência de detecção estrutural — operando um nível acima: entre documentos, em vez de entre nós.
+> 
+> Registrado como risco porque não é um erro pontual já corrigido, e sim uma propriedade do processo. A mitigação adotada é `GOV-1.0`, cuja regra central (§8.2) proíbe marcar um documento como superado antes de existir registro do conteúdo que ele contém e que não foi transportado.
 
 ## 20. Agenda de Expansão
 
@@ -363,6 +441,35 @@ Itens que não integram o núcleo axiomático das Partes II–IV, mas que decis�
 
 **Registro de Notas para o White Paper 3.0.** A partir desta consolidação, qualquer ideia que emergir durante trabalho futuro sobre este documento — e que constitua melhoria conceitual, não correção factual, de redação, ou incorporação de evidência empírica já prevista pelo Programa de Pesquisa — deve ser lançada aqui, não incorporada ao núcleo congelado das Partes II–IV. Este registro está, neste momento da consolidação, vazio: nenhuma ideia dessa natureza surgiu durante a redação das Partes V–VII que não coubesse já em um dos vinte e dois graus de liberdade catalogados na Parte III.
 
+> **`[Errata 2.0.1]`** A condição do primeiro item permanece integralmente em vigor: a expansão para Humanas e Linguagens está condicionada a GL-12b, **que continua aberto**, e à condição de entrada do Capítulo 16, **que não foi satisfeita** — não há piloto executado nem kappa medido. O Registro de Notas para o 3.0 permanece vazio: nada nesta errata é melhoria conceitual.
+
+---
+
+## 21. Aparato de Referências e Gerações de Identificador
+
+_Seção acrescentada na 2.0.1._
+
+### 21.1 Referências
+
+A versão 2.0 cita autores em texto corrido e **não possui seção de referências**. Sob GOV-1.0 §10.2, regra 4, _"uma afirmação `[EC]` sem referência recuperável é rebaixada automaticamente a `[IT]` até que a referência seja restaurada"_ — o que, aplicado literalmente, rebaixaria toda afirmação `[EC]` deste documento.
+
+**Resolução, sem duplicar aparato:** o aparato bibliográfico deste documento é o do **White Paper 1.0**, em seus três blocos de Referências (fim dos Capítulos 1, 2 e 4), preservado e integralmente recuperável no corpus canônico. Toda afirmação `[EC]` desta versão resolve por chave autor-ano naquele aparato.
+
+Duas consequências, declaradas:
+
+1. As afirmações `[EC]` deste documento são **`[EC]` herdada** — a referência é recuperável, mas não foi reverificada nesta errata contra a afirmação específica que a invoca. Uma referência prova que a literatura existe; não prova que ela sustenta a afirmação particular.
+2. Reproduzir o aparato aqui seria **duplicação de contrato**, proibida por GOV-1.0 §12. A remissão por chave é a forma correta.
+
+Registro em `EXT-WP1-1.0`, item L14.
+
+### 21.2 Gerações de identificador
+
+Todos os identificadores citados na Parte V pertencem às gerações **G0** (esquema mnemônico do Capítulo 2 do White Paper 1.0: `RQ-PROP-003`) e **G1** (esquema de três dígitos do Capítulo 4: `PROC-EXP-001`, `PROC-ESTR-001`). O catálogo vigente usa **G3** (`PROC-EXP-02`).
+
+**Nenhum identificador citado na Parte V é resolvível contra o catálogo vigente.** Não por descuido de nomeação, mas porque a cadeia documental entre as gerações passa pela Ontologia v1.3, **ausente do corpus canônico** — `G-CONF-09`. Toda equivalência entre G0/G1 e G3 é, portanto, `EQUIVALÊNCIA NÃO ESTABELECIDA`.
+
+Advertência operacional: truncar o zero à esquerda de um identificador G1 produz um identificador G3 **válido e errado**. Casos confirmados: `PROC-ESPACO-003` (semelhança/escala) → `PROC-ESPACO-03` (estrutura→função); `PROC-EXP-001` (controle de variáveis) → `PROC-EXP-01` (formular hipótese); `PROC-INC-004` (heurísticas) → `PROC-INC-04` (combinatório-probabilístico). Colisão `NS-3`. A conversão automática entre gerações é **proibida** por `09 Mapa de Rastreabilidade de IDs` §12.
+
 ---
 
 **3. Pendências reais**
@@ -371,4 +478,18 @@ Itens que não integram o núcleo axiomático das Partes II–IV, mas que decis�
 2. Os Capítulos 13–14 apresentam subconjunto ilustrativo dos processos cognitivos (cerca de 10 dos 28 totais da derivação original); a reprodução integral do conjunto completo, se desejada para a versão publicável final, exigirá consulta ao material fonte original do Capítulo 4 do White Paper 1.0, não apenas ao que foi citado ao longo deste processo de revisão.
 3. Nenhuma.
 
-Capítulos 13 a 20 (Partes V, VI e VII) consolidados.
+> **`[Errata 2.0.1]`** **Pendência 2 encerrada.** O White Paper 1.0 integra o corpus canônico e seu Capítulo 4 está integralmente disponível; a consulta que a pendência previa não é mais necessária. Ademais, a reprodução integral do inventário tornou-se **desnecessária e indesejável**: os Capítulos 13 e 14 estão superados quanto ao inventário pela Ontologia v1.4.1 (ver a nota de supersessão parcial no início da Parte V), e reproduzir aqui um catálogo superado recriaria a duplicação que `GOV-1.0` §12 proíbe. A **Pendência 1 permanece aberta**.
+
+---
+
+## 22. Changelog
+
+|TX|Timestamp|Classe|Alteração|
+|---|---|---|---|
+|`TX-2026-08-17T184458Z-wp2-errata`|2026-08-17T18:44:58Z|I e II — Correção de Fidelidade e Errata|**(1)** §6.3 e §12.4: corrigida a afirmação de que nenhuma evidência sustentava a camada de decisão; status corrigido de inexistente para `rebaixado`. A conclusão substantiva (não derivável dos axiomas; função objetivo ausente) permanece. **(2)** Parte V, Capítulos 13 e 14: **supersessão parcial** quanto ao inventário, pela Ontologia v1.4.1 (GOV-1.0 §8.3). **(3)** §14.3: corrigida a afirmação de que `PROC-ESTR-001` está preservado; registrado incidente `MAP-INC-03`. **(4)** §15: acrescentado quadro de estado verificado de cada ativo protegido — três não estavam preservados. **(5)** §19: acrescentado o quinto risco, verificado. **(6)** §21 criada: aparato de referências resolvido por remissão ao White Paper 1.0, sem duplicação; gerações de identificador declaradas. **(7)** Pendência 2 encerrada. **(8)** Notas de estado em §4.4, §10, §12.3, §13.4, §14.4, §16, §18, §20. **(9)** Cabeçalho canônico e changelog (GOV-1.0 §7.1, §7.3).|
+
+**Nenhum axioma foi alterado. Nenhum grau de confiança foi reponderado. Nenhum Grau de Liberdade foi fechado nem aberto. Nenhum elemento de catálogo ontológico foi criado, alterado ou removido.**
+
+---
+
+_Capítulos 13 a 20 (Partes V, VI e VII) consolidados na 2.0. Errata aplicada na 2.0.1._

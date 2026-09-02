@@ -22,20 +22,34 @@ import io
 import csv
 
 # --- Setup ---
-MONGO_URL = os.environ["MONGO_URL"]
-DB_NAME = os.environ["DB_NAME"]
-JWT_SECRET = os.environ["JWT_SECRET"]
-JWT_ALGORITHM = "HS256"
-FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
+import settings
 
-client = AsyncIOMotorClient(MONGO_URL)
+logging.basicConfig(
+    level=getattr(logging, settings.LOG_LEVEL, logging.INFO),
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+)
+logger = logging.getLogger("sapiens")
+
+settings.exigir_config_valida()
+
+MONGO_URL = settings.MONGO_URL
+DB_NAME = settings.DB_NAME
+JWT_SECRET = settings.JWT_SECRET
+JWT_ALGORITHM = "HS256"
+FRONTEND_URL = settings.FRONTEND_URL
+
+client = AsyncIOMotorClient(MONGO_URL, serverSelectionTimeoutMS=5000)
 db = client[DB_NAME]
 
-app = FastAPI(title="Sapiens Dashboard API")
+app = FastAPI(
+    title="Sapiens Dashboard API",
+    # Em producao a documentacao interativa e superficie gratuita para mapear
+    # o servico antes de tentar autenticar.
+    docs_url=None if settings.IS_PRODUCTION else "/docs",
+    redoc_url=None if settings.IS_PRODUCTION else "/redoc",
+    openapi_url=None if settings.IS_PRODUCTION else "/openapi.json",
+)
 api_router = APIRouter(prefix="/api")
-
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logger = logging.getLogger("sapiens")
 
 
 # --- Auth helpers ---
@@ -61,11 +75,26 @@ def create_refresh_token(user_id: str) -> str:
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
 
+def _cookie_kwargs() -> dict:
+    """Politica de cookie dirigida pela configuracao.
+
+    `Secure` + `SameSite=None` e obrigatorio quando frontend e backend estao em
+    dominios diferentes sobre HTTPS; em http://localhost o navegador descarta
+    esse cookie em silencio, e o login parece funcionar sem persistir.
+    """
+    return {
+        "httponly": True,
+        "secure": settings.COOKIE_SECURE,
+        "samesite": settings.COOKIE_SAMESITE,
+        "domain": settings.COOKIE_DOMAIN,
+        "path": "/",
+    }
+
+
 def set_auth_cookies(response: Response, access: str, refresh: str) -> None:
-    response.set_cookie(key="access_token", value=access, httponly=True,
-                        secure=True, samesite="none", max_age=3600, path="/")
-    response.set_cookie(key="refresh_token", value=refresh, httponly=True,
-                        secure=True, samesite="none", max_age=604800, path="/")
+    kw = _cookie_kwargs()
+    response.set_cookie(key="access_token", value=access, max_age=3600, **kw)
+    response.set_cookie(key="refresh_token", value=refresh, max_age=604800, **kw)
 
 
 async def get_current_user(request: Request) -> dict:
@@ -142,16 +171,26 @@ async def login(body: LoginInput, response: Response):
 
 @api_router.post("/auth/logout")
 async def logout(response: Response):
-    response.set_cookie(key="access_token", value="", httponly=True,
-                        secure=True, samesite="none", max_age=0, path="/")
-    response.set_cookie(key="refresh_token", value="", httponly=True,
-                        secure=True, samesite="none", max_age=0, path="/")
+    kw = _cookie_kwargs()
+    response.set_cookie(key="access_token", value="", max_age=0, **kw)
+    response.set_cookie(key="refresh_token", value="", max_age=0, **kw)
     return {"ok": True}
 
 
 @api_router.get("/auth/me")
 async def me(user: dict = Depends(get_current_user)):
     return user
+
+
+def scope_query(user: dict) -> Dict[str, Any]:
+    """Restrict import visibility: admins see everything, teachers only see imports
+    they ingested or turmas explicitly granted to them."""
+    if user.get("role") == "admin":
+        return {}
+    return {"$or": [
+        {"_ingested_by": user["email"]},
+        {"turma": {"$in": user.get("turmas_autorizadas") or []}},
+    ]}
 
 
 # --- Import model (data snapshots from Sapiens ecosystem) ---
@@ -194,14 +233,14 @@ async def create_import(body: ImportInput, user: dict = Depends(get_current_user
 
 @api_router.get("/imports")
 async def list_imports(user: dict = Depends(get_current_user)):
-    cursor = db.imports.find({}, {"_id": 0, "alunos": 0}).sort("_ingested_at", -1)
+    cursor = db.imports.find(scope_query(user), {"_id": 0, "alunos": 0}).sort("_ingested_at", -1)
     docs = await cursor.to_list(500)
     return docs
 
 
 @api_router.delete("/imports/{import_id}")
 async def delete_import(import_id: str, user: dict = Depends(get_current_user)):
-    r = await db.imports.delete_one({"import_id": import_id})
+    r = await db.imports.delete_one({**scope_query(user), "import_id": import_id})
     if r.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Import não encontrado")
     return {"ok": True}
@@ -210,7 +249,7 @@ async def delete_import(import_id: str, user: dict = Depends(get_current_user)):
 # --- Filters ---
 @api_router.get("/filters")
 async def get_filters(user: dict = Depends(get_current_user)):
-    imports = await db.imports.find({}, {"_id": 0}).to_list(1000)
+    imports = await db.imports.find(scope_query(user), {"_id": 0}).to_list(1000)
     turmas = sorted({i.get("turma") for i in imports if i.get("turma")})
     periodos = sorted({i.get("periodo") for i in imports if i.get("periodo")})
     anos = sorted({i.get("ano_escolar") for i in imports if i.get("ano_escolar")})
@@ -235,12 +274,13 @@ async def get_filters(user: dict = Depends(get_current_user)):
 
 
 # --- Helpers to fetch filtered imports ---
-async def fetch_imports(turma: Optional[str] = None,
+async def fetch_imports(user: dict,
+                       turma: Optional[str] = None,
                        periodo: Optional[str] = None,
                        ano: Optional[str] = None,
                        banca: Optional[str] = None,
                        prova: Optional[str] = None) -> List[dict]:
-    query: Dict[str, Any] = {}
+    query: Dict[str, Any] = dict(scope_query(user))
     if turma: query["turma"] = turma
     if periodo: query["periodo"] = periodo
     if ano: query["ano_escolar"] = ano
@@ -264,7 +304,7 @@ def filter_disciplina(alunos: List[dict], disciplina: Optional[str]) -> List[dic
 async def view_turma(turma: str, periodo: str,
                      disciplina: Optional[str] = None,
                      user: dict = Depends(get_current_user)):
-    imports = await fetch_imports(turma=turma, periodo=periodo)
+    imports = await fetch_imports(user, turma=turma, periodo=periodo)
     if not imports:
         raise HTTPException(status_code=404, detail="Sem dado para os filtros informados")
     imp = imports[0]
@@ -311,7 +351,7 @@ async def view_turma(turma: str, periodo: str,
 @api_router.get("/views/processo")
 async def view_processo(turma: str, periodo: str, no_id: str,
                         user: dict = Depends(get_current_user)):
-    imports = await fetch_imports(turma=turma, periodo=periodo)
+    imports = await fetch_imports(user, turma=turma, periodo=periodo)
     if not imports:
         raise HTTPException(status_code=404, detail="Sem dado")
     imp = imports[0]
@@ -365,7 +405,7 @@ async def view_processo(turma: str, periodo: str, no_id: str,
 async def view_aluno(turma: str, periodo: str, aluno_id: str,
                      disciplina: Optional[str] = None,
                      user: dict = Depends(get_current_user)):
-    imports = await fetch_imports(turma=turma, periodo=periodo)
+    imports = await fetch_imports(user, turma=turma, periodo=periodo)
     if not imports:
         raise HTTPException(status_code=404, detail="Sem dado")
     imp = imports[0]
@@ -412,7 +452,7 @@ async def view_aluno(turma: str, periodo: str, aluno_id: str,
 
 @api_router.get("/views/alunos")
 async def list_alunos(turma: str, periodo: str, user: dict = Depends(get_current_user)):
-    imports = await fetch_imports(turma=turma, periodo=periodo)
+    imports = await fetch_imports(user, turma=turma, periodo=periodo)
     if not imports:
         return {"alunos": []}
     imp = imports[0]
@@ -427,7 +467,7 @@ async def view_evolucao(turma: str,
                         aluno_id: Optional[str] = None,
                         disciplina: Optional[str] = None,
                         user: dict = Depends(get_current_user)):
-    imports = await fetch_imports(turma=turma)
+    imports = await fetch_imports(user, turma=turma)
     imports.sort(key=lambda i: i.get("periodo") or "")
     versoes_encontradas = sorted({i.get("versao_taxonomia") for i in imports if i.get("versao_taxonomia")})
     series = []
@@ -467,7 +507,8 @@ async def view_evolucao(turma: str,
 # --- Taxonomia tree ---
 @api_router.get("/taxonomia")
 async def taxonomia(versao: Optional[str] = None, user: dict = Depends(get_current_user)):
-    q = {"versao_taxonomia": versao} if versao else {}
+    q = dict(scope_query(user))
+    if versao: q["versao_taxonomia"] = versao
     imports = await db.imports.find(q, {"_id": 0}).to_list(1000)
     versoes_disponiveis = sorted({i.get("versao_taxonomia") for i in imports if i.get("versao_taxonomia")})
     # Build tree: disciplina -> nó
@@ -529,14 +570,17 @@ async def export_turma_csv(turma: str, periodo: str, disciplina: Optional[str] =
 
 
 # --- Seed sample data ---
+
+# IDs/nomes/domínios extraídos verbatim de pipeline/docs/ontology/ontology_v1.4.json
+# (processos_cognitivos + dominios) — fonte única de verdade da ontologia.
 SAMPLE_NOS = [
-    {"no_id": "MAT.NUM.01", "no_label": "Interpretação de números racionais", "disciplina": "Matemática"},
-    {"no_id": "MAT.ALG.01", "no_label": "Resolução de equações do 1º grau", "disciplina": "Matemática"},
-    {"no_id": "MAT.GEO.01", "no_label": "Áreas de figuras planas", "disciplina": "Matemática"},
-    {"no_id": "POR.INT.01", "no_label": "Inferência textual", "disciplina": "Português"},
-    {"no_id": "POR.GRA.01", "no_label": "Concordância verbal", "disciplina": "Português"},
-    {"no_id": "CIE.BIO.01", "no_label": "Cadeias alimentares", "disciplina": "Ciências"},
-    {"no_id": "CIE.FIS.01", "no_label": "Leis de Newton", "disciplina": "Ciências"},
+    {"no_id": "PROC-QUANT-02", "no_label": "Inferir e aplicar relação proporcional entre grandezas", "disciplina": "Quantificação e Raciocínio Numérico"},
+    {"no_id": "PROC-ESPACO-01", "no_label": "Interpretar figura geométrica e extrair relações métricas", "disciplina": "Representação e Raciocínio Espacial"},
+    {"no_id": "PROC-MUD-01", "no_label": "Reconhecer e quantificar relação de covariação entre grandezas", "disciplina": "Mudança e Covariação"},
+    {"no_id": "PROC-TEXT-02", "no_label": "Inferir informação implícita", "disciplina": "Compreensão e Integração Textual"},
+    {"no_id": "PROC-INC-02", "no_label": "Sintetizar conjunto de dados por medida de tendência central", "disciplina": "Incerteza e Raciocínio sobre Dados"},
+    {"no_id": "PROC-CAUSAL-01", "no_label": "Identificar e explicar relação de causa e efeito", "disciplina": "Raciocínio Causal"},
+    {"no_id": "PROC-EXP-01", "no_label": "Formular hipótese testável", "disciplina": "Raciocínio Experimental e Metodológico"},
 ]
 
 SAMPLE_ALUNOS = [
@@ -575,7 +619,13 @@ async def seed_sample_data():
             doc = {
                 "turma": turma_name,
                 "periodo": periodo,
-                "versao_taxonomia": "Taxonomia Sapiens v0.8 (Experimental)" if i < 2 else "Taxonomia Sapiens v0.9 (Experimental)",
+                # "1.3" é a versão anterior citada em ontology_v1.4.json:based_on;
+                # "1.4.1" é a versão canônica vigente — preserva o cenário de demo
+                # de comparação entre versões sem inventar identificadores de
+                # taxonomia. Nota de rastreabilidade: a v1.3 NÃO existe no corpus
+                # canônico (G-CONF-09), então este rótulo é referência histórica,
+                # não uma versão contra a qual algo possa ser resolvido.
+                "versao_taxonomia": "Ontologia Cognitiva Sapiens v1.3" if i < 2 else "Ontologia Cognitiva Sapiens v1.4.1",
                 "data_processamento": f"2024-0{i+3}-15T10:00:00Z",
                 "modelo_analise": "sapiens-cognitive-v1.2",
                 "ano_escolar": "9º ano",
@@ -591,21 +641,21 @@ async def seed_sample_data():
 
 
 async def seed_admin():
-    admin_email = os.environ.get("ADMIN_EMAIL", "admin@sapiens.edu")
-    admin_password = os.environ.get("ADMIN_PASSWORD", "admin123")
-    existing = await db.users.find_one({"email": admin_email})
-    if existing is None:
-        await db.users.insert_one({
-            "email": admin_email,
-            "password_hash": hash_password(admin_password),
-            "name": "Administrador Sapiens",
-            "role": "admin",
-            "created_at": datetime.now(timezone.utc).isoformat(),
-        })
-        logger.info("Admin user seeded.")
-    elif not verify_password(admin_password, existing["password_hash"]):
-        await db.users.update_one({"email": admin_email},
-                                  {"$set": {"password_hash": hash_password(admin_password)}})
+    admin_email = os.environ.get("ADMIN_EMAIL")
+    admin_password = os.environ.get("ADMIN_PASSWORD")
+    if not admin_email or not admin_password:
+        logger.info("ADMIN_EMAIL/ADMIN_PASSWORD not set — skipping admin seed.")
+        return
+    if await db.users.find_one({"email": admin_email}):
+        return
+    await db.users.insert_one({
+        "email": admin_email,
+        "password_hash": hash_password(admin_password),
+        "name": "Administrador Sapiens",
+        "role": "admin",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    })
+    logger.info("Admin user seeded.")
 
 
 @app.on_event("startup")
@@ -613,7 +663,14 @@ async def on_startup():
     await db.users.create_index("email", unique=True)
     await db.imports.create_index([("turma", 1), ("periodo", 1)])
     await seed_admin()
-    await seed_sample_data()
+    if settings.SEED_DEMO_DATA:
+        # Turmas e alunos ficticios. Em producao isso injetaria dado inventado
+        # no banco real, indistinguivel de dado de escola.
+        logger.info("SEED_DEMO_DATA ligado — semeando turmas de demonstracao.")
+        await seed_sample_data()
+    else:
+        logger.info("SEED_DEMO_DATA desligado — nenhum dado de demonstracao inserido.")
+    logger.info("Sapiens professor pronto · %s", settings.resumo())
 
 
 @app.on_event("shutdown")
@@ -626,14 +683,60 @@ async def root():
     return {"message": "Sapiens Dashboard API", "status": "ok"}
 
 
+# --- Health checks (fora do /api: o balanceador nao conhece a estrutura) ---
+@app.get("/health")
+async def health():
+    """Liveness: o processo esta de pe. Nao toca em dependencia alguma."""
+    return {"status": "ok", "service": "professor", "app_env": settings.APP_ENV}
+
+
+@app.get("/ready")
+async def ready():
+    """Readiness: as dependencias respondem? 503 enquanto nao."""
+    from fastapi.responses import JSONResponse
+
+    checks = {}
+    ok = True
+    try:
+        await client.admin.command("ping")
+        checks["mongo"] = "ok"
+    except Exception as exc:  # noqa: BLE001
+        checks["mongo"] = f"falhou: {type(exc).__name__}"
+        ok = False
+    checks["jwt_configurado"] = bool(JWT_SECRET)
+    return JSONResponse(
+        status_code=200 if ok else 503,
+        content={"status": "ready" if ok else "degraded", "checks": checks},
+    )
+
+
+@app.exception_handler(Exception)
+async def _erro_nao_tratado(request: Request, exc: Exception):
+    """Registra o traceback e devolve so um identificador ao cliente."""
+    import secrets as _secrets
+
+    from fastapi.responses import JSONResponse
+
+    incidente = _secrets.token_hex(8)
+    logger.exception("[%s] %s %s", incidente, request.method, request.url.path)
+    return JSONResponse(status_code=500, content={"detail": "Erro interno.", "incidente": incidente})
+
+
 app.include_router(api_router)
 
-# CORS — explicit origins with credentials
-allowed_origins = [FRONTEND_URL, "http://localhost:3000"]
+# CORS — origens explicitas, com credenciais.
+# `http://localhost:3000` era fixo no codigo, sem condicao de ambiente: a
+# origem de desenvolvimento ia junto para producao.
+allowed_origins = settings.CORS_ORIGINS or ["http://localhost:3002", "http://localhost:3000"]
+if not settings.CORS_ORIGINS:
+    logger.warning(
+        "CORS_ORIGINS/FRONTEND_URL nao definidos; liberando apenas localhost. "
+        "Em producao o boot teria sido recusado."
+    )
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
 )

@@ -49,7 +49,7 @@ class TestOntologyReset:
         r = s.post(f"{API}/ontology/reset", timeout=60)
         assert r.status_code == 200, r.text
         d = r.json()
-        assert d["version"] == "1.0.0-seed"
+        assert d["version"] == "1.4"
         assert d["counts"] == {
             "dominios": 8,
             "competencias": 16,
@@ -61,7 +61,7 @@ class TestOntologyReset:
         # Summary confirms active seed
         r2 = s.get(f"{API}/ontology/summary", timeout=30)
         assert r2.status_code == 200
-        assert r2.json()["version"] == "1.0.0-seed"
+        assert r2.json()["version"] == "1.4"
 
 
 class TestOntologyImportGuards:
@@ -96,8 +96,8 @@ class TestOntologyImportGemini:
 
 
 class TestFinalReset:
-    """Leave the seed 1.0.0-seed active for the user."""
+    """Leave the canonical seed (1.4) active for the user."""
     def test_final_reset(self, s):
         r = s.post(f"{API}/ontology/reset", timeout=60)
         assert r.status_code == 200
-        assert r.json()["version"] == "1.0.0-seed"
+        assert r.json()["version"] == "1.4"

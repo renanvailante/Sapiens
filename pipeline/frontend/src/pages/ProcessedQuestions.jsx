@@ -78,8 +78,9 @@ export default function ProcessedQuestions() {
     return r.data.map((d) => ({
       pipeline_id: d.id,
       source_files: (d.artifacts?.originals || []).map((o) => o.filename),
-      ontology_version: d.ontology_version,
-      pipeline: d.pipeline,
+      // `item` é a chave canônica (Schema 2.2); `pipeline` é a forma anterior,
+      // exportada para não perder documentos gerados antes da migração.
+      item: d.item || d.pipeline,
     }));
   };
 

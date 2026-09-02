@@ -3,7 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import Nav from "../components/Nav";
 import OnboardingTour from "../components/OnboardingTour";
-import { ArrowRight, Sparkles, Flame, Zap, Target, Network, Trophy, ListChecks, Medal, Award, CheckCircle2 } from "lucide-react";
+import AulasParticularesModal from "../components/AulasParticularesModal";
+import { ArrowRight, Sparkles, Flame, Zap, Target, Network, Trophy, ListChecks, Medal, Award, CheckCircle2, GraduationCap } from "lucide-react";
 import { useAuth } from "../lib/auth";
 
 // ---------------- Streak / progresso semanal ----------------
@@ -65,6 +66,28 @@ const AREA_CODE_TO_LABEL = {
   "LC-Idioma": "Linguagens e Códigos",
 };
 
+// Melhor rodada de 10 mais fraca entre os cadernos praticados (última
+// tentativa de cada bloco) — usado como fallback de "próxima ação" quando o
+// aluno pratica questão a questão e nunca upload um gabarito completo (o
+// único caso que `latest.by_area` cobre). Sem isso, quem só usa a prática
+// avulsa via `/exams` nunca sai de "ainda reunindo dados", mesmo respondendo
+// centenas de questões — `analyses` continua vazio pra sempre nesse fluxo.
+function weakestRoundBloco(rounds) {
+  if (!rounds?.length) return null;
+  const porBloco = {};
+  for (const r of rounds) {
+    const b = r.bloco || {};
+    const chave = [b.banca, b.ano, b.prova, b.numero_min, b.numero_max].join("|");
+    (porBloco[chave] = porBloco[chave] || []).push(r);
+  }
+  let pior = null;
+  for (const lista of Object.values(porBloco)) {
+    const ultima = [...lista].sort((a, b) => (a.created_at || "").localeCompare(b.created_at || "")).pop();
+    if (!pior || (ultima.percentual_acerto ?? 100) < (pior.percentual_acerto ?? 100)) pior = ultima;
+  }
+  return pior;
+}
+
 export default function Dashboard() {
   const { user } = useAuth();
   const [analyses, setAnalyses] = useState([]);
@@ -72,8 +95,10 @@ export default function Dashboard() {
   const [activityDates, setActivityDates] = useState([]);
   const [hubs, setHubs] = useState([]);
   const [totalRespondidas, setTotalRespondidas] = useState(0);
+  const [rounds, setRounds] = useState([]);
   const [loaded, setLoaded] = useState(false);
   const [showTour, setShowTour] = useState(false);
+  const [showAulasModal, setShowAulasModal] = useState(false);
   const nav = useNavigate();
 
   useEffect(() => {
@@ -83,12 +108,14 @@ export default function Dashboard() {
       api.get("/firestore/students/me/activity").then(({ data }) => data.dates || []).catch(() => []),
       api.get("/skills-map").then(({ data }) => data.hubs || []).catch(() => []),
       api.get("/firestore/students/me/respondidas").then(({ data }) => (data.item_ids || []).length).catch(() => 0),
-    ]).then(([a, s, dates, h, respondidas]) => {
+      api.get("/firestore/students/me/rounds").then(({ data }) => data.rounds || []).catch(() => []),
+    ]).then(([a, s, dates, h, respondidas, r]) => {
       setAnalyses(a);
       setSparks(s);
       setTotalRespondidas(respondidas);
       setActivityDates(dates);
       setHubs(h);
+      setRounds(r);
       setLoaded(true);
     });
     // Tour de boas-vindas: só na primeira vez (`flags.onboarded === false` no
@@ -111,6 +138,7 @@ export default function Dashboard() {
         .filter((e) => e.total > 0)
     : [];
   const weakestArea = areaEntries.length ? [...areaEntries].sort((a, b) => a.pct - b.pct)[0] : null;
+  const weakestRound = !weakestArea ? weakestRoundBloco(rounds) : null;
 
   const rankedHubs = [...hubs].sort((a, b) => (b.mastery || 0) - (a.mastery || 0));
   const hasMasteryData = hubs.some((h) => (h.mastery || 0) > 0);
@@ -163,6 +191,29 @@ export default function Dashboard() {
             </div>
           </div>
         )}
+
+        {/* Aulas particulares — CTA de alta visibilidade */}
+        <div
+          className="mt-4 rounded-2xl p-6 md:p-7 flex flex-col md:flex-row md:items-center gap-4 bg-gradient-to-r from-amber-300 to-amber-400 shadow-[0_20px_50px_-25px_rgba(217,158,10,0.6)]"
+          data-testid="dash-aulas-particulares-banner"
+        >
+          <div className="w-12 h-12 rounded-xl bg-white/40 text-amber-950 flex items-center justify-center shrink-0">
+            <GraduationCap className="w-6 h-6" strokeWidth={1.8} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="font-display font-bold text-lg tracking-tight text-amber-950">Tenha aulas conosco</div>
+            <div className="mt-1 text-sm text-amber-900/80">
+              Precisa de reforço em alguma área? Solicite uma aula particular e fale direto com nossa equipe pelo WhatsApp.
+            </div>
+          </div>
+          <button
+            onClick={() => setShowAulasModal(true)}
+            className="pill shrink-0 inline-flex items-center justify-center gap-2 bg-amber-950 text-amber-50 hover:brightness-110 px-6 py-3 rounded-full text-sm font-semibold"
+            data-testid="dash-aulas-particulares-cta"
+          >
+            Solicitar aula <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
 
         {/* Sequência · Semana · Sparks */}
         <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4" data-tour="dash-stats">
@@ -246,6 +297,19 @@ export default function Dashboard() {
                   Treinar agora <ArrowRight className="w-4 h-4" />
                 </Link>
               </>
+            ) : weakestRound ? (
+              <>
+                <div className="font-display font-bold text-lg text-zinc-950 leading-snug">
+                  O Sapiens encontrou uma lacuna.
+                </div>
+                <p className="mt-2 text-sm text-zinc-600 leading-relaxed flex-1">
+                  Você acertou {weakestRound.percentual_acerto}% na rodada mais recente de{" "}
+                  <strong>{[weakestRound.bloco?.banca, weakestRound.bloco?.ano, weakestRound.bloco?.prova].filter(Boolean).join(" ")}</strong> — vale reforçar esse caderno.
+                </p>
+                <button onClick={() => nav("/exams")} className="pill btn-sapiens mt-4 self-start inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium" data-testid="dash-recommendation-cta">
+                  Treinar agora <ArrowRight className="w-4 h-4" />
+                </button>
+              </>
             ) : (
               <>
                 <div className="font-display font-bold text-lg text-zinc-950 leading-snug">Ainda reunindo dados.</div>
@@ -280,6 +344,7 @@ export default function Dashboard() {
       </div>
 
       {loaded && showTour && <OnboardingTour onDone={() => setShowTour(false)} />}
+      <AulasParticularesModal open={showAulasModal} onClose={() => setShowAulasModal(false)} />
     </div>
   );
 }

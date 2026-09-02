@@ -43,7 +43,7 @@ logger.setLevel(logging.INFO)
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
-COLLECTION_NAME = os.environ.get("FIRESTORE_COLLECTION", "pipelines")
+COLLECTION_NAME = os.environ.get("FIRESTORE_COLLECTION", "itens")
 FIRESTORE_MODE = os.environ.get("FIRESTORE_MODE", "mock").lower()
 
 # Fields we DO NOT mirror. Storage paths only make sense inside the internal
@@ -371,6 +371,17 @@ def sync_all_questions(all_docs: Iterable[dict]) -> dict:
     orphan_ids = [i for i in client.list_ids() if i not in internal_ids]
     orphans_removed = 0
     orphan_failures = 0
+    # An empty internal set would delete the entire published collection — that is
+    # always an operator mistake (wrong DB / wrong collection), never a real re-sync.
+    if not internal_ids and orphan_ids:
+        logger.error(
+            "sync_all aborted: 0 internal docs would delete %d Firestore docs in %r",
+            len(orphan_ids), COLLECTION_NAME,
+        )
+        raise RuntimeError(
+            f"Refusing full sync: nenhum item local, apagaria {len(orphan_ids)} "
+            f"documentos em '{COLLECTION_NAME}'."
+        )
     for oid in orphan_ids:
         try:
             client.delete(oid)
