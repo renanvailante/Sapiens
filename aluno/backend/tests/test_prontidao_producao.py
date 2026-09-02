@@ -24,6 +24,7 @@ _BASE_PROD = {
     "FIREBASE_SERVICE_ACCOUNT_PATH": "/secrets/sa.json",
     "ADMIN_EMAILS": "admin@exemplo.app",
     "MERCADOPAGO_ACCESS_TOKEN": "APP_USR-token",
+    "MERCADOPAGO_PUBLIC_KEY": "APP_USR-public-key",
     "MERCADOPAGO_WEBHOOK_SECRET": "webhook-secret",
     "SEED_DEMO_DATA": "false",
     "COOKIE_SECURE": "true",
@@ -160,6 +161,21 @@ def test_mercadopago_access_token_ausente_e_recusado_em_producao(monkeypatch):
 def test_mercadopago_webhook_secret_ausente_e_recusado_em_producao(monkeypatch):
     """Sem ele /api/sparks/webhook não valida que a notificação veio do MP."""
     assert "MERCADOPAGO_WEBHOOK_SECRET" in _problemas(monkeypatch, MERCADOPAGO_WEBHOOK_SECRET=None)
+
+
+def test_credencial_de_teste_do_mercadopago_e_recusada_em_producao(monkeypatch):
+    """Deixar a credencial `TEST-` em produção não falha visivelmente: o
+    checkout abre, o cartão é "aceito" e nenhum dinheiro entra. O boot precisa
+    recusar, senão o erro só aparece na conciliação financeira."""
+    p = _problemas(monkeypatch, MERCADOPAGO_ACCESS_TOKEN="TEST-123")
+    assert "MERCADOPAGO_ACCESS_TOKEN" in p and "teste" in p
+
+
+def test_public_key_de_teste_do_mercadopago_e_recusada_em_producao(monkeypatch):
+    """O Brick monta com a public key; se ela for de teste, o formulário roda
+    em sandbox mesmo com o backend em produção."""
+    p = _problemas(monkeypatch, MERCADOPAGO_PUBLIC_KEY="TEST-abc")
+    assert "MERCADOPAGO_PUBLIC_KEY" in p and "teste" in p
 
 
 # ------------------------------------------------------------ dados de demo

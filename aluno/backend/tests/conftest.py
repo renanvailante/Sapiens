@@ -38,6 +38,11 @@ class FakeCursor:
         return doc
 
 
+class FakeUpdateResult:
+    def __init__(self, matched_count: int):
+        self.matched_count = matched_count
+
+
 class FakeCollection:
     """Suporte mínimo: find_one/update_one(upsert)/insert_one/find. Consultas
     são casamento exato de campo — suficiente para os testes deste módulo,
@@ -68,11 +73,13 @@ class FakeCollection:
         for doc in self.docs:
             if self._bate(doc, query):
                 doc.update(update.get("$set", {}))
-                return
+                return FakeUpdateResult(matched_count=1)
         if upsert:
             novo = dict(query)
             novo.update(update.get("$set", {}))
             self.docs.append(novo)
+            return FakeUpdateResult(matched_count=0)
+        return FakeUpdateResult(matched_count=0)
 
     def find(self, query: dict | None = None, projection: dict | None = None):
         query = query or {}

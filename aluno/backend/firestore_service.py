@@ -14,6 +14,7 @@ import hashlib
 import json
 import logging
 import os
+import re
 import uuid
 from datetime import datetime, timezone
 from typing import Any, Optional
@@ -436,6 +437,89 @@ def grant_round_sparks(
     return {"ja_concedido": False, **round_doc}
 
 
+def count_answers_for_item(uid: str, item_id: str) -> int:
+    """Quantas vezes este aluno já respondeu efetivamente este item.
+
+    Base de `numero_tentativas`: reiniciar uma prova nunca apaga nem
+    sobrescreve o histórico, só acrescenta eventos — então "esta resposta é a
+    enésima tentativa" só pode sair de contar o que já está gravado, nunca de
+    um contador à parte no cliente (que zeraria a cada sessão nova).
+
+    Só conta `status == "respondida"`: um evento abandonado não é resposta.
+    """
+    query = (
+        _behavior_collection_ref(uid)
+        .where(filter=firestore.FieldFilter("item_id", "==", item_id))
+        .where(filter=firestore.FieldFilter("status", "==", "respondida"))
+    )
+    return sum(1 for _ in query.stream())
+
+
+def _purchase_ref(uid: str, payment_id: str):
+    """`students/{uid}/sparks_purchases/{payment_id}` — o id do pagamento no
+    Mercado Pago é a própria chave, que é o que torna o crédito idempotente
+    sem nenhuma checagem prévia (ver `grant_purchase_sparks`)."""
+    seguro = re.sub(r"[^A-Za-z0-9_.-]", "_", str(payment_id))[:400] or "pagamento"
+    return _student_doc_ref(uid).collection("sparks_purchases").document(seguro)
+
+
+def grant_purchase_sparks(
+    uid: str,
+    *,
+    payment_id: str,
+    package_id: str,
+    sparks_amount: int,
+    price_cents: int,
+    currency: str,
+    source: str,
+) -> dict[str, Any]:
+    """Credita os Sparks de um pagamento aprovado, UMA única vez.
+
+    Mesma garantia de `grant_round_sparks`, e pelo mesmo motivo: o Mercado
+    Pago reenvia notificações (retry por timeout, entregas duplicadas, e a
+    mesma cobrança notificada por eventos diferentes). O documento tem o
+    `mp_payment_id` como caminho, então `create()` só pode vencer uma vez —
+    quem chegar depois recebe `AlreadyExists` e não incrementa saldo nenhum.
+
+    Chamado SÓ pelo webhook, nunca na resposta síncrona do checkout: até o
+    Mercado Pago confirmar, não existe dinheiro e não deve existir Spark.
+    """
+    ref = _purchase_ref(uid, payment_id)
+    doc = {
+        "payment_id": str(payment_id),
+        "student_id": uid,
+        "package_id": package_id,
+        "sparks_amount": sparks_amount,
+        "price_cents": price_cents,
+        "currency": currency,
+        "source": source,
+        "created_at": _now_iso(),
+    }
+    try:
+        ref.create(doc)
+    except gcloud_exceptions.AlreadyExists:
+        existente = ref.get().to_dict() or {}
+        return {"ja_creditado": True, **existente}
+
+    if sparks_amount:
+        _student_doc_ref(uid).update({"sparks_balance": firestore.Increment(sparks_amount)})
+    return {"ja_creditado": False, **doc}
+
+
+def list_sparks_purchases(uid: str, limit: int = 100) -> list[dict[str, Any]]:
+    """Créditos de compra já aplicados ao saldo do aluno, mais recente
+    primeiro — a visão do Firestore (o que de fato virou saldo), separada da
+    auditoria de cobrança que vive em `sparks_payments` no Mongo."""
+    docs = (
+        _student_doc_ref(uid)
+        .collection("sparks_purchases")
+        .order_by("created_at", direction=firestore.Query.DESCENDING)
+        .limit(limit)
+        .stream()
+    )
+    return [d.to_dict() for d in docs]
+
+
 class InsufficientSparksError(Exception):
     """Saldo de Sparks do aluno é menor que o custo da ação."""
 
@@ -465,6 +549,21 @@ def deduct_sparks(uid: str, amount: int) -> int:
         return new_balance
 
     return _run(transaction)
+
+
+def refund_sparks(uid: str, amount: int) -> int:
+    """Devolve `amount` Sparks ao saldo — compensação de um débito cujo
+    trabalho pago falhou depois de cobrado.
+
+    Existe porque `deduct_sparks` acontece ANTES do trabalho caro (é o débito
+    que autoriza gastar o recurso), e uma falha no meio deixaria o aluno sem
+    Sparks e sem entrega. Não é uma operação de produto: nenhuma rota expõe
+    isso ao cliente, só o tratamento de erro do servidor a chama.
+    """
+    if amount <= 0:
+        return read_sparks_balance(uid)
+    _student_doc_ref(uid).update({"sparks_balance": firestore.Increment(amount)})
+    return read_sparks_balance(uid)
 
 
 # ======================================================================

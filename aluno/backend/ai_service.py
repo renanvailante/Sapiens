@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import json
 import logging
+import asyncio
 import os
 import re
 from typing import Any
@@ -82,6 +83,24 @@ def _extract_json(text: str) -> Any:
 
 _THINKING_VALIDOS = {"MINIMAL", "LOW", "MEDIUM", "HIGH"}
 
+# Teto de espera por chamada ao Gemini. Sem isto uma resposta pendurada segura
+# o worker indefinidamente: com `soft_limit = 40` requisições concorrentes numa
+# máquina só (fly.toml), poucas chamadas travadas bastam para o site inteiro
+# parar de responder — sem erro nenhum, só lentidão inexplicável.
+# O OCR do cartão-resposta manda uma imagem e demora mais que uma chamada de
+# texto, daí o teto próprio.
+GEMINI_TIMEOUT_SEGUNDOS = float(os.environ.get("GEMINI_TIMEOUT_SEGUNDOS", "30") or 30)
+GEMINI_TIMEOUT_VISION_SEGUNDOS = float(os.environ.get("GEMINI_TIMEOUT_VISION_SEGUNDOS", "60") or 60)
+
+
+class GeminiIndisponivelError(RuntimeError):
+    """Gemini não respondeu no tempo limite, ou falhou de forma não recuperável.
+
+    Existe para o chamador distinguir "o modelo não respondeu" de "o modelo
+    respondeu algo inválido" — o primeiro caso merece uma mensagem de tentar
+    de novo, o segundo é um bug de prompt.
+    """
+
 
 async def _generate_json(
     system_instruction: str,
@@ -89,6 +108,7 @@ async def _generate_json(
     parts: list | None = None,
     model: str | None = None,
     thinking_level: str | None = None,
+    timeout: float | None = None,
 ) -> Any:
     """`thinking_level`, quando presente, limita o raciocínio da chamada.
 
@@ -97,6 +117,10 @@ async def _generate_json(
     "thinking" numa única chamada — o app aluno usa o mesmo modelo, então
     chamadas novas e recorrentes aqui (ex.: resumo de sessão, gerado por
     aluno ativo) herdam o mesmo risco se ninguém configurar isto.
+
+    `timeout` (padrão `GEMINI_TIMEOUT_SEGUNDOS`) transforma uma chamada
+    pendurada em `GeminiIndisponivelError`, que cada chamador trata com o
+    fallback que fizer sentido para ele — nunca deixando o aluno esperando.
     """
     client = _client()
     chosen = model or _model()
@@ -110,12 +134,37 @@ async def _generate_json(
     nivel = (thinking_level or "").strip().upper()
     if nivel in _THINKING_VALIDOS:
         config_kwargs["thinking_config"] = types.ThinkingConfig(thinking_level=types.ThinkingLevel(nivel))
-    resp = await client.aio.models.generate_content(
-        model=chosen,
-        contents=contents,
-        config=types.GenerateContentConfig(**config_kwargs),
-    )
+    try:
+        resp = await asyncio.wait_for(
+            client.aio.models.generate_content(
+                model=chosen,
+                contents=contents,
+                config=types.GenerateContentConfig(**config_kwargs),
+            ),
+            timeout=timeout if timeout is not None else GEMINI_TIMEOUT_SEGUNDOS,
+        )
+    except asyncio.TimeoutError as exc:
+        raise GeminiIndisponivelError(
+            f"Gemini não respondeu em {timeout or GEMINI_TIMEOUT_SEGUNDOS:.0f}s."
+        ) from exc
     return _extract_json(resp.text or "")
+
+
+async def generate_json(
+    system_instruction: str,
+    user_text: str,
+    model: str | None = None,
+    thinking_level: str | None = None,
+) -> Any:
+    """Fachada pública de `_generate_json` para os módulos que chamam o Gemini
+    de fora deste arquivo (hoje o corretor de redação, em `redacao/`).
+
+    Existe como nome público de propósito: é o ponto único que os testes
+    offline substituem para rodar o corretor inteiro sem rede.
+    """
+    return await _generate_json(
+        system_instruction, user_text, model=model, thinking_level=thinking_level
+    )
 
 
 # ---------- Diagnóstico cognitivo ----------
@@ -294,6 +343,7 @@ async def ocr_answer_sheet(
         prompt,
         parts=[types.Part.from_bytes(data=data, mime_type=mime)],
         model=_vision_model(),
+        timeout=GEMINI_TIMEOUT_VISION_SEGUNDOS,
     )
     if isinstance(parsed, list):
         return parsed

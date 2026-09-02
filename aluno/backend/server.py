@@ -6,6 +6,7 @@ import logging
 import os
 import secrets
 from pathlib import Path
+from collections import Counter
 from typing import Any
 
 from dotenv import load_dotenv
@@ -36,6 +37,7 @@ import admin_routes as admin_module
 import events_routes as events_module
 import firestore_routes as firestore_module
 import skills_map_routes as skills_map_module
+import aulas_particulares_routes as aulas_particulares_module
 from enem_seed import migrate_and_seed
 from feed_seed import seed_feed
 from firestore_service import seed_all_students as _firestore_seed_students
@@ -50,6 +52,7 @@ feed_module.set_db(db)
 annotation_module.set_db(db)
 admin_module.set_db(db)
 firestore_module.set_db(db)
+aulas_particulares_module.set_db(db)
 
 app = FastAPI(
     title="Sapiens",
@@ -148,6 +151,26 @@ def _area_enem(disciplina: str | None) -> str | None:
     return disciplina.strip()
 
 
+def _area_dominante(disciplinas_raw: "Counter[str]") -> list[str]:
+    """A área do bloco é a MODA das disciplinas dos seus itens, não a união.
+
+    Um bloco de 45 é, por estrutura do ENEM, sempre de uma área só. A extração
+    automática de `fonte.disciplina` erra em um ou dois itens, e a união
+    transformava um caderno 100% de Matemática em "Ciências da Natureza e
+    Matemática" — um rótulo que descreve o ruído, não a prova. Empate é
+    desfeito por ordem alfabética só para o resultado ser estável entre
+    execuções (não acontece em corpus real).
+    """
+    contagem: Counter[str] = Counter()
+    for disciplina, vezes in disciplinas_raw.items():
+        if area := _area_enem(disciplina):
+            contagem[area] += vezes
+    if not contagem:
+        return []
+    maior = max(contagem.values())
+    return [sorted(a for a, n in contagem.items() if n == maior)[0]]
+
+
 BLOCO_TAMANHO = 45  # 1 prova/área real do ENEM. Um caderno de dia inteiro tem
 # 2 blocos (90 questões): 1-45/46-90 no dia 1, 91-135/136-180 no dia 2. Juntar
 # os 2 num só "caderno" escondia que são 2 provas distintas.
@@ -190,14 +213,14 @@ async def list_provas_publico():
         if bloco is None:
             continue
         chave = (fonte.get("banca"), fonte.get("ano"), fonte.get("prova"), bloco[0], bloco[1])
-        g = grupos.setdefault(chave, {"count": 0, "disciplinas_raw": set()})
+        g = grupos.setdefault(chave, {"count": 0, "disciplinas_raw": Counter()})
         g["count"] += 1
         if fonte.get("disciplina"):
-            g["disciplinas_raw"].add(fonte["disciplina"])
+            g["disciplinas_raw"][fonte["disciplina"]] += 1
 
     provas = []
     for (banca, ano, prova, numero_min, numero_max), g in grupos.items():
-        areas = sorted({a for d in g["disciplinas_raw"] if (a := _area_enem(d))})
+        areas = _area_dominante(g["disciplinas_raw"])
         provas.append(
             {
                 "banca": banca,
@@ -223,6 +246,7 @@ api_router.include_router(admin_module.router)
 api_router.include_router(events_module.router)
 api_router.include_router(firestore_module.router)
 api_router.include_router(skills_map_module.router)
+api_router.include_router(aulas_particulares_module.router)
 app.include_router(api_router)
 
 

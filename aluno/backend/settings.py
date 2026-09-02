@@ -67,6 +67,15 @@ GOOGLE_CREDENTIALS = _env("FIREBASE_SERVICE_ACCOUNT_PATH") or _env("GOOGLE_APPLI
 FIREBASE_SERVICE_ACCOUNT_JSON = _env("FIREBASE_SERVICE_ACCOUNT_JSON")
 FIREBASE_PROJECT_ID = _env("FIREBASE_PROJECT_ID")
 
+# Mercado Pago. Só estes dois segredos + o webhook secret são usados: Client ID
+# e Client Secret pertencem ao fluxo OAuth de marketplace (cobrar em nome de
+# terceiros), que não é o caso aqui — a loja cobra na própria conta.
+# `MERCADOPAGO_PUBLIC_KEY` é pública por natureza (vai para o navegador montar
+# o Brick); o access token e o webhook secret NUNCA saem do backend.
+MERCADOPAGO_ACCESS_TOKEN = _env("MERCADOPAGO_ACCESS_TOKEN")
+MERCADOPAGO_PUBLIC_KEY = _env("MERCADOPAGO_PUBLIC_KEY")
+MERCADOPAGO_WEBHOOK_SECRET = _env("MERCADOPAGO_WEBHOOK_SECRET")
+
 SEED_DEMO_DATA = _flag("SEED_DEMO_DATA", default=not IS_PRODUCTION)
 LOG_LEVEL = (_env("LOG_LEVEL", "INFO") or "INFO").upper()
 
@@ -140,6 +149,28 @@ def validar() -> list[str]:
                 "ADMIN_EMAILS ausente em produção — ninguém conseguiria acessar "
                 "as telas administrativas."
             )
+        if not MERCADOPAGO_ACCESS_TOKEN:
+            problemas.append(
+                "MERCADOPAGO_ACCESS_TOKEN ausente — a loja de Sparks não cria "
+                "pagamento nem assinatura nenhuma, e o aluno vê a compra como "
+                "indisponível sem entender por quê."
+            )
+        elif MERCADOPAGO_ACCESS_TOKEN.startswith("TEST-"):
+            problemas.append(
+                "MERCADOPAGO_ACCESS_TOKEN é credencial de teste (prefixo TEST-) "
+                "em produção — cobranças reais não seriam processadas."
+            )
+        if MERCADOPAGO_PUBLIC_KEY and MERCADOPAGO_PUBLIC_KEY.startswith("TEST-"):
+            problemas.append(
+                "MERCADOPAGO_PUBLIC_KEY é credencial de teste (prefixo TEST-) em "
+                "produção — o Checkout Brick abriria em modo sandbox."
+            )
+        if not MERCADOPAGO_WEBHOOK_SECRET:
+            problemas.append(
+                "MERCADOPAGO_WEBHOOK_SECRET ausente — /api/sparks/webhook não "
+                "conseguiria validar que a notificação veio mesmo do Mercado "
+                "Pago, e qualquer um poderia forjar um crédito de Sparks."
+            )
 
     return problemas
 
@@ -165,4 +196,15 @@ def resumo() -> dict:
         "gemini_configurado": bool(GEMINI_API_KEY),
         "firebase_configurado": bool(GOOGLE_CREDENTIALS or FIREBASE_SERVICE_ACCOUNT_JSON),
         "admins_declarados": len(ADMIN_EMAILS),
+        # Booleano e nunca o valor: este resumo vai para o log de startup e
+        # para /ready, ambos legíveis por quem tiver acesso a eles.
+        "mercadopago_configurado": bool(MERCADOPAGO_ACCESS_TOKEN),
+        "mercadopago_public_key_configurada": bool(MERCADOPAGO_PUBLIC_KEY),
+        "mercadopago_webhook_configurado": bool(MERCADOPAGO_WEBHOOK_SECRET),
+        # Qual ambiente do MP as credenciais apontam — sem revelar a credencial.
+        "mercadopago_ambiente": (
+            "não configurado" if not MERCADOPAGO_ACCESS_TOKEN
+            else "teste" if MERCADOPAGO_ACCESS_TOKEN.startswith("TEST-")
+            else "produção"
+        ),
     }

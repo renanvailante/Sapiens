@@ -35,7 +35,17 @@ import uuid
 import pytest
 import requests
 
-BASE_URL = os.environ["REACT_APP_BACKEND_URL"].rstrip("/")
+# Suíte de integração: exige um servidor no ar em `REACT_APP_BACKEND_URL`.
+# Sem a variável ela FALHAVA NA COLETA, o que derrubava a suíte inteira
+# em vermelho sem nada a ver com o código sob teste. Pular no nível do
+# módulo mantém os testes intactos e só os ativa quando há infraestrutura.
+_BASE_URL = os.environ.get("REACT_APP_BACKEND_URL")
+if not _BASE_URL:
+    pytest.skip(
+        "REACT_APP_BACKEND_URL não definida — suíte de integração exige servidor no ar.",
+        allow_module_level=True,
+    )
+BASE_URL = _BASE_URL.rstrip("/")
 API = f"{BASE_URL}/api"
 
 ADMIN_EMAIL = "qa@sapiens.app"

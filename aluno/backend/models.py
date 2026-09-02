@@ -163,3 +163,93 @@ class PasteAnswerKeyRequest(BaseModel):
     day: int  # 1 or 2
     color: str
     raw_text: str  # pasted content from INEP
+
+
+# ---------- Aulas particulares ----------
+
+AULAS_PARTICULARES_AREAS = [
+    "Matemática",
+    "Ciências da Natureza",
+    "Linguagens",
+    "Ciências Humanas",
+    "Redação",
+]
+
+AULAS_PARTICULARES_STATUS = ["pendente", "em_andamento", "concluida", "cancelada"]
+
+
+class AulaParticularRequest(BaseModel):
+    request_id: str = Field(default_factory=lambda: f"aula_{uuid.uuid4().hex[:12]}")
+    user_id: str
+    nome_completo: str
+    whatsapp: str
+    areas: list[str]
+    descricao: str = ""
+    status: str = "pendente"
+    created_at: str = Field(default_factory=_now_iso)
+    updated_at: str = Field(default_factory=_now_iso)
+
+
+class CreateAulaParticularRequest(BaseModel):
+    nome_completo: str
+    whatsapp: str
+    areas: list[str]
+    descricao: str = ""
+
+
+class UpdateAulaParticularStatusRequest(BaseModel):
+    status: str
+
+
+# ---------- Redação (corretor ENEM) ----------
+#
+# `Redacao` é o que o aluno enviou; `AvaliacaoRedacao` é o resultado da
+# correção — separados de propósito: reprocessar uma redação com um canon mais
+# novo gera uma avaliação nova sem tocar no texto original, e o histórico
+# mostra a evolução sem reescrever o passado.
+
+REDACAO_TEXTO_MAX = 20_000  # ~4x uma redação Enem de 30 linhas; corta abuso sem cortar aluno.
+
+
+class RedacaoSubmitRequest(BaseModel):
+    texto: str = Field(..., max_length=REDACAO_TEXTO_MAX)
+    titulo: str | None = Field(default=None, max_length=300)
+    tema_frase: str | None = Field(default=None, max_length=1_000)
+    tema_elementos_obrigatorios: list[str] = Field(default_factory=list, max_length=20)
+    linhas_manuscritas: int | None = Field(default=None, ge=0, le=100)
+    textos_motivadores: list[str] = Field(default_factory=list, max_length=10)
+
+
+class Redacao(BaseModel):
+    redacao_id: str = Field(default_factory=lambda: f"red_{uuid.uuid4().hex[:12]}")
+    user_id: str
+    texto: str
+    titulo: str | None = None
+    tema_frase: str | None = None
+    tema_elementos_obrigatorios: list[str] = Field(default_factory=list)
+    linhas_manuscritas: int | None = None
+    textos_motivadores: list[str] = Field(default_factory=list)
+    created_at: str = Field(default_factory=_now_iso)
+
+
+class AvaliacaoRedacao(BaseModel):
+    """Espelha exatamente o dicionário de `redacao.pontuacao.montar_resultado`
+    (mais os campos de vínculo). Campos extras do corretor são preservados —
+    o canon evolui e não vale a pena perder informação numa validação
+    estrita enquanto o formato ainda está se firmando."""
+
+    model_config = {"extra": "allow"}
+
+    avaliacao_id: str = Field(default_factory=lambda: f"aval_{uuid.uuid4().hex[:12]}")
+    redacao_id: str
+    user_id: str
+    estado_geral: str
+    nota_total: int
+    competencias: list[dict[str, Any]] = Field(default_factory=list)
+    gatilhos_disparados: list[dict[str, Any]] = Field(default_factory=list)
+    tangenciamento_detectado: bool | None = None
+    necessita_revisao_humana: bool = False
+    itens_para_revisao: list[str] = Field(default_factory=list)
+    itens_escalonados_llm: list[str] = Field(default_factory=list)
+    canon_versao: str | None = None
+    created_at: str = Field(default_factory=_now_iso)
