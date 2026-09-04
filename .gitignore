@@ -1,0 +1,39 @@
+.secrets/
+*.env
+.env
+.env.*
+# ...mas os exemplos SAO versionados: sao a documentacao das variaveis
+!.env.example
+!*.env.example
+node_modules/
+.mongodb-data/
+.logs/
+venv/
+.venv/
+build/
+dist/
+
+# acrescentado na remocao da Emergent (2026-08-21)
+# ATENCAO: o .gitignore NAO aceita comentario no fim da linha do padrao —
+# `_storage/   # artefatos` vira um padrao literal com espacos e "#", que nao
+# casa com nada. As duas linhas abaixo ficaram MORTAS por isso ate 2026-09-03,
+# e os 412 MB de `pipeline/backend/_storage/` estavam prestes a entrar no
+# repositorio. Comentario sempre em linha propria.
+# artefatos binarios do pipeline (STORAGE_MODE=local)
+_storage/
+__pycache__/
+.pytest_cache/
+.DS_Store
+# relatorios de execucao, nao fonte
+test_reports/
+
+# saneamento do corpus (auditoria 2026-08-26): backups, gabaritos oficiais
+# do INEP e boletins do auditor. Contem dado de aluno; nao versionar.
+.saneamento/
+
+# caches de ferramenta de deploy (Cloudflare Wrangler)
+.wrangler/
+
+# Claude Code: a configuracao de execucao e do projeto e vai versionada;
+# settings.local.json e permissao da maquina de cada um.
+.claude/settings.local.json
