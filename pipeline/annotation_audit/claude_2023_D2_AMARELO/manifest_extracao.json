@@ -1,0 +1,1131 @@
+[
+  {
+    "numero": 91,
+    "pagina": 2,
+    "crop": "crops/Q091.png",
+    "page_full": "pages_full/page_02.png",
+    "has_raster_image": true,
+    "vector_ops_in_range": 2,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [
+      [
+        58.1,
+        147.8,
+        508.8,
+        261.1
+      ]
+    ],
+    "raw_text": "Questões de 91 a 135\nQUESTÃO 91\t\nNa tirinha de Mauricio de Sousa, os personagens Cebolinha e Cascão fazem uma brincadeira utilizando duas\ne um barbante. Ao perceberem que o som pode ser transmitido através do barbante, resolvem alterar o comprime\nbarbante para ficar cada vez mais extenso. As demais condições permaneceram inalteradas durante a brinca\nSOUSA, M. Disponível em: www.monica.com.br. Acesso em: 2 out. 2012 (a\nNa prática, à medida que se aumenta o comprimento do barbante, ocorre a redução de qual característica da onda so\nA\t\nA\t Altura.\nB\t\nB\t Período.\nC\t\nC\t Amplitude.\nD\t\nD\t Velocidade.\nE\t\nE\t Comprimento de onda.\n"
+  },
+  {
+    "numero": 92,
+    "pagina": 2,
+    "crop": "crops/Q092.png",
+    "page_full": "pages_full/page_02.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 2,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "E\t\nE\t Comprimento de onda.\nQUESTÃO 92\t\nInformações digitais — dados — são gravadas em d\nmicroscópicas. A gravação e a leitura óptica dessas informaçõ\nQuanto menores as dimensões dessas cavidades, mais dado\npara a leitura de dados é o espalhamento da luz pelo efeito d\nobstáculo com dimensões da ordem de seu comprimento de\ncom emissão em menores comprimentos de onda, possibilita\nEm qual região espectral se situa o comprimento de onda d\nem discos de uma mesma área?\nA\t\nA\t Violeta.\nB\t\nB\t Azul.\nC\t\nC\t Verde.\nD\t\nD\t Vermelho.\nE\t\nE\t Infravermelho.\n"
+  },
+  {
+    "numero": 93,
+    "pagina": 2,
+    "crop": "crops/Q093.png",
+    "page_full": "pages_full/page_02.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 6,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "2\nCN • 2º DIA • CADE\nE\t\nE\t Infravermelho.\nQUESTÃO 93\t\nO bluetooth é uma tecnologia de comunicação sem f\neletrônicos de consumo. Ela permite que aparelhos elet\nsi. No padrão bluetooth, denominado de Classe 2, as a\npossibilitam conectar dois dispositivos distanciados até 1\nfontes puntiformes que emitem ondas eletromagnéticas \npotência por unidade de área. Considere 3 como valor ap\nPara que o sinal de bluetooth seja detectado pelas anten\npróximo de\nA\t\nA\t 2,0 × 10–6.\nB\t\nB\t 2,0 × 10–5.\nC\t\nC\t 2,4 × 10–5.\nD\t\nD\t 2,4 × 10–3.\nE\t\nE\t 2,4 × 10–1.\n"
+  },
+  {
+    "numero": 94,
+    "pagina": 3,
+    "crop": "crops/Q094.png",
+    "page_full": "pages_full/page_03.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 187,
+    "possivel_figura_vetorial": true,
+    "image_bboxes": [],
+    "raw_text": "QUESTÃO 94\t\nOs solos amazônicos, ricos em silicato, não são apropri\nContudo, descobertas arqueológicas têm demonstrado que\nde preparo de um insumo agrícola natural, denominado \nde uma espécie de biocarvão (biochar) obtido da queima d\nossos e esterco, capaz de manter um solo fértil por anos.\nAdmite-se que o efeito do biocarvão na fertilização do\norgânicos do tipo carboxilato em sua superfície, carregad\npositivos necessários como nutrientes, tais quais os proven\nalém de micronutrientes, como zinco (Zn) e ferro (Fe). Ess\nconforme ilustra a figura, em que Mn+ representa os cá\neletronegatividade do elemento oxigênio é igual a 3,44.\nM\nO\nO–\nSolo com biocarvão\nO quadro apresenta os valores de eletronegatividade d\nElemento metálico\nK\nCa\nMg\nZn\nFe\nM\nO cátion que resultará em uma interação de maior caráte\ndo elemento \nA\t\nA\t potássio.\nB\t\nB\t cálcio.\nC\t\nC\t magnésio.\nD\t\nD\t zinco.\nE\t\nE\t ferro.\n"
+  },
+  {
+    "numero": 95,
+    "pagina": 3,
+    "crop": "crops/Q095.png",
+    "page_full": "pages_full/page_03.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 10,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "CN • 2º DIA • CADE\nQUESTÃO 95\t\nEm uma indústria alimentícia, para produção de doce d\npara vapor de água a 120 °C  e uma saída para água líquida\noca do tacho, o vapor de água transforma-se em líquido, l\ninterior do tacho, resultando na evaporação de água e con\nNo processo de concentração do produto, é utilizada ener\nA\t\nA\t somente do calor latente de vaporização.\nB\t\nB\t somente do calor latente de condensação.\nC\t\nC\t do calor sensível e do calor latente de vaporização.\nD\t\nD\t do calor sensível e do calor latente de condensação.\nE\t\nE\t do calor latente de condensação e do calor latente de \n"
+  },
+  {
+    "numero": 96,
+    "pagina": 4,
+    "crop": "crops/Q096.png",
+    "page_full": "pages_full/page_04.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 38,
+    "possivel_figura_vetorial": true,
+    "image_bboxes": [],
+    "raw_text": "QUESTÃO 96\t\nA gasolina é uma mistura de hidrocarbonetos de \ncadeias saturadas contendo de 8 a 12 átomos de carbono. \nAlém disso, a gasolina de alto desempenho deve conter \nelevados teores de hidrocarbonetos de cadeias ramificadas, \nde forma a resistir à compressão e entrar em ignição apenas \nquando a vela aciona uma centelha elétrica no motor. \nNo quadro, estão apresentados compostos que podem \nser utilizados como combustíveis.\nComposto\nNomenclatura\nI\nn-decano\nII\nn-heptano\nIII\n2,2,4-trimetilpentano\nIV\n3-etil-4-metilex-1-eno\nV\n3-etil-2-metilpentan-1-ol\nEntre esses compostos, aquele que conferirá maior \ndesempenho como combustível é o\nA\t\nA\t I.\nB\t\nB\t II.\nC\t\nC\t III.\nD\t\nD\t IV.\nE\t\nE\t V.\n"
+  },
+  {
+    "numero": 97,
+    "pagina": 4,
+    "crop": "crops/Q097.png",
+    "page_full": "pages_full/page_04.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 10,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "4\nCN • 2º DIA • CADE\nQUESTÃO 97\t\nDe acordo com a Constituição Federal, é competência \ndos municípios o gerenciamento dos serviços de limpeza e \ncoleta dos resíduos urbanos (lixo). No entanto, há relatos \nde que parte desse lixo acaba sendo incinerado, liberando \nsubstâncias tóxicas para o ambiente e causando acidentes \npor explosões, principalmente quando ocorre a incineração \nde frascos de aerossóis (por exemplo: desodorantes, \ninseticidas e repelentes). A temperatura elevada provoca \na vaporização de todo o conteúdo dentro desse tipo de \nfrasco, aumentando a pressão em seu interior até culminar \nna explosão da embalagem.\nZVEIBIL, V. Z. et al. Cartilha de limpeza urbana. Disponível em: \nwww.ibam.org.br. Acesso em: 6 jul. 2015 (adaptado).\nSuponha um frasco metálico de um aerossol de \ncapacidade igual a 100 mL, contendo 0,1 mol de produtos \ngasosos à temperatura de 650 °C, no momento da explosão.\nConsidere: R = 0,082 L atm\nmol K\n⋅\n⋅\nA pressão, em atm, dentro do frasco, no momento da \nexplosão, é mais próxima de\nA\t\nA\t 756.\nB\t\nB\t 533.\nC\t\nC\t 76.\nD\t\nD\t 53.\nE\t\nE\t 13.\n"
+  },
+  {
+    "numero": 98,
+    "pagina": 4,
+    "crop": "crops/Q098.png",
+    "page_full": "pages_full/page_04.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 135,
+    "possivel_figura_vetorial": true,
+    "image_bboxes": [],
+    "raw_text": "RNO 5 • AMARELO\nQUESTÃO 98\t\nO circuito com três lâmpadas incandescentes idênticas, \nrepresentado na figura, consiste em uma associação mista \nde resistores. Cada lâmpada (L 1, L2 e L3) é associada, \nem paralelo, a um resistor de resistência R, formando um \nconjunto. Esses conjuntos são associados em série, tendo \ntodas as lâmpadas o mesmo brilho quando ligadas à fonte \nde energia. Após vários dias em uso, apenas a lâmpada L2 \nqueima, enquanto as demais permanecem acesas.\nFonte de\nenergia\nR\nL³\nR\nR\nL²\nL¹\nEm relação à situação em que todas as lâmpadas \nfuncionam, após a queima de L2, os brilhos das \nlâmpadas serão\nA\t\nA\t os mesmos.\nB\t\nB\t mais intensos.\nC\t\nC\t menos intensos.\nD\t\nD\t menos intenso para L 1 e o mesmo para L3.\nE\t\nE\t mais intenso para L 1 e menos intenso para L3.\n"
+  },
+  {
+    "numero": 99,
+    "pagina": 5,
+    "crop": "crops/Q099.png",
+    "page_full": "pages_full/page_05.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 6,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "QUESTÃO 99\t\nA tecnologia de vacinas de RNA mensageiro (RNAm) \né investigada há anos. Avanços científicos em genética \nmolecular permitiram desenvolver uma vacina para \ncontrole da pandemia da covid-19 causada pelo vírus de \nRNA SARS-CoV-2. A vacina de RNAm tem sequências \nde genes do vírus. Entretanto, por ser muito instável, o \nRNAm deve ser recoberto por uma capa de lipídios que \nevita sua degradação e favorece sua ação. Dessa forma, \no RNAm desempenhará sua função específica atuando \nno mesmo compartimento celular de sempre.\nDisponível em: https://sbim.org.br. Acesso em: 29 nov. 2021 (adaptado).\nA imunização produzida por esse tipo de vacina é \nalcançada por meio da\nA\t\nA\t estimulação de leucócitos induzida pela capa lipídica \ncontendo RNAm.\nB\t\nB\t atuação do RNAm como sequestrador do vírus para \no meio extracelular.\nC\t\nC\t tradução do RNAm em proteína viral, desencadeando \na resposta antigênica.\nD\t\nD\t competição entre o RNAm vacinal e o RNA viral pelos \nsítios dos ribossomos.\nE\t\nE\t incorporação do RNAm viral ao genoma do hospedeiro, \ngerando novo fenótipo.\n"
+  },
+  {
+    "numero": 100,
+    "pagina": 5,
+    "crop": "crops/Q100.png",
+    "page_full": "pages_full/page_05.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 15,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "CN • 2º DIA • CADE\ng\np\nQUESTÃO 100\t\nNa fertilização in vitro, espermatozoides são adicionados \naos gametas femininos retirados de uma mulher. Após o \nperíodo de incubação, a fecundação é favorecida pela ação \nde enzimas. Em um procedimento realizado, observou-se \nque nenhum dos gametas femininos foi fertilizado e, \nposteriormente, verificou-se que havia sido adicionado, \nequivocadamente, um coquetel de inibidores das enzimas do \nacrossomo, no lugar de um dos nutrientes constituintes do \nmeio de cultura.\nO coquetel de inibidores impediu o(a)\nA\t\nA\t formação do pronúcleo masculino.\nB\t\nB\t início da divisão mitótica do zigoto.\nC\t\nC\t término da segunda divisão meiótica do ovócito.\nD\t\nD\t passagem do espermatozoide pela corona radiata e \nzona pelúcida.\nE\t\nE\t fusão das membranas plasmáticas do ovócito e do \nespermatozoide.\n"
+  },
+  {
+    "numero": 101,
+    "pagina": 5,
+    "crop": "crops/Q101.png",
+    "page_full": "pages_full/page_05.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 6,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "QUESTÃO 101\t\nO fogão por indução funciona a partir do surgimento \nde uma corrente elétrica induzida no fundo da panela, \ncom consequente transformação de energia elétrica \nem calor por efeito Joule. A principal vantagem desses \nfogões é a eficiência energética, que é substancialmente \nmaior que a dos fogões convencionais.\nA corrente elétrica mencionada é induzida por\nA\t\nA\t radiação.\nB\t\nB\t condução.\nC\t\nC\t campo elétrico variável.\nD\t\nD\t campo magnético variável.\nE\t\nE\t ressonância eletromagnética.\n"
+  },
+  {
+    "numero": 102,
+    "pagina": 5,
+    "crop": "crops/Q102.png",
+    "page_full": "pages_full/page_05.png",
+    "has_raster_image": true,
+    "vector_ops_in_range": 51,
+    "possivel_figura_vetorial": true,
+    "image_bboxes": [
+      [
+        360.0,
+        415.0,
+        371.0,
+        427.0
+      ],
+      [
+        363.0,
+        418.0,
+        369.0,
+        424.0
+      ],
+      [
+        370.0,
+        558.0,
+        381.0,
+        570.0
+      ],
+      [
+        372.0,
+        561.0,
+        379.0,
+        567.0
+      ],
+      [
+        317.0,
+        415.0,
+        329.0,
+        427.0
+      ],
+      [
+        320.0,
+        418.0,
+        326.0,
+        424.0
+      ],
+      [
+        495.0,
+        415.0,
+        507.0,
+        427.0
+      ],
+      [
+        498.0,
+        418.0,
+        504.0,
+        424.0
+      ],
+      [
+        505.0,
+        558.0,
+        516.0,
+        570.0
+      ],
+      [
+        508.0,
+        561.0,
+        514.0,
+        567.0
+      ],
+      [
+        456.0,
+        415.0,
+        467.0,
+        427.0
+      ],
+      [
+        458.0,
+        418.0,
+        464.0,
+        424.0
+      ],
+      [
+        446.0,
+        535.0,
+        457.0,
+        546.0
+      ],
+      [
+        449.0,
+        537.0,
+        455.0,
+        543.0
+      ]
+    ],
+    "raw_text": "5\nRNO 5 • AMARELO\nE\t\nE\t ressonância eletromagnética.\nQUESTÃO 102\t\nUma academia decide trocar gradualmente seus \naparelhos de musculação. Agora, os frequentadores \nque utilizam os aparelhos do tipo 1 podem também \nutilizar os aparelhos do tipo 2, representados na figura, \npara elevar cargas correspondentes às massas M1 e M2, \ncom velocidade constante. A fim de que o exercício seja \nrealizado com a mesma força F, os usuários devem ser \norientados a respeito da relação entre as cargas nos dois \ntipos de aparelhos, já que as polias fixas apenas mudam a \ndireção das forças, enquanto a polia móvel divide as forças.\nEm ambos os aparelhos, considere as cordas \ninextensíveis, as massas das polias e das cordas desprezíveis \ne que não há dissipação de energia.\nF\nF\nM1\nM2\nAparelho do tipo 2\nAparelho do tipo 1\nPara essa academia, qual deve ser a razão M\nM\n2\n1\n informada \naos usuários?\nA\t\nA\t 1\n4\nB\t\nB\t 1\n2\nC\t\nC\t 1\nD\t\nD\t 2\nE\t\nE\t 4\n"
+  },
+  {
+    "numero": 103,
+    "pagina": 6,
+    "crop": "crops/Q103.png",
+    "page_full": "pages_full/page_06.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 5,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "QUESTÃO 103\t\nUm garoto comprou vários abacates na feira, mas \ndescobriu que eles não estavam maduros o suficiente \npara serem consumidos. Sua mãe recomendou que \nele colocasse os abacates em um recipiente fechado, \npois isso aceleraria seu amadurecimento. Com certa \ndúvida, o garoto realizou esta experiência: colocou \nalguns abacates no recipiente e deixou os demais em \numa fruteira aberta. Surpreendendo-se, ele percebeu \nque os frutos que estavam no recipiente fechado \namadureceram mais rapidamente.\nA aceleração desse processo é causada por\nA\t\nA\t acúmulo de gás etileno.\nB\t\nB\t redução da umidade do ar.\nC\t\nC\t aumento da concentração de CO2.\nD\t\nD\t diminuição da intensidade luminosa.\nE\t\nE\t isolamento do contato com O2 atmosférico.\n"
+  },
+  {
+    "numero": 104,
+    "pagina": 6,
+    "crop": "crops/Q104.png",
+    "page_full": "pages_full/page_06.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 23,
+    "possivel_figura_vetorial": true,
+    "image_bboxes": [],
+    "raw_text": "6\nCN • 2º DIA • CADE\nQUESTÃO 104\t\nHá muito tempo são conhecidas espécies de \nlesmas-do-mar com uma capacidade ímpar: guardar \nparte da maquinaria das células das algas que \nconsomem — os cloroplastos — e mantê-los funcionais \ndentro das suas próprias células, obtendo assim \nparte do seu alimento. Investigadores portugueses \ndescobriram que essas lesmas-do-mar podem ser \nmais eficientes nesse processo do que as próprias \nalgas que consomem.\nDisponível em: www.cienciahoje.pt. Acesso em: 10 fev. 2015 (adaptado).\nEssa adaptação confere a esse organismo a capacidade \nde obter primariamente\nA\t\nA\t ácidos nucleicos.\nB\t\nB\t carboidratos.\nC\t\nC\t proteínas.\nD\t\nD\t vitaminas.\nE\t\nE\t lipídios.\n"
+  },
+  {
+    "numero": 105,
+    "pagina": 6,
+    "crop": "crops/Q105.png",
+    "page_full": "pages_full/page_06.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 8,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "QUESTÃO 105\t\nA leishmaniose visceral é uma zoonose causada por \num protozoário do gênero Leishmania que é encontrado em \ndiversos tecidos. Ela é transmitida ao homem de forma \nindireta, por vetores do ambiente doméstico. O cão é \nconsiderado um importante hospedeiro desse protozoário, \npodendo ou não apresentar os sintomas da doença, como \nperda de peso, anemia, ferimentos na pele, diarreia, \nconjuntivite e insuficiência renal. Em uma região que \nsofre com alta incidência dessa doença, uma campanha \ndo centro de zoonoses buscou verificar a presença desse \nprotozoário nos cães para tentar controlar a doença.\nEm qual material biológico dos cães a presença desse \nprotozoário representa risco de transmissão dessa zoonose?\nA\t\nA\t Urina.\nB\t\nB\t Saliva.\nC\t\nC\t Fezes.\nD\t\nD\t Sangue.\nE\t\nE\t Secreção ocular.\n"
+  },
+  {
+    "numero": 106,
+    "pagina": 6,
+    "crop": "crops/Q106.png",
+    "page_full": "pages_full/page_06.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 60,
+    "possivel_figura_vetorial": true,
+    "image_bboxes": [],
+    "raw_text": "RNO 5 • AMARELO\nç\nQUESTÃO 106\t\nUm professor lança uma esfera verticalmente para \ncima, a qual retorna, depois de alguns segundos, ao ponto \nde lançamento. Em seguida, lista em um quadro todas as \npossibilidades para as grandezas cinemáticas.\nGrandeza cinemática\nMódulo\nSentido\nVelocidade\nv ≠ 0\nPara cima\nPara baixo\nv = 0\nIndefi nido*\nAceleração\na ≠ 0\nPara cima\nPara baixo\na = 0\nIndefi nido*\n*Grandezas com módulo nulo não têm sentido definido.\nEle solicita aos alunos que analisem as grandezas \ncinemáticas no instante em que a esfera atinge a altura \nmáxima, escolhendo uma combinação para os módulos \ne sentidos da velocidade e da aceleração.\nA escolha que corresponde à combinação correta é\nA\t\nA\t v = 0 e a ≠ 0 para cima.\nB\t\nB\t v ≠ 0 para cima e a = 0.\nC\t\nC\t v = 0 e a ≠ 0 para baixo.\nD\t\nD\t v ≠ 0 para cima e a ≠ 0 para cima.\nE\t\nE\t v ≠ 0 para baixo e a ≠ 0 para baixo.\n"
+  },
+  {
+    "numero": 107,
+    "pagina": 7,
+    "crop": "crops/Q107.png",
+    "page_full": "pages_full/page_07.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 5,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "QUESTÃO 107\t\nMuitas mulheres sofrem com desconfortos nos dias \nque antecedem a menstruação, a chamada tensão \npré-menstrual. Entre outros sintomas, podem ocorrer \nalterações de humor. Atualmente, acredita-se que os \nsintomas são resultado da queda na concentração do \nneurotransmissor serotonina, que, por sua vez, está \nrelacionado com a diminuição na produção dos hormônios \novarianos estrógeno e progesterona, observada nessa \nfase do ciclo feminino.\nDIMMOCK, P. W. et al. Efficacy of Selective Serotonin-Reuptake Inhibitors in Premenstrual \nSyndrome: a Systematic Review. The Lancet, n. 9 236, 2000 (adaptado).\nA redução da produção desses hormônios nessa fase \nestá relacionada com o(a)\nA\t\nA\t regressão do corpo lúteo ovariano.\nB\t\nB\t diminuição na produção de ocitocina.\nC\t\nC\t liberação do gameta feminino na ovulação.\nD\t\nD\t aumento nos níveis dos hormônios LH e FSH.\nE\t\nE\t elevação nos níveis sorológicos de adrenalina.\n"
+  },
+  {
+    "numero": 108,
+    "pagina": 7,
+    "crop": "crops/Q108.png",
+    "page_full": "pages_full/page_07.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 5,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "QUESTÃO 108\t\nAs cetonas fazem parte de famílias olfativas encontradas \nem muitos alimentos. A molécula de hexan-3-ona é um \nexemplo desses compostos voláteis responsáveis pelo \naroma, podendo ser obtida por processos energéticos \nrealizados em meio ácido, na presença de oxidantes como \no permanganato de potássio.\nPara se produzir esse composto volátil em laboratório, \ndeve-se oxidar a molécula de\nA\t\nA\t hexanal.\nB\t\nB\t hexan-1-ol.\nC\t\nC\t hexan-3-ol.\nD\t\nD\t hex-1-en-1-ol.\nE\t\nE\t ácido hexanoico.\n"
+  },
+  {
+    "numero": 109,
+    "pagina": 7,
+    "crop": "crops/Q109.png",
+    "page_full": "pages_full/page_07.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 13,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "CN • 2º DIA • CADE\nQUESTÃO 109\t\nDurante a evolução das plantas, ocorreu uma transição \ndo ambiente aquático para o ambiente terrestre graças ao \nsurgimento de algumas estruturas que as tornaram \nindependentes da água. Esse fato permitiu maior dispersão \ndesse grupo de seres vivos, sendo possível observá-los \nem diferentes ambientes na atualidade.\nQual estrutura possibilitou a independência da água para \na fecundação dos seres vivos citados acima?\nA\t\nA\t Fruto.\nB\t\nB\t Esporo.\nC\t\nC\t Semente.\nD\t\nD\t Tubo polínico.\nE\t\nE\t Vaso condutor.\n"
+  },
+  {
+    "numero": 110,
+    "pagina": 7,
+    "crop": "crops/Q110.png",
+    "page_full": "pages_full/page_07.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 8,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "QUESTÃO 110\t\nO vidro contendo alumínio em sua composição é \num excelente material para acondicionar medicamentos \ne suplementos, porque pode ser esterilizado por \naquecimento. No entanto, quando o medicamento \nou suplemento contém substâncias que se ligam \nfortemente ao íon desse metal, a dissolução do \nalumínio é promovida em função do deslocamento \ndo equilíbrio químico estabelecido entre a espécie \nimobilizada no vidro e a espécie em solução. Por essa \nrazão, recomenda-se que suplementos de nutrição de \nrecém-nascidos contendo gluconato de cálcio sejam \nacondicionados em embalagens plásticas, e não nesse \ntipo de vidro.\nAtualização da recomendação da Sociedade Portuguesa de Neonatologia. \nDisponível em: www.spneonatologia.pt. Acesso em: 22 out. 2021 (adaptado).\nCaso esse suplemento seja acondicionado em embalagem \ndesse tipo de vidro, o risco de contaminação por alumínio \nserá maior se o(a)\nA\t\nA\t vidro do frasco for translúcido.\nB\t\nB\t concentração de gluconato de cálcio for alta.\nC\t\nC\t frasco de vidro apresentar uma maior espessura.\nD\t\nD\t vidro for previamente esterilizado em altas \ntemperaturas.\nE\t\nE\t reação do alumínio com gluconato de cálcio for \nendotérmica.\n"
+  },
+  {
+    "numero": 111,
+    "pagina": 7,
+    "crop": "crops/Q111.png",
+    "page_full": "pages_full/page_07.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 10,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "7\nRNO 5 • AMARELO\nQUESTÃO 111\t\nBarbatimão é o nome popular de uma árvore cuja \ncasca é utilizada para fins medicinais. Essa casca é \nconstituída principalmente de dois tecidos vegetais: \nperiderme e floema. A extração da casca tem levado à \nmorte muitos indivíduos dessa espécie, quando o corte \nretira um anel completo ao longo da circunferência do \ntronco. Aqueles que têm parte da casca retirada sem \ncompletar essa circunferência podem sobreviver.\nA morte desses indivíduos, decorrente da retirada do anel \ncompleto da casca, é provocada pela interrupção da\nA\t\nA\t fotossíntese.\nB\t\nB\t transpiração.\nC\t\nC\t troca de gases.\nD\t\nD\t formação de brotos.\nE\t\nE\t nutrição das raízes.\n \n"
+  },
+  {
+    "numero": 112,
+    "pagina": 8,
+    "crop": "crops/Q112.png",
+    "page_full": "pages_full/page_08.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 30,
+    "possivel_figura_vetorial": true,
+    "image_bboxes": [],
+    "raw_text": "QUESTÃO 112\t\nO descarte de detergentes comuns nos esgotos \ndomésticos ocasiona a formação de uma camada \nde espuma que impede a entrada de oxigênio na \nágua. Os microrganismos que vivem nessas águas \nnão são capazes de quebrar moléculas ramificadas, \nocorrendo assim um desequilíbrio ambiental nos rios. \nA fórmula a seguir representa a estrutura química de um \ntensoativo presente na composição de um detergente \nnão biodegradável.\nS\nO\nO\nO– Na+\n Tensoativo não biodegradável\nQual modificação química na estrutura desse tensoativo \no tornaria um detergente biodegradável?\nA\t\nA\t Retirar a parte polar da molécula.\nB\t\nB\t Eliminar as insaturações do anel aromático.\nC\t\nC\t Trocar o grupo aniônico por um grupo neutro.\nD\t\nD\t Alterar o grupo aniônico por um grupo catiônico.\nE\t\nE\t Modificar a cadeia carbônica para cadeia normal.\n"
+  },
+  {
+    "numero": 113,
+    "pagina": 8,
+    "crop": "crops/Q113.png",
+    "page_full": "pages_full/page_08.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 9,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "8\nCN • 2º DIA • CADEi\nQUESTÃO 113\t\nAvaliação de substâncias genotóxicas\nO ensaio de micronúcleos é um teste de avaliação de \ngenotoxicidade que associa a presença de micronúcleos \n(pequenos núcleos que aparecem próximo aos núcleos \ndas células) com lesões genéticas. Os micronúcleos são \nfragmentos de DNA encapsulados, provenientes do fuso \nmitótico durante a divisão celular.\nDIAS, V. M. Micronúcleos em células tumorais: biologia e implicações \npara a tumorigênese. Dissertação de Mestrado. USP, 2006 (adaptado).\nOs micronúcleos se originam dos(as)\nA\t\nA\t nucléolos.\nB\t\nB\t lisossomos.\nC\t\nC\t ribossomos.\nD\t\nD\t mitocôndrias.\nE\t\nE\t cromossomos.\n"
+  },
+  {
+    "numero": 114,
+    "pagina": 8,
+    "crop": "crops/Q114.png",
+    "page_full": "pages_full/page_08.png",
+    "has_raster_image": true,
+    "vector_ops_in_range": 30,
+    "possivel_figura_vetorial": true,
+    "image_bboxes": [
+      [
+        245.5,
+        264.3,
+        540.8,
+        558.8
+      ],
+      [
+        247.3,
+        266.1,
+        539.0,
+        557.1
+      ],
+      [
+        249.6,
+        268.3,
+        536.7,
+        554.8
+      ]
+    ],
+    "raw_text": "DIA • CADERNO 5 • AMARELO\nesgotos \namada \nênio na \náguas \nficadas, \nos rios. \na de um \nergente \nnsoativo \nco.\nmal.\ns\nação de \nnúcleos \nnúcleos \neos são \ndo fuso \nimplicações \n(adaptado).\nQUESTÃO 114\t\nO petróleo é uma matéria-prima muito valiosa \ne métodos geofísicos são úteis na sua prospecção. \nÉ possível identificar a composição de materiais \nestratificados medindo-se a velocidade de propagação \ndo som (onda mecânica) através deles. Considere que \numa camada de 450 m de um líquido se encontra presa \nno subsolo entre duas camadas rochosas, conforme o \nesquema. Um pulso acústico (que gera uma vibração \nmecânica) é emitido a partir da superfície do solo, onde \nsão posteriormente recebidas duas vibrações refletidas \n(ecos). A primeira corresponde à reflexão do pulso na \ninterface superior do líquido com a camada rochosa. \nA segunda vibração deve-se à reflexão do pulso na \ninterface inferior. O tempo entre a emissão do pulso e \na chegada do primeiro eco é de 0,5 s. O segundo eco \nchega 1,1 s após a emissão do pulso.\nEmissor e detector de pulsos\nRocha\nRocha\n450 m\nLíquido\nA velocidade do som na camada líquida, em metro por \nsegundo, é\nA\t\nA\t 270.\nB\t\nB\t 540.\nC\t\nC\t 818.\nD\t\nD\t 1 500.\nE\t\nE\t 1 800.\n"
+  },
+  {
+    "numero": 115,
+    "pagina": 9,
+    "crop": "crops/Q115.png",
+    "page_full": "pages_full/page_09.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 5,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "QUESTÃO 115\t\nÉ comum em viagens de avião sermos solicitados a \ndesligar aparelhos cujo funcionamento envolva a emissão \nou a recepção de ondas eletromagnéticas, como celulares. \nA justificativa dada para esse procedimento é, entre \noutras coisas, a necessidade de eliminar fontes de sinais \neletromagnéticos que possam interferir nas comunicações, \nvia rádio, dos pilotos com a torre de controle.\nEssa interferência poderá ocorrer somente se as ondas \nemitidas pelo celular e as recebidas pelo rádio do avião\nA\t\nA\t forem ambas audíveis.\nB\t\nB\t tiverem a mesma potência.\nC\t\nC\t tiverem a mesma frequência.\nD\t\nD\t tiverem a mesma intensidade.\nE\t\nE\t propagarem-se com velocidades diferentes.\n"
+  },
+  {
+    "numero": 116,
+    "pagina": 9,
+    "crop": "crops/Q116.png",
+    "page_full": "pages_full/page_09.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 40,
+    "possivel_figura_vetorial": true,
+    "image_bboxes": [],
+    "raw_text": "CN • 2º DIA • CADE\nQUESTÃO 116\t\nO Aldrin é um inseticida agrícola organoclorado \nsintético de baixa polaridade, cuja estrutura molecular \nsimétrica, de fórmula C12H8Cl6, está representada na \nfigura. Introduzido na agricultura a partir da década de \n1950, esse composto apresenta alta persistência no meio \nambiente e acumulação nos organismos, sendo danoso \npara a saúde. \nAldrin\nCl\nCl\nCl\nCl\nCl\nCl\nC\nH\nH\nC\nVIEGAS JÚNIOR, C. Terpenos com atividade inseticida: uma alternativa para \no controle químico de insetos. Química Nova, v. 26, n. 3, 2003 (adaptado).\nUm pesquisador coletou fluidos biológicos de indivíduos \nde uma população contaminada por esse inseticida agrícola. \nEle analisou amostras de saliva, sangue, lágrima, urina e \nleite quanto à presença dessa substância.\nEm qual dos fluidos o pesquisador provavelmente encontrou \na maior concentração dessa substância?\nA\t\nA\t Saliva, por consequência da atividade de enzimas.\nB\t\nB\t Sangue, em função das hemácias e leucócitos.\nC\t\nC\t Lágrima, em razão da concentração de sais.\nD\t\nD\t Urina, pela presença de moléculas de ureia.\nE\t\nE\t Leite, por causa do alto teor de gorduras.\n"
+  },
+  {
+    "numero": 117,
+    "pagina": 9,
+    "crop": "crops/Q117.png",
+    "page_full": "pages_full/page_09.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 8,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "QUESTÃO 117\t\nUma cafeteria adotou copos fabricados a partir \nde uma composição de 50% de plástico reciclado não \nbiodegradável e 50% de casca de café. O copo é reutilizável \ne retornável, pois o material, semelhante a uma cerâmica, \nsuporta a lavagem. Embora ele seja comercializado por \num preço considerado alto quando comparado ao de um \ncopo de plástico descartável, essa cafeteria possibilita aos \nclientes retornarem o copo sujo e levarem o café quente \nservido em outro copo já limpo e higienizado. O material \ndesse copo oferece também o conforto de não esquentar \nna parte externa.\nCafeteria adota copo reutilizável feito com casca de café. Disponível em: \nwww.gazetadopovo.com.br. Acesso em: 5 dez. 2019 (adaptado).\nQuais duas vantagens esse copo apresenta em \ncomparação ao copo descartável?\nA\t\nA\t Ter a durabilidade de uma cerâmica e ser totalmente \nbiodegradável.\nB\t\nB\t Ser tão durável quanto uma cerâmica e ter alta \ncondutividade térmica.\nC\t\nC\t Ser um mau condutor térmico e aumentar o resíduo \nbiodegradável na natureza.\nD\t\nD\t Ter baixa condutividade térmica e reduzir o resíduo \nnão biodegradável na natureza.\nE\t\nE\t Ter alta condutividade térmica e possibilitar a \ndegradação do material no meio ambiente.\n"
+  },
+  {
+    "numero": 118,
+    "pagina": 9,
+    "crop": "crops/Q118.png",
+    "page_full": "pages_full/page_09.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 8,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "9\nRNO 5 • AMARELO\ng\nç\nQUESTÃO 118\t\nO consumo exagerado de refrigerantes é preocupante, \npois contribui para o aumento de casos de obesidade e \ndiabetes. Considere dois refrigerantes enlatados, um \ncomum e um diet, e que ambos possuam a mesma \nquantidade de aditivos, exceto pela presença de \naçúcar. O refrigerante comum contém basicamente \nágua carbonatada e grande quantidade de açúcar; \njá o refrigerante diet tem água carbonatada e adoçantes, \ncujas massas são muito pequenas.\nCAVAGIS, A. D. M.; PEREIRA, E. A.; OLIVEIRA, L. C. Um método simples para avaliar o teor \nde sacarose e CO2 em refrigerantes. Química Nova na Escola, n. 3, ago. 2014 (adaptado).\nEntre as duas versões apresentadas, o refrigerante \ncomum possui\nA\t\nA\t maior densidade.\nB\t\nB\t menor viscosidade.\nC\t\nC\t maior volume de gás dissolvido.\nD\t\nD\t menor massa de solutos dissolvidos.\nE\t\nE\t maior temperatura de congelamento.\n \n"
+  },
+  {
+    "numero": 119,
+    "pagina": 10,
+    "crop": "crops/Q119.png",
+    "page_full": "pages_full/page_10.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 59,
+    "possivel_figura_vetorial": true,
+    "image_bboxes": [],
+    "raw_text": "10\nCN • 2º DIA • CADE\nQUESTÃO 119\t\nO manual de um automóvel alerta sobre os cuidad\nRecomenda-se que a pressão seja verificada com os\ndesatento a essa informação, realizou uma viagem long\npressão P0 no interior dos pneus não era a recomendad\nera T0. Após um longo período em repouso, os pneus d\nresfriamento, não há alteração no volume dos pneus e \npneus um gás perfeito (também denominado gás ideal).\nDurante o processo de resfriamento, os valores de press\npelo gráfico:\nA\nP (Pa)\nP0\nT0\nT (K)\nT\nB\nP0\nT0\nT\nP (Pa)\nT (K)\nC\nP0\nT0\nT\nT (K)\nP (Pa)\n"
+  },
+  {
+    "numero": 120,
+    "pagina": 11,
+    "crop": "crops/Q120.png",
+    "page_full": "pages_full/page_11.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 2,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "QUESTÃO 120\t\nPais com síndr\nA síndrome de Down é uma alteração genética associad\ntrês cromossomos 21 e não um par, como é normal. Isso oco\ncom um gameta possuidor de dois cromossomos 21. Em\nestéreis, em 2008, no interior de São Paulo, uma delas de\nMORENO, T. Três anos após dar à luz, mãe portadora de síndrome de Down revela detalh\nSabendo disso, um jovem casal, ambos com essa síndro\ngenético porque querem ter um bebê.\nO médico informa ao casal que, com relação ao cromosso\nA\t\nA\t todos normais.\nB\t\nB\t todos tetrassômicos.\nC\t\nC\t apenas normais ou tetrassômicos.\nD\t\nD\t apenas trissômicos ou tetrassômicos.\nE\t\nE\t normais, trissômicos ou tetrassômicos.\n"
+  },
+  {
+    "numero": 121,
+    "pagina": 11,
+    "crop": "crops/Q121.png",
+    "page_full": "pages_full/page_11.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 4,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "QUESTÃO 121\t\nPara que uma molécula dê origem a um medicamen\nfarmacológica, deve ser capaz de atingir o local de ação. Pa\n(onde o meio é fortemente ácido e há várias enzimas que rea\nas membranas celulares e ser solúvel no plasma sanguíne\nformadas por cadeias carbônicas longas contendo pelo meno\né sua conversão no cloridrato correspondente. Essa conversã\nR3N + HCl \nO aumento da eficiência de circulação do fármaco no sang\nde seu(sua)\nA\t\nA\t basicidade.\nB\t\nB\t lipofilicidade.\nC\t\nC\t caráter iônico.\nD\t\nD\t cadeia carbônica.\nE\t\nE\t estado de oxidação.\n"
+  },
+  {
+    "numero": 122,
+    "pagina": 11,
+    "crop": "crops/Q122.png",
+    "page_full": "pages_full/page_11.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 22,
+    "possivel_figura_vetorial": true,
+    "image_bboxes": [],
+    "raw_text": "CN • 2º DIA • CADE\nç\nQUESTÃO 122\t\nToxicidade \nA produção de ATP depende do gradiente de prótons ge\nprovenientes da oxidação do NADH em NAD+ percorrem a\nFe3+ a Fe2+. O oxigênio atua como aceptor final desses el\naltamente tóxica que tem grande afinidade pelo Fe3+. Quan\nFe3+ da citocromo c oxidase, impedindo a sua conversão e\nSubstrato\nproveniente\ndo nutriente\nForma\noxidada\no\nr\nForma\nreduzida\nTransportador\n1\nTra\nCO2\nNADH\nNAD+\nEsse bloqueio aumenta a concentração celular de\nA\t\nA\t ATP.\nB\t\nB\t água.\nC\t\nC\t NADH.\nD\t\nD\t dióxido de carbono.\nE\t\nE\t citocromo c oxidase.\n"
+  },
+  {
+    "numero": 123,
+    "pagina": 12,
+    "crop": "crops/Q123.png",
+    "page_full": "pages_full/page_12.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 19,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "QUESTÃO 123\t\nO número de abelhas encontra-se em declínio em \nvárias regiões do mundo, inclusive no Brasil, sendo \nque vários fatores contribuem para o colapso de suas \ncolmeias. Nos Estados Unidos, bombas de sementes \nde espécies vegetais nativas têm sido utilizadas para \ncombater o desaparecimento desses insetos. Elas são \npequenas bolinhas recheadas com sementes, adubo e \nargila. Quando são arremessadas e ficam expostas ao \nsol e à chuva, germinam até mesmo em solo pouco fértil.\nDARAYA, V. Disponível em: http://planetasustentavel.abril.com.br. \nAcesso em: 2 fev. 2015 (adaptado).\nEsse método contribui para a preservação das abelhas \nporque\nA\t\nA\t reduz sua predação.\nB\t\nB\t reduz o uso de pesticidas.\nC\t\nC\t reduz a competição por abrigo.\nD\t\nD\t aumenta a oferta de alimento.\nE\t\nE\t aumenta os locais de reprodução.\n"
+  },
+  {
+    "numero": 124,
+    "pagina": 12,
+    "crop": "crops/Q124.png",
+    "page_full": "pages_full/page_12.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 5,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "QUESTÃO 124\t\nOs mais antigos cozinhavam o feijão na panela de ferro a \nfim de acabar com a palidez de seus filhos. Alguns chegavam \naté a colocar um prego enferrujado nesse cozimento para \nliberar o ferro contido nele. Sabe-se que esse elemento \npode ser encontrado na sua forma metálica ou iônica, \nsendo essencial para a manutenção da vida humana.\nAs estratégias citadas eram utilizadas com o objetivo de\nA\t\nA\t tratar a diarreia.\nB\t\nB\t prevenir a anemia.\nC\t\nC\t evitar as verminoses.\nD\t\nD\t remediar o raquitismo.\nE\t\nE\t combater a febre amarela.\n"
+  },
+  {
+    "numero": 125,
+    "pagina": 12,
+    "crop": "crops/Q125.png",
+    "page_full": "pages_full/page_12.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 9,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "12\nCN • 2º DIA • CADE\nQUESTÃO 125\t\nA utilização de tecnologia nuclear é um tema \nbastante controverso, por causa do risco de acidentes \ngraves, como aqueles ocorridos em Chernobyl (1986), \nem Goiânia (1987) e em Fukushima (2011). Apesar de \nmuitas desvantagens, como a geração de resíduos \ntóxicos, a descontaminação ambiental dispendiosa em \ncaso de acidentes e a utilização em armas nucleares, \na geração de energia nuclear apresenta vantagens em \ncomparação a outras fontes de energia.\nA geração dessa energia tem como característica:\nA\t\nA\t Formar resíduos facilmente recicláveis.\nB\t\nB\t Promover o aumento do desmatamento.\nC\t\nC\t Contribuir para a produção de chuva ácida.\nD\t\nD\t Emitir gases tóxicos que são lançados no ambiente.\nE\t\nE\t Produzir calor sem o consumo de combustíveis fósseis.\n"
+  },
+  {
+    "numero": 126,
+    "pagina": 12,
+    "crop": "crops/Q126.png",
+    "page_full": "pages_full/page_12.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 41,
+    "possivel_figura_vetorial": true,
+    "image_bboxes": [],
+    "raw_text": "QUESTÃO 126\t\nEm uma indústria, o controle da dureza da água é \nimportante quando ela é utilizada em caldeiras, uma vez \nque sais pouco solúveis, formados a partir de sulfatos e \ncarbonatos, podem acumular-se no interior das tubulações, \ncausando obstruções. Para avaliar a água utilizada nessa \nindústria, foram realizados testes de qualidade que \nconsideraram os seguintes parâmetros:\nTeste\nParâmetro medido\n1\nCálcio\n2\nCloreto\n3\nTurbidez\n4\nColiformes totais\n5\nSólidos sedimentáveis\nQual teste deve ser considerado para controlar a \nformação desse tipo de obstrução de tubulações?\nA\t\nA\t 1\nB\t\nB\t 2\nC\t\nC\t 3\nD\t\nD\t 4\nE\t\nE\t 5\n"
+  },
+  {
+    "numero": 127,
+    "pagina": 12,
+    "crop": "crops/Q127.png",
+    "page_full": "pages_full/page_12.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 6,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "QUESTÃO 127\t\nAs aves apresentam dois tipos de músculos em seus \ncorpos: vermelhos e brancos. Aves migratórias como garças, \ngansos e patos selvagens têm os músculos vermelhos bem \ndesenvolvidos, com ampla rede de vasos sanguíneos.\nNas viagens por grandes distâncias, tais músculos são \nfundamentais, pois favorecem o(a)\nA\t\nA\t execução de manobras.\nB\t\nB\t metabolismo corpóreo elevado.\nC\t\nC\t manutenção da aerodinâmica.\nD\t\nD\t deslocamento a grandes velocidades.\nE\t\nE\t capacidade de voo em grandes altitudes.\n"
+  },
+  {
+    "numero": 128,
+    "pagina": 12,
+    "crop": "crops/Q128.png",
+    "page_full": "pages_full/page_12.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 11,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "RNO 5 • AMARELO\ng\nQUESTÃO 128\t\nExiste no comércio um produto antimofo constituído por \numa embalagem com tampa perfurada contendo cloreto \nde cálcio anidro, CaCl2. Uma vez aberto o lacre, essa \nsubstância absorve a umidade ambiente, transformando-se \nem cloreto de cálcio di-hidratado, CaCl2⋅ 2H2O. \nConsidere a massa molar da água igual a 18 g mol−1, e a \nmassa molar do cloreto de cálcio anidro igual a 111 g mol−1.\nNa hidratação da substância presente no antimofo, o \nganho percentual, em massa, é mais próximo de\nA\t\nA\t 14%\nB\t\nB\t 16%\nC\t\nC\t 24%\nD\t\nD\t 32%\nE\t\nE\t 75%\n"
+  },
+  {
+    "numero": 129,
+    "pagina": 13,
+    "crop": "crops/Q129.png",
+    "page_full": "pages_full/page_13.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 141,
+    "possivel_figura_vetorial": true,
+    "image_bboxes": [],
+    "raw_text": "CN • 2º DIA • CADE\nQUESTÃO 129\t\nUm assistente de laboratório precisou descartar sete fr\nforam utilizados em uma aula prática. Cada frasco contin\ntoxidez do mercúrio e sabendo que o Hg2Cl2 tem solubilidad\nsolução por precipitação com cloreto de sódio (NaCl), con\nHg2(NO3)2 (aq) + 2 NaCl (aq) \nNa dúvida sobre a massa de NaCl a ser utilizada, o ass\nem cada frasco, como apresentado no quadro.\nFrasco\nI\nMassa de NaCl \nem grama (g)\n0,2\n0\nO produto obtido em cada experimento foi filtrado, sec\nresultados na forma de um gráfico que correlaciona a mas\ncada frasco. A massa molar do Hg2(NO3)2 é 525 g mol–1, a\nQual foi o gráfico obtido pelo assistente de laboratório?\nA\n5\n6\n7\n4\n3\n2\n1\n0\n0,0\n0,2\n0,4\n0,6\n0,8\n1,0\n1,2\n1,4\nMassa de Hg2Cl2 (g)\nMassa de NaCI (g)\nB\n5\n6\n7\n4\n3\n2\n1\n0\n0,0\n0,2\n0,4\n0,6\n0,8\n1,0\n1,2\n1,4\nMassa de Hg2Cl2 (g)\nMassa de NaCI (g)\nC\n5\n6\n7\n4\n3\n2\n1\n0\n0,0\n0,2\n0,4\n0,6\n0,8\n1,0\n1,2\n1,4\nMassa de Hg2Cl2 (g)\nMassa de NaCI (g)\n"
+  },
+  {
+    "numero": 130,
+    "pagina": 14,
+    "crop": "crops/Q130.png",
+    "page_full": "pages_full/page_14.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 49,
+    "possivel_figura_vetorial": true,
+    "image_bboxes": [],
+    "raw_text": "QUESTÃO 130\t\nUma equipe de segurança do transporte de uma empresa \navalia o comportamento das tensões que aparecem em duas \ncordas, 1 e 2, usadas para prender uma carga de massa \nM = 200 kg na carroceria, conforme a ilustração. Quando o \ncaminhão parte do repouso, sua aceleração é constante \ne igual a 3 m/s2 e, quando ele é freado bruscamente, sua \nfrenagem é constante e igual a 5 m/s2. Em ambas as \nsituações, a carga encontra-se na iminência de movimento, \ne o sentido do movimento do caminhão está indicado na \nfigura. O coeficiente de atrito estático entre a caixa e o \nassoalho da carroceria é igual a 0,2. Considere a aceleração \nda gravidade igual a 10 m/s2, as tensões iniciais nas cordas \niguais a zero e as duas cordas ideais.\n1\n2\nM\nV\nNas situações de aceleração e frenagem do caminhão, \nas tensões nas cordas 1 e 2, em newton, serão\nA\t\nA\t aceleração: T1 = 0 e T2 = 200; frenagem: T1 = 600 e \nT2 = 0.\nB\t\nB\t aceleração: T1 = 0 e T2 = 200; frenagem: T1 = 1 400 e \nT2 = 0. \nC\t\nC\t aceleração: T1 = 0 e T2 = 600; frenagem: T1 = 600 e \nT2 = 0. \nD\t\nD\t aceleração: T1 = 560 e T2 = 0; frenagem: T1 = 0 e \nT2 = 960.\nE\t\nE\t aceleração: T1 = 640 e T2 = 0; frenagem: T1 = 0 e \nT2 = 1 040.\n"
+  },
+  {
+    "numero": 131,
+    "pagina": 14,
+    "crop": "crops/Q131.png",
+    "page_full": "pages_full/page_14.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 8,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "14\nCN • 2º DIA • CADE\n2\nQUESTÃO 131\t\nA biorremediação designa tratamentos que usam \norganismos para reduzir a quantidade de substâncias \ntóxicas no ambiente ou degradá-las em substâncias \nnão tóxicas ou de menor toxicidade. Uma planta aquática, \no aguapé, tem sido utilizada para a biorremediação de\nambientes contaminados por metais tóxicos. Sabe-se\nque esses poluentes serão captados para dentro do\ncorpo do vegetal.\nDentro do corpo do vegetal, esses contaminantes serão\nA\t\nA\t digeridos por enzimas.\nB\t\nB\t acumulados nos tecidos.\nC\t\nC\t eliminados pelos estômatos.\nD\t\nD\t metabolizados por glândulas.\nE\t\nE\t utilizados como fonte energética.\n"
+  },
+  {
+    "numero": 132,
+    "pagina": 14,
+    "crop": "crops/Q132.png",
+    "page_full": "pages_full/page_14.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 21,
+    "possivel_figura_vetorial": true,
+    "image_bboxes": [],
+    "raw_text": "QUESTÃO 132\t\nO ciclo do nitrogênio é composto por várias etapas, \nconforme a figura, sendo cada uma desempenhada por \num grupo específico de microrganismos.\nGás nitrogênio\nAmônia\nDetritos\nNitrito\nNitrato\n1\n2\n3\n4\n5\nSe o grupo dos microrganismos decompositores fosse \nexterminado, qual etapa não ocorreria?\nA\t\nA\t 1\nB\t\nB\t 2\nC\t\nC\t 3\nD\t\nD\t 4\nE\t\nE\t 5\n"
+  },
+  {
+    "numero": 133,
+    "pagina": 14,
+    "crop": "crops/Q133.png",
+    "page_full": "pages_full/page_14.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 13,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "RNO 5 • AMARELO\nQUESTÃO 133\t\nOs raios cósmicos são fontes de radiação ionizante \npotencialmente perigosas para o organismo humano. \nPara quantificar a dose de radiação recebida, utiliza-se \no sievert (Sv), definido como a unidade de energia\nrecebida por unidade de massa. A exposição à radiação\nproveniente de raios cósmicos aumenta com a altitude,\no que pode representar um problema para as tripulações\nde aeronaves. Recentemente, foram realizadas medições\nacuradas das doses de radiação ionizante para voos entre\nRio de Janeiro e Roma. Os resultados têm indicado que a\ndose média de radiação recebida na fase de cruzeiro (que\ngeralmente representa 80% do tempo total de voo) desse\ntrecho intercontinental é 2 μSv/h. As normas internacionais\nda aviação civil limitam em 1 000 horas por ano o tempo\nde trabalho para as tripulações que atuem em voos\nintercontinentais. Considere que a dose de radiação ionizante\npara uma radiografia torácica é estimada em 0,2 mSv.\nRUAS, A. C. O tripulante de aeronaves e a radiação ionizante. \nSão Paulo: Edição do Autor, 2019 (adaptado).\nA quantas radiografias torácicas corresponde a dose de \nradiação ionizante à qual um tripulante que atue no trecho \nRio de Janeiro−Roma é exposto ao longo de um ano?\nA\t\nA\t 8\nB\t\nB\t 10\nC\t\nC\t 80\nD\t\nD\t 100\nE\t\nE\t 1 000\n"
+  },
+  {
+    "numero": 134,
+    "pagina": 15,
+    "crop": "crops/Q134.png",
+    "page_full": "pages_full/page_15.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 87,
+    "possivel_figura_vetorial": true,
+    "image_bboxes": [],
+    "raw_text": "QUESTÃO 134\t\nEntre os medicamentos mais comuns consumidos pa\ncom ação anti-inflamatória e efeito analgésico, que é com\na mistura com outro isômero óptico. A fórmula estrutural p\nIbup\nAlém do ibuprofeno, destacam-se também os princípio\no alívio da dor:\nN\nH\nO\nFenacetina \nO\nO−\nDiclofenaco sódico\nNH\nCl\nCl\nNa+\nParacetam\nHO\nN\nH\nO\nO princípio ativo que apresenta o mesmo tipo de isomeria \nA\t\nA\t fenacetina.\nB\t\nB\t paracetamol.\nC\t\nC\t dipirona sódica.\nD\t\nD\t diclofenaco sódico.\nE\t\nE\t butilbrometo de escopolamina.\n"
+  },
+  {
+    "numero": 135,
+    "pagina": 15,
+    "crop": "crops/Q135.png",
+    "page_full": "pages_full/page_15.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 10,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "CN • 2º DIA • CADE\nE\t\nE\t butilbrometo de escopolamina.\nQUESTÃO 135\t\nUma concessionária é responsável por um trecho de\nconstruídas 10 praças de pedágio, onde funcionários rece\nexiste o serviço automático, em que os veículos providos\nautomaticamente, evitando filas e diminuindo o tempo de \nefetuar a passagem em uma cabine é de 3 minutos, e as v\npara veículos leves, e 80 km/h, para veículos de grande p\nConsidere um carro e um caminhão viajando, ambos co\ne que somente o caminhão tenha o serviço automático de \nComparado ao caminhão, quantos minutos a menos o car\nA\t\nA\t 30\nB\t\nB\t 42\nC\t\nC\t 72\nD\t\nD\t 288\nE\t\nE\t 360\n"
+  },
+  {
+    "numero": 136,
+    "pagina": 16,
+    "crop": "crops/Q136.png",
+    "page_full": "pages_full/page_16.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 5,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "Questões de 136 a 180\nQUESTÃO 136\t\nAlguns estudos comprovam que os carboidratos \nfornecem energia ao corpo, preservam as proteínas \nestruturais dos músculos durante a prática de atividade \nfísica e ainda dão força para o cérebro coordenar os \nmovimentos, o que de fato tem impacto positivo no \ndesenvolvimento do praticante. O ideal é consumir 1 grama \nde carboidrato para cada minuto de caminhada.\nCIRINO, C. Boa pergunta: consumir carboidratos antes dos exercícios melhora o \ndesempenho do atleta? Revista Saúde! É Vital, n. 330, nov. 2010 (adaptado).\nUm casal realizará diariamente 30 minutos de caminhada, \ningerindo, antes dessa atividade, a quantidade ideal de \ncarboidratos recomendada. Para ter o consumo ideal apenas \npor meio do consumo de pão de fôrma integral, o casal planeja \ngarantir o suprimento de pães para um período de 30 dias \nininterruptos. Sabe-se que cada pacote desse pão vem com 18 \nfatias, e que cada uma delas tem 15 gramas de carboidratos.\nA quantidade mínima de pacotes de pão de fôrma \nnecessários para prover o suprimento a esse casal é \nA\t\nA\t 1.\nB\t\nB\t 4.\nC\t\nC\t 6.\nD\t\nD\t 7.\nE\t\nE\t 8.\n"
+  },
+  {
+    "numero": 137,
+    "pagina": 16,
+    "crop": "crops/Q137.png",
+    "page_full": "pages_full/page_16.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 41,
+    "possivel_figura_vetorial": true,
+    "image_bboxes": [],
+    "raw_text": "16\nMT • 2º DIA • CADE\nE\t\nE\t 8.\nQUESTÃO 137\t\nO mastro de uma bandeira foi instalado \nperpendicularmente ao solo em uma região plana. \nDevido aos fortes ventos, três cabos de aço, de mesmo \ncomprimento, serão instalados para dar sustentação ao \nmastro. Cada cabo de aço ficará perfeitamente esticado, \ncom uma extremidade num ponto P do mastro, a uma \naltura h do solo, e a outra extremidade, num ponto no \nchão, como mostra a figura.\nh\nP\nα\nα\nα\nOs cabos de aço formam um ângulo a com o plano \ndo chão.\nPor medida de segurança, há apenas três opções de \ninstalação:\n•\t opção I: h = 11 m e a = 30°\n•\t opção II: h = 12 m e a = 45°\n•\t opção III: h = 18 m e a = 60°\n"
+  },
+  {
+    "numero": 138,
+    "pagina": 16,
+    "crop": "crops/Q138.png",
+    "page_full": "pages_full/page_16.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 39,
+    "possivel_figura_vetorial": true,
+    "image_bboxes": [],
+    "raw_text": "RNO 5 • AMARELO\nQUESTÃO 138\t\nUm controlador de voo dispõe de um instrumento que \ndescreve a altitude de uma aeronave em voo, em função \nda distância em solo. Essa distância em solo é a medida na \nhorizontal entre o ponto de origem do voo até o ponto que \nrepresenta a projeção ortogonal da posição da aeronave, \nem voo, no solo. Essas duas grandezas são dadas numa \nmesma unidade de medida.\nA tela do instrumento representa proporcionalmente \nas dimensões reais das distâncias associadas ao voo. \nA figura apresenta a tela do instrumento depois de \nconcluída a viagem de um avião, sendo a medida do lado \nde cada quadradinho da malha igual a 1 cm.\nAltitude\nOrigem \ndo voo\nDestino\nDistância\nEssa tela apresenta os dados de um voo cuja maior \naltitude alcançada foi de 5 km.\nA escala em que essa tela representa as medidas reais é\nA\t\nA\t 1 : 5.\nB\t\nB\t 1 : 11.\nC\t\nC\t 1 : 55.\nD\t\nD\t 1 : 5 000.\nE\t\nE\t 1 : 500 000.\n"
+  },
+  {
+    "numero": 139,
+    "pagina": 17,
+    "crop": "crops/Q139.png",
+    "page_full": "pages_full/page_17.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 71,
+    "possivel_figura_vetorial": true,
+    "image_bboxes": [],
+    "raw_text": "QUESTÃO 139\t\nUma pessoa pratica quatro atividades físicas — caminh\nde seu programa de emagrecimento. Essas atividades são\napresenta o número de horas diárias por atividade.\nDias da semana\nCaminhar Correr\nSegunda-feira\n1,0\n0,5\nTerça-feira\n0,5\n1,0\nQuarta-feira\n0,0\n1,5\nQuinta-feira\n0,0\n2,0\nSexta-feira\n0,0\n0,5\nEla deseja comemorar seu aniversário e escolhe o di\nfísicas praticadas for o maior. Para tanto, considera que os v\nsão os seguintes:\nAtividade física\nCaminhar \nCor\nGasto calórico (cal/h)\n248\n76\nO dia da semana em que será comemorado o aniversário \nA\t\nA\t segunda-feira.\nB\t\nB\t terça-feira.\nC\t\nC\t quarta-feira.\nD\t\nD\t quinta-feira.\nE\t\nE\t sexta-feira.\n"
+  },
+  {
+    "numero": 140,
+    "pagina": 17,
+    "crop": "crops/Q140.png",
+    "page_full": "pages_full/page_17.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 11,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "MT • 2º DIA • CADE\nQUESTÃO 140\t\nA cada bimestre, a diretora de uma escola compra uma q\nde alunos matriculados. No bimestre passado, ela compro\nmatriculados. Neste bimestre, alguns alunos cancelaram\nA diretora só pode gastar R$ 220,00 nessa compra, e sa\nofício em embalagens de 100 unidades a R$ 4,00 a embala\ndesconto à escola, de modo que seja possível comprar a q\nO desconto necessário no preço final da compra, em porc\nA\t\nA\t (5,0 ; 5,5).\nB\t\nB\t (8,0 ; 8,5).\nC\t\nC\t (11,5 ; 12,5).\nD\t\nD\t (19,5 ; 20,5). \nE\t\nE\t (3,5 ; 4,0).\n"
+  },
+  {
+    "numero": 141,
+    "pagina": 18,
+    "crop": "crops/Q141.png",
+    "page_full": "pages_full/page_18.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 4,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "QUESTÃO 141\t\nO calendário maia apresenta duas contagens \nsimultâneas de anos, o chamado ano Tzolkim, composto \npor 260 dias e que determinava o calendário religioso, \ne o ano Haab, composto por 365 dias e que determinava o \ncalendário agrícola. Um historiador encontrou evidências \nde que gerações de uma mesma família governaram certa \ncomunidade maia pelo período de 20 ciclos, sendo cada \nciclo formado por 52 anos Haab.\nDisponível em: www.suapesquisa.com. Acesso em: 20 ago. 2014.\nDe acordo com as informações fornecidas, durante \nquantos anos Tzolkim aquela comunidade maia foi \ngovernada por tal família?\nA\t\nA\t 741\nB\t\nB\t 1 040\nC\t\nC\t 1 460\nD\t\nD\t 2 100\nE\t\nE\t 5 200\n"
+  },
+  {
+    "numero": 142,
+    "pagina": 18,
+    "crop": "crops/Q142.png",
+    "page_full": "pages_full/page_18.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 16,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "18\nMT • 2º DIA • CADE\nQUESTÃO 142\t\nSejam a, b e c as medidas dos lados de um triângulo \nretângulo, tendo a como medida da hipotenusa. Esses \nvalores a, b e c são, respectivamente, os diâmetros dos \ncírculos C1, C2 e C3, como apresentados na figura.\nCírculo C1\nCírculo C2\nCírculo C3\nc\na\nb\nObserve que essa construção assegura, pelo teorema \nde Pitágoras, que área (C1) = área (C2) + área (C3).\nUm professor de matemática era conhecedor dessa \nconstrução e, confraternizando com dois amigos em uma \npizzaria onde são vendidas pizzas somente em formato \nde círculo, lançou um desafio: mesmo sem usar um \ninstrumento de medição, poderia afirmar com certeza se \na área do círculo correspondente à pizza que ele pedisse \nera maior, igual ou menor do que a soma das áreas das \npizzas dos dois amigos. Assim, foram pedidas três pizzas. \nO professor as dividiu ao meio e formou um triângulo com \nos diâmetros das pizzas, conforme indicado na figura.\n"
+  },
+  {
+    "numero": 143,
+    "pagina": 18,
+    "crop": "crops/Q143.png",
+    "page_full": "pages_full/page_18.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 16,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "RNO 5 • AMARELO\nQUESTÃO 143\t\nEntre maratonistas, um parâmetro utilizado é o de \neconomia de corrida (EC). O valor desse parâmetro é \ncalculado pela razão entre o consumo de oxigênio, em \nmililitro (mL) por minuto (min), e a massa, em quilograma (kg), \ndo atleta correndo a uma velocidade constante.\nDisponível em: www.treinamentoonline.com.br. Acesso em: 23 out. 2019 (adaptado).\nUm maratonista, visando melhorar sua performance, \nauxiliado por um médico, mensura o seu consumo de \noxigênio por minuto a velocidade constante. Com base \nnesse consumo e na massa do atleta, o médico calcula \no EC do atleta.\nA unidade de medida da grandeza descrita pelo \nparâmetro EC é\nA\t\nA\t \nmin\nmL kg\n⋅\nB\t\nB\t \nmL\nmin kg\n⋅\nC\t\nC\t min mL\nkg\n⋅\nD\t\nD\t min kg\nmL\n⋅\nE\t\nE\t mL kg\nmin\n⋅\n"
+  },
+  {
+    "numero": 144,
+    "pagina": 19,
+    "crop": "crops/Q144.png",
+    "page_full": "pages_full/page_19.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 21,
+    "possivel_figura_vetorial": true,
+    "image_bboxes": [],
+    "raw_text": "QUESTÃO 144\t\nO gerente de uma fábrica pretende comparar a evoluçã\npassou a verificar o número de unidades vendidas de cada\nverificação, para os meses de abril a junho, são apresenta\nProduto\nVendas\nem abril\n(unidade)\nl\n80\nll\n190\nO gerente estava decidido a cessar a produção do p\nproduto I superassem as do produto II.\nSuponha que a variação na quantidade de unidades v\nno período representado na tabela.\nEm qual mês o produto II parou de ser produzido?\nA\t\nA\t Junho.\nB\t\nB\t Julho.\nC\t\nC\t Agosto.\nD\t\nD\t Setembro.\nE\t\nE\t Outubro.\n"
+  },
+  {
+    "numero": 145,
+    "pagina": 19,
+    "crop": "crops/Q145.png",
+    "page_full": "pages_full/page_19.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 23,
+    "possivel_figura_vetorial": true,
+    "image_bboxes": [],
+    "raw_text": "MT • 2º DIA • CADE\nQUESTÃO 145\t\nUma empresa de transporte faz regularmente um leva\npor todos os 160 motoristas cadastrados em seu aplicativo\ngráfico de barras, no qual se relacionaram a quantidade d\naquele instante do dia.\nQuantidade de viagens realizadas\nQuantidade d\n0\n5\n10\n15\n20\n25\n7\n6\n4\n3\n2\n1\n5\nComparando os valores da média, da mediana e da mod\npelos motoristas cadastrados nessa empresa, obtém-se\nA\t\nA\t mediana = média < moda.\nB\t\nB\t mediana = moda < média.\nC\t\nC\t mediana < média < moda.\nD\t\nD\t moda < média < mediana.\nE\t\nE\t moda < mediana < média.\n"
+  },
+  {
+    "numero": 146,
+    "pagina": 20,
+    "crop": "crops/Q146.png",
+    "page_full": "pages_full/page_20.png",
+    "has_raster_image": true,
+    "vector_ops_in_range": 45,
+    "possivel_figura_vetorial": true,
+    "image_bboxes": [
+      [
+        31.1,
+        279.4,
+        277.8,
+        444.5
+      ]
+    ],
+    "raw_text": "QUESTÃO 146\t\nA foto mostra a construção de uma cisterna destinada \nao armazenamento de água. Uma cisterna como essa, na \nforma de cilindro circular reto com 3 m² de área da base, \nfoi abastecida por um curso-d’água com vazão constante. \nO seu proprietário registrou a altura do nível da água no \ninterior da cisterna durante o abastecimento em diferentes \nmomentos de um mesmo dia, conforme o quadro.\nHorário (h)\nNível da água (m)\n6:00\n0,5\n8:00\n1,1\n12:00\n2,3\n15:00\n3,2\nDisponível em: www.paraibamix.com. Acesso em: 3 dez. 2012.\nQual foi a vazão, em metro cúbico por hora, do \ncurso-d’água que abasteceu a cisterna?\nA\t\nA\t 0,3\nB\t\nB\t 0,5\nC\t\nC\t 0,9\nD\t\nD\t 1,8\nE\t\nE\t 2,7\n"
+  },
+  {
+    "numero": 147,
+    "pagina": 20,
+    "crop": "crops/Q147.png",
+    "page_full": "pages_full/page_20.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 12,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "20\nMT • 2º DIA • CADE\nQUESTÃO 147\t\nNum certo momento de um jogo digital, a tela \napresenta a imagem representada na figura. O ponto Q1 \nrepresenta a posição de um jogador que está com a bola, \nos pontos Q2, Q3, Q4, Q5 e Q6 também indicam posições \nde jogadores da mesma equipe, e os pontos A e B indicam \nos dois pés da trave mais próxima deles. No momento da \npartida retratado, o jogador Q1 tem a posse da bola, que \nserá passada para um dos outros jogadores das posições \nQn, n ∈ {2, 3, 4, 5, 6}, cujo ângulo AQ B\nn\n tenha a mesma \nmedida do ângulo \nAQ B\n1 .\n"
+  },
+  {
+    "numero": 148,
+    "pagina": 20,
+    "crop": "crops/Q148.png",
+    "page_full": "pages_full/page_20.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 22,
+    "possivel_figura_vetorial": true,
+    "image_bboxes": [],
+    "raw_text": "RNO 5 • AMARELO\n6\nQUESTÃO 148\t\nO triângulo da figura é denominado triângulo mágico. \nNos círculos, escrevem-se os números de 1 a 6, sem \nrepetição, com um número em cada círculo. O objetivo é \ndistribuir os números de forma que as somas dos números \nem cada lado do triângulo sejam iguais.\nConsidere que os números colocados nos vértices \ndo triângulo estejam em progressão aritmética de razão \nigual a 2.\nNas condições propostas, quais as possíveis soluções \npara as somas dos números que formam os lados do \ntriângulo?\nA\t\nA\t Há somente uma solução possível, e as somas em \ncada lado do triângulo são iguais a 7.\nB\t\nB\t Há somente uma solução possível, e as somas em \ncada lado do triângulo são iguais a 9.\nC\t\nC\t Há somente duas soluções possíveis, uma em que \nas somas em cada lado do triângulo são iguais a 7 e \noutra em que as somas são iguais a 9.\nD\t\nD\t Há somente duas soluções possíveis, uma em que \nas somas em cada lado do triângulo são iguais a 9 e \noutra em que as somas são iguais a 12.\nE\t\nE\t Há somente duas soluções possíveis, uma em que \nas somas em cada lado do triângulo são iguais a 10 e \noutra em que as somas são iguais a 11.\n"
+  },
+  {
+    "numero": 149,
+    "pagina": 21,
+    "crop": "crops/Q149.png",
+    "page_full": "pages_full/page_21.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 7,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "QUESTÃO 149\t\nNo alojamento de uma universidade, há alguns quartos\nficou disponível, e muitos estudantes se candidataram par\num sorteio será realizado. Para esse sorteio, cartões individ\ndepositados em uma urna, sendo que, para cada estudan\nseu nome; para cada estudante de segundo ano, dois cartõ\ntrês cartões com seu nome. Foram inscritos 200 estudante\nano. Todos os cartões têm a mesma probabilidade de sere\nQual a probabilidade de o vencedor do sorteio ser um estu\nA\t\nA\t 1\n2\nB\t\nB\t 1\n3\nC\t\nC\t 1\n8\nD\t\nD\t 2\n9\nE\t\nE\t 3\n8\n"
+  },
+  {
+    "numero": 150,
+    "pagina": 21,
+    "crop": "crops/Q150.png",
+    "page_full": "pages_full/page_21.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 2,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "8\nQUESTÃO 150\t\nA água utilizada pelos 75 moradores de um vilarejo pro\ncujo raio da base mede 5 metros, sempre abastecido no pri\ndesse vilarejo consome, em média, 200 litros de água por \nNo mês de junho de um determinado ano, o vilarejo fest\nnos primeiros 20 dias. Passado esse período, as pessoas v\ne constataram que o nível da coluna de água estava em 1,5\ndurante os 10 dias seguintes. Considere 3 como aproxima\nQual é a quantidade mínima de água, em litro, que cada m\nque o reservatório não fique sem água nos próximos 10 di\nA\t\nA\t 50\nB\t\nB\t 60\nC\t\nC\t 80\nD\t\nD\t 140\nE\t\nE\t 150\n"
+  },
+  {
+    "numero": 151,
+    "pagina": 21,
+    "crop": "crops/Q151.png",
+    "page_full": "pages_full/page_21.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 10,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "MT • 2º DIA • CADE\nE\nQUESTÃO 151\t\nEm janeiro do ano passado, a direção de uma fábrica a\n10 salas, cada uma com capacidade para atender 10 cria\ndos funcionários inscritos, enquanto os não contemplados \na lista de espera teve 400 nomes e, neste ano, esse núme\nA direção da fábrica realizou uma pesquisa e constato\nquantidade de nomes da lista de espera deste ano. Decid\na creche, também com capacidade de atendimento para 10\nde espera no próximo ano seja 25% menor que o deste an\nO número mínimo de salas que deverão ser construídas é\nA\t\nA\t 10.\nB\t\nB\t 11.\nC\t\nC\t 13.\nD\t\nD\t 30.\nE\t\nE\t 33.\n"
+  },
+  {
+    "numero": 152,
+    "pagina": 22,
+    "crop": "crops/Q152.png",
+    "page_full": "pages_full/page_22.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 145,
+    "possivel_figura_vetorial": true,
+    "image_bboxes": [],
+    "raw_text": "QUESTÃO 152\t\nOs números figurados pentagonais provavelmente \nforam introduzidos pelos pitagóricos por volta do \nséculo V a.C. As figuras ilustram como obter os seis \nprimeiros deles, sendo os demais obtidos seguindo o \nmesmo padrão geométrico.\n22\n12\n5\n1\n35\n51\nO oitavo número pentagonal é \nA\t\nA\t 59.\nB\t\nB\t 83.\nC\t\nC\t 86.\nD\t\nD\t 89.\nE\t\nE\t 92.\n"
+  },
+  {
+    "numero": 153,
+    "pagina": 22,
+    "crop": "crops/Q153.png",
+    "page_full": "pages_full/page_22.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 29,
+    "possivel_figura_vetorial": true,
+    "image_bboxes": [],
+    "raw_text": "22\nMT • 2º DIA • CADE\nQUESTÃO 153\t\nA figura ilustra uma roda-gigante no exato instante em \nque a cadeira onde se encontra a pessoa P está no ponto \nmais alto dessa roda-gigante.\nP\nSolo\nCom o passar do tempo, à medida que a roda-gigante \ngira, com velocidade angular constante e no sentido \nhorário, a altura da cadeira onde se encontra a pessoa P, \nem relação ao solo, vai se alterando.\n"
+  },
+  {
+    "numero": 154,
+    "pagina": 23,
+    "crop": "crops/Q154.png",
+    "page_full": "pages_full/page_23.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 18,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "QUESTÃO 154\t\nUm professor, para promover a aprendizagem dos \nestudantes em estatística, propôs uma atividade. O objetivo \nera verificar o percentual de estudantes com massa corporal \nabaixo da média e altura acima da média de um grupo de \nestudantes. Para isso, usando uma balança e uma fita \nmétrica, avaliou uma amostra de dez estudantes, anotando as \nmedidas observadas. O gráfico apresenta a massa corporal, \nem quilograma, e a altura, em metro, obtidas na atividade.\nMassa corporal e altura de estudantes\nAltura (m)\nMassa corporal (kg)\n0\n1,8\n1,75\n1,7\n1,65\n1,6\n1,55\n1,5\n1,45\n20\n40\n60\n80\n100\n120\n140\nApós a coleta dos dados, os estudantes calcularam a \nmédia dos valores obtidos, referentes à massa corporal \ne à altura, obtendo, respectivamente, 80 kg e 1,65 m.\nQual é o percentual de estudantes dessa amostra com \nmassa corporal abaixo da média e altura acima da média?\nA\t\nA\t 10\nB\t\nB\t 20\nC\t\nC\t 30\nD\t\nD\t 50\nE\t\nE\t 70\n"
+  },
+  {
+    "numero": 155,
+    "pagina": 23,
+    "crop": "crops/Q155.png",
+    "page_full": "pages_full/page_23.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 12,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "MT • 2º DIA • CADE\nE\nQUESTÃO 155\t\nUm pescador tem um custo fixo diário de R$ 900,00 \ncom combustível, iscas, manutenção de seu barco e outras \npequenas despesas. Ele vende cada quilograma de peixe por \nR$ 5,00. Sua meta é obter um lucro mínimo de R$ 800,00 \npor dia. Sozinho, ele consegue, ao final de um dia de trabalho, \npescar 180 kg de peixe, o que é suficiente apenas para cobrir o \ncusto fixo diário. Portanto, precisa contratar ajudantes, pagando \npara cada um R$ 250,00 por dia de trabalho. Além desse valor, \n4% da receita obtida pela venda de peixe é repartida igualmente \nentre os ajudantes. Considerando o tamanho de seu barco, ele \npode contratar até 5 ajudantes. Ele sabe que com um ajudante \na pesca diária é de 300 kg e que, a partir do segundo \najudante contratado, aumenta-se em 100 kg a quantidade de \npeixe pescada por ajudante em um dia de trabalho.\nA quantidade mínima de ajudantes que esse pescador \nprecisa contratar para conseguir o lucro diário pretendido é\nA\t\nA\t 1.\nB\t\nB\t 2.\nC\t\nC\t 3.\nD\t\nD\t 4.\nE\t\nE\t 5.\n"
+  },
+  {
+    "numero": 156,
+    "pagina": 23,
+    "crop": "crops/Q156.png",
+    "page_full": "pages_full/page_23.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 7,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "QUESTÃO 156\t\nUm agricultor é informado sobre um método de proteção \npara sua lavoura que consiste em inserir larvas específicas, \nde rápida reprodução. A reprodução dessas larvas faz com \nque sua população multiplique-se por 10 a cada 3 dias e, \npara evitar eventuais desequilíbrios, é possível cessar essa \nreprodução aplicando-se um produto X. O agricultor decide \niniciar esse método com 100 larvas e dispõe de 5 litros do \nproduto X, cuja aplicação recomendada é de exatamente \n1 litro para cada população de 200 000 larvas. A quantidade \ntotal do produto X de que ele dispõe deverá ser aplicada \nde uma única vez.\nQuantos dias após iniciado esse método o agricultor \ndeverá aplicar o produto X?\nA\t\nA\t 2\nB\t\nB\t 4\nC\t\nC\t 6\nD\t\nD\t 12\nE\t\nE\t 18 \n"
+  },
+  {
+    "numero": 157,
+    "pagina": 23,
+    "crop": "crops/Q157.png",
+    "page_full": "pages_full/page_23.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 10,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "23\nRNO 5 • AMARELO\nQUESTÃO 157\t\nAo realizar o cadastro em um aplicativo de investimentos, \nfoi solicitado ao usuário que criasse uma senha, sendo \npermitido o uso somente dos seguintes caracteres:\n•\t algarismos de 0 a 9;\n•\t 26 letras minúsculas do alfabeto;\n•\t 26 letras maiúsculas do alfabeto;\n•\t 6 caracteres especiais !, @, #, $, , &.\nTrês tipos de estruturas para senha foram apresentadas \nao usuário:\n•\t tipo I: formada por quaisquer quatro caracteres \ndistintos, escolhidos dentre os permitidos;\n•\t tipo II: formada por cinco caracteres distintos, \niniciando por três letras, seguidas por um algarismo \ne, ao final, um caractere especial;\n•\t tipo III: formada por seis caracteres distintos, iniciando \npor duas letras, seguidas por dois algarismos e, ao \nfinal, dois caracteres especiais.\nConsidere p1, p2 e p3 as probabilidades de se \ndescobrirem ao acaso, na primeira tentativa, as senhas \ndos tipos I, II e III, respectivamente.\nNessas condições, o tipo de senha que apresenta a \nmenor probabilidade de ser descoberta ao acaso, na \nprimeira tentativa, é o\nA\t\nA\t tipo I, pois p1 < p2 < p3.\nB\t\nB\t tipo I, pois tem menor quantidade de caracteres.\nC\t\nC\t tipo II, pois tem maior quantidade de letras.\nD\t\nD\t tipo III, pois p3 < p2 < p1.\nE\t\nE\t tipo III, pois tem maior quantidade de caracteres.\n"
+  },
+  {
+    "numero": 158,
+    "pagina": 24,
+    "crop": "crops/Q158.png",
+    "page_full": "pages_full/page_24.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 10,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "QUESTÃO 158\t\nEm um colégio público, a admissão no primeiro ano se \ndá por sorteio. Neste ano há 55 candidatos, cujas inscrições \nsão numeradas de 01 a 55. O sorteio de cada número de \ninscrição será realizado em etapas, utilizando-se duas \nurnas. Da primeira urna será sorteada uma bola, dentre \nbolas numeradas de 0 a 9, que representará o algarismo \ndas unidades do número de inscrição a ser sorteado e, em \nseguida, da segunda urna, será sorteada uma bola para \nrepresentar o algarismo das dezenas desse número. Depois \ndo primeiro sorteio, e antes de se sortear o algarismo das \ndezenas, as bolas que estarão presentes na segunda \nurna serão apenas aquelas cujos números formam, com o \nalgarismo já sorteado, um número de 01 a 55.\nAs probabilidades de os candidatos de inscrição número \n50 e 02 serem sorteados são, respectivamente,\nA\t\nA\t 1\n50\n1\n60\ne\nB\t\nB\t 1\n50\n1\n50\ne\nC\t\nC\t 1\n50\n1\n10\ne\nD\t\nD\t 1\n55\n1\n54\ne\nE\t\nE\t \n1\n100\n1\n100\ne\n"
+  },
+  {
+    "numero": 159,
+    "pagina": 24,
+    "crop": "crops/Q159.png",
+    "page_full": "pages_full/page_24.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 49,
+    "possivel_figura_vetorial": true,
+    "image_bboxes": [],
+    "raw_text": "24\nMT • 2º DIA • CADE\nQUESTÃO 159\t\nO esquema mostra como a intensidade luminosa \ndecresce com o aumento da profundidade em um rio, \nsendo L0 a intensidade na sua superfície.\n0 m\nL0\n1 m\n3\n2 L0\n2 m\n9\n4 L0\n3 m\n27\n8 L0\nIntensidade luminosa\nProfundidade\nConsidere que a intensidade luminosa diminui, a cada \nmetro acrescido na profundidade, segundo o mesmo \npadrão do esquema.\n"
+  },
+  {
+    "numero": 160,
+    "pagina": 24,
+    "crop": "crops/Q160.png",
+    "page_full": "pages_full/page_24.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 15,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "RNO 5 • AMARELO\nQUESTÃO 160\t\nAnalisando as vendas de uma empresa, o gerente \nconcluiu que o montante diário arrecadado, em milhar de real, \npoderia ser calculado pela expressão V x\nx\nx\n\u001f \u001e \u001d\n\u001c\n\u001b\n2\n4\n10\n105, \nem que os valores de x representam os dias do mês, \nvariando de 1 a 30.\nUm dos fatores para avaliar o desempenho mensal \nda empresa é verificar qual é o menor montante diário V0 \narrecadado ao longo do mês e classificar o desempenho \nconforme as categorias apresentadas a seguir, em que as \nquantidades estão expressas em milhar de real.\n•\t Ótimo: V0 ≥ 24\n•\t Bom: 20 ≤ V0 < 24\n•\t Normal: 10 ≤ V0 < 20\n•\t Ruim: 4 ≤ V0 < 10\n•\t Péssimo: V0 < 4\nNo caso analisado, qual seria a classificação do \ndesempenho da empresa?\nA\t\nA\t Ótimo.\nB\t\nB\t Bom.\nC\t\nC\t Normal.\nD\t\nD\t Ruim.\nE\t\nE\t Péssimo.\n"
+  },
+  {
+    "numero": 161,
+    "pagina": 25,
+    "crop": "crops/Q161.png",
+    "page_full": "pages_full/page_25.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 5,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "QUESTÃO 161\t\nDirigir após ingerir bebidas alcoólicas é uma atitude \nextremamente perigosa, uma vez que, a partir da primeira \ndose, a pessoa já começa a ter perda de sensibilidade \nde movimentos e de reflexos. Apesar de a eliminação e \nabsorção do álcool depender de cada pessoa e de como \no organismo consegue metabolizar a substância, ao final \nda primeira hora após a ingestão, a concentração de álcool \n(C) no sangue corresponde a aproximadamente 90% da \nquantidade (q) de álcool ingerida, e a eliminação total \ndessa concentração pode demorar até 12 horas.\nDisponível em: http://g1.globo.com. Acesso em: 1 dez. 2018 (adaptado).\nNessas condições, ao final da primeira hora após a ingestão \nda quantidade q de álcool, a concentração C dessa \nsubstância no sangue é expressa algebricamente por\nA\t\nA\t C = 0,9q\nB\t\nB\t C = 0,1q\nC\t\nC\t C = 1 − 0,1q\nD\t\nD\t C = 1 − 0,9q\nE\t\nE\t C = q − 10\n"
+  },
+  {
+    "numero": 162,
+    "pagina": 25,
+    "crop": "crops/Q162.png",
+    "page_full": "pages_full/page_25.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 65,
+    "possivel_figura_vetorial": true,
+    "image_bboxes": [],
+    "raw_text": "MT • 2º DIA • CADE\nq\nQUESTÃO 162\t\nUm investidor iniciante observou o gráfico que \napresenta a evolução dos valores de duas criptomoedas \nA e B em relação ao tempo.\nCriptomoeda B\n(milhar de real)\nCriptomoeda A\n(milhar de real)\nDurante horas consecutivas, esses valores foram \nobservados em nove instantes, representados por horas \nexatas.\nEm quantos desses instantes a criptomoeda A estava \nmais valorizada do que a criptomoeda B?\nA\t\nA\t 3\nB\t\nB\t 4\nC\t\nC\t 6\nD\t\nD\t 7\nE\t\nE\t 9\n"
+  },
+  {
+    "numero": 163,
+    "pagina": 25,
+    "crop": "crops/Q163.png",
+    "page_full": "pages_full/page_25.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 12,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "25\nRNO 5 • AMARELO\nQUESTÃO 163\t\nA exposição a alguns níveis sonoros pode causar \nlesões auditivas. Por isso, em uma indústria, são adotadas \nmedidas preventivas de acordo com a máquina que o \nfuncionário opera e o nível N de intensidade do som, \nmedido em decibel (dB), a que o operário é exposto, \nsendo N = log10I 10 − log10I 10\n0 , I a intensidade do som e \nI0 = 10−12 W/m2.\nDisponível em: www.sofisica.com.br. Acesso em: 8 jul. 2015 (adaptado).\nQuando o som é considerado baixo, ou seja, \nN = 48 dB ou menos, deve ser utilizada a medida \npreventiva I. No caso de o som ser moderado, quando \nN está no intervalo (48 dB, 55 dB), deve ser utilizada a \nmedida preventiva II. Quando o som é moderado alto, \nque equivale a N no intervalo (55 dB, 80 dB), a medida \npreventiva a ser usada é a III. Se N estiver no intervalo \n(80 dB, 115 dB), quando o som é considerado alto, deve ser \nutilizada a medida preventiva IV. E se o som é considerado \nmuito alto, com N maior que 115 dB, deve-se utilizar a \nmedida preventiva V.\nUma nova máquina, com I = 8 × 10−8 W/m2, foi adquirida \ne será classificada de acordo com o nível de ruído \nque produz. \nConsidere 0,3 como aproximação para log102.\nO funcionário que operará a nova máquina deverá adotar \na medida preventiva\nA\t\nA\t I.\nB\t\nB\t II.\nC\t\nC\t III.\nD\t\nD\t IV.\nE\t\nE\t V.\n"
+  },
+  {
+    "numero": 164,
+    "pagina": 26,
+    "crop": "crops/Q164.png",
+    "page_full": "pages_full/page_26.png",
+    "has_raster_image": true,
+    "vector_ops_in_range": 58,
+    "possivel_figura_vetorial": true,
+    "image_bboxes": [
+      [
+        231.0,
+        237.0,
+        253.0,
+        243.0
+      ]
+    ],
+    "raw_text": "26\nMT • 2º DIA • CADE\nQUESTÃO 164\t\nUm artista plástico esculpe uma escultura a partir \nde um bloco de madeira de lei, em etapas. Inicialmente, \nesculpe um cone reto com 36 cm de altura e diâmetro da \nbase medindo 18 cm. Em seguida, remove desse cone um \ncone menor, cujo diâmetro da base mede 6 cm, obtendo, \nassim, um tronco de cone, conforme ilustrado na figura.\n6 cm\n36 cm\n18 cm\nEm seguida, perfura esse tronco de cone, removendo \num cilindro reto, de diâmetro 6 cm, cujo eixo de simetria é o \nmesmo do cone original. Dessa forma, ao final, a escultura \ntem a forma de um tronco de cone com uma perfuração \ncilíndrica de base a base.\nO tipo de madeira utilizada para produzir essa escultura \ntem massa igual a 0,6 g por centímetro cúbico de volume. \nUtilize 3 como aproximação para π.\nQual é a massa, em grama, dessa escultura?\nA\t\nA\t 1 198,8\nB\t\nB\t 1 296,0\nC\t\nC\t 1 360,8\nD\t\nD\t 4 665,6\nE\t\nE\t 4 860,0\n"
+  },
+  {
+    "numero": 165,
+    "pagina": 26,
+    "crop": "crops/Q165.png",
+    "page_full": "pages_full/page_26.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 35,
+    "possivel_figura_vetorial": true,
+    "image_bboxes": [],
+    "raw_text": "QUESTÃO 165\t\nOs 100 funcionários de uma empresa estão \ndistribuídos em dois setores: Produção e Administração. \nOs funcionários de um mesmo setor recebem salários \ncom valores iguais. O quadro apresenta a quantidade de \nfuncionários por setor e seus respectivos salários.\nSetor\nQuantidade de \nfuncionários\nSalário \n(em real)\nProdução\n75\n2 000,00\nAdministração\n25\n7 000,00\nA média dos salários dos 100 funcionários dessa \nempresa, em real, é\nA\t\nA\t 2 000,00.\nB\t\nB\t 2 500,00.\nC\t\nC\t 3 250,00.\nD\t\nD\t 4 500,00.\nE\t\nE\t 9 000,00.\n"
+  },
+  {
+    "numero": 166,
+    "pagina": 26,
+    "crop": "crops/Q166.png",
+    "page_full": "pages_full/page_26.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 12,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "RNO 5 • AMARELO\nQUESTÃO 166\t\nVisando atrair mais clientes, o gerente de uma loja \nanunciou uma promoção em que cada cliente que realizar \numa compra pode ganhar um voucher para ser usado \nem sua próxima compra. Para ganhar seu voucher, \no cliente precisa retirar, ao acaso, uma bolinha de dentro\nde cada uma das duas urnas A e B disponibilizadas pelo\ngerente, nas quais há apenas bolinhas pretas e brancas.\nAtualmente, a probabilidade de se escolher, ao acaso,\numa bolinha preta na urna A é igual a 20% e a probabilidade\nde se escolher uma bolinha preta na urna B é 25%.\nGanha o voucher o cliente que retirar duas bolinhas pretas,\numa de cada urna.\nCom o passar dos dias, o gerente percebeu que, para a \npromoção ser viável aos negócios, era preciso alterar \na probabilidade de acerto do cliente sem alterar a regra \nda promoção. Para isso, resolveu alterar a quantidade de \nbolinhas brancas na urna B de forma que a probabilidade \nde um cliente ganhar o voucher passasse a ser menor ou \nigual a 1%. Sabe-se que a urna B tem 4 bolinhas pretas e \nque, em ambas as urnas, todas as bolinhas têm a mesma \nprobabilidade de serem retiradas.\nQual é o número mínimo de bolinhas brancas que o \ngerente deve adicionar à urna B?\nA\t\nA\t 20\nB\t\nB\t 60\nC\t\nC\t 64\nD\t\nD\t 68\nE\t\nE\t 80\n"
+  },
+  {
+    "numero": 167,
+    "pagina": 27,
+    "crop": "crops/Q167.png",
+    "page_full": "pages_full/page_27.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 57,
+    "possivel_figura_vetorial": true,
+    "image_bboxes": [],
+    "raw_text": "MT • 2º DIA • CADE\nQUESTÃO 167\t\nEstudantes trabalhando com robótica criaram uma \n“torneira inteligente” que automatiza sua abertura e seu \nfechamento durante a limpeza das mãos. A tecnologia \nfunciona da seguinte forma: ao se colocarem as mãos \nsob a torneira, ela libera água durante 3 segundos para \nque a pessoa possa molhá-las. Em seguida, interrompe o \nfornecimento de água por 5 segundos, enquanto a pessoa \nensaboa suas mãos, e finaliza o ciclo liberando água para \no enxágue por mais 3 segundos. Considere o tempo ( t ), \nem segundo, contado a partir do instante em que se inicia\no ciclo. A vazão de água nessa torneira é constante.\nUm esboço de gráfico que descreve o volume de água \nacumulado, em litro, liberado por essa torneira durante um \nciclo de lavagem das mãos, em função do tempo ( t ), em \nsegundo, é\nA\t\nA\t\n0\n1\n2\n3\n4\n5\n6\n7\n8\n9 10 11 12\nt (s)\nVolume de água (L)\nB\t\nB\t\n0\n1\n2\n3\n4\n5\n6\n7\n8\n9 10 11 12\nVolume de água (L)\nt (s)\nC\t\nC\t\n0\n1\n2\n3\n4\n5\n6\n7\n8\n9 10 11 12\nVolume de água (L)\nt (s)\nD\t\nD\t\n0\n1\n2\n3\n4\n5\n6\n7\n8\n9 10 11 12\nVolume de água (L)\nt (s)\nE\t\nE\t\n0\n1\n2\n3\n4\n5\n6\n7\n8\n9 10 11 12\nt (s)\nVolume de água (L)\n"
+  },
+  {
+    "numero": 168,
+    "pagina": 27,
+    "crop": "crops/Q168.png",
+    "page_full": "pages_full/page_27.png",
+    "has_raster_image": true,
+    "vector_ops_in_range": 6,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [
+      [
+        299.1,
+        120.8,
+        525.7,
+        288.7
+      ]
+    ],
+    "raw_text": "QUESTÃO 168\t\nAs características culturais variam de povo para povo. \nHá notícias de um povo que possuía formas de contar \ndiferentes das nossas, como indicado no quadrinho a seguir.\nSegundo o padrão de contagem indicado na figura, as \nrepresentações dos numerais cinco e sete, nessa cultura, \ndevem ser, respectivamente,\nA\t\nA\t okosa urapum urapum urapum e okosa okosa urapum \nurapum urapum.\nB\t\nB\t okosa okosa urapum e okosa okosa okosa okosa urapum. \nC\t\nC\t okosa okosa urapum e okosa okosa okosa urapum. \nD\t\nD\t okosa urapum urapum e okosa urapum okosa urapum \nurapum.\nE\t\nE\t okosa okosa urapum e okosa okosa okosa okosa.\n"
+  },
+  {
+    "numero": 169,
+    "pagina": 27,
+    "crop": "crops/Q169.png",
+    "page_full": "pages_full/page_27.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 7,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "27\nRNO 5 • AMARELO\nE\np\nQUESTÃO 169\t\nUm tipo de semente necessita de bastante água nos \ndois primeiros meses após o plantio. Um produtor pretende \nestabelecer o melhor momento para o plantio desse tipo de \nsemente, nos meses de outubro a março. Após consultar \na previsão do índice mensal de precipitação de chuva \n(ImPC) da região onde ocorrerá o plantio, para o período \nchuvoso de 2020 - 2021, ele obteve os seguintes dados:\n• outubro/2020: ImPC = 250 mm;\n• novembro/2020: ImPC = 150 mm;\n• dezembro/2020: ImPC = 200 mm;\n• janeiro/2021: ImPC = 450 mm;\n• fevereiro/2021: ImPC = 100 mm;\n• março/2021: ImPC = 200 mm.\nCom base nessas previsões, ele precisa escolher\ndois meses consecutivos em que a média mensal de \nprecipitação seja a maior possível.\nNo início de qual desses meses o produtor deverá plantar \nesse tipo de semente?\nA\t\nA\t Outubro.\nB\t\nB\t Novembro.\nC\t\nC\t Dezembro.\nD\t\nD\t Janeiro.\nE\t\nE\t Fevereiro.\n"
+  },
+  {
+    "numero": 170,
+    "pagina": 28,
+    "crop": "crops/Q170.png",
+    "page_full": "pages_full/page_28.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 5,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "QUESTÃO 170\t\nUma loja vende seus produtos de duas formas: \nà vista ou financiado em três parcelas mensais iguais. \nPara definir o valor dessas parcelas nas vendas \nfinanciadas, a loja aumenta em 20% o valor do produto \nà vista e divide esse novo valor por 3. A primeira parcela \ndeve ser paga no ato da compra, e as duas últimas, \nem 30 e 60 dias após a compra.\nUm cliente da loja decidiu comprar, de forma financiada, \num produto cujo valor à vista é R$ 1 500,00.\nUtilize 5,29 como aproximação para \n28.\nA taxa mensal de juros compostos praticada nesse \nfinanciamento é de\nA\t\nA\t 6,7%\nB\t\nB\t 10%\nC\t\nC\t 20%\nD\t\nD\t 21,5%\nE\t\nE\t 23,3%\n"
+  },
+  {
+    "numero": 171,
+    "pagina": 28,
+    "crop": "crops/Q171.png",
+    "page_full": "pages_full/page_28.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 4,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "QUESTÃO 171\t\nPara concretar a laje de sua residência, uma pessoa \ncontratou uma construtora. Tal empresa informa que o \npreço y do concreto bombeado é composto de duas \npartes: uma fixa, chamada de taxa de bombeamento, \ne uma variável, que depende do volume x de concreto \nutilizado. Sabe-se que a taxa de bombeamento custa \nR$ 500,00 e que o metro cúbico do concreto bombeado \né de R$ 250,00.\nA expressão que representa o preço y em função do \nvolume x, em metro cúbico, é\nA\t\nA\t y = 250x\nB\t\nB\t y = 500x\nC\t\nC\t y = 750x\nD\t\nD\t y = 250x + 500\nE\t\nE\t y = 500x + 250\n"
+  },
+  {
+    "numero": 172,
+    "pagina": 28,
+    "crop": "crops/Q172.png",
+    "page_full": "pages_full/page_28.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 9,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "28\nMT • 2º DIA • CADE\nQUESTÃO 172\t\nUma empresa de segurança domiciliar oferece o serviço \nde patrulha noturna, no qual vigilantes em motocicletas \nfazem o monitoramento periódico de residências. \nA empresa conta com uma base, de onde acompanha \no trajeto realizado pelos vigilantes durante as patrulhas \ne orienta o deslocamento de equipes de reforço quando \nnecessário. Numa patrulha rotineira, sem ocorrências, \num vigilante conduziu sua motocicleta a uma velocidade \nconstante durante todo o itinerário estabelecido, levando \n30 minutos para conclusão. De acordo com os registros \ndo GPS alocado na motocicleta, a distância da posição \ndo vigilante à base, ao longo do tempo de realização do \ntrajeto, é descrita pelo gráfico.\n"
+  },
+  {
+    "numero": 173,
+    "pagina": 29,
+    "crop": "crops/Q173.png",
+    "page_full": "pages_full/page_29.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 9,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "QUESTÃO 173\t\nUm supermercado conta com cinco caixas disponíveis \npara pagamento. Foram instaladas telas que apresentam \no tempo médio gasto por cada caixa para iniciar e finalizar o \natendimento de cada cliente, e o número de pessoas \npresentes na fila de cada caixa em tempo real. Um cliente, \nna hora de passar sua compra, sabendo que cada um \ndos cinco caixas iniciará um novo atendimento naquele \nmomento, pretende gastar o menor tempo possível de \nespera na fila. Ele observa que as telas apresentavam as \ninformações a seguir.\n•\t Caixa I: atendimento 12 minutos, 5 pessoas na fila.\n•\t Caixa II: atendimento 6 minutos, 9 pessoas na fila.\n•\t Caixa III: atendimento 5 minutos, 6 pessoas na fila.\n•\t Caixa IV: atendimento 15 minutos, 2 pessoas na fila.\n•\t Caixa V: atendimento 9 minutos, 3 pessoas na fila.\nPara alcançar seu objetivo, o cliente deverá escolher o caixa\nA\t\nA\t I.\nB\t\nB\t II.\nC\t\nC\t III.\nD\t\nD\t IV.\nE\t\nE\t V.\n"
+  },
+  {
+    "numero": 174,
+    "pagina": 29,
+    "crop": "crops/Q174.png",
+    "page_full": "pages_full/page_29.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 38,
+    "possivel_figura_vetorial": true,
+    "image_bboxes": [],
+    "raw_text": "MT • 2º DIA • CADE\nQUESTÃO 174\t\nAs figuras pintadas no quadro da sala de estar de \numa residência representam as silhuetas de parte das \ntorres de um castelo e, ao fundo, a de uma lua cheia. \nA lua foi pintada na forma de um círculo, e o telhado da \ntorre mais alta, na forma de triângulo equilátero, foi pintado \nsobrepondo parte da lua. O centro da lua coincide com um \ndos vértices do telhado da torre mais alta.\nNesse quadro, a parte da lua escondida atrás da torre \nmais alta do castelo pode ser representada por um\nA\t\nA\t cone.\nB\t\nB\t setor circular.\nC\t\nC\t segmento circular.\nD\t\nD\t triângulo isósceles.\nE\t\nE\t arco de circunferência.\n"
+  },
+  {
+    "numero": 175,
+    "pagina": 29,
+    "crop": "crops/Q175.png",
+    "page_full": "pages_full/page_29.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 28,
+    "possivel_figura_vetorial": true,
+    "image_bboxes": [],
+    "raw_text": "QUESTÃO 175\t\nNa planta baixa de um clube, a piscina é representada \npor um quadrado cuja área real mede 400 m². Ao redor \ndessa piscina, será construída uma calçada, de largura \nconstante igual a 5 m.\nCalçada\nPiscina\n5 m\n5 m\n5 m\n5 m\nQual é a medida da área, em metro quadrado, ocupada \npela calçada?\nA\t\nA\t 1 000\nB\t\nB\t 900\nC\t\nC\t 600\nD\t\nD\t 500\nE\t\nE\t 400\n"
+  },
+  {
+    "numero": 176,
+    "pagina": 29,
+    "crop": "crops/Q176.png",
+    "page_full": "pages_full/page_29.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 95,
+    "possivel_figura_vetorial": true,
+    "image_bboxes": [],
+    "raw_text": "29\nRNO 5 • AMARELO\nE\nQUESTÃO 176\t\nUma pessoa caminha por 30 minutos e utiliza um \naplicativo instalado em seu celular para monitorar a \nvariação da intensidade do sinal de internet recebido \npelo aparelho durante o deslocamento. Chegando ao seu \ndestino, o aplicativo forneceu este gráfico:\nIntensidade do sinal de internet\nTempo (min)\n0\n2\n4\n6\n8\n10 12 14\n16\n18 20\n22 24\n26 28 30\nPor quantos minutos, durante essa caminhada, o celular \ndessa pessoa ficou sem receber sinal de internet?\nA\t\nA\t 6\nB\t\nB\t 8\nC\t\nC\t 10\nD\t\nD\t 14\nE\t\nE\t 24\n"
+  },
+  {
+    "numero": 177,
+    "pagina": 30,
+    "crop": "crops/Q177.png",
+    "page_full": "pages_full/page_30.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 13,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "QUESTÃO 177\t\nO gráfico expõe alguns números da gripe A-H1N1. En\numa já está completamente imunizada, a dos trabalhadore\nAdultos entre 20 e 29 anos\n0,0%\nCrianças de 6 meses a 2 anos\nGestantes\nDoentes crônicos\nIndígenas\n10,0% 20,0%\nTrabalhadores da saúde\nNúmeros da campanha\nDe acordo com o gráfico, entre as demais categorias, a\ncategoria de\nA\t\nA\t indígenas. \nB\t\nB\t gestantes. \nC\t\nC\t doentes crônicos. \nD\t\nD\t adultos entre 20 e 29 anos.\nE\t\nE\t crianças de 6 meses a 2 anos.\n"
+  },
+  {
+    "numero": 178,
+    "pagina": 30,
+    "crop": "crops/Q178.png",
+    "page_full": "pages_full/page_30.png",
+    "has_raster_image": true,
+    "vector_ops_in_range": 6,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [
+      [
+        146.0,
+        417.6,
+        420.9,
+        613.2
+      ]
+    ],
+    "raw_text": "30\nMT • 2º DIA • CADERNO 5 • AMARELO\nç\nQUESTÃO 178\t\nA figura representa uma escada com três degraus, construída em concreto maciço, com su\nNessa escada, pisos e espelhos têm formato retangular, e as paredes laterais têm form\nlados adjacentes são perpendiculares. Pisos, espelhos e paredes laterais serão revestidos\nA área a ser revestida em cerâmica, em metro quadrado, mede\nA\t\nA\t 1,20.\nB\t\nB\t 1,35.\nC\t\nC\t 1,65.\nD\t\nD\t 1,80.\nE\t\nE\t 1,95.\n"
+  },
+  {
+    "numero": 179,
+    "pagina": 31,
+    "crop": "crops/Q179.png",
+    "page_full": "pages_full/page_31.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 93,
+    "possivel_figura_vetorial": true,
+    "image_bboxes": [],
+    "raw_text": "QUESTÃO 179\t\nUma pessoa comprou um ingresso para o cinema em \nbidimensional do posicionamento das poltronas, conforme\na subir uma das escadas e parou na posição indicada pela\ne observou que, para encontrar sua poltrona, deveria par\ndireção norte por mais quatro fileiras e olhar à sua direita, \nFileiras\nEscada\nTel\nEntrada\nA\nB\nC\nD\nE\nF\nG\nH\nI\nJ\n2\n1\n3\n4\n5\n6\nNesse cinema, as poltronas são identificadas por um\nposição da poltrona na fileira, respectivamente.\nA poltrona dessa pessoa é a identificada por\nA\t\nA\t A6.\nB\t\nB\t H1.\nC\t\nC\t H6.\nD\t\nD\t I1.\nE\t\nE\t I6.\n"
+  },
+  {
+    "numero": 180,
+    "pagina": 31,
+    "crop": "crops/Q180.png",
+    "page_full": "pages_full/page_31.png",
+    "has_raster_image": false,
+    "vector_ops_in_range": 11,
+    "possivel_figura_vetorial": false,
+    "image_bboxes": [],
+    "raw_text": "MT • 2º DIA • CADE\nQUESTÃO 180\t\nO metrô de um município oferece dois tipos de tíquetes c\nem cartelas, cada qual com nove tíquetes da mesma cor \numa cartela de tíquetes vermelhos são vendidas por R$ 32,\nde um tíquete vermelho é igual ao preço de um tíquete ver\nQual o preço, em real, de uma cartela de tíquetes vermelh\nA\t\nA\t 4,68\nB\t\nB\t 6,30\nC\t\nC\t 9,30\nD\t\nD\t 10,50\nE\t\nE\t 10,65 \n"
+  }
+]

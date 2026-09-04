@@ -39,6 +39,9 @@ import admin_routes as admin_module
 import events_routes as events_module
 import firestore_routes as firestore_module
 import skills_map_routes as skills_map_module
+import diagnostico_routes as diagnostico_module
+import perfil_cognitivo_service
+import mentis_routes as mentis_module
 import aulas_particulares_routes as aulas_particulares_module
 import sparks_routes as sparks_module
 import redacao_routes as redacao_module
@@ -58,6 +61,7 @@ feed_module.set_db(db)
 annotation_module.set_db(db)
 admin_module.set_db(db)
 firestore_module.set_db(db)
+mentis_module.set_db(db)
 aulas_particulares_module.set_db(db)
 sparks_module.set_db(db)
 redacao_module.set_db(db)
@@ -282,6 +286,8 @@ api_router.include_router(admin_module.router)
 api_router.include_router(events_module.router)
 api_router.include_router(firestore_module.router)
 api_router.include_router(skills_map_module.router)
+api_router.include_router(diagnostico_module.router)
+api_router.include_router(mentis_module.router)
 api_router.include_router(aulas_particulares_module.router)
 api_router.include_router(sparks_module.router)
 api_router.include_router(redacao_module.router)
@@ -428,6 +434,38 @@ async def _auto_sync_loop():
             )
 
 
+# Diário, não a cada 5 min como o sync do acervo: o perfil é pensado em
+# semanas, não minutos, e cada ciclo já é barato por si (só recomputa quem tem
+# evento novo desde o último snapshot — ver `atualizar_todos_os_perfis`), mas
+# rodar menos vezes por dia ainda poupa a cota gratuita de leitura do
+# Firestore à toa em bases maiores.
+PERFIL_COGNITIVO_SYNC_SECONDS = int(os.environ.get("PERFIL_COGNITIVO_SYNC_SECONDS", "86400") or 86400)
+
+
+async def _perfil_cognitivo_loop():
+    """Mesmo contrato de robustez do `_auto_sync_loop`: nunca derruba o
+    processo, sempre tenta de novo no próximo ciclo. `<= 0` desliga."""
+    if PERFIL_COGNITIVO_SYNC_SECONDS <= 0:
+        logger.warning(
+            "Perfil cognitivo automático DESLIGADO (PERFIL_COGNITIVO_SYNC_SECONDS=%d).",
+            PERFIL_COGNITIVO_SYNC_SECONDS,
+        )
+        return
+    while True:
+        await asyncio.sleep(PERFIL_COGNITIVO_SYNC_SECONDS)
+        try:
+            resultado = await perfil_cognitivo_service.atualizar_todos_os_perfis()
+            logger.info(
+                "Perfil cognitivo: %d processados, %d sem amostra, %d sem evento novo, %d falhas.",
+                resultado["processados"], resultado["sem_amostra"], resultado["pulados"], resultado["falhas"],
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(
+                "Perfil cognitivo automático falhou (tentando de novo em %ds): %s",
+                PERFIL_COGNITIVO_SYNC_SECONDS, exc,
+            )
+
+
 @app.on_event("startup")
 async def _startup():
     # Antes de qualquer outra coisa: sem os índices, toda requisição
@@ -458,6 +496,7 @@ async def _startup():
 
     asyncio.create_task(_safe_firestore_seed())
     asyncio.create_task(_auto_sync_loop())
+    asyncio.create_task(_perfil_cognitivo_loop())
     if not settings.MERCADOPAGO_HABILITADO:
         # Alto e claro: a loja fechada é uma condição operacional silenciosa —
         # o site funciona, ninguém reclama, e a receita é zero. Tem que estar
@@ -473,8 +512,8 @@ async def _startup():
                     settings.resumo()["mercadopago_ambiente"])
 
     logger.info(
-        "Sapiens ready · %s · auto-sync Firestore a cada %ds",
-        settings.resumo(), FIRESTORE_AUTO_SYNC_SECONDS,
+        "Sapiens ready · %s · auto-sync Firestore a cada %ds · perfil cognitivo a cada %ds",
+        settings.resumo(), FIRESTORE_AUTO_SYNC_SECONDS, PERFIL_COGNITIVO_SYNC_SECONDS,
     )
 
 

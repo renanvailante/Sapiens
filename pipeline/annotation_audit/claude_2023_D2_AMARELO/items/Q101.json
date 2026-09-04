@@ -1,0 +1,219 @@
+{
+  "fonte": {
+    "banca": "ENEM",
+    "ano": 2023,
+    "prova": "AMARELO",
+    "numero": 101,
+    "disciplina": "Ciências da Natureza e suas Tecnologias",
+    "tema": "Eletromagnetismo",
+    "conteudo": "Indução eletromagnética como princípio de funcionamento do fogão de indução",
+    "arquivo_origem": "2023_PV_impresso_D2_CD5.pdf",
+    "pagina": 5
+  },
+  "questao": {
+    "enunciado": "O fogão por indução funciona a partir do surgimento de uma corrente elétrica induzida no fundo da panela, com consequente transformação de energia elétrica em calor por efeito Joule. A principal vantagem desses fogões é a eficiência energética, que é substancialmente maior que a dos fogões convencionais.\n\nA corrente elétrica mencionada é induzida por",
+    "alternativas": [
+      {
+        "letra": "A",
+        "texto": "radiação.",
+        "correta": false
+      },
+      {
+        "letra": "B",
+        "texto": "condução.",
+        "correta": false
+      },
+      {
+        "letra": "C",
+        "texto": "campo elétrico variável.",
+        "correta": false
+      },
+      {
+        "letra": "D",
+        "texto": "campo magnético variável.",
+        "correta": true
+      },
+      {
+        "letra": "E",
+        "texto": "ressonância eletromagnética.",
+        "correta": false
+      }
+    ],
+    "recursos": {
+      "imagens": [],
+      "graficos": [],
+      "tabelas": [],
+      "formulas": []
+    }
+  },
+  "estrutura_cognitiva": {
+    "processos": [
+      {
+        "id": "PROC-CAUSAL-01",
+        "papel": "nuclear",
+        "peso_no_item": 1.0,
+        "confianca": 0.7,
+        "habilidades": [
+          {
+            "id": "HAB-34",
+            "peso_no_processo": 1.0,
+            "confianca": 0.7,
+            "aproximado": false
+          }
+        ],
+        "evidencias": {
+          "trechos": [
+            "corrente elétrica induzida no fundo da panela",
+            "A corrente elétrica mencionada é induzida por"
+          ],
+          "figuras": []
+        },
+        "justificativa": "O item exige relacionar o surgimento da corrente elétrica na panela (efeito) à sua causa física: a Lei de Faraday-Lenz estabelece que uma corrente é induzida em um condutor quando este é submetido a um campo magnético variável (a bobina do fogão gera um campo magnético alternado), e não por radiação, condução, campo elétrico variável isolado ou ressonância."
+      }
+    ],
+    "dominios": [
+      {
+        "id": "DOM-CAUSAL",
+        "derivado_de": [
+          "PROC-CAUSAL-01"
+        ],
+        "peso_no_item": 1.0,
+        "confianca": 0.7,
+        "_estatuto": {
+          "natureza": "classificacao_organizacao",
+          "evidencial": false,
+          "autoridade": "Constituicao §4.5",
+          "nota": "Peso e confianca deste bloco sao de NAVEGACAO E AGRUPAMENTO, nunca de evidencia. Nao alimentam a camada de crenca sobre o estado de um estudante. A unica relacao ponderada com valor diagnostico neste contrato e 'distratores[].erros_esperados[].confianca'.",
+          "metodo_confianca": "media_dos_processos_sustentadores",
+          "metodo_confianca_provisorio": true,
+          "metodo_confianca_motivo": "O Schema 2.2 diz 'confianca herdada dos processos' e NAO define a funcao de heranca. Nenhum documento de camada C1/C2/C3 a define: o White Paper 2.0.1 §4.2 registra que o Axioma da Crenca Calibrada 'nao exige nenhuma familia matematica especifica'. A media e decisao de engenharia deste pipeline, declarada sob GOV-1.0 §6.4 em vez de inserida silenciosamente, e substituivel sem alteracao de contrato."
+        }
+      }
+    ],
+    "competencias": [
+      {
+        "id": "COMP-06",
+        "derivado_de": [
+          "PROC-CAUSAL-01"
+        ],
+        "peso_no_item": 1.0,
+        "confianca": 0.7,
+        "_estatuto": {
+          "natureza": "classificacao_organizacao",
+          "evidencial": false,
+          "autoridade": "Constituicao §4.5",
+          "nota": "Peso e confianca deste bloco sao de NAVEGACAO E AGRUPAMENTO, nunca de evidencia. Nao alimentam a camada de crenca sobre o estado de um estudante. A unica relacao ponderada com valor diagnostico neste contrato e 'distratores[].erros_esperados[].confianca'.",
+          "metodo_confianca": "media_dos_processos_sustentadores",
+          "metodo_confianca_provisorio": true,
+          "metodo_confianca_motivo": "O Schema 2.2 diz 'confianca herdada dos processos' e NAO define a funcao de heranca. Nenhum documento de camada C1/C2/C3 a define: o White Paper 2.0.1 §4.2 registra que o Axioma da Crenca Calibrada 'nao exige nenhuma familia matematica especifica'. A media e decisao de engenharia deste pipeline, declarada sob GOV-1.0 §6.4 em vez de inserida silenciosamente, e substituivel sem alteracao de contrato."
+        }
+      }
+    ]
+  },
+  "incerteza": {
+    "marcadores": [],
+    "detalhe": "",
+    "requer_arbitragem": false
+  },
+  "distratores": [
+    {
+      "alternativa": "A",
+      "erros_esperados": [
+        {
+          "ordem": 1,
+          "erro": "erro-nao-catalogado-nesta-versao",
+          "processo_afetado": "PROC-CAUSAL-01",
+          "confianca": 0.4,
+          "mecanismo": "MEC-01"
+        }
+      ],
+      "plausibilidade": {
+        "valor": "baixa"
+      },
+      "probabilidade_estimada": null,
+      "explicacao": "Confunde o mecanismo de indução eletromagnética com aquecimento por radiação (como em fornos de micro-ondas ou infravermelho), ignorando que o fogão de indução gera corrente por variação de campo magnético, não por emissão de radiação absorvida pela panela."
+    },
+    {
+      "alternativa": "B",
+      "erros_esperados": [
+        {
+          "ordem": 1,
+          "erro": "erro-nao-catalogado-nesta-versao",
+          "processo_afetado": "PROC-CAUSAL-01",
+          "confianca": 0.4,
+          "mecanismo": "MEC-01"
+        }
+      ],
+      "plausibilidade": {
+        "valor": "media"
+      },
+      "probabilidade_estimada": null,
+      "explicacao": "Confunde indução com condução elétrica direta, como se houvesse contato elétrico entre a bobina do fogão e a panela; no fogão de indução não há contato elétrico, apenas acoplamento magnético."
+    },
+    {
+      "alternativa": "C",
+      "erros_esperados": [
+        {
+          "ordem": 1,
+          "erro": "erro-nao-catalogado-nesta-versao",
+          "processo_afetado": "PROC-CAUSAL-01",
+          "confianca": 0.4,
+          "mecanismo": "MEC-01"
+        }
+      ],
+      "plausibilidade": {
+        "valor": "alta"
+      },
+      "probabilidade_estimada": null,
+      "explicacao": "Confunde a grandeza física responsável pela indução: troca campo magnético variável (correto, Lei de Faraday) por campo elétrico variável, uma confusão comum entre as duas leis do eletromagnetismo (indução de Faraday vs. corrente de deslocamento de Maxwell)."
+    },
+    {
+      "alternativa": "E",
+      "erros_esperados": [
+        {
+          "ordem": 1,
+          "erro": "erro-nao-catalogado-nesta-versao",
+          "processo_afetado": "PROC-CAUSAL-01",
+          "confianca": 0.15,
+          "mecanismo": "MEC-01"
+        }
+      ],
+      "plausibilidade": {
+        "valor": "baixa"
+      },
+      "probabilidade_estimada": null,
+      "explicacao": "Atribui o efeito a ressonância eletromagnética, um termo tecnicamente vago aqui usado como distrator de sonoridade científica, sem relação com o mecanismo real de indução por variação de fluxo magnético."
+    }
+  ],
+  "intervencoes": [],
+  "pedagogia": {
+    "estrategia": "Consolidar a distinção entre os diferentes mecanismos de transferência/geração de energia elétrica e térmica (condução, radiação, indução), ancorando a Lei de Faraday-Lenz no exemplo concreto do fogão de indução.",
+    "passos": [
+      "Identificar que o texto descreve uma corrente elétrica surgindo sem contato físico entre a fonte e a panela.",
+      "Relembrar que, pela Lei de Faraday, uma força eletromotriz (e corrente) é induzida por variação de fluxo magnético através de um condutor.",
+      "Associar a bobina do fogão de indução a um gerador de campo magnético alternado, que induz correntes parasitas (correntes de Foucault) no fundo metálico da panela.",
+      "Descartar as demais alternativas por não descreverem o mecanismo físico da indução eletromagnética."
+    ],
+    "erros_comuns": [
+      "Confundir indução eletromagnética com aquecimento por radiação ou com condução elétrica direta.",
+      "Trocar campo magnético variável por campo elétrico variável, sem diferenciar as leis de Faraday e de Ampère-Maxwell."
+    ],
+    "dicas": [
+      "Fogão de indução não tem contato elétrico com a panela: o que existe é um campo magnético que muda no tempo, criado pela bobina."
+    ],
+    "tempo_estimado_segundos": 70,
+    "nivel_dificuldade": "facil"
+  },
+  "qualidade": {
+    "confianca_global": 0.7,
+    "revisado": false,
+    "observacoes": "Todos os distratores foram classificados com a sentinela 'erro-nao-catalogado-nesta-versao' vinculada a PROC-CAUSAL-01, pois embora esse processo tenha tipos de erro catalogados (ERR-07 confusão causa/correlação, ERR-08 generalização indevida), nenhum descreve com precisão a troca de um mecanismo físico específico por outro mecanismo físico específico (indução vs. radiação/condução/campo elétrico/ressonância); forçar ERR-07/ERR-08 aqui distorceria o catálogo, por isso a sentinela é o registro mais honesto.",
+    "apto_para_camada_de_crenca": {
+      "valor": false
+    }
+  },
+  "schema_version": "2.2",
+  "ontology_version": "1.4.1",
+  "item_hash": "4b46fffa2e0fa926dbea6ea6fa8692945a69ac01afb2c8c47807d9ce865f8d93",
+  "item_id": "CLAUDE-ITEM-ENEM-2023-AMARELO-Q101"
+}

@@ -1,0 +1,133 @@
+{
+  "fonte": {
+    "banca": "ENEM",
+    "ano": 2023,
+    "prova": "AMARELO",
+    "numero": 97,
+    "disciplina": "Ciências da Natureza e suas Tecnologias",
+    "tema": "Termoquímica — Gases",
+    "conteudo": "Aplicação da equação de Clapeyron (gás ideal) ao cálculo de pressão em uma explosão de aerossol",
+    "arquivo_origem": "2023_PV_impresso_D2_CD5.pdf",
+    "pagina": 4
+  },
+  "questao": {
+    "enunciado": "De acordo com a Constituição Federal, é competência dos municípios o gerenciamento dos serviços de limpeza e coleta dos resíduos urbanos (lixo). No entanto, há relatos de que parte desse lixo acaba sendo incinerado, liberando substâncias tóxicas para o ambiente e causando acidentes por explosões, principalmente quando ocorre a incineração de frascos de aerossóis (por exemplo: desodorantes, inseticidas e repelentes). A temperatura elevada provoca a vaporização de todo o conteúdo dentro desse tipo de frasco, aumentando a pressão em seu interior até culminar na explosão da embalagem.\n\nZVEIBIL, V. Z. et al. Cartilha de limpeza urbana. Disponível em: www.ibam.org.br. Acesso em: 6 jul. 2015 (adaptado).\n\nSuponha um frasco metálico de um aerossol de capacidade igual a 100 mL, contendo 0,1 mol de produtos gasosos à temperatura de 650 °C, no momento da explosão.\n\nConsidere: R = 0,082 (L·atm)/(mol·K)\n\nA pressão, em atm, dentro do frasco, no momento da explosão, é mais próxima de",
+    "alternativas": [
+      {"letra": "A", "texto": "756.", "correta": false},
+      {"letra": "B", "texto": "533.", "correta": false},
+      {"letra": "C", "texto": "76.", "correta": true},
+      {"letra": "D", "texto": "53.", "correta": false},
+      {"letra": "E", "texto": "13.", "correta": false}
+    ],
+    "recursos": {
+      "imagens": [],
+      "graficos": [],
+      "tabelas": [],
+      "formulas": [
+        {"id": "FOR-01", "latex": "R = 0{,}082\\ \\frac{L\\cdot atm}{mol\\cdot K}"}
+      ]
+    }
+  },
+  "estrutura_cognitiva": {
+    "processos": [
+      {
+        "id": "PROC-SIMB-01",
+        "papel": "nuclear",
+        "peso_no_item": 1.0,
+        "confianca": "alta",
+        "habilidades": [
+          {"id": "HAB-38", "peso_no_processo": 1.0, "confianca": "alta", "aproximado": false}
+        ],
+        "evidencias": {
+          "trechos": [
+            "um frasco metálico de um aerossol de capacidade igual a 100 mL, contendo 0,1 mol de produtos gasosos à temperatura de 650 °C",
+            "A pressão, em atm, dentro do frasco, no momento da explosão, é mais próxima de"
+          ],
+          "figuras": []
+        },
+        "justificativa": "O item exige traduzir a situação descrita (gás em recipiente fechado, quantidade de matéria, temperatura, volume) na equação de Clapeyron PV = nRT, convertendo corretamente as unidades fornecidas (mL para L; °C para K) antes de isolar e calcular a pressão."
+      }
+    ]
+  },
+  "incerteza": {
+    "marcadores": [],
+    "detalhe": "",
+    "requer_arbitragem": false
+  },
+  "distratores": [
+    {
+      "alternativa": "A",
+      "erros_esperados": [
+        {"ordem": 1, "erro": "ERR-04", "processo_afetado": "PROC-QUANT-04", "confianca": "media", "mecanismo": "MEC-06"}
+      ],
+      "plausibilidade": {"valor": "media"},
+      "probabilidade_estimada": null,
+      "explicacao": "Converte o volume de 100 mL para 0,01 L (um erro de ordem de grandeza na conversão de mililitro para litro, em vez de 0,1 L), resultando em P = (0,1×0,082×923)/0,01 ≈ 757."
+    },
+    {
+      "alternativa": "B",
+      "erros_esperados": [
+        {"ordem": 1, "erro": "ERR-04", "processo_afetado": "PROC-QUANT-04", "confianca": "baixa", "mecanismo": "MEC-06"}
+      ],
+      "plausibilidade": {"valor": "baixa"},
+      "probabilidade_estimada": null,
+      "explicacao": "Combina duas conversões de unidade incorretas simultaneamente: usa o volume como 0,01 L (em vez de 0,1 L) e a temperatura em Celsius sem converter para Kelvin (650, em vez de 923 K), resultando em P = (0,1×0,082×650)/0,01 ≈ 533."
+    },
+    {
+      "alternativa": "D",
+      "erros_esperados": [
+        {"ordem": 1, "erro": "ERR-04", "processo_afetado": "PROC-QUANT-04", "confianca": "alta", "mecanismo": "MEC-06"}
+      ],
+      "plausibilidade": {"valor": "alta"},
+      "probabilidade_estimada": null,
+      "explicacao": "Não converte a temperatura de Celsius para Kelvin, usando T = 650 diretamente na fórmula (em vez de T = 923 K): P = (0,1×0,082×650)/0,1 ≈ 53."
+    },
+    {
+      "alternativa": "E",
+      "erros_esperados": [
+        {"ordem": 1, "erro": "ERR-11", "processo_afetado": "PROC-QUANT-03", "confianca": "baixa", "mecanismo": "MEC-10"}
+      ],
+      "plausibilidade": {"valor": "baixa"},
+      "probabilidade_estimada": null,
+      "explicacao": "Produz um valor de ordem de grandeza incompatível com o resultado correto, consistente com múltiplos erros de manipulação numérica simultâneos (unidades, casas decimais ou posição dos termos na fórmula) que não foi possível reconstruir com precisão; registrado por completude diagnóstica."
+    }
+  ],
+  "intervencoes": [
+    {
+      "id": "INT-07",
+      "gatilho": {"processo": "PROC-QUANT-04", "erro": "ERR-04"},
+      "acao": "Revisão sistemática de conversão de unidades (mL → L; °C → K) antes de substituir valores em uma equação física, com prática dedicada de checagem dimensional do resultado.",
+      "prioridade": null
+    },
+    {
+      "id": "INT-06",
+      "gatilho": {"processo": "PROC-QUANT-03", "erro": "ERR-11"},
+      "acao": "Laboratório de estimativa e ordem de grandeza, com prática de verificar se o resultado numérico obtido é plausível para o contexto físico descrito.",
+      "prioridade": null
+    }
+  ],
+  "pedagogia": {
+    "estrategia": "Guiar o aluno na conversão explícita e isolada de cada unidade (volume em litros, temperatura em kelvin) antes de substituir os valores na equação de Clapeyron, evitando erros de ordem de grandeza.",
+    "passos": [
+      "Converter o volume: 100 mL = 0,1 L.",
+      "Converter a temperatura: 650 °C + 273 = 923 K.",
+      "Substituir na equação PV = nRT: P × 0,1 = 0,1 × 0,082 × 923.",
+      "Isolar e calcular P: P = 0,082 × 923 ≈ 76 atm."
+    ],
+    "erros_comuns": [
+      "Esquecer de converter Celsius para Kelvin (soma de 273).",
+      "Errar a conversão de mililitros para litros por uma ou mais ordens de grandeza.",
+      "Combinar múltiplos erros de conversão na mesma resolução."
+    ],
+    "dicas": [
+      "Antes de substituir números na fórmula, escreva ao lado de cada grandeza sua unidade do SI correta — isso evita esquecer conversões."
+    ],
+    "tempo_estimado_segundos": 110,
+    "nivel_dificuldade": "medio"
+  },
+  "qualidade": {
+    "confianca_global": "alta",
+    "revisado": false,
+    "observacoes": "As cadeias de erro dos distratores A, B e D reproduzem exatamente os valores numéricos das alternativas a partir de erros de conversão de unidade plausíveis. Para o distrator E (13), não foi possível reconstruir com confiança um caminho aritmético único que leve exatamente a esse valor; a classificação usa a sentinela de ordem de grandeza (ERR-11) com confiança baixa, registrada por completude diagnóstica em vez de inventar uma justificativa numérica não verificada."
+  }
+}

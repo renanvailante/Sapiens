@@ -1,0 +1,35 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "aluno-frontend",
+      "runtimeExecutable": "yarn",
+      "runtimeArgs": [
+        "--cwd",
+        "/Users/renanvailante/Documents/Projetos/Sapiens/aluno/frontend",
+        "start"
+      ],
+      "port": 3000
+    },
+    {
+      "name": "pipeline-frontend",
+      "runtimeExecutable": "yarn",
+      "runtimeArgs": [
+        "--cwd",
+        "/Users/renanvailante/Documents/Projetos/Sapiens/pipeline/frontend",
+        "start"
+      ],
+      "port": 3001
+    },
+    {
+      "name": "professor-frontend",
+      "runtimeExecutable": "yarn",
+      "runtimeArgs": [
+        "--cwd",
+        "/Users/renanvailante/Documents/Projetos/Sapiens/professor/frontend",
+        "start"
+      ],
+      "port": 3002
+    }
+  ]
+}

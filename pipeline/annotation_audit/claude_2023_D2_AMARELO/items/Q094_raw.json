@@ -1,0 +1,127 @@
+{
+  "fonte": {
+    "banca": "ENEM",
+    "ano": 2023,
+    "prova": "AMARELO",
+    "numero": 94,
+    "disciplina": "Ciências da Natureza e suas Tecnologias",
+    "tema": "Ligações químicas",
+    "conteudo": "Caráter iônico de uma ligação metal-ânion carboxilato em função da diferença de eletronegatividade",
+    "arquivo_origem": "2023_PV_impresso_D2_CD5.pdf",
+    "pagina": 3
+  },
+  "questao": {
+    "enunciado": "Os solos amazônicos, ricos em silicato, não são apropriados para o cultivo por serem incapazes de reter nutrientes. Contudo, descobertas arqueológicas têm demonstrado que os antigos habitantes da Amazônia dominavam a técnica de preparo de um insumo agrícola natural, denominado terra preta. Esse insumo era constituído principalmente de uma espécie de biocarvão (biochar) obtido da queima de matéria orgânica, como troncos de árvores, pedaços de ossos e esterco, capaz de manter um solo fértil por anos.\n\nAdmite-se que o efeito do biocarvão na fertilização do solo estava, em parte, relacionado à presença de grupos orgânicos do tipo carboxilato em sua superfície, carregados negativamente (—COO⁻). Esses grupos atraem íons positivos necessários como nutrientes, tais quais os provenientes do potássio (K), do cálcio (Ca) e do magnésio (Mg), além de micronutrientes, como zinco (Zn) e ferro (Fe). Essa ligação no solo fertilizado é predominantemente iônica, conforme ilustra a figura, em que Mⁿ⁺ representa os cátions metálicos. De acordo com a escala de Pauling, a eletronegatividade do elemento oxigênio é igual a 3,44.\n\n[Figura: esquema mostrando, à esquerda, um grupo carboxilato (—COO⁻) ligado à superfície de 'Solo com biocarvão'; uma seta indica a adição de um cátion metálico genérico Mⁿ⁺; à direita, o resultado é o grupo carboxilato agora ligado iônicamente a esse cátion (O—C(=O)—O⁻Mⁿ⁺), rotulado 'Solo fertilizado'.]\n\nO quadro apresenta os valores de eletronegatividade desses cinco elementos metálicos.\n\nMICHALOVIC, M. Ancient Soil Chemists of the Amazon. ChemMatters, fev. 2009 (adaptado).\n\nO cátion que resultará em uma interação de maior caráter iônico com o ânion carboxilato será aquele proveniente do elemento",
+    "alternativas": [
+      {"letra": "A", "texto": "potássio.", "correta": true},
+      {"letra": "B", "texto": "cálcio.", "correta": false},
+      {"letra": "C", "texto": "magnésio.", "correta": false},
+      {"letra": "D", "texto": "zinco.", "correta": false},
+      {"letra": "E", "texto": "ferro.", "correta": false}
+    ],
+    "recursos": {
+      "imagens": [
+        {
+          "id": "IMG-01",
+          "tipo": "diagrama",
+          "descricao": "Esquema em duas etapas: à esquerda, o grupo carboxilato (—COO⁻) ligado à superfície de um bloco rotulado 'Solo com biocarvão'; uma seta horizontal rotulada 'Mⁿ⁺' indica a adição de um cátion metálico genérico; à direita, o resultado é o mesmo grupo carboxilato agora ligado ionicamente a esse cátion (estrutura O=C(—O)—O⁻Mⁿ⁺), sobre um bloco rotulado 'Solo fertilizado'.",
+          "arquivo": "crops/Q094.png",
+          "ocr": "Solo com biocarvão; Mⁿ⁺; Solo fertilizado"
+        }
+      ],
+      "graficos": [],
+      "tabelas": [
+        {
+          "id": "TAB-01",
+          "descricao": "Tabela de duas colunas ('Elemento metálico' e 'Eletronegatividade') com cinco linhas: K = 0,82; Ca = 1,00; Mg = 1,31; Zn = 1,65; Fe = 1,83."
+        }
+      ],
+      "formulas": []
+    }
+  },
+  "estrutura_cognitiva": {
+    "processos": [
+      {
+        "id": "PROC-QUANT-01",
+        "papel": "nuclear",
+        "peso_no_item": 1.0,
+        "confianca": "media",
+        "habilidades": [
+          {"id": "HAB-01", "peso_no_processo": 1.0, "confianca": "media", "aproximado": true}
+        ],
+        "evidencias": {
+          "trechos": ["O cátion que resultará em uma interação de maior caráter iônico com o ânion carboxilato será aquele proveniente do elemento"],
+          "figuras": ["IMG-01"]
+        },
+        "justificativa": "O item exige comparar as eletronegatividades tabeladas dos cinco metais para identificar aquele com a maior diferença em relação ao oxigênio (3,44), o que corresponde ao cátion de maior caráter iônico; a operação central é uma comparação/ordenação de grandezas (menor eletronegatividade metálica → maior diferença → maior caráter iônico), com apoio de conhecimento químico de que ligação iônica se associa a grande diferença de eletronegatividade."
+      }
+    ]
+  },
+  "incerteza": {
+    "marcadores": ["aproximado"],
+    "detalhe": "A habilidade HAB-01 (ordenar valores numéricos) foi marcada como aproximada porque o item não pede apenas a ordenação direta dos valores tabelados, mas a ordenação da DIFERENÇA entre cada valor e a eletronegatividade fixa do oxigênio — um passo inferencial adicional não coberto literalmente pela definição da habilidade.",
+    "requer_arbitragem": false
+  },
+  "distratores": [
+    {
+      "alternativa": "B",
+      "erros_esperados": [
+        {"ordem": 1, "erro": "erro-nao-catalogado-nesta-versao", "processo_afetado": "PROC-QUANT-01", "confianca": "baixa", "mecanismo": "MEC-06"}
+      ],
+      "plausibilidade": {"valor": "media"},
+      "probabilidade_estimada": null,
+      "explicacao": "Escolhe o cálcio, o segundo metal de menor eletronegatividade da tabela, sugerindo comparação apenas parcial ou aproximada dos valores em vez da identificação precisa do menor valor (potássio)."
+    },
+    {
+      "alternativa": "C",
+      "erros_esperados": [
+        {"ordem": 1, "erro": "erro-nao-catalogado-nesta-versao", "processo_afetado": "PROC-QUANT-01", "confianca": "baixa", "mecanismo": "MEC-06"}
+      ],
+      "plausibilidade": {"valor": "baixa"},
+      "probabilidade_estimada": null,
+      "explicacao": "Escolhe o magnésio, um valor intermediário da tabela, refletindo comparação imprecisa entre as cinco eletronegatividades em vez de localizar corretamente o valor mínimo."
+    },
+    {
+      "alternativa": "D",
+      "erros_esperados": [
+        {"ordem": 1, "erro": "erro-nao-catalogado-nesta-versao", "processo_afetado": "PROC-QUANT-01", "confianca": "baixa", "mecanismo": "MEC-01"}
+      ],
+      "plausibilidade": {"valor": "media"},
+      "probabilidade_estimada": null,
+      "explicacao": "Escolhe o zinco, citado no texto como micronutriente junto ao ferro; possível associação equivocada entre 'micronutriente' e 'maior caráter iônico', sem base na comparação real das eletronegatividades."
+    },
+    {
+      "alternativa": "E",
+      "erros_esperados": [
+        {"ordem": 1, "erro": "erro-nao-catalogado-nesta-versao", "processo_afetado": "PROC-QUANT-01", "confianca": "media", "mecanismo": "MEC-01"}
+      ],
+      "plausibilidade": {"valor": "alta"},
+      "probabilidade_estimada": null,
+      "explicacao": "Inverte a regra química: escolhe o ferro, o metal de MAIOR eletronegatividade da tabela (logo, MENOR diferença com o oxigênio e MENOR caráter iônico), por assumir equivocadamente que maior eletronegatividade do metal implica maior caráter iônico da ligação, quando na verdade é a diferença de eletronegatividade que importa."
+    }
+  ],
+  "intervencoes": [],
+  "pedagogia": {
+    "estrategia": "Conduzir o aluno a calcular explicitamente a diferença de eletronegatividade entre cada metal e o oxigênio (3,44), reforçando a regra de que maior diferença de eletronegatividade corresponde a maior caráter iônico da ligação, em vez de julgar apenas pela eletronegatividade absoluta do metal.",
+    "passos": [
+      "Ler na tabela a eletronegatividade de cada um dos cinco metais.",
+      "Calcular ou estimar a diferença de cada valor em relação a 3,44 (eletronegatividade do oxigênio).",
+      "Identificar que quanto MENOR a eletronegatividade do metal, MAIOR a diferença e, portanto, maior o caráter iônico.",
+      "Selecionar o metal de menor eletronegatividade tabelada: potássio (0,82)."
+    ],
+    "erros_comuns": [
+      "Julgar o caráter iônico pela eletronegatividade absoluta do metal, e não pela diferença em relação ao oxigênio.",
+      "Comparar os valores da tabela de forma imprecisa, sem identificar corretamente o extremo (mínimo)."
+    ],
+    "dicas": [
+      "Ligação iônica forte pede grande diferença de eletronegatividade: procure o metal 'mais diferente' do oxigênio, não o metal 'mais eletronegativo'."
+    ],
+    "tempo_estimado_segundos": 100,
+    "nivel_dificuldade": "medio"
+  },
+  "qualidade": {
+    "confianca_global": "media",
+    "revisado": false,
+    "observacoes": "Os mecanismos cognitivos atribuídos aos distratores B, C e D são hipóteses de plausibilidade moderada a baixa, reconstruídas a partir da posição relativa dos valores na tabela; não há evidência textual direta que os diferencie de outras explicações possíveis."
+  }
+}

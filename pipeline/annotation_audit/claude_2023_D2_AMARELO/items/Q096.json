@@ -1,0 +1,224 @@
+{
+  "fonte": {
+    "banca": "ENEM",
+    "ano": 2023,
+    "prova": "AMARELO",
+    "numero": 96,
+    "disciplina": "Ciências da Natureza e suas Tecnologias",
+    "tema": "Química orgânica",
+    "conteudo": "Relação entre ramificação de hidrocarbonetos e resistência à detonação (desempenho como combustível)",
+    "arquivo_origem": "2023_PV_impresso_D2_CD5.pdf",
+    "pagina": 4
+  },
+  "questao": {
+    "enunciado": "A gasolina é uma mistura de hidrocarbonetos de cadeias saturadas contendo de 8 a 12 átomos de carbono. Além disso, a gasolina de alto desempenho deve conter elevados teores de hidrocarbonetos de cadeias ramificadas, de forma a resistir à compressão e entrar em ignição apenas quando a vela aciona uma centelha elétrica no motor.\n\nNo quadro, estão apresentados compostos que podem ser utilizados como combustíveis.\n\nEntre esses compostos, aquele que conferirá maior desempenho como combustível é o",
+    "alternativas": [
+      {
+        "letra": "A",
+        "texto": "I.",
+        "correta": false
+      },
+      {
+        "letra": "B",
+        "texto": "II.",
+        "correta": false
+      },
+      {
+        "letra": "C",
+        "texto": "III.",
+        "correta": true
+      },
+      {
+        "letra": "D",
+        "texto": "IV.",
+        "correta": false
+      },
+      {
+        "letra": "E",
+        "texto": "V.",
+        "correta": false
+      }
+    ],
+    "recursos": {
+      "imagens": [],
+      "graficos": [],
+      "tabelas": [
+        {
+          "id": "TAB-01",
+          "descricao": "Tabela de duas colunas ('Composto' e 'Nomenclatura') com cinco linhas: I = n-decano; II = n-heptano; III = 2,2,4-trimetilpentano; IV = 3-etil-4-metilex-1-eno; V = 3-etil-2-metilpentan-1-ol."
+        }
+      ],
+      "formulas": []
+    }
+  },
+  "estrutura_cognitiva": {
+    "processos": [
+      {
+        "id": "PROC-ESPACO-03",
+        "papel": "nuclear",
+        "peso_no_item": 1.0,
+        "confianca": 0.7,
+        "habilidades": [
+          {
+            "id": "HAB-15",
+            "peso_no_processo": 1.0,
+            "confianca": 0.7,
+            "aproximado": false
+          }
+        ],
+        "evidencias": {
+          "trechos": [
+            "a gasolina de alto desempenho deve conter elevados teores de hidrocarbonetos de cadeias ramificadas, de forma a resistir à compressão e entrar em ignição apenas quando a vela aciona uma centelha elétrica no motor"
+          ],
+          "figuras": []
+        },
+        "justificativa": "O item exige associar a organização molecular de cada composto (grau e tipo de ramificação da cadeia carbônica) à propriedade observável de desempenho como combustível (resistência à autoignição por compressão); o composto III, 2,2,4-trimetilpentano (isooctano), é a cadeia mais ramificada entre as opções e a referência histórica de alto índice de octanagem."
+      }
+    ],
+    "dominios": [
+      {
+        "id": "DOM-ESPACO",
+        "derivado_de": [
+          "PROC-ESPACO-03"
+        ],
+        "peso_no_item": 1.0,
+        "confianca": 0.7,
+        "_estatuto": {
+          "natureza": "classificacao_organizacao",
+          "evidencial": false,
+          "autoridade": "Constituicao §4.5",
+          "nota": "Peso e confianca deste bloco sao de NAVEGACAO E AGRUPAMENTO, nunca de evidencia. Nao alimentam a camada de crenca sobre o estado de um estudante. A unica relacao ponderada com valor diagnostico neste contrato e 'distratores[].erros_esperados[].confianca'.",
+          "metodo_confianca": "media_dos_processos_sustentadores",
+          "metodo_confianca_provisorio": true,
+          "metodo_confianca_motivo": "O Schema 2.2 diz 'confianca herdada dos processos' e NAO define a funcao de heranca. Nenhum documento de camada C1/C2/C3 a define: o White Paper 2.0.1 §4.2 registra que o Axioma da Crenca Calibrada 'nao exige nenhuma familia matematica especifica'. A media e decisao de engenharia deste pipeline, declarada sob GOV-1.0 §6.4 em vez de inserida silenciosamente, e substituivel sem alteracao de contrato."
+        }
+      }
+    ],
+    "competencias": [
+      {
+        "id": "COMP-03",
+        "derivado_de": [
+          "PROC-ESPACO-03"
+        ],
+        "peso_no_item": 1.0,
+        "confianca": 0.7,
+        "_estatuto": {
+          "natureza": "classificacao_organizacao",
+          "evidencial": false,
+          "autoridade": "Constituicao §4.5",
+          "nota": "Peso e confianca deste bloco sao de NAVEGACAO E AGRUPAMENTO, nunca de evidencia. Nao alimentam a camada de crenca sobre o estado de um estudante. A unica relacao ponderada com valor diagnostico neste contrato e 'distratores[].erros_esperados[].confianca'.",
+          "metodo_confianca": "media_dos_processos_sustentadores",
+          "metodo_confianca_provisorio": true,
+          "metodo_confianca_motivo": "O Schema 2.2 diz 'confianca herdada dos processos' e NAO define a funcao de heranca. Nenhum documento de camada C1/C2/C3 a define: o White Paper 2.0.1 §4.2 registra que o Axioma da Crenca Calibrada 'nao exige nenhuma familia matematica especifica'. A media e decisao de engenharia deste pipeline, declarada sob GOV-1.0 §6.4 em vez de inserida silenciosamente, e substituivel sem alteracao de contrato."
+        }
+      }
+    ]
+  },
+  "incerteza": {
+    "marcadores": [],
+    "detalhe": "",
+    "requer_arbitragem": false
+  },
+  "distratores": [
+    {
+      "alternativa": "A",
+      "erros_esperados": [
+        {
+          "ordem": 1,
+          "erro": "erro-nao-catalogado-nesta-versao",
+          "processo_afetado": "PROC-ESPACO-03",
+          "confianca": 0.4,
+          "mecanismo": "MEC-01"
+        }
+      ],
+      "plausibilidade": {
+        "valor": "media"
+      },
+      "probabilidade_estimada": null,
+      "explicacao": "Escolhe o n-decano, um hidrocarboneto de cadeia linear (não ramificada), possivelmente por associar maior número de átomos de carbono a maior desempenho, ignorando que o texto associa desempenho à ramificação, não ao tamanho da cadeia."
+    },
+    {
+      "alternativa": "B",
+      "erros_esperados": [
+        {
+          "ordem": 1,
+          "erro": "erro-nao-catalogado-nesta-versao",
+          "processo_afetado": "PROC-ESPACO-03",
+          "confianca": 0.15,
+          "mecanismo": "MEC-01"
+        }
+      ],
+      "plausibilidade": {
+        "valor": "baixa"
+      },
+      "probabilidade_estimada": null,
+      "explicacao": "Escolhe o n-heptano, também de cadeia linear, sem identificar que o critério de desempenho apresentado no texto (resistência à compressão) depende da ramificação da cadeia, não presente nesse composto."
+    },
+    {
+      "alternativa": "D",
+      "erros_esperados": [
+        {
+          "ordem": 1,
+          "erro": "erro-nao-catalogado-nesta-versao",
+          "processo_afetado": "PROC-ESPACO-03",
+          "confianca": 0.4,
+          "mecanismo": "MEC-01"
+        }
+      ],
+      "plausibilidade": {
+        "valor": "media"
+      },
+      "probabilidade_estimada": null,
+      "explicacao": "Escolhe o 3-etil-4-metilex-1-eno, um composto ramificado mas insaturado (alceno), possivelmente por reconhecer a ramificação sem perceber que o texto restringe a análise a hidrocarbonetos de cadeia SATURADA, o critério estrutural definidor da gasolina descrita."
+    },
+    {
+      "alternativa": "E",
+      "erros_esperados": [
+        {
+          "ordem": 1,
+          "erro": "erro-nao-catalogado-nesta-versao",
+          "processo_afetado": "PROC-ESPACO-03",
+          "confianca": 0.4,
+          "mecanismo": "MEC-12"
+        }
+      ],
+      "plausibilidade": {
+        "valor": "alta"
+      },
+      "probabilidade_estimada": null,
+      "explicacao": "Escolhe o 3-etil-2-metilpentan-1-ol, um álcool ramificado, provavelmente por viés de conhecimento prévio sobre o etanol como aditivo que aumenta a octanagem da gasolina no contexto brasileiro, ignorando que o texto trata especificamente de hidrocarbonetos (o composto V nem é um hidrocarboneto, por conter o grupo -OH)."
+    }
+  ],
+  "intervencoes": [],
+  "pedagogia": {
+    "estrategia": "Levar o aluno a relacionar a estrutura molecular (grau de ramificação da cadeia carbônica saturada) à propriedade funcional de resistência à autoignição por compressão, filtrando primeiro os compostos que atendem ao critério de 'hidrocarboneto saturado' antes de comparar o grau de ramificação entre eles.",
+    "passos": [
+      "Eliminar compostos que não são hidrocarbonetos saturados (IV é insaturado; V é um álcool, não um hidrocarboneto).",
+      "Entre os hidrocarbonetos saturados restantes (I, II, III), identificar o grau de ramificação de cada cadeia.",
+      "Reconhecer que I e II são cadeias lineares (sem ramificação) e III é altamente ramificada.",
+      "Concluir que III (2,2,4-trimetilpentano) oferece a maior resistência à compressão e, portanto, o melhor desempenho."
+    ],
+    "erros_comuns": [
+      "Associar desempenho ao tamanho da cadeia (número de carbonos) em vez de ao grau de ramificação.",
+      "Não filtrar previamente os compostos pelo critério de saturação e classe funcional exigidos no texto (hidrocarboneto saturado).",
+      "Confiar em conhecimento prévio genérico sobre aditivos de combustível (como o etanol) fora do escopo da pergunta."
+    ],
+    "dicas": [
+      "Releia a condição do texto: 'hidrocarbonetos de cadeias saturadas' — isso já elimina o alceno (IV) e o álcool (V) antes mesmo de comparar ramificações."
+    ],
+    "tempo_estimado_segundos": 100,
+    "nivel_dificuldade": "medio"
+  },
+  "qualidade": {
+    "confianca_global": 0.7,
+    "revisado": false,
+    "observacoes": "PROC-ESPACO-03 não possui tipo de erro catalogado na ontologia v1.4.1 (sentinela usada sem gerar aviso).",
+    "apto_para_camada_de_crenca": {
+      "valor": false
+    }
+  },
+  "schema_version": "2.2",
+  "ontology_version": "1.4.1",
+  "item_hash": "c7ca71b2352da09298d72c3908488aa08831409cd6fbda4307136de03421afe9",
+  "item_id": "CLAUDE-ITEM-ENEM-2023-AMARELO-Q096"
+}

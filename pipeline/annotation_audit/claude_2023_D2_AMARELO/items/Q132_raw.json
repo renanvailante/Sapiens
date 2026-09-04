@@ -1,0 +1,190 @@
+{
+  "fonte": {
+    "banca": "ENEM",
+    "ano": 2023,
+    "prova": "AMARELO",
+    "numero": 132,
+    "disciplina": "Ciências da Natureza e suas Tecnologias",
+    "tema": "Ciclo do nitrogênio",
+    "conteudo": "Papel dos microrganismos decompositores na etapa detritos -> amônia (amonificação)",
+    "arquivo_origem": "2023_PV_impresso_D2_CD5.pdf",
+    "pagina": 14
+  },
+  "questao": {
+    "enunciado": "O ciclo do nitrogênio é composto por várias etapas, conforme a figura, sendo cada uma desempenhada por um grupo específico de microrganismos.\n\n[Figura: fluxograma com os reservatórios Gás nitrogênio, Amônia, Detritos, Nitrito e Nitrato ligados por 5 setas numeradas — ver questao.recursos.imagens[IMG-01].]\n\nSe o grupo dos microrganismos decompositores fosse exterminado, qual etapa não ocorreria?",
+    "alternativas": [
+      {
+        "letra": "A",
+        "texto": "1",
+        "correta": false
+      },
+      {
+        "letra": "B",
+        "texto": "2",
+        "correta": true
+      },
+      {
+        "letra": "C",
+        "texto": "3",
+        "correta": false
+      },
+      {
+        "letra": "D",
+        "texto": "4",
+        "correta": false
+      },
+      {
+        "letra": "E",
+        "texto": "5",
+        "correta": false
+      }
+    ],
+    "recursos": {
+      "imagens": [
+        {
+          "id": "IMG-01",
+          "tipo": "diagrama",
+          "descricao": "Fluxograma do ciclo do nitrogênio com 5 setas numeradas conectando quatro reservatórios: seta 1 de 'Gás nitrogênio' para 'Amônia' (fixação); seta 2 de 'Detritos' para 'Amônia' (amonificação/decomposição); seta 3 de 'Amônia' para 'Nitrito' (nitrificação, etapa 1); seta 4 de 'Nitrito' para 'Nitrato' (nitrificação, etapa 2); seta 5 de 'Nitrato' de volta para 'Gás nitrogênio' (desnitrificação).",
+          "arquivo": "crops/Q132.png",
+          "ocr": "Gás nitrogênio | Amônia | Detritos | Nitrito | Nitrato | 1 | 2 | 3 | 4 | 5"
+        }
+      ],
+      "graficos": [],
+      "tabelas": [],
+      "formulas": []
+    }
+  },
+  "estrutura_cognitiva": {
+    "processos": [
+      {
+        "id": "PROC-SIST-02",
+        "papel": "nuclear",
+        "peso_no_item": 1.0,
+        "confianca": "alta",
+        "habilidades": [
+          {
+            "id": "HAB-54",
+            "peso_no_processo": 1.0,
+            "confianca": "alta",
+            "aproximado": false
+          }
+        ],
+        "evidencias": {
+          "trechos": [
+            "sendo cada uma desempenhada por um grupo específico de microrganismos",
+            "Se o grupo dos microrganismos decompositores fosse exterminado, qual etapa não ocorreria?"
+          ],
+          "figuras": [
+            "IMG-01"
+          ]
+        },
+        "justificativa": "O item exige rastrear, num sistema cíclico (ciclo do nitrogênio), qual etapa de circulação do elemento depende especificamente do grupo funcional 'decompositores' — a etapa 2 (Detritos → Amônia, amonificação), identificando a posição desse componente na cadeia de interdependência do sistema."
+      }
+    ]
+  },
+  "incerteza": {
+    "marcadores": [],
+    "detalhe": "",
+    "requer_arbitragem": false
+  },
+  "distratores": [
+    {
+      "alternativa": "A",
+      "erros_esperados": [
+        {
+          "ordem": 1,
+          "erro": "erro-nao-catalogado-nesta-versao",
+          "processo_afetado": "PROC-SIST-02",
+          "confianca": "media"
+        }
+      ],
+      "plausibilidade": {
+        "valor": "media"
+      },
+      "probabilidade_estimada": null,
+      "explicacao": "Confunde o grupo decompositor com as bactérias fixadoras de nitrogênio, responsáveis pela etapa 1 (Gás nitrogênio → Amônia)."
+    },
+    {
+      "alternativa": "C",
+      "erros_esperados": [
+        {
+          "ordem": 1,
+          "erro": "erro-nao-catalogado-nesta-versao",
+          "processo_afetado": "PROC-SIST-02",
+          "confianca": "media"
+        }
+      ],
+      "plausibilidade": {
+        "valor": "media"
+      },
+      "probabilidade_estimada": null,
+      "explicacao": "Confunde o grupo decompositor com as bactérias nitrificantes responsáveis pela etapa 3 (Amônia → Nitrito)."
+    },
+    {
+      "alternativa": "D",
+      "erros_esperados": [
+        {
+          "ordem": 1,
+          "erro": "erro-nao-catalogado-nesta-versao",
+          "processo_afetado": "PROC-SIST-02",
+          "confianca": "media"
+        }
+      ],
+      "plausibilidade": {
+        "valor": "baixa"
+      },
+      "probabilidade_estimada": null,
+      "explicacao": "Confunde o grupo decompositor com as bactérias nitrificantes responsáveis pela etapa 4 (Nitrito → Nitrato)."
+    },
+    {
+      "alternativa": "E",
+      "erros_esperados": [
+        {
+          "ordem": 1,
+          "erro": "erro-nao-catalogado-nesta-versao",
+          "processo_afetado": "PROC-SIST-02",
+          "confianca": "media"
+        }
+      ],
+      "plausibilidade": {
+        "valor": "media"
+      },
+      "probabilidade_estimada": null,
+      "explicacao": "Confunde o grupo decompositor com as bactérias desnitrificantes responsáveis pela etapa 5 (Nitrato → Gás nitrogênio)."
+    }
+  ],
+  "intervencoes": [
+    {
+      "id": "INT-11",
+      "gatilho": {
+        "processo": "PROC-SIST-02",
+        "erro": "erro-nao-catalogado-nesta-versao"
+      },
+      "acao": "Prática de classificação por critério funcional: montar uma tabela associando cada seta do ciclo do nitrogênio ao grupo de microrganismos responsável (fixadoras, decompositoras, nitrificantes, desnitrificantes), reforçando que 'decompositor' se refere especificamente à quebra de matéria orgânica morta (detritos) em amônia.",
+      "prioridade": null
+    }
+  ],
+  "pedagogia": {
+    "estrategia": "Levar o aluno a mapear cada seta do diagrama ao grupo funcional de microrganismos correspondente antes de responder, evitando decorar apenas 'decompositor = decomposição' sem localizar a seta exata no ciclo.",
+    "passos": [
+      "Rotular mentalmente cada seta do ciclo com o processo biológico que representa.",
+      "Identificar que 'detritos' (matéria orgânica morta) só se transforma em amônia por ação de decompositores (amonificação).",
+      "Confirmar que as demais setas (fixação, nitrificação, desnitrificação) envolvem outros grupos bacterianos.",
+      "Selecionar a etapa 2 como resposta."
+    ],
+    "erros_comuns": [
+      "Confundir decompositores com bactérias nitrificantes ou fixadoras.",
+      "Não localizar visualmente qual seta parte de 'Detritos'."
+    ],
+    "dicas": [
+      "Procure no diagrama a seta que sai de 'Detritos': só ela depende de decompositores."
+    ],
+    "tempo_estimado_segundos": null,
+    "nivel_dificuldade": "medio"
+  },
+  "qualidade": {
+    "confianca_global": "alta",
+    "revisado": false,
+    "observacoes": "Diagrama nítido e completo no recorte; nenhuma limitação de leitura."
+  }
+}

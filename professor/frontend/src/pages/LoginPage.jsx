@@ -44,6 +44,26 @@ export default function LoginPage() {
           <InfoRow label="Agregações" value="Somente soma, contagem, média, percentual, ordenação e filtro." />
           <InfoRow label="Versionamento" value="Toda visualização exibe a versão da taxonomia utilizada." />
         </div>
+
+        {/* O sistema externo de análise cognitiva que este painel espera (ver
+            "Não classifica" acima) é o app aluno: perfil real por aluno,
+            calculado automaticamente a partir do comportamento de resposta,
+            sem importação manual. Link direto em vez de reimplementar a
+            mesma visualização aqui — uma ferramenta só, duas entradas. */}
+        <a
+          href="https://sapiens-aluno.pages.dev/admin/history"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block max-w-md border border-[hsl(214_100%_34%)]/30 bg-[hsl(214_100%_34%)]/5 p-4 hover:bg-[hsl(214_100%_34%)]/10 transition-colors"
+          data-testid="link-perfil-cognitivo-aluno"
+        >
+          <div className="text-xs font-mono uppercase tracking-widest text-[hsl(214_100%_34%)]">Diagnóstico automático (app aluno)</div>
+          <div className="mt-1 text-sm text-foreground">
+            Perfil cognitivo real por aluno — calculado automaticamente a partir das respostas registradas, sem
+            importar planilha nenhuma. Abre o painel admin do app aluno.
+          </div>
+        </a>
+
         <div className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest">
           v0.1 · MVP · Uso interno
         </div>

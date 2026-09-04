@@ -1,0 +1,221 @@
+{
+  "fonte": {
+    "banca": "ENEM",
+    "ano": 2023,
+    "prova": "AMARELO",
+    "numero": 95,
+    "disciplina": "Ciências da Natureza e suas Tecnologias",
+    "tema": "Termologia",
+    "conteudo": "Calor sensível e calor latente na troca térmica entre vapor de água e o produto em um tacho industrial",
+    "arquivo_origem": "2023_PV_impresso_D2_CD5.pdf",
+    "pagina": 3
+  },
+  "questao": {
+    "enunciado": "Em uma indústria alimentícia, para produção de doce de leite, utiliza-se um tacho de parede oca com uma entrada para vapor de água a 120 °C e uma saída para água líquida em equilíbrio com o vapor a 100 °C. Ao passar pela parte oca do tacho, o vapor de água transforma-se em líquido, liberando energia. A parede transfere essa energia para o interior do tacho, resultando na evaporação de água e consequente concentração do produto.\n\nNo processo de concentração do produto, é utilizada energia proveniente",
+    "alternativas": [
+      {
+        "letra": "A",
+        "texto": "somente do calor latente de vaporização.",
+        "correta": false
+      },
+      {
+        "letra": "B",
+        "texto": "somente do calor latente de condensação.",
+        "correta": false
+      },
+      {
+        "letra": "C",
+        "texto": "do calor sensível e do calor latente de vaporização.",
+        "correta": false
+      },
+      {
+        "letra": "D",
+        "texto": "do calor sensível e do calor latente de condensação.",
+        "correta": true
+      },
+      {
+        "letra": "E",
+        "texto": "do calor latente de condensação e do calor latente de vaporização.",
+        "correta": false
+      }
+    ],
+    "recursos": {
+      "imagens": [],
+      "graficos": [],
+      "tabelas": [],
+      "formulas": []
+    }
+  },
+  "estrutura_cognitiva": {
+    "processos": [
+      {
+        "id": "PROC-MUD-02",
+        "papel": "nuclear",
+        "peso_no_item": 1.0,
+        "confianca": 0.4,
+        "habilidades": [
+          {
+            "id": "HAB-22",
+            "peso_no_processo": 1.0,
+            "confianca": 0.4,
+            "aproximado": true
+          }
+        ],
+        "evidencias": {
+          "trechos": [
+            "entrada para vapor de água a 120 °C e uma saída para água líquida em equilíbrio com o vapor a 100 °C",
+            "o vapor de água transforma-se em líquido, liberando energia"
+          ],
+          "figuras": []
+        },
+        "justificativa": "O item exige identificar corretamente as duas parcelas de energia liberadas PELO VAPOR (fonte) ao longo do processo descrito: o resfriamento do vapor de 120 °C até 100 °C (calor sensível, pois não há mudança de fase nesse trecho) e a condensação do vapor em líquido a 100 °C (calor latente de condensação); essas duas parcelas — e não o calor latente de vaporização do produto, que ocorre do lado oposto da parede — são a energia 'proveniente' do vapor que sustenta a concentração do doce de leite."
+      }
+    ],
+    "dominios": [
+      {
+        "id": "DOM-MUDANCA",
+        "derivado_de": [
+          "PROC-MUD-02"
+        ],
+        "peso_no_item": 1.0,
+        "confianca": 0.4,
+        "_estatuto": {
+          "natureza": "classificacao_organizacao",
+          "evidencial": false,
+          "autoridade": "Constituicao §4.5",
+          "nota": "Peso e confianca deste bloco sao de NAVEGACAO E AGRUPAMENTO, nunca de evidencia. Nao alimentam a camada de crenca sobre o estado de um estudante. A unica relacao ponderada com valor diagnostico neste contrato e 'distratores[].erros_esperados[].confianca'.",
+          "metodo_confianca": "media_dos_processos_sustentadores",
+          "metodo_confianca_provisorio": true,
+          "metodo_confianca_motivo": "O Schema 2.2 diz 'confianca herdada dos processos' e NAO define a funcao de heranca. Nenhum documento de camada C1/C2/C3 a define: o White Paper 2.0.1 §4.2 registra que o Axioma da Crenca Calibrada 'nao exige nenhuma familia matematica especifica'. A media e decisao de engenharia deste pipeline, declarada sob GOV-1.0 §6.4 em vez de inserida silenciosamente, e substituivel sem alteracao de contrato."
+        }
+      }
+    ],
+    "competencias": [
+      {
+        "id": "COMP-04",
+        "derivado_de": [
+          "PROC-MUD-02"
+        ],
+        "peso_no_item": 1.0,
+        "confianca": 0.4,
+        "_estatuto": {
+          "natureza": "classificacao_organizacao",
+          "evidencial": false,
+          "autoridade": "Constituicao §4.5",
+          "nota": "Peso e confianca deste bloco sao de NAVEGACAO E AGRUPAMENTO, nunca de evidencia. Nao alimentam a camada de crenca sobre o estado de um estudante. A unica relacao ponderada com valor diagnostico neste contrato e 'distratores[].erros_esperados[].confianca'.",
+          "metodo_confianca": "media_dos_processos_sustentadores",
+          "metodo_confianca_provisorio": true,
+          "metodo_confianca_motivo": "O Schema 2.2 diz 'confianca herdada dos processos' e NAO define a funcao de heranca. Nenhum documento de camada C1/C2/C3 a define: o White Paper 2.0.1 §4.2 registra que o Axioma da Crenca Calibrada 'nao exige nenhuma familia matematica especifica'. A media e decisao de engenharia deste pipeline, declarada sob GOV-1.0 §6.4 em vez de inserida silenciosamente, e substituivel sem alteracao de contrato."
+        }
+      }
+    ]
+  },
+  "incerteza": {
+    "marcadores": [
+      "aproximado"
+    ],
+    "detalhe": "HAB-22 ('Calcular quantidade de calor trocada em processo térmico') foi marcada como aproximada: o item não pede um cálculo numérico, apenas a identificação qualitativa correta dos tipos de calor envolvidos na troca térmica descrita.",
+    "requer_arbitragem": false
+  },
+  "distratores": [
+    {
+      "alternativa": "A",
+      "erros_esperados": [
+        {
+          "ordem": 1,
+          "erro": "erro-nao-catalogado-nesta-versao",
+          "processo_afetado": "PROC-MUD-02",
+          "confianca": 0.4,
+          "mecanismo": "MEC-01"
+        }
+      ],
+      "plausibilidade": {
+        "valor": "alta"
+      },
+      "probabilidade_estimada": null,
+      "explicacao": "Atribui à energia do processo o calor latente de VAPORIZAÇÃO, que na verdade é o calor absorvido pela ÁGUA DO PRODUTO ao evaporar (lado de dentro do tacho), confundindo-o com a energia liberada PELO VAPOR (fonte, lado de fora) que efetivamente é 'proveniente' e alimenta o processo."
+    },
+    {
+      "alternativa": "B",
+      "erros_esperados": [
+        {
+          "ordem": 1,
+          "erro": "erro-nao-catalogado-nesta-versao",
+          "processo_afetado": "PROC-MUD-02",
+          "confianca": 0.4,
+          "mecanismo": "MEC-04"
+        }
+      ],
+      "plausibilidade": {
+        "valor": "media"
+      },
+      "probabilidade_estimada": null,
+      "explicacao": "Identifica corretamente a condensação como fonte de energia, mas ignora que o vapor entra a 120 °C (acima dos 100 °C de condensação) e por isso também libera calor sensível ao se resfriar até a temperatura de condensação, antes de mudar de fase."
+    },
+    {
+      "alternativa": "C",
+      "erros_esperados": [
+        {
+          "ordem": 1,
+          "erro": "erro-nao-catalogado-nesta-versao",
+          "processo_afetado": "PROC-MUD-02",
+          "confianca": 0.4,
+          "mecanismo": "MEC-01"
+        }
+      ],
+      "plausibilidade": {
+        "valor": "alta"
+      },
+      "probabilidade_estimada": null,
+      "explicacao": "Identifica corretamente que há calor sensível envolvido, mas atribui o segundo componente ao calor latente de VAPORIZAÇÃO (fase do produto) em vez de condensação (fase do vapor/fonte), invertendo qual lado da troca térmica está sendo perguntado."
+    },
+    {
+      "alternativa": "E",
+      "erros_esperados": [
+        {
+          "ordem": 1,
+          "erro": "erro-nao-catalogado-nesta-versao",
+          "processo_afetado": "PROC-MUD-02",
+          "confianca": 0.4,
+          "mecanismo": "MEC-04"
+        }
+      ],
+      "plausibilidade": {
+        "valor": "media"
+      },
+      "probabilidade_estimada": null,
+      "explicacao": "Identifica corretamente a condensação como fonte de energia, mas soma a ela o calor latente de vaporização (que pertence ao produto, não à fonte de vapor) em vez do calor sensível do resfriamento do vapor de 120 °C a 100 °C, ignorando que o vapor de entrada está acima da temperatura de condensação."
+    }
+  ],
+  "intervencoes": [],
+  "pedagogia": {
+    "estrategia": "Levar o aluno a separar explicitamente os dois lados da parede do tacho — o vapor (fonte, que libera energia) e o produto (que recebe energia e evapora água) — e a identificar que o vapor entra SUPERAQUECIDO (120 °C, acima dos 100 °C de condensação), liberando primeiro calor sensível e depois calor latente de condensação.",
+    "passos": [
+      "Identificar as duas temperaturas do enunciado: entrada de vapor a 120 °C, saída de líquido a 100 °C.",
+      "Reconhecer que, de 120 °C a 100 °C, o vapor ainda não mudou de fase — essa etapa libera calor SENSÍVEL.",
+      "Reconhecer que, a 100 °C, o vapor se condensa em líquido — essa etapa libera calor LATENTE DE CONDENSAÇÃO.",
+      "Concluir que a energia 'proveniente' (do lado da fonte de vapor) é a soma dessas duas parcelas."
+    ],
+    "erros_comuns": [
+      "Confundir o calor latente de vaporização do produto (que recebe energia) com o calor liberado pelo vapor (que fornece energia).",
+      "Ignorar a etapa de resfriamento do vapor superaquecido (120→100 °C) antes da condensação."
+    ],
+    "dicas": [
+      "Pergunte sempre 'de que lado da parede estou olhando?' — o calor PROVENIENTE vem do vapor que libera energia, não do produto que a recebe."
+    ],
+    "tempo_estimado_segundos": 100,
+    "nivel_dificuldade": "medio"
+  },
+  "qualidade": {
+    "confianca_global": 0.4,
+    "revisado": false,
+    "observacoes": "PROC-MUD-02 não possui tipo de erro catalogado na ontologia v1.4.1 (sentinela usada sem gerar aviso). Os quatro distratores refletem confusões conceituais específicas de termologia (calor sensível vs. latente; condensação vs. vaporização; lado da fonte vs. lado do produto) que não têm correspondência exata em nenhum ERR-* do catálogo atual.",
+    "apto_para_camada_de_crenca": {
+      "valor": false
+    }
+  },
+  "schema_version": "2.2",
+  "ontology_version": "1.4.1",
+  "item_hash": "90d8cbf3b208cdd23a15f0df7e9e971b50a0b85fa493e4e2f1c51826f0ca91ab",
+  "item_id": "CLAUDE-ITEM-ENEM-2023-AMARELO-Q095"
+}

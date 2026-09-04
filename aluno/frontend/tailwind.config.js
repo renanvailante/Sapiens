@@ -54,10 +54,14 @@ module.exports = {
           '5': 'hsl(var(--chart-5))'
         },
         sapiens: {
+          // `accent`/`accentDeep` subiram para a luz da direção bioluminescente
+          // (2026-09-03). Os 38 `border-sapiens-accent` do produto são estados
+          // de foco/hover: no ambiente escuro precisam ACENDER, e o azul antigo
+          // (#4A85E3) mal se separava da borda de repouso.
           navy: '#132D5C',
           navyDeep: '#0C1C3A',
-          accent: '#4A85E3',
-          accentDeep: '#1F4F95',
+          accent: '#4FD9FF',
+          accentDeep: '#2E7FD6',
           accentSoft: '#DBE9FC'
         }
       },

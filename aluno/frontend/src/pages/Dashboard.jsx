@@ -4,6 +4,7 @@ import { api } from "../lib/api";
 import Nav from "../components/Nav";
 import OnboardingTour from "../components/OnboardingTour";
 import AulasParticularesModal from "../components/AulasParticularesModal";
+import Mentis from "../components/Mentis";
 import { ArrowRight, Sparkles, Flame, Zap, Target, Network, Trophy, ListChecks, Medal, Award, CheckCircle2, GraduationCap, CloudOff, RotateCw } from "lucide-react";
 import { useAuth } from "../lib/auth";
 
@@ -246,23 +247,46 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* Mentis — porta de entrada do chat. Fica acima do CTA de aulas de
+            propósito: é a única superfície do produto que responde ao aluno
+            sobre o histórico dele, e antes só existia no menu de navegação. */}
+        <Link
+          to="/mentis"
+          className="lift card-sapiens mt-4 rounded-2xl p-6 md:p-7 flex flex-col md:flex-row md:items-center gap-4 group"
+          data-testid="dash-mentis"
+        >
+          <Mentis className="w-14 h-14 shrink-0" estado="neutra" />
+          <div className="flex-1 min-w-0">
+            <div className="font-display font-bold text-lg tracking-tight text-white">
+              Pergunte à Mentis por que você erra.
+            </div>
+            <div className="mt-1 text-sm text-white/60">
+              Ela lê o seu histórico inteiro antes da primeira palavra — processos fracos,
+              amostra de cada um, padrão de erro por trás. Depois é conversa.
+            </div>
+          </div>
+          <span className="pill btn-sapiens shrink-0 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full text-sm">
+            Conversar <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+          </span>
+        </Link>
+
         {/* Aulas particulares — CTA de alta visibilidade */}
         <div
-          className="mt-4 rounded-2xl p-6 md:p-7 flex flex-col md:flex-row md:items-center gap-4 bg-gradient-to-r from-amber-300 to-amber-400 shadow-[0_20px_50px_-25px_rgba(217,158,10,0.6)]"
+          className="cta-calor mt-4 rounded-2xl p-6 md:p-7 flex flex-col md:flex-row md:items-center gap-4"
           data-testid="dash-aulas-particulares-banner"
         >
-          <div className="w-12 h-12 rounded-xl bg-white/40 text-amber-950 flex items-center justify-center shrink-0">
+          <div className="w-12 h-12 rounded-xl bg-amber-300/15 border border-amber-300/25 text-amber-200 flex items-center justify-center shrink-0">
             <GraduationCap className="w-6 h-6" strokeWidth={1.8} />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="font-display font-bold text-lg tracking-tight text-amber-950">Tenha aulas conosco</div>
-            <div className="mt-1 text-sm text-amber-900/80">
+            <div className="font-display font-bold text-lg tracking-tight text-amber-100">Tenha aulas conosco</div>
+            <div className="mt-1 text-sm text-amber-100/70">
               Precisa de reforço em alguma área? Solicite uma aula particular e fale direto com nossa equipe pelo WhatsApp.
             </div>
           </div>
           <button
             onClick={() => setShowAulasModal(true)}
-            className="pill shrink-0 inline-flex items-center justify-center gap-2 bg-amber-950 text-amber-50 hover:brightness-110 px-6 py-3 rounded-full text-sm font-semibold"
+            className="btn-calor pill shrink-0 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full text-sm"
             data-testid="dash-aulas-particulares-cta"
           >
             Solicitar aula <ArrowRight className="w-4 h-4" />

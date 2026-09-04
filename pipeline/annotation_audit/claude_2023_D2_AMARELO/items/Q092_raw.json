@@ -1,0 +1,119 @@
+{
+  "fonte": {
+    "banca": "ENEM",
+    "ano": 2023,
+    "prova": "AMARELO",
+    "numero": 92,
+    "disciplina": "Ciências da Natureza e suas Tecnologias",
+    "tema": "Óptica — Radiação eletromagnética",
+    "conteudo": "Relação entre o comprimento de onda do laser de leitura e o limite de difração na capacidade de armazenamento de discos ópticos",
+    "arquivo_origem": "2023_PV_impresso_D2_CD5.pdf",
+    "pagina": 2
+  },
+  "questao": {
+    "enunciado": "Informações digitais — dados — são gravadas em discos ópticos, como CD e DVD, na forma de cavidades microscópicas. A gravação e a leitura óptica dessas informações são realizadas por um laser (fonte de luz monocromática). Quanto menores as dimensões dessas cavidades, mais dados são armazenados na mesma área do disco. O fator limitante para a leitura de dados é o espalhamento da luz pelo efeito de difração, fenômeno que ocorre quando a luz atravessa um obstáculo com dimensões da ordem de seu comprimento de onda. Essa limitação motivou o desenvolvimento de lasers com emissão em menores comprimentos de onda, possibilitando armazenar e ler dados em cavidades cada vez menores.\n\nEm qual região espectral se situa o comprimento de onda do laser que otimiza o armazenamento e a leitura de dados em discos de uma mesma área?",
+    "alternativas": [
+      {"letra": "A", "texto": "Violeta.", "correta": true},
+      {"letra": "B", "texto": "Azul.", "correta": false},
+      {"letra": "C", "texto": "Verde.", "correta": false},
+      {"letra": "D", "texto": "Vermelho.", "correta": false},
+      {"letra": "E", "texto": "Infravermelho.", "correta": false}
+    ],
+    "recursos": {"imagens": [], "graficos": [], "tabelas": [], "formulas": []}
+  },
+  "estrutura_cognitiva": {
+    "processos": [
+      {
+        "id": "PROC-TEXT-02",
+        "papel": "nuclear",
+        "peso_no_item": 1.0,
+        "confianca": "media",
+        "habilidades": [
+          {"id": "HAB-45", "peso_no_processo": 1.0, "confianca": "media", "aproximado": false}
+        ],
+        "evidencias": {
+          "trechos": [
+            "Essa limitação motivou o desenvolvimento de lasers com emissão em menores comprimentos de onda, possibilitando armazenar e ler dados em cavidades cada vez menores.",
+            "Em qual região espectral se situa o comprimento de onda do laser que otimiza o armazenamento"
+          ],
+          "figuras": []
+        },
+        "justificativa": "O enunciado estabelece implicitamente uma relação inversa entre comprimento de onda e capacidade de armazenamento (menor comprimento de onda → menor difração → cavidades menores → mais dados); o item exige inferir dessa relação, combinada ao conhecimento de que a luz violeta tem o menor comprimento de onda entre as cores visíveis listadas, qual região espectral otimiza o armazenamento."
+      }
+    ]
+  },
+  "incerteza": {
+    "marcadores": [],
+    "detalhe": "",
+    "requer_arbitragem": false
+  },
+  "distratores": [
+    {
+      "alternativa": "B",
+      "erros_esperados": [
+        {"ordem": 1, "erro": "erro-nao-catalogado-nesta-versao", "processo_afetado": "PROC-QUANT-01", "confianca": "baixa", "mecanismo": "MEC-09"}
+      ],
+      "plausibilidade": {"valor": "media"},
+      "probabilidade_estimada": null,
+      "explicacao": "Reconhece corretamente que é necessário um comprimento de onda relativamente curto, mas erra ao ordenar as cores do espectro visível por comprimento de onda, posicionando o azul (e não o violeta) como o de menor valor entre as opções."
+    },
+    {
+      "alternativa": "C",
+      "erros_esperados": [
+        {"ordem": 1, "erro": "erro-nao-catalogado-nesta-versao", "processo_afetado": "PROC-QUANT-01", "confianca": "baixa", "mecanismo": "MEC-09"}
+      ],
+      "plausibilidade": {"valor": "baixa"},
+      "probabilidade_estimada": null,
+      "explicacao": "Erra a ordenação do espectro visível por comprimento de onda, situando o verde equivocadamente como a opção de menor comprimento de onda entre as apresentadas."
+    },
+    {
+      "alternativa": "D",
+      "erros_esperados": [
+        {"ordem": 1, "erro": "erro-nao-catalogado-nesta-versao", "processo_afetado": "PROC-QUANT-01", "confianca": "media", "mecanismo": "MEC-09"}
+      ],
+      "plausibilidade": {"valor": "media"},
+      "probabilidade_estimada": null,
+      "explicacao": "Associa 'vermelho' ao laser efetivamente usado em DVDs (conhecimento memorizado do mundo real), sem aplicar a relação apresentada no texto de que um comprimento de onda ainda menor otimizaria mais o armazenamento."
+    },
+    {
+      "alternativa": "E",
+      "erros_esperados": [
+        {"ordem": 1, "erro": "ERR-05", "processo_afetado": "PROC-QUANT-02", "confianca": "media", "mecanismo": "MEC-01"}
+      ],
+      "plausibilidade": {"valor": "alta"},
+      "probabilidade_estimada": null,
+      "explicacao": "Inverte o sentido da relação implícita no texto: em vez de reconhecer que MENOR comprimento de onda melhora o armazenamento, assume que o comprimento de onda MAIOR (infravermelho, associado ao laser usado em CDs mais antigos) é o que otimiza a leitura de dados."
+    }
+  ],
+  "intervencoes": [
+    {
+      "id": "INT-03",
+      "gatilho": {"processo": "PROC-QUANT-02", "erro": "ERR-05"},
+      "acao": "Prática guiada de relações proporcionais diretas e inversas, com foco em identificar corretamente o sentido da relação (aqui, inversa) entre comprimento de onda e capacidade de armazenamento óptico.",
+      "prioridade": null
+    }
+  ],
+  "pedagogia": {
+    "estrategia": "Conduzir o aluno a extrair do próprio texto a relação causal (difração menor com comprimento de onda menor → cavidades menores → mais dados armazenados) e aplicá-la à ordenação correta do espectro eletromagnético visível, sem recorrer apenas à memorização de qual cor é usada em qual mídia real.",
+    "passos": [
+      "Identificar no texto a relação: comprimento de onda menor implica menor difração e cavidades menores.",
+      "Concluir que 'otimizar o armazenamento' significa buscar o MENOR comprimento de onda possível entre as opções.",
+      "Ordenar mentalmente o espectro visível por comprimento de onda crescente: violeta < azul < verde < vermelho < infravermelho.",
+      "Selecionar a opção de menor comprimento de onda (violeta)."
+    ],
+    "erros_comuns": [
+      "Confiar em conhecimento memorizado sobre discos reais (CD usa infravermelho, DVD usa vermelho) em vez de aplicar a relação apresentada no texto.",
+      "Inverter a relação e concluir que comprimento de onda maior otimiza o armazenamento."
+    ],
+    "dicas": [
+      "Releia a frase-chave do texto sobre 'menores comprimentos de onda' antes de escolher a cor: ela já indica a direção da resposta."
+    ],
+    "tempo_estimado_segundos": 80,
+    "nivel_dificuldade": "medio"
+  },
+  "qualidade": {
+    "confianca_global": "media",
+    "revisado": false,
+    "observacoes": "A habilidade HAB-45 foi mantida sem marcação de aproximado, mas o mapeamento é parcial: o item exige, além da inferência textual da relação inversa, conhecimento prévio de ordenação do espectro eletromagnético visível, que não está listado como habilidade própria na ontologia v1.4.1."
+  }
+}

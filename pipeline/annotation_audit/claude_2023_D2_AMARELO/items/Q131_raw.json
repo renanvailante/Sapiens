@@ -1,0 +1,183 @@
+{
+  "fonte": {
+    "banca": "ENEM",
+    "ano": 2023,
+    "prova": "AMARELO",
+    "numero": 131,
+    "disciplina": "Ciências da Natureza e suas Tecnologias",
+    "tema": "Biorremediação e fisiologia vegetal",
+    "conteudo": "Fitorremediação de metais tóxicos por aguapé — destino do contaminante no corpo do vegetal",
+    "arquivo_origem": "2023_PV_impresso_D2_CD5.pdf",
+    "pagina": 14
+  },
+  "questao": {
+    "enunciado": "A biorremediação designa tratamentos que usam organismos para reduzir a quantidade de substâncias tóxicas no ambiente ou degradá-las em substâncias não tóxicas ou de menor toxicidade. Uma planta aquática, o aguapé, tem sido utilizada para a biorremediação de ambientes contaminados por metais tóxicos. Sabe-se que esses poluentes serão captados para dentro do corpo do vegetal.\n\nDentro do corpo do vegetal, esses contaminantes serão",
+    "alternativas": [
+      {
+        "letra": "A",
+        "texto": "digeridos por enzimas.",
+        "correta": false
+      },
+      {
+        "letra": "B",
+        "texto": "acumulados nos tecidos.",
+        "correta": true
+      },
+      {
+        "letra": "C",
+        "texto": "eliminados pelos estômatos.",
+        "correta": false
+      },
+      {
+        "letra": "D",
+        "texto": "metabolizados por glândulas.",
+        "correta": false
+      },
+      {
+        "letra": "E",
+        "texto": "utilizados como fonte energética.",
+        "correta": false
+      }
+    ],
+    "recursos": {
+      "imagens": [],
+      "graficos": [],
+      "tabelas": [],
+      "formulas": []
+    }
+  },
+  "estrutura_cognitiva": {
+    "processos": [
+      {
+        "id": "PROC-CAUSAL-01",
+        "papel": "nuclear",
+        "peso_no_item": 1.0,
+        "confianca": "media",
+        "habilidades": [
+          {
+            "id": "HAB-32",
+            "peso_no_processo": 1.0,
+            "confianca": "media",
+            "aproximado": true
+          }
+        ],
+        "evidencias": {
+          "trechos": [
+            "Sabe-se que esses poluentes serão captados para dentro do corpo do vegetal.",
+            "Dentro do corpo do vegetal, esses contaminantes serão"
+          ],
+          "figuras": []
+        },
+        "justificativa": "O item exige explicar o destino causal de um metal (elemento inorgânico, não biodegradável) dentro do organismo vegetal: como não é substrato de enzimas nem é excretado pelas vias normais de gás/vapor d'água, sua consequência causal é o acúmulo nos tecidos, não a digestão, eliminação ou uso metabólico."
+      }
+    ]
+  },
+  "incerteza": {
+    "marcadores": [
+      "ambiguidade-fronteira"
+    ],
+    "detalhe": "Nenhum processo do catálogo v1.4.1 cobre com exatidão 'conhecimento de conteúdo biológico sobre destino fisiológico de um poluente inorgânico'; PROC-CAUSAL-01 foi escolhido por ser o mais próximo (explicação da relação causa/efeito entre natureza química do metal e seu destino no vegetal), mas a fronteira com pura recordação de conteúdo (fitorremediação) é genuína.",
+    "requer_arbitragem": false
+  },
+  "distratores": [
+    {
+      "alternativa": "A",
+      "erros_esperados": [
+        {
+          "ordem": 1,
+          "erro": "ERR-08",
+          "processo_afetado": "PROC-CAUSAL-01",
+          "confianca": "media"
+        }
+      ],
+      "plausibilidade": {
+        "valor": "alta"
+      },
+      "probabilidade_estimada": null,
+      "explicacao": "Generaliza indevidamente o princípio 'organismos digerem substâncias com enzimas' para um íon metálico inorgânico, que não é substrato de nenhuma rota enzimática conhecida."
+    },
+    {
+      "alternativa": "C",
+      "erros_esperados": [
+        {
+          "ordem": 1,
+          "erro": "ERR-08",
+          "processo_afetado": "PROC-CAUSAL-01",
+          "confianca": "media"
+        }
+      ],
+      "plausibilidade": {
+        "valor": "media"
+      },
+      "probabilidade_estimada": null,
+      "explicacao": "Generaliza a função dos estômatos (trocas gasosas e transpiração de vapor d'água) para a eliminação de um íon metálico sólido retido nos tecidos, funções incompatíveis."
+    },
+    {
+      "alternativa": "D",
+      "erros_esperados": [
+        {
+          "ordem": 1,
+          "erro": "ERR-08",
+          "processo_afetado": "PROC-CAUSAL-01",
+          "confianca": "media"
+        }
+      ],
+      "plausibilidade": {
+        "valor": "baixa"
+      },
+      "probabilidade_estimada": null,
+      "explicacao": "Importa indevidamente um conceito de fisiologia animal (glândulas) para um vegetal, que não possui esse tipo de estrutura secretora especializada."
+    },
+    {
+      "alternativa": "E",
+      "erros_esperados": [
+        {
+          "ordem": 1,
+          "erro": "ERR-08",
+          "processo_afetado": "PROC-CAUSAL-01",
+          "confianca": "media"
+        }
+      ],
+      "plausibilidade": {
+        "valor": "media"
+      },
+      "probabilidade_estimada": null,
+      "explicacao": "Generaliza indevidamente que toda substância absorvida é aproveitada como nutriente energético, ignorando que metais tóxicos não são oxidados nas vias metabólicas do vegetal."
+    }
+  ],
+  "intervencoes": [
+    {
+      "id": "INT-08",
+      "gatilho": {
+        "processo": "PROC-CAUSAL-01",
+        "erro": "ERR-08"
+      },
+      "acao": "Treino de distinção causa/correlação com contraexemplos: comparar explicitamente o destino de poluentes orgânicos (biodegradáveis, sujeitos a enzimas) com o de metais tóxicos (não biodegradáveis, apenas acumulados), usando contraexemplos de cada rota incorreta (digestão, eliminação, glândulas, uso energético).",
+      "prioridade": null
+    }
+  ],
+  "pedagogia": {
+    "estrategia": "Guiar o aluno a diferenciar poluentes orgânicos (degradáveis por enzimas/microrganismos) de metais tóxicos (elementos inorgânicos, não degradáveis), concluindo por eliminação que o único destino fisiológico coerente é o acúmulo tecidual (bioacumulação/fitoextração).",
+    "passos": [
+      "Identificar que o texto trata de metais tóxicos, não de poluentes orgânicos.",
+      "Recordar que metais são elementos químicos, não substrato de enzimas digestivas.",
+      "Eliminar as opções que descrevem processos de degradação, secreção ou uso energético.",
+      "Concluir que o destino coerente é o acúmulo nos tecidos vegetais (bioacumulação)."
+    ],
+    "erros_comuns": [
+      "Assumir que qualquer substância absorvida é processada enzimaticamente.",
+      "Confundir função dos estômatos (gases/vapor d'água) com excreção de sólidos.",
+      "Atribuir estruturas animais (glândulas) a vegetais."
+    ],
+    "dicas": [
+      "Pergunte-se: metais podem ser quebrados por enzimas como moléculas orgânicas? Se não, o que resta é acúmulo."
+    ],
+    "tempo_estimado_segundos": null,
+    "nivel_dificuldade": "medio"
+  },
+  "qualidade": {
+    "confianca_global": "media",
+    "revisado": false,
+    "observacoes": "Enunciado e alternativas legíveis por completo na imagem; nenhuma limitação de leitura."
+  }
+}

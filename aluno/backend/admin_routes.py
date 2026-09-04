@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from auth import require_admin
 from models import User
 import firestore_service as fs
+import perfil_cognitivo_service
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -164,6 +165,18 @@ async def firestore_sync(admin: User = Depends(require_admin)):
         raise
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=502, detail=f"Firestore error: {exc}")
+
+
+@router.post("/perfil-cognitivo/atualizar-todos")
+async def perfil_cognitivo_atualizar_todos(admin: User = Depends(require_admin)):
+    """Mesmo trabalho do laço automático (`server._perfil_cognitivo_loop`),
+    sob demanda — para não esperar o próximo ciclo depois de subir esta
+    feature, ou para conferir o resultado logo depois de um aluno responder
+    em massa."""
+    try:
+        return await perfil_cognitivo_service.atualizar_todos_os_perfis()
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=502, detail=f"Falha ao atualizar perfis: {exc}")
 
 
 def _read_all_firestore(collection: str) -> list[dict]:

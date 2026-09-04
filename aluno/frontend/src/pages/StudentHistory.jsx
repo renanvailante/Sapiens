@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { api } from "../lib/api";
+import { api, errMsg } from "../lib/api";
 import Nav from "../components/Nav";
-import { Check, X, ChevronDown, ChevronRight, Filter } from "lucide-react";
+import { Check, X, ChevronDown, ChevronRight, Filter, RefreshCw, Stethoscope } from "lucide-react";
+import { RankingsPorNivel, PadraoCard, semDadosReais } from "../components/PerfilCognitivoView";
+import { toast } from "sonner";
 
 // Lê o schema canônico definido em
 // pipeline/docs/behavior/07 behavior student 1.4.md — sem reshape de campos.
@@ -72,17 +74,136 @@ function Expandable({ ev }) {
   );
 }
 
+// Narrativa (briefing gerado por IA, no máximo 1x por semana por aluno — ver
+// `perfil_cognitivo_service.py`) e o histórico de snapshots semanais, que dão
+// o "evoluiu ou piorou" que o desempenho ao vivo sozinho não mostra.
+function PerfilCognitivo({ studentId, perfil, perfilLoading, perfilError, historico, onAtualizar, atualizando }) {
+  if (perfilLoading) return <div className="mt-8 text-white/60">Carregando perfil cognitivo...</div>;
+  if (perfilError) return <div className="mt-8 text-white/60" data-testid="perfil-erro">{perfilError}</div>;
+  if (!perfil) return null;
+
+  const vazio = semDadosReais(perfil);
+
+  return (
+    <div className="mt-8">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-2 font-mono-alt text-xs uppercase tracking-[0.3em] text-white/50">
+          <Stethoscope className="w-3.5 h-3.5" /> Perfil cognitivo real
+          {perfil.periodo && <span className="text-white/30">· {perfil.periodo}</span>}
+        </div>
+        <button
+          onClick={() => onAtualizar(studentId)}
+          disabled={atualizando}
+          className="pill text-xs font-medium btn-sapiens flex items-center gap-1.5 px-3 py-1.5 rounded-full disabled:opacity-50"
+          data-testid="perfil-atualizar-btn"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${atualizando ? "animate-spin" : ""}`} /> Atualizar agora
+        </button>
+      </div>
+
+      {vazio ? (
+        <div className="mt-4 card-sapiens rounded-2xl p-6 text-center">
+          <div className="font-display font-bold text-lg text-zinc-950">Ainda sem amostra suficiente.</div>
+          <p className="mt-2 text-sm text-zinc-500">Este aluno precisa responder mais questões num mesmo processo cognitivo (mínimo: {perfil.amostra_minima}).</p>
+        </div>
+      ) : (
+        <>
+          {perfil.narrativa && (
+            <div className="mt-4 card-sapiens rounded-2xl p-5 md:p-6" data-testid="perfil-narrativa">
+              <div className="font-mono-alt text-[10px] uppercase tracking-[0.25em] text-zinc-400 mb-2">Briefing (IA, gerado 1x/semana)</div>
+              <p className="text-sm text-zinc-700 leading-relaxed whitespace-pre-line">{perfil.narrativa}</p>
+            </div>
+          )}
+          <div className="mt-4">
+            <RankingsPorNivel data={perfil} />
+          </div>
+          {perfil.padroes_associados?.length > 0 && (
+            <div className="mt-4 space-y-4">
+              {perfil.padroes_associados.map((p) => <PadraoCard key={p.processo_id} padrao={p} />)}
+            </div>
+          )}
+        </>
+      )}
+
+      {historico?.length > 1 && (
+        <div className="mt-4 card-sapiens rounded-2xl p-5 md:p-6 overflow-x-auto" data-testid="perfil-historico">
+          <div className="font-mono-alt text-[10px] uppercase tracking-[0.25em] text-zinc-400 mb-3">Evolução por período</div>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-zinc-400 text-xs uppercase tracking-wide">
+                <th className="pb-2 pr-4">Período</th>
+                <th className="pb-2 pr-4">Cobertura</th>
+                <th className="pb-2">Maior ponto de atenção</th>
+              </tr>
+            </thead>
+            <tbody>
+              {historico.map((h) => {
+                const pior = h.por_processo?.fracos?.[0];
+                return (
+                  <tr key={h.periodo} className="border-t border-zinc-100">
+                    <td className="py-2 pr-4 font-mono-alt text-zinc-700">{h.periodo}</td>
+                    <td className="py-2 pr-4 text-zinc-600">{h.coverage}%</td>
+                    <td className="py-2 text-zinc-600">
+                      {pior ? `${pior.nome} (${pior.percentual_acerto}%)` : "—"}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function StudentHistory() {
   const [students, setStudents] = useState([]);
   const [aluno, setAluno] = useState("");
   const [history, setHistory] = useState(null);
+  const [perfil, setPerfil] = useState(null);
+  const [perfilHistorico, setPerfilHistorico] = useState([]);
+  const [perfilLoading, setPerfilLoading] = useState(false);
+  const [perfilError, setPerfilError] = useState(null);
+  const [atualizando, setAtualizando] = useState(false);
 
   useEffect(() => { api.get("/students").then(({ data }) => setStudents(data)); }, []);
+
+  const loadPerfil = async (studentId) => {
+    setPerfilLoading(true);
+    setPerfilError(null);
+    try {
+      const [{ data: atual }, { data: hist }] = await Promise.all([
+        api.get(`/students/${encodeURIComponent(studentId)}/perfil`),
+        api.get(`/students/${encodeURIComponent(studentId)}/perfil/historico`),
+      ]);
+      setPerfil(atual);
+      setPerfilHistorico(hist.snapshots || []);
+    } catch (e) {
+      setPerfilError(errMsg(e, "Não foi possível carregar o perfil cognitivo."));
+    } finally {
+      setPerfilLoading(false);
+    }
+  };
+
+  const atualizarPerfil = async (studentId) => {
+    setAtualizando(true);
+    try {
+      await api.post(`/students/${encodeURIComponent(studentId)}/perfil/atualizar`);
+      await loadPerfil(studentId);
+      toast.success("Perfil cognitivo atualizado.");
+    } catch (e) {
+      toast.error(errMsg(e, "Não foi possível atualizar agora."));
+    } finally {
+      setAtualizando(false);
+    }
+  };
 
   const load = async (studentId) => {
     if (!studentId) return;
     const { data } = await api.get(`/students/${encodeURIComponent(studentId)}/history`);
     setHistory(data);
+    loadPerfil(studentId);
   };
 
   const grouped = useMemo(() => {
@@ -136,9 +257,23 @@ export default function StudentHistory() {
           </div>
         )}
 
-        {/* Timeline */}
+        {/* Perfil cognitivo real (parametrizado) */}
         {history && (
-          <div className="mt-8 space-y-6">
+          <PerfilCognitivo
+            studentId={aluno}
+            perfil={perfil}
+            perfilLoading={perfilLoading}
+            perfilError={perfilError}
+            historico={perfilHistorico}
+            onAtualizar={atualizarPerfil}
+            atualizando={atualizando}
+          />
+        )}
+
+        {/* Timeline (bruta, evento a evento) */}
+        {history && (
+          <div className="mt-10 space-y-6">
+            <div className="font-mono-alt text-xs uppercase tracking-[0.3em] text-white/50">Eventos brutos</div>
             {grouped.length === 0 && <div className="text-white/60">Sem eventos registrados para este aluno.</div>}
             {grouped.map(([day, entries]) => (
               <div key={day}>

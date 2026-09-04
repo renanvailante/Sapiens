@@ -1,0 +1,239 @@
+{
+  "fonte": {
+    "banca": "ENEM",
+    "ano": 2023,
+    "prova": "AMARELO",
+    "numero": 99,
+    "disciplina": "Ciências da Natureza e suas Tecnologias",
+    "tema": "Biologia Molecular",
+    "conteudo": "Mecanismo de ação de vacina de RNA mensageiro (RNAm) — tradução e resposta imune",
+    "arquivo_origem": "2023_PV_impresso_D2_CD5.pdf",
+    "pagina": 5
+  },
+  "questao": {
+    "enunciado": "A tecnologia de vacinas de RNA mensageiro (RNAm) é investigada há anos. Avanços científicos em genética molecular permitiram desenvolver uma vacina para controle da pandemia da covid-19 causada pelo vírus de RNA SARS-CoV-2. A vacina de RNAm tem sequências de genes do vírus. Entretanto, por ser muito instável, o RNAm deve ser recoberto por uma capa de lipídios que evita sua degradação e favorece sua ação. Dessa forma, o RNAm desempenhará sua função específica atuando no mesmo compartimento celular de sempre.\n\nDisponível em: https://sbim.org.br. Acesso em: 29 nov. 2021 (adaptado).\n\nA imunização produzida por esse tipo de vacina é alcançada por meio da",
+    "alternativas": [
+      {
+        "letra": "A",
+        "texto": "estimulação de leucócitos induzida pela capa lipídica contendo RNAm.",
+        "correta": false
+      },
+      {
+        "letra": "B",
+        "texto": "atuação do RNAm como sequestrador do vírus para o meio extracelular.",
+        "correta": false
+      },
+      {
+        "letra": "C",
+        "texto": "tradução do RNAm em proteína viral, desencadeando a resposta antigênica.",
+        "correta": true
+      },
+      {
+        "letra": "D",
+        "texto": "competição entre o RNAm vacinal e o RNA viral pelos sítios dos ribossomos.",
+        "correta": false
+      },
+      {
+        "letra": "E",
+        "texto": "incorporação do RNAm viral ao genoma do hospedeiro, gerando novo fenótipo.",
+        "correta": false
+      }
+    ],
+    "recursos": {
+      "imagens": [],
+      "graficos": [],
+      "tabelas": [],
+      "formulas": []
+    }
+  },
+  "estrutura_cognitiva": {
+    "processos": [
+      {
+        "id": "PROC-CAUSAL-01",
+        "papel": "nuclear",
+        "peso_no_item": 1.0,
+        "confianca": 0.7,
+        "habilidades": [
+          {
+            "id": "HAB-32",
+            "peso_no_processo": 1.0,
+            "confianca": 0.7,
+            "aproximado": false
+          }
+        ],
+        "evidencias": {
+          "trechos": [
+            "o RNAm desempenhará sua função específica atuando no mesmo compartimento celular de sempre",
+            "A imunização produzida por esse tipo de vacina é alcançada por meio da"
+          ],
+          "figuras": []
+        },
+        "justificativa": "O item exige encadear a causa (RNAm entregue ao citoplasma, seu compartimento celular usual, isto é, onde ocorre a tradução pelos ribossomos) ao efeito final (imunização), passando pelo elo intermediário obrigatório: a tradução do RNAm em proteína viral, que é reconhecida como antígeno e desencadeia a resposta imune antigênica."
+      }
+    ],
+    "dominios": [
+      {
+        "id": "DOM-CAUSAL",
+        "derivado_de": [
+          "PROC-CAUSAL-01"
+        ],
+        "peso_no_item": 1.0,
+        "confianca": 0.7,
+        "_estatuto": {
+          "natureza": "classificacao_organizacao",
+          "evidencial": false,
+          "autoridade": "Constituicao §4.5",
+          "nota": "Peso e confianca deste bloco sao de NAVEGACAO E AGRUPAMENTO, nunca de evidencia. Nao alimentam a camada de crenca sobre o estado de um estudante. A unica relacao ponderada com valor diagnostico neste contrato e 'distratores[].erros_esperados[].confianca'.",
+          "metodo_confianca": "media_dos_processos_sustentadores",
+          "metodo_confianca_provisorio": true,
+          "metodo_confianca_motivo": "O Schema 2.2 diz 'confianca herdada dos processos' e NAO define a funcao de heranca. Nenhum documento de camada C1/C2/C3 a define: o White Paper 2.0.1 §4.2 registra que o Axioma da Crenca Calibrada 'nao exige nenhuma familia matematica especifica'. A media e decisao de engenharia deste pipeline, declarada sob GOV-1.0 §6.4 em vez de inserida silenciosamente, e substituivel sem alteracao de contrato."
+        }
+      }
+    ],
+    "competencias": [
+      {
+        "id": "COMP-06",
+        "derivado_de": [
+          "PROC-CAUSAL-01"
+        ],
+        "peso_no_item": 1.0,
+        "confianca": 0.7,
+        "_estatuto": {
+          "natureza": "classificacao_organizacao",
+          "evidencial": false,
+          "autoridade": "Constituicao §4.5",
+          "nota": "Peso e confianca deste bloco sao de NAVEGACAO E AGRUPAMENTO, nunca de evidencia. Nao alimentam a camada de crenca sobre o estado de um estudante. A unica relacao ponderada com valor diagnostico neste contrato e 'distratores[].erros_esperados[].confianca'.",
+          "metodo_confianca": "media_dos_processos_sustentadores",
+          "metodo_confianca_provisorio": true,
+          "metodo_confianca_motivo": "O Schema 2.2 diz 'confianca herdada dos processos' e NAO define a funcao de heranca. Nenhum documento de camada C1/C2/C3 a define: o White Paper 2.0.1 §4.2 registra que o Axioma da Crenca Calibrada 'nao exige nenhuma familia matematica especifica'. A media e decisao de engenharia deste pipeline, declarada sob GOV-1.0 §6.4 em vez de inserida silenciosamente, e substituivel sem alteracao de contrato."
+        }
+      }
+    ]
+  },
+  "incerteza": {
+    "marcadores": [],
+    "detalhe": "",
+    "requer_arbitragem": false
+  },
+  "distratores": [
+    {
+      "alternativa": "A",
+      "erros_esperados": [
+        {
+          "ordem": 1,
+          "erro": "ERR-07",
+          "processo_afetado": "PROC-CAUSAL-01",
+          "confianca": 0.4,
+          "mecanismo": "MEC-01"
+        }
+      ],
+      "plausibilidade": {
+        "valor": "media"
+      },
+      "probabilidade_estimada": null,
+      "explicacao": "Confunde o veículo de entrega (a capa lipídica, mero invólucro que protege o RNAm da degradação) com o agente causador da resposta imune, atribuindo a estimulação de leucócitos à cápsula lipídica em si, e não à proteína viral produzida a partir da tradução do RNAm."
+    },
+    {
+      "alternativa": "B",
+      "erros_esperados": [
+        {
+          "ordem": 1,
+          "erro": "ERR-07",
+          "processo_afetado": "PROC-CAUSAL-01",
+          "confianca": 0.4,
+          "mecanismo": "MEC-01"
+        }
+      ],
+      "plausibilidade": {
+        "valor": "baixa"
+      },
+      "probabilidade_estimada": null,
+      "explicacao": "Inverte o papel causal do RNAm vacinal: atribui-lhe uma função ativa de captura direta do vírus no meio extracelular, quando na verdade sua função é servir de molde para a síntese intracelular de uma proteína viral que será reconhecida pelo sistema imune."
+    },
+    {
+      "alternativa": "D",
+      "erros_esperados": [
+        {
+          "ordem": 1,
+          "erro": "ERR-08",
+          "processo_afetado": "PROC-CAUSAL-01",
+          "confianca": 0.4,
+          "mecanismo": "MEC-11"
+        }
+      ],
+      "plausibilidade": {
+        "valor": "media"
+      },
+      "probabilidade_estimada": null,
+      "explicacao": "Generaliza indevidamente um mecanismo de competição por sítios ribossômicos (transferido de outro contexto biológico) para a situação da vacina, ignorando que o texto não descreve uma infecção viral concomitante com RNA viral competindo pelos ribossomos — o mecanismo de imunização não depende de tal competição."
+    },
+    {
+      "alternativa": "E",
+      "erros_esperados": [
+        {
+          "ordem": 1,
+          "erro": "ERR-08",
+          "processo_afetado": "PROC-CAUSAL-01",
+          "confianca": 0.7,
+          "mecanismo": "MEC-01"
+        }
+      ],
+      "plausibilidade": {
+        "valor": "alta"
+      },
+      "probabilidade_estimada": null,
+      "explicacao": "Reproduz uma concepção equivocada e recorrente (generalização indevida de que qualquer material genético introduzido se incorpora ao genoma do hospedeiro), ignorando que o RNAm não entra no núcleo nem é retrotranscrito em DNA, atuando apenas no citoplasma para tradução."
+    }
+  ],
+  "intervencoes": [
+    {
+      "id": "INT-08",
+      "gatilho": {
+        "processo": "PROC-CAUSAL-01",
+        "erro": "ERR-07"
+      },
+      "acao": "Treino de distinção causa/correlação com contraexemplos, usando esquemas passo a passo do mecanismo de ação da vacina (entrega → tradução → antígeno → resposta imune) para isolar o elo causal real do papel de veículos e correlatos.",
+      "prioridade": null
+    },
+    {
+      "id": "INT-08",
+      "gatilho": {
+        "processo": "PROC-CAUSAL-01",
+        "erro": "ERR-08"
+      },
+      "acao": "Debate estruturado sobre mitos comuns de vacinas de RNAm (ex.: alteração do genoma), contrastando cada mito com o mecanismo molecular real de tradução no citoplasma, para corrigir generalizações indevidas.",
+      "prioridade": null
+    }
+  ],
+  "pedagogia": {
+    "estrategia": "Reconstruir com o aluno a cadeia causal completa do mecanismo de imunização, desde a entrega do RNAm ao citoplasma até a resposta antigênica, distinguindo explicitamente veículo (lipídio), molde genético (RNAm) e produto funcional (proteína viral/antígeno).",
+    "passos": [
+      "Identificar que a capa lipídica é apenas um veículo de proteção e entrega, não o agente da resposta imune.",
+      "Reconhecer que o RNAm atua no citoplasma (compartimento celular usual do RNAm), onde é traduzido pelos ribossomos.",
+      "Concluir que a tradução gera uma proteína viral, que funciona como antígeno.",
+      "Relacionar o reconhecimento desse antígeno pelo sistema imune à resposta antigênica que gera a imunização."
+    ],
+    "erros_comuns": [
+      "Atribuir a ação imunológica à capa lipídica em vez de à proteína traduzida.",
+      "Acreditar que o RNAm da vacina altera o genoma do hospedeiro.",
+      "Confundir o mecanismo de tradução com competição direta por RNA viral."
+    ],
+    "dicas": [
+      "Lembre que RNAm nunca entra no núcleo: sua função inteira acontece no citoplasma, servindo de instrução temporária para os ribossomos produzirem uma proteína."
+    ],
+    "tempo_estimado_segundos": 90,
+    "nivel_dificuldade": "medio"
+  },
+  "qualidade": {
+    "confianca_global": 0.7,
+    "revisado": false,
+    "observacoes": "",
+    "apto_para_camada_de_crenca": {
+      "valor": false
+    }
+  },
+  "schema_version": "2.2",
+  "ontology_version": "1.4.1",
+  "item_hash": "7965fe8f77c5d6152f8863af01eaa0ed809ca15e4dc8765cf7271741625ce920",
+  "item_id": "CLAUDE-ITEM-ENEM-2023-AMARELO-Q099"
+}

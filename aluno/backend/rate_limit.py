@@ -38,6 +38,10 @@ LIMITES: dict[str, tuple[int, int]] = {
     "password_reset": (3, 900),
     # Rotas que gastam Gemini. Por usuário, não por IP.
     "llm": (20, 3600),
+    # Chat da Mentis. Cada mensagem já custa 10 Sparks, então o dinheiro
+    # é o freio principal; isto existe para o caso de um script com saldo
+    # alto virar um laço de chamadas ao Gemini.
+    "mentis": (60, 3600),
     # Leitura do acervo — generoso para uso normal, barra raspagem.
     "acervo": (120, 60),
     # Criação de pagamento: dinheiro real, e cada tentativa toca o MP.

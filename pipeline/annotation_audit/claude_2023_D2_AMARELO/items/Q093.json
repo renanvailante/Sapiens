@@ -1,0 +1,247 @@
+{
+  "fonte": {
+    "banca": "ENEM",
+    "ano": 2023,
+    "prova": "AMARELO",
+    "numero": 93,
+    "disciplina": "Ciências da Natureza e suas Tecnologias",
+    "tema": "Ondulatória — Radiação eletromagnética",
+    "conteudo": "Intensidade de uma onda eletromagnética emitida por fonte puntiforme esférica (lei do inverso do quadrado da distância)",
+    "arquivo_origem": "2023_PV_impresso_D2_CD5.pdf",
+    "pagina": 2
+  },
+  "questao": {
+    "enunciado": "O bluetooth é uma tecnologia de comunicação sem fio, de curto alcance, presente em diferentes dispositivos eletrônicos de consumo. Ela permite que aparelhos eletrônicos diferentes se conectem e troquem dados entre si. No padrão bluetooth, denominado de Classe 2, as antenas transmitem sinais de potência igual a 2,4 mW e possibilitam conectar dois dispositivos distanciados até 10 m. Considere que essas antenas se comportam como fontes puntiformes que emitem ondas eletromagnéticas esféricas e que a intensidade do sinal é calculada pela potência por unidade de área. Considere 3 como valor aproximado para π.\n\nPara que o sinal de bluetooth seja detectado pelas antenas, o valor mínimo de sua intensidade, em W/m², é mais próximo de",
+    "alternativas": [
+      {
+        "letra": "A",
+        "texto": "2,0 × 10⁻⁶.",
+        "correta": true
+      },
+      {
+        "letra": "B",
+        "texto": "2,0 × 10⁻⁵.",
+        "correta": false
+      },
+      {
+        "letra": "C",
+        "texto": "2,4 × 10⁻⁵.",
+        "correta": false
+      },
+      {
+        "letra": "D",
+        "texto": "2,4 × 10⁻³.",
+        "correta": false
+      },
+      {
+        "letra": "E",
+        "texto": "2,4 × 10⁻¹.",
+        "correta": false
+      }
+    ],
+    "recursos": {
+      "imagens": [],
+      "graficos": [],
+      "tabelas": [],
+      "formulas": []
+    }
+  },
+  "estrutura_cognitiva": {
+    "processos": [
+      {
+        "id": "PROC-SIMB-01",
+        "papel": "nuclear",
+        "peso_no_item": 1.0,
+        "confianca": 0.7,
+        "habilidades": [
+          {
+            "id": "HAB-38",
+            "peso_no_processo": 1.0,
+            "confianca": 0.7,
+            "aproximado": false
+          }
+        ],
+        "evidencias": {
+          "trechos": [
+            "fontes puntiformes que emitem ondas eletromagnéticas esféricas e que a intensidade do sinal é calculada pela potência por unidade de área",
+            "o valor mínimo de sua intensidade, em W/m², é mais próximo de"
+          ],
+          "figuras": []
+        },
+        "justificativa": "O item exige traduzir a descrição textual (fonte puntiforme emitindo onda esférica; intensidade = potência/área) na expressão formal I = P/(4πr²) e aplicar os valores numéricos fornecidos (P = 2,4 mW, r = 10 m, π ≈ 3) para obter o valor mínimo de intensidade detectável na distância máxima de alcance."
+      }
+    ],
+    "dominios": [
+      {
+        "id": "DOM-SIMBOLICO",
+        "derivado_de": [
+          "PROC-SIMB-01"
+        ],
+        "peso_no_item": 1.0,
+        "confianca": 0.7,
+        "_estatuto": {
+          "natureza": "classificacao_organizacao",
+          "evidencial": false,
+          "autoridade": "Constituicao §4.5",
+          "nota": "Peso e confianca deste bloco sao de NAVEGACAO E AGRUPAMENTO, nunca de evidencia. Nao alimentam a camada de crenca sobre o estado de um estudante. A unica relacao ponderada com valor diagnostico neste contrato e 'distratores[].erros_esperados[].confianca'.",
+          "metodo_confianca": "media_dos_processos_sustentadores",
+          "metodo_confianca_provisorio": true,
+          "metodo_confianca_motivo": "O Schema 2.2 diz 'confianca herdada dos processos' e NAO define a funcao de heranca. Nenhum documento de camada C1/C2/C3 a define: o White Paper 2.0.1 §4.2 registra que o Axioma da Crenca Calibrada 'nao exige nenhuma familia matematica especifica'. A media e decisao de engenharia deste pipeline, declarada sob GOV-1.0 §6.4 em vez de inserida silenciosamente, e substituivel sem alteracao de contrato."
+        }
+      }
+    ],
+    "competencias": [
+      {
+        "id": "COMP-08",
+        "derivado_de": [
+          "PROC-SIMB-01"
+        ],
+        "peso_no_item": 1.0,
+        "confianca": 0.7,
+        "_estatuto": {
+          "natureza": "classificacao_organizacao",
+          "evidencial": false,
+          "autoridade": "Constituicao §4.5",
+          "nota": "Peso e confianca deste bloco sao de NAVEGACAO E AGRUPAMENTO, nunca de evidencia. Nao alimentam a camada de crenca sobre o estado de um estudante. A unica relacao ponderada com valor diagnostico neste contrato e 'distratores[].erros_esperados[].confianca'.",
+          "metodo_confianca": "media_dos_processos_sustentadores",
+          "metodo_confianca_provisorio": true,
+          "metodo_confianca_motivo": "O Schema 2.2 diz 'confianca herdada dos processos' e NAO define a funcao de heranca. Nenhum documento de camada C1/C2/C3 a define: o White Paper 2.0.1 §4.2 registra que o Axioma da Crenca Calibrada 'nao exige nenhuma familia matematica especifica'. A media e decisao de engenharia deste pipeline, declarada sob GOV-1.0 §6.4 em vez de inserida silenciosamente, e substituivel sem alteracao de contrato."
+        }
+      }
+    ]
+  },
+  "incerteza": {
+    "marcadores": [],
+    "detalhe": "",
+    "requer_arbitragem": false
+  },
+  "distratores": [
+    {
+      "alternativa": "B",
+      "erros_esperados": [
+        {
+          "ordem": 1,
+          "erro": "ERR-03",
+          "processo_afetado": "PROC-SIMB-01",
+          "confianca": 0.4,
+          "mecanismo": "MEC-02"
+        }
+      ],
+      "plausibilidade": {
+        "valor": "alta"
+      },
+      "probabilidade_estimada": null,
+      "explicacao": "Calcula a área da esfera usando o raio sem elevá-lo ao quadrado (I = P/(4πr) em vez de P/(4πr²)): 2,4×10⁻³/(4×3×10) = 2,0×10⁻⁵."
+    },
+    {
+      "alternativa": "C",
+      "erros_esperados": [
+        {
+          "ordem": 1,
+          "erro": "ERR-03",
+          "processo_afetado": "PROC-SIMB-01",
+          "confianca": 0.4,
+          "mecanismo": "MEC-02"
+        }
+      ],
+      "plausibilidade": {
+        "valor": "alta"
+      },
+      "probabilidade_estimada": null,
+      "explicacao": "Omite o fator geométrico 4π da área da superfície esférica, usando A = r² em vez de A = 4πr²: 2,4×10⁻³/10² = 2,4×10⁻⁵."
+    },
+    {
+      "alternativa": "D",
+      "erros_esperados": [
+        {
+          "ordem": 1,
+          "erro": "ERR-03",
+          "processo_afetado": "PROC-SIMB-01",
+          "confianca": 0.4,
+          "mecanismo": "MEC-07"
+        }
+      ],
+      "plausibilidade": {
+        "valor": "media"
+      },
+      "probabilidade_estimada": null,
+      "explicacao": "Não traduz 'intensidade = potência/área' em uma divisão pela área da esfera, tratando a potência da fonte diretamente como se já fosse a intensidade do sinal: I = P = 2,4×10⁻³."
+    },
+    {
+      "alternativa": "E",
+      "erros_esperados": [
+        {
+          "ordem": 1,
+          "erro": "ERR-04",
+          "processo_afetado": "PROC-QUANT-04",
+          "confianca": 0.4,
+          "mecanismo": "MEC-06"
+        },
+        {
+          "ordem": 2,
+          "erro": "ERR-03",
+          "processo_afetado": "PROC-SIMB-01",
+          "confianca": 0.15,
+          "mecanismo": "MEC-02"
+        }
+      ],
+      "plausibilidade": {
+        "valor": "baixa"
+      },
+      "probabilidade_estimada": null,
+      "explicacao": "Primeiro não converte a potência de miliwatts para watts, usando P = 2,4 em vez de 2,4×10⁻³ (raiz do erro); em seguida, usa a área como sendo apenas o valor do raio (A = 10), sem elevá-lo ao quadrado nem aplicar o fator 4π: 2,4/10 = 2,4×10⁻¹."
+    }
+  ],
+  "intervencoes": [
+    {
+      "id": "INT-02",
+      "gatilho": {
+        "processo": "PROC-SIMB-01",
+        "erro": "ERR-03"
+      },
+      "acao": "Uso de diagrama de tradução enunciado→modelo formal, explicitando passo a passo a construção da fórmula da intensidade de uma onda esférica (I = P / 4πr²) a partir da descrição textual da fonte puntiforme.",
+      "prioridade": null
+    },
+    {
+      "id": "INT-07",
+      "gatilho": {
+        "processo": "PROC-QUANT-04",
+        "erro": "ERR-04"
+      },
+      "acao": "Revisão sistemática de conversão de unidades (mW → W) antes de substituir valores numéricos em uma fórmula física.",
+      "prioridade": null
+    }
+  ],
+  "pedagogia": {
+    "estrategia": "Guiar o aluno na construção passo a passo da fórmula da intensidade de uma onda esférica a partir da descrição textual, destacando separadamente a conversão de unidades e a montagem correta da área da superfície esférica (4πr²) antes de substituir valores.",
+    "passos": [
+      "Converter a potência de miliwatts para watts: P = 2,4 mW = 2,4×10⁻³ W.",
+      "Identificar a distância máxima de alcance como o raio da esfera: r = 10 m.",
+      "Calcular a área da superfície esférica: A = 4πr² = 4×3×10² = 1200 m².",
+      "Calcular a intensidade mínima: I = P/A = 2,4×10⁻³/1200 = 2,0×10⁻⁶ W/m²."
+    ],
+    "erros_comuns": [
+      "Esquecer de elevar o raio ao quadrado na fórmula da área da esfera.",
+      "Esquecer o fator 4π da área de uma superfície esférica.",
+      "Não converter miliwatts para watts antes do cálculo.",
+      "Confundir potência com intensidade, pulando a divisão pela área."
+    ],
+    "dicas": [
+      "Escreva a fórmula I = P/(4πr²) por extenso antes de substituir os números — isso evita esquecer algum fator."
+    ],
+    "tempo_estimado_segundos": 120,
+    "nivel_dificuldade": "medio"
+  },
+  "qualidade": {
+    "confianca_global": 0.7,
+    "revisado": false,
+    "observacoes": "A cadeia de erro do distrator E é uma reconstrução plausível, mas não a única capaz de gerar exatamente o valor 2,4×10⁻¹; a confiança do segundo elo foi marcada como baixa para refletir essa incerteza de reconstrução aritmética.",
+    "apto_para_camada_de_crenca": {
+      "valor": false
+    }
+  },
+  "schema_version": "2.2",
+  "ontology_version": "1.4.1",
+  "item_hash": "7c54ab4a1e4b30027b3c16846358e19101bca810a3a2e9f7dbd7abed25663856",
+  "item_id": "CLAUDE-ITEM-ENEM-2023-AMARELO-Q093"
+}

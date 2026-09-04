@@ -17,7 +17,9 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from auth import require_admin
 from models import User
+import annotation_service
 import firestore_service as fs
+import perfil_cognitivo_service
 
 router = APIRouter(prefix="", tags=["events"])
 
@@ -62,3 +64,41 @@ async def student_history(student_id: str, admin: User = Depends(require_admin))
             "avg_tempo_resposta_segundos": round(sum(tempos) / len(tempos), 1) if tempos else 0.0,
         },
     }
+
+
+# ---------- Perfil cognitivo real (não cosmético) — ver perfil_cognitivo_service.py ----------
+#
+# Diferente do histórico bruto acima: isto é o desempenho JÁ parametrizado por
+# domínio/competência/processo, com amostra mínima e padrões de erro
+# associados ao catálogo pedagógico — o mesmo cálculo de
+# `annotation_service.compute_diagnostico_real`, só que persistido por período
+# (snapshot semanal) para dar histórico/evolução, e com uma narrativa gerada
+# por IA no máximo 1x por semana por aluno.
+
+@router.get("/students/{student_id}/perfil")
+async def perfil_cognitivo_atual(student_id: str, admin: User = Depends(require_admin)):
+    """Snapshot mais recente. Se ainda não existe nenhum (laço automático
+    ainda não passou por este aluno), calcula na hora — sem narrativa, que só
+    é gerada pelo laço/pelo botão de atualizar manual, nunca implicitamente
+    numa leitura, para não surpreender ninguém com uma chamada Gemini."""
+    perfil = _safe(fs.read_ultimo_perfil, student_id)
+    if perfil is not None:
+        return perfil
+    ao_vivo = await annotation_service.compute_diagnostico_real(student_id)
+    return {**ao_vivo, "periodo": None, "narrativa": "", "gerado_em": None}
+
+
+@router.get("/students/{student_id}/perfil/historico")
+async def perfil_cognitivo_historico(student_id: str, admin: User = Depends(require_admin)):
+    return {"student_id": student_id, "snapshots": _safe(fs.list_perfil_historico, student_id)}
+
+
+@router.post("/students/{student_id}/perfil/atualizar")
+async def perfil_cognitivo_atualizar(student_id: str, admin: User = Depends(require_admin)):
+    """Força um recálculo agora, ignorando o gate de 'sem evento novo' do laço
+    automático — útil logo após o aluno responder algo, ou pra conferir que a
+    narrativa está boa antes de esperar o laço passar."""
+    doc = await perfil_cognitivo_service.gerar_e_salvar_snapshot(student_id)
+    if doc is None:
+        raise HTTPException(status_code=409, detail="Aluno ainda não tem amostra suficiente em nenhum item.")
+    return doc

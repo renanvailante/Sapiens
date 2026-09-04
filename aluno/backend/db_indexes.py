@@ -89,6 +89,18 @@ INDICES: list[tuple[str, list[tuple[str, int]], dict]] = [
     ("redacao_avaliacoes", [("redacao_id", pymongo.ASCENDING)], {"name": "avaliacao_por_redacao"}),
     ("aulas_particulares", [("created_at", pymongo.DESCENDING)], {"name": "aulas_recentes"}),
 
+    # --- chat da Mentis ---
+    # A busca por sessão ativa (`mentis_routes._sessao_ativa`) roda em toda
+    # abertura do chat e em toda mensagem enviada: filtra por aluno e por
+    # validade, ordenando pela mais recente — as três colunas do índice.
+    ("mentis_sessoes", [("user_id", pymongo.ASCENDING), ("expira_em", pymongo.DESCENDING),
+                        ("criada_em", pymongo.DESCENDING)],
+     {"name": "sessao_ativa_do_aluno"}),
+    # A conversa deixa de ser útil muito depois de a sessão vencer; 30 dias
+    # dão margem para suporte olhar um caso sem guardar histórico para sempre.
+    ("mentis_sessoes", [("expurgo_em_dt", pymongo.ASCENDING)],
+     {"name": "mentis_sessoes_ttl", "expireAfterSeconds": 0}),
+
     # --- monitoramento ---
     ("client_errors", [("recebido_em_dt", pymongo.ASCENDING)],
      {"name": "client_errors_ttl", "expireAfterSeconds": 30 * 24 * 3600}),

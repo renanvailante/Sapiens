@@ -32,6 +32,7 @@ from typing import Any
 
 from dotenv import load_dotenv
 from google import genai
+from google.genai import errors as genai_errors
 from google.genai import types
 
 load_dotenv()
@@ -165,6 +166,75 @@ async def generate_json(
     return await _generate_json(
         system_instruction, user_text, model=model, thinking_level=thinking_level
     )
+
+
+# ---------- Chamada resiliente (timeout próprio + fallback de modelo) ----------
+#
+# Existe por causa de uma falha real e reprodutível: em 2026-09-03 o botão
+# "Saiba mais" nunca funcionou em produção. Medição do mesmo item do ENEM com
+# `gemini-3-flash-preview`:
+#
+#     thinking=MINIMAL ->  4,3 s, resposta completa
+#     thinking=LOW     -> 83,4 s
+#     thinking=MEDIUM  -> 503 UNAVAILABLE ("high demand") aos 37 s
+#
+# Ou seja: o teto global de 30 s (`GEMINI_TIMEOUT_SEGUNDOS`) é adequado para
+# uma chamada rasa e impossível para uma chamada com raciocínio alto — quem
+# precisa de mais tempo tem de pedir mais tempo explicitamente, e quem topa
+# esperar ainda assim esbarra na indisponibilidade do modelo em preview.
+#
+# Esta função é o ponto único onde as duas coisas são tratadas:
+#  * `timeout` por chamador, em vez do teto global de 30 s;
+#  * fallback para um modelo ESTÁVEL quando o preview responde 5xx/indisponível.
+#    O fallback é só para falha de INFRAESTRUTURA — resposta inválida (JSON
+#    quebrado) é bug de prompt e sobe para o chamador sem segunda tentativa,
+#    para não pagar duas chamadas por um erro que a repetição não conserta.
+
+# `gemini-3.5-flash` e não `gemini-2.5-flash`: a 2.5 responde 404 "no longer
+# available to new users" para esta chave, e `gemini-flash-latest` recusa
+# `thinking_level=MINIMAL` com 400. Medido em 2026-09-03; ao trocar este
+# valor, confira as duas coisas — existir e aceitar MINIMAL.
+GEMINI_MODELO_FALLBACK = os.environ.get("GEMINI_MODEL_FALLBACK") or "gemini-3.5-flash"
+
+
+async def generate_json_resiliente(
+    system_instruction: str,
+    user_text: str,
+    *,
+    thinking_level: str | None = None,
+    timeout: float | None = None,
+    modelo: str | None = None,
+    modelo_fallback: str | None = None,
+) -> Any:
+    """Como `generate_json`, mas com teto de tempo próprio e um único retry
+    em modelo estável quando o modelo primário está fora do ar.
+
+    Levanta `GeminiIndisponivelError` se os dois modelos falharem por
+    infraestrutura; qualquer outra exceção (JSON inválido, prompt recusado)
+    sobe direto, sem retry.
+    """
+    primario = modelo or _model()
+    reserva = modelo_fallback if modelo_fallback is not None else GEMINI_MODELO_FALLBACK
+    try:
+        return await _generate_json(
+            system_instruction, user_text, model=primario,
+            thinking_level=thinking_level, timeout=timeout,
+        )
+    except (GeminiIndisponivelError, genai_errors.ServerError) as exc:
+        if not reserva or reserva == primario:
+            raise GeminiIndisponivelError(f"Gemini indisponível em {primario}: {exc}") from exc
+        logger.warning(
+            "Gemini indisponível em %s (%s) — repetindo em %s.", primario, exc, reserva
+        )
+    try:
+        return await _generate_json(
+            system_instruction, user_text, model=reserva,
+            thinking_level=thinking_level, timeout=timeout,
+        )
+    except (GeminiIndisponivelError, genai_errors.ServerError) as exc:
+        raise GeminiIndisponivelError(
+            f"Gemini indisponível nos dois modelos ({primario}, {reserva}): {exc}"
+        ) from exc
 
 
 # ---------- Diagnóstico cognitivo ----------
@@ -302,6 +372,66 @@ async def diagnose_sessao(contexto: list[dict[str, Any]]) -> dict[str, Any]:
     if not isinstance(result, dict):
         return dict(_SESSAO_FALLBACK)
     return {**_SESSAO_FALLBACK, **result}
+
+
+# ---------- Narrativa do perfil cognitivo (briefing para o educador) ----------
+#
+# Diferente de `diagnose_sessao` (fala COM o aluno, tom empático, "hipótese de
+# estudo"): esta narrativa é um briefing interno PARA quem vai decidir a
+# intervenção pedagógica — tom direto, sem preocupação em não desanimar quem
+# lê. Mesma fronteira de contrato do topo do módulo: a entrada
+# (`perfil_cognitivo_service._sanitizar_para_narrativa`) já chega sem ID de
+# catálogo, e o texto nunca vira estrutura cognitiva persistida — é só
+# apresentação em cima de números já calculados deterministicamente.
+#
+# Gerada no máximo 1x por período (ver `perfil_cognitivo_service`), não a cada
+# acesso: é a única chamada Gemini de todo o pipeline de perfil cognitivo.
+
+NARRATIVA_PERFIL_SYSTEM = """Você é um analista pedagógico preparando um briefing interno para um
+educador que vai decidir como intervir com um aluno específico. Isto NÃO é
+uma mensagem para o aluno ler — é para quem vai planejar a intervenção.
+
+Você recebe dados JÁ CALCULADOS (não invente números novos, não recalcule):
+desempenho real por domínio/competência/processo cognitivo (com o tamanho da
+amostra de cada um) e, quando existir, um processo fraco associado a um tipo
+de erro catalogado e a intervenção pedagógica já sugerida para ele.
+
+Escreva um briefing direto e objetivo, em português, em 2-3 parágrafos curtos:
+o que já está claro nos dados, onde a evidência ainda é fraca (amostra
+pequena) e por onde começar a intervenção. Não use identificadores de
+catálogo (PROC-, ERR-, HAB-, DOM-, COMP-, INT-) em nenhum trecho — só nomes.
+Não amenize nem inflate: se os dados são poucos, diga isso explicitamente em
+vez de soar confiante.
+
+Responda EXCLUSIVAMENTE com JSON no formato:
+{"texto": "briefing em 2-3 parágrafos"}
+Sem markdown, sem prefixos, apenas o JSON."""
+
+_NARRATIVA_PERFIL_FALLBACK = {"texto": ""}
+
+
+async def gerar_narrativa_perfil(payload: dict[str, Any]) -> str:
+    """Briefing textual sobre o perfil cognitivo de um aluno. Degrada para
+    string vazia — o snapshot determinístico nunca deixa de ser salvo por
+    causa de uma falha aqui (ver `perfil_cognitivo_service.gerar_e_salvar_snapshot`).
+
+    `thinking_level="MINIMAL"`, não "LOW": a medição de 2026-09-03 registrada
+    acima de `generate_json_resiliente` achou LOW em ~83s (estoura o teto
+    padrão de 30s) contra MINIMAL em ~4s para uma tarefa de dificuldade
+    comparável — aqui a entrada já é o resultado pronto da agregação, o
+    modelo só precisa narrar, então MINIMAL sobra. Via `generate_json_resiliente`
+    para herdar o retry em modelo estável sem duplicar essa lógica aqui.
+    """
+    prompt = "Perfil cognitivo calculado:\n" + json.dumps(payload, ensure_ascii=False, indent=2)
+    try:
+        result = await generate_json_resiliente(NARRATIVA_PERFIL_SYSTEM, prompt, thinking_level="MINIMAL")
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Narrativa de perfil indisponível: %s", exc)
+        return _NARRATIVA_PERFIL_FALLBACK["texto"]
+    if not isinstance(result, dict):
+        return _NARRATIVA_PERFIL_FALLBACK["texto"]
+    texto = result.get("texto")
+    return texto if isinstance(texto, str) else _NARRATIVA_PERFIL_FALLBACK["texto"]
 
 
 # ---------- Visão: leitura do cartão-resposta ----------

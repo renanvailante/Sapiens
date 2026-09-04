@@ -1,0 +1,36 @@
+# Sapiens — app do professor (backend). Deploy a partir deste diretório:
+#     fly deploy --config professor/backend/fly.toml
+# (o Dockerfile já copia `.` a partir daqui — sem dependência de pipeline/docs,
+# diferente do backend do aluno.)
+
+app = "sapiens-professor"
+primary_region = "gru"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  APP_ENV = "production"
+  LOG_LEVEL = "INFO"
+  PORT = "8000"
+  DB_NAME = "sapiens_professor"
+  COOKIE_SECURE = "true"
+  COOKIE_SAMESITE = "none"
+  SEED_DEMO_DATA = "false"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = "suspend"
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 20
+    hard_limit = 40
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"

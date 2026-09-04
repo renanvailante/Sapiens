@@ -1,0 +1,302 @@
+{
+  "fonte": {
+    "banca": "ENEM",
+    "ano": 2023,
+    "prova": "AMARELO",
+    "numero": 102,
+    "disciplina": "Ciências da Natureza e suas Tecnologias",
+    "tema": "Estática e máquinas simples",
+    "conteudo": "Vantagem mecânica de sistemas de polias fixas e móveis (associação de polias)",
+    "arquivo_origem": "2023_PV_impresso_D2_CD5.pdf",
+    "pagina": 5
+  },
+  "questao": {
+    "enunciado": "Uma academia decide trocar gradualmente seus aparelhos de musculação. Agora, os frequentadores que utilizam os aparelhos do tipo 1 podem também utilizar os aparelhos do tipo 2, representados na figura, para elevar cargas correspondentes às massas M1 e M2, com velocidade constante. A fim de que o exercício seja realizado com a mesma força F, os usuários devem ser orientados a respeito da relação entre as cargas nos dois tipos de aparelhos, já que as polias fixas apenas mudam a direção das forças, enquanto a polia móvel divide as forças.\n\nEm ambos os aparelhos, considere as cordas inextensíveis, as massas das polias e das cordas desprezíveis e que não há dissipação de energia.\n\n[Duas figuras lado a lado. 'Aparelho do tipo 1': uma estrutura de madeira com duas polias fixas no topo; uma corda passa por ambas as polias, com a massa M1 pendurada em uma extremidade (lado esquerdo) e a força F aplicada para cima na outra extremidade (lado direito), guiada por uma polia fixa adicional na base direita. 'Aparelho do tipo 2': estrutura semelhante, mas com uma polia fixa no topo e uma polia móvel presa à massa M2; a corda desce da polia fixa superior, passa pela polia móvel (que sustenta M2) e sobe novamente até sair pela polia fixa da base direita, onde a força F é aplicada para cima.]\n\nPara essa academia, qual deve ser a razão M2/M1 informada aos usuários?",
+    "alternativas": [
+      {
+        "letra": "A",
+        "texto": "1/4",
+        "correta": false
+      },
+      {
+        "letra": "B",
+        "texto": "1/2",
+        "correta": false
+      },
+      {
+        "letra": "C",
+        "texto": "1",
+        "correta": false
+      },
+      {
+        "letra": "D",
+        "texto": "2",
+        "correta": true
+      },
+      {
+        "letra": "E",
+        "texto": "4",
+        "correta": false
+      }
+    ],
+    "recursos": {
+      "imagens": [
+        {
+          "id": "IMG-01",
+          "tipo": "diagrama",
+          "descricao": "Aparelho do tipo 1: estrutura de madeira com duas polias fixas no topo por onde passa uma corda; a massa M1 é sustentada por um segmento vertical único da corda do lado esquerdo, e a força F é aplicada verticalmente para cima na outra ponta da corda, após passar por uma polia fixa adicional na base direita. Apenas polias fixas, sem multiplicação de força.",
+          "arquivo": "crops/Q102.png",
+          "ocr": "Aparelho do tipo 1; M1; F"
+        },
+        {
+          "id": "IMG-02",
+          "tipo": "diagrama",
+          "descricao": "Aparelho do tipo 2: estrutura semelhante, mas com uma polia móvel presa diretamente à massa M2; a corda desce de uma polia fixa no topo, contorna a polia móvel (sustentando M2 em dois segmentos verticais de corda) e sobe até uma polia fixa na base direita, de onde sai a força F aplicada para cima.",
+          "arquivo": "crops/Q102.png",
+          "ocr": "Aparelho do tipo 2; M2; F"
+        }
+      ],
+      "graficos": [],
+      "tabelas": [],
+      "formulas": []
+    }
+  },
+  "estrutura_cognitiva": {
+    "processos": [
+      {
+        "id": "PROC-ESPACO-03",
+        "papel": "nuclear",
+        "peso_no_item": 0.7,
+        "confianca": 0.7,
+        "habilidades": [
+          {
+            "id": "HAB-16",
+            "peso_no_processo": 1.0,
+            "confianca": 0.7,
+            "aproximado": false
+          }
+        ],
+        "evidencias": {
+          "trechos": [
+            "as polias fixas apenas mudam a direção das forças, enquanto a polia móvel divide as forças"
+          ],
+          "figuras": [
+            "IMG-01",
+            "IMG-02"
+          ]
+        },
+        "justificativa": "O item exige reconhecer, a partir da disposição espacial dos componentes em cada aparelho, que a função de uma polia fixa é apenas redirecionar a força (vantagem mecânica 1), enquanto a função de uma polia móvel presa à carga é dividir a força necessária entre dois segmentos de corda (vantagem mecânica 2), o que distingue estruturalmente o Aparelho 1 do Aparelho 2."
+      },
+      {
+        "id": "PROC-QUANT-02",
+        "papel": "secundario",
+        "peso_no_item": 0.3,
+        "confianca": 0.7,
+        "habilidades": [
+          {
+            "id": "HAB-03",
+            "peso_no_processo": 1.0,
+            "confianca": 0.4,
+            "aproximado": false
+          }
+        ],
+        "evidencias": {
+          "trechos": [
+            "A fim de que o exercício seja realizado com a mesma força F"
+          ],
+          "figuras": []
+        },
+        "justificativa": "Após identificar a vantagem mecânica de cada sistema (F = M1·g no tipo 1; F = M2·g/2 no tipo 2), o item exige igualar as duas expressões de F e resolver a proporção resultante, concluindo que M2 = 2·M1, ou seja, M2/M1 = 2."
+      }
+    ],
+    "dominios": [
+      {
+        "id": "DOM-ESPACO",
+        "derivado_de": [
+          "PROC-ESPACO-03"
+        ],
+        "peso_no_item": 0.7,
+        "confianca": 0.7,
+        "_estatuto": {
+          "natureza": "classificacao_organizacao",
+          "evidencial": false,
+          "autoridade": "Constituicao §4.5",
+          "nota": "Peso e confianca deste bloco sao de NAVEGACAO E AGRUPAMENTO, nunca de evidencia. Nao alimentam a camada de crenca sobre o estado de um estudante. A unica relacao ponderada com valor diagnostico neste contrato e 'distratores[].erros_esperados[].confianca'.",
+          "metodo_confianca": "media_dos_processos_sustentadores",
+          "metodo_confianca_provisorio": true,
+          "metodo_confianca_motivo": "O Schema 2.2 diz 'confianca herdada dos processos' e NAO define a funcao de heranca. Nenhum documento de camada C1/C2/C3 a define: o White Paper 2.0.1 §4.2 registra que o Axioma da Crenca Calibrada 'nao exige nenhuma familia matematica especifica'. A media e decisao de engenharia deste pipeline, declarada sob GOV-1.0 §6.4 em vez de inserida silenciosamente, e substituivel sem alteracao de contrato."
+        }
+      },
+      {
+        "id": "DOM-QUANT",
+        "derivado_de": [
+          "PROC-QUANT-02"
+        ],
+        "peso_no_item": 0.3,
+        "confianca": 0.7,
+        "_estatuto": {
+          "natureza": "classificacao_organizacao",
+          "evidencial": false,
+          "autoridade": "Constituicao §4.5",
+          "nota": "Peso e confianca deste bloco sao de NAVEGACAO E AGRUPAMENTO, nunca de evidencia. Nao alimentam a camada de crenca sobre o estado de um estudante. A unica relacao ponderada com valor diagnostico neste contrato e 'distratores[].erros_esperados[].confianca'.",
+          "metodo_confianca": "media_dos_processos_sustentadores",
+          "metodo_confianca_provisorio": true,
+          "metodo_confianca_motivo": "O Schema 2.2 diz 'confianca herdada dos processos' e NAO define a funcao de heranca. Nenhum documento de camada C1/C2/C3 a define: o White Paper 2.0.1 §4.2 registra que o Axioma da Crenca Calibrada 'nao exige nenhuma familia matematica especifica'. A media e decisao de engenharia deste pipeline, declarada sob GOV-1.0 §6.4 em vez de inserida silenciosamente, e substituivel sem alteracao de contrato."
+        }
+      }
+    ],
+    "competencias": [
+      {
+        "id": "COMP-01",
+        "derivado_de": [
+          "PROC-QUANT-02"
+        ],
+        "peso_no_item": 0.3,
+        "confianca": 0.7,
+        "_estatuto": {
+          "natureza": "classificacao_organizacao",
+          "evidencial": false,
+          "autoridade": "Constituicao §4.5",
+          "nota": "Peso e confianca deste bloco sao de NAVEGACAO E AGRUPAMENTO, nunca de evidencia. Nao alimentam a camada de crenca sobre o estado de um estudante. A unica relacao ponderada com valor diagnostico neste contrato e 'distratores[].erros_esperados[].confianca'.",
+          "metodo_confianca": "media_dos_processos_sustentadores",
+          "metodo_confianca_provisorio": true,
+          "metodo_confianca_motivo": "O Schema 2.2 diz 'confianca herdada dos processos' e NAO define a funcao de heranca. Nenhum documento de camada C1/C2/C3 a define: o White Paper 2.0.1 §4.2 registra que o Axioma da Crenca Calibrada 'nao exige nenhuma familia matematica especifica'. A media e decisao de engenharia deste pipeline, declarada sob GOV-1.0 §6.4 em vez de inserida silenciosamente, e substituivel sem alteracao de contrato."
+        }
+      },
+      {
+        "id": "COMP-03",
+        "derivado_de": [
+          "PROC-ESPACO-03"
+        ],
+        "peso_no_item": 0.7,
+        "confianca": 0.7,
+        "_estatuto": {
+          "natureza": "classificacao_organizacao",
+          "evidencial": false,
+          "autoridade": "Constituicao §4.5",
+          "nota": "Peso e confianca deste bloco sao de NAVEGACAO E AGRUPAMENTO, nunca de evidencia. Nao alimentam a camada de crenca sobre o estado de um estudante. A unica relacao ponderada com valor diagnostico neste contrato e 'distratores[].erros_esperados[].confianca'.",
+          "metodo_confianca": "media_dos_processos_sustentadores",
+          "metodo_confianca_provisorio": true,
+          "metodo_confianca_motivo": "O Schema 2.2 diz 'confianca herdada dos processos' e NAO define a funcao de heranca. Nenhum documento de camada C1/C2/C3 a define: o White Paper 2.0.1 §4.2 registra que o Axioma da Crenca Calibrada 'nao exige nenhuma familia matematica especifica'. A media e decisao de engenharia deste pipeline, declarada sob GOV-1.0 §6.4 em vez de inserida silenciosamente, e substituivel sem alteracao de contrato."
+        }
+      }
+    ]
+  },
+  "incerteza": {
+    "marcadores": [],
+    "detalhe": "",
+    "requer_arbitragem": false
+  },
+  "distratores": [
+    {
+      "alternativa": "A",
+      "erros_esperados": [
+        {
+          "ordem": 1,
+          "erro": "erro-nao-catalogado-nesta-versao",
+          "processo_afetado": "PROC-QUANT-02",
+          "confianca": 0.15,
+          "mecanismo": "MEC-01"
+        }
+      ],
+      "plausibilidade": {
+        "valor": "baixa"
+      },
+      "probabilidade_estimada": null,
+      "explicacao": "Superestima a vantagem mecânica do aparelho tipo 2, tratando-a como fator 4 (por exemplo, elevando ao quadrado o número de segmentos de corda ou contando polias em dobro), quando a polia móvel única produz vantagem mecânica 2, não 4."
+    },
+    {
+      "alternativa": "B",
+      "erros_esperados": [
+        {
+          "ordem": 1,
+          "erro": "ERR-05",
+          "processo_afetado": "PROC-QUANT-02",
+          "confianca": 0.4,
+          "mecanismo": "MEC-01"
+        }
+      ],
+      "plausibilidade": {
+        "valor": "alta"
+      },
+      "probabilidade_estimada": null,
+      "explicacao": "Inverte a direção da relação proporcional: reconhece que há um fator 2 envolvido, mas atribui a vantagem mecânica ao aparelho tipo 1 em vez do tipo 2, concluindo erroneamente que M2 deveria ser menor (metade) que M1."
+    },
+    {
+      "alternativa": "C",
+      "erros_esperados": [
+        {
+          "ordem": 1,
+          "erro": "erro-nao-catalogado-nesta-versao",
+          "processo_afetado": "PROC-ESPACO-03",
+          "confianca": 0.4,
+          "mecanismo": "MEC-01"
+        }
+      ],
+      "plausibilidade": {
+        "valor": "media"
+      },
+      "probabilidade_estimada": null,
+      "explicacao": "Não reconhece que a polia móvel do aparelho tipo 2 divide a força, tratando ambos os sistemas como funcionalmente equivalentes (apenas redirecionadores de força), e por isso conclui que as massas suportadas com a mesma força F devem ser iguais."
+    },
+    {
+      "alternativa": "E",
+      "erros_esperados": [
+        {
+          "ordem": 1,
+          "erro": "erro-nao-catalogado-nesta-versao",
+          "processo_afetado": "PROC-QUANT-02",
+          "confianca": 0.15,
+          "mecanismo": "MEC-01"
+        }
+      ],
+      "plausibilidade": {
+        "valor": "baixa"
+      },
+      "probabilidade_estimada": null,
+      "explicacao": "Superestima a vantagem mecânica ao contar os dois segmentos de corda que sustentam a polia móvel como se cada um dobrasse a força de forma independente e cumulativa, chegando a fator 4 em vez de 2."
+    }
+  ],
+  "intervencoes": [
+    {
+      "id": "INT-03",
+      "gatilho": {
+        "processo": "PROC-QUANT-02",
+        "erro": "ERR-05"
+      },
+      "acao": "Praticar, com sistemas de polias simples manipuláveis (ou simulações), a identificação do sentido da relação de proporcionalidade entre força aplicada e carga sustentada, evidenciando qual variável cresce e qual diminui conforme a vantagem mecânica do sistema.",
+      "prioridade": null
+    }
+  ],
+  "pedagogia": {
+    "estrategia": "Construir a distinção funcional entre polia fixa (redireciona força, vantagem mecânica 1) e polia móvel (divide força, vantagem mecânica 2) antes de formalizar a equação de equilíbrio de forças em cada sistema.",
+    "passos": [
+      "Isolar o corpo M1 e a corda que o sustenta no aparelho tipo 1: como só há polias fixas, F = M1·g.",
+      "Isolar o corpo M2 e a polia móvel no aparelho tipo 2: dois segmentos de corda sustentam o conjunto, então 2F = M2·g, ou F = M2·g/2.",
+      "Igualar as duas expressões de F (mesma força exigida do usuário): M1·g = M2·g/2.",
+      "Resolver a proporção para obter M2 = 2·M1, isto é, M2/M1 = 2."
+    ],
+    "erros_comuns": [
+      "Tratar todas as polias (fixas e móveis) como funcionalmente equivalentes.",
+      "Inverter a direção da vantagem mecânica, atribuindo o ganho de força ao sistema errado.",
+      "Multiplicar a vantagem mecânica pelo número total de polias, em vez de considerar apenas os segmentos de corda que sustentam a carga na polia móvel."
+    ],
+    "dicas": [
+      "Conte quantos segmentos de corda sustentam diretamente o peso: cada segmento adicional (via polia móvel) divide a força necessária por essa quantidade."
+    ],
+    "tempo_estimado_segundos": 110,
+    "nivel_dificuldade": "medio"
+  },
+  "qualidade": {
+    "confianca_global": 0.7,
+    "revisado": false,
+    "observacoes": "Distratores A e E usam a sentinela 'erro-nao-catalogado-nesta-versao' vinculada a PROC-QUANT-02 porque descrevem erro de magnitude (superestimar o fator de vantagem mecânica), não de direção da proporção — ERR-05 (confusão de direção) foi reservado exclusivamente para B, cujo erro é literalmente inverter a quem se atribui a vantagem mecânica. O distrator C foi vinculado a PROC-ESPACO-03, que não tem tipo de erro catalogado na v1.4.1.",
+    "apto_para_camada_de_crenca": {
+      "valor": false
+    }
+  },
+  "schema_version": "2.2",
+  "ontology_version": "1.4.1",
+  "item_hash": "e1d4097f9b78d6508448e2ef884de551425617c8fc1d3d4e252d25fd7b1bff82",
+  "item_id": "CLAUDE-ITEM-ENEM-2023-AMARELO-Q102"
+}

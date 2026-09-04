@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { api } from "../lib/api";
-import { LogOut, Compass, History, Zap, Brain, ShieldCheck, MoreHorizontal, Trash2, LayoutGrid, GraduationCap, PenLine } from "lucide-react";
+import { LogOut, Compass, History, Zap, Brain, ShieldCheck, MoreHorizontal, Trash2, LayoutGrid, GraduationCap, PenLine, Stethoscope, MessageCircle } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTitle, SheetDescription } from "./ui/sheet";
 import BrandMark from "./BrandMark";
+import Mentis from "./Mentis";
 import AulasParticularesModal from "./AulasParticularesModal";
 
 // Única fonte da lista de navegação — usada tanto nos links visíveis em
@@ -14,8 +15,10 @@ const PRIMARY_LINKS = [
   { to: "/dashboard", icon: LayoutGrid, label: "Painel", testid: "nav-dashboard" },
   { to: "/exams", icon: Compass, label: "Provas", testid: "nav-exams" },
   { to: "/cognitive-profile", icon: Brain, label: "Cognitivo", testid: "nav-cognitive", tour: "nav-cognitive" },
+  { to: "/mentis", icon: MessageCircle, label: "Mentis", testid: "nav-mentis", mascote: true },
 ];
 const SECONDARY_LINKS = [
+  { to: "/diagnostico", icon: Stethoscope, label: "Diagnóstico", testid: "nav-diagnostico" },
   { to: "/redacao", icon: PenLine, label: "Redação", testid: "nav-redacao" },
   { to: "/history", icon: History, label: "Histórico", testid: "nav-history" },
   { to: "/feed", icon: Zap, label: "Feed", testid: "nav-feed" },
@@ -71,7 +74,7 @@ function MobileMenu({ user, onLogout, open, setOpen, onOpenAulas }) {
         <div className="px-3">
           <button
             onClick={() => { setOpen(false); onOpenAulas(); }}
-            className="w-full flex items-center gap-3 text-left text-[15px] font-semibold text-amber-950 bg-gradient-to-r from-amber-300 to-amber-400 hover:brightness-105 px-3 py-3.5 rounded-xl transition-all mb-2"
+            className="btn-calor w-full flex items-center gap-3 text-left text-[15px] px-3 py-3.5 rounded-xl transition-all mb-2"
             data-testid="nav-mobile-aulas-particulares"
           >
             <GraduationCap className="w-4.5 h-4.5" /> Tenha aulas conosco
@@ -86,7 +89,7 @@ function MobileMenu({ user, onLogout, open, setOpen, onOpenAulas }) {
               className="w-full flex items-center gap-3 text-left text-[15px] text-white/80 hover:text-white hover:bg-white/8 px-3 py-3 rounded-xl transition-colors"
               data-testid={`nav-mobile-${l.testid}`}
             >
-              <l.icon className="w-4.5 h-4.5" /> {l.label}
+              {l.mascote ? <Mentis className="w-5 h-5" variante="icone" /> : <l.icon className="w-4.5 h-4.5" />} {l.label}
             </button>
           ))}
           {user.is_admin && (
@@ -150,7 +153,7 @@ export default function Nav() {
                 data-testid={l.testid}
                 data-tour={l.tour}
               >
-                <l.icon className="w-4 h-4" /> {l.label}
+                {l.mascote ? <Mentis className="w-5 h-5" variante="icone" /> : <l.icon className="w-4 h-4" />} {l.label}
               </Link>
             ))}
 
@@ -171,7 +174,7 @@ export default function Nav() {
 
             <button
               onClick={() => setShowAulasModal(true)}
-              className="pill hidden md:inline-flex items-center gap-2 text-xs md:text-sm font-semibold text-amber-950 bg-gradient-to-r from-amber-300 to-amber-400 hover:brightness-105 px-3.5 py-2 rounded-full"
+              className="btn-calor pill hidden md:inline-flex items-center gap-2 text-xs md:text-sm px-3.5 py-2 rounded-full"
               data-testid="nav-aulas-particulares"
             >
               <GraduationCap className="w-4 h-4" /> Tenha aulas conosco

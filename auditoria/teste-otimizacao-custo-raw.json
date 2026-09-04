@@ -1,0 +1,769 @@
+[
+  {
+    "questao": "T1",
+    "titulo": "Diluição de solução salina",
+    "config": "atual_HIGH",
+    "thinking_level": "HIGH",
+    "started_at": "2026-08-22T12:27:37.860242+00:00",
+    "usage": {
+      "model": "gemini-3-flash-preview",
+      "cached": true,
+      "thinking_level": "HIGH",
+      "duration_ms": 14707.0,
+      "success": true,
+      "error_type": null,
+      "http_status": null,
+      "prompt_token_count": 12763,
+      "cached_content_token_count": 12611,
+      "candidates_token_count": 1794,
+      "thoughts_token_count": 1211,
+      "total_token_count": 15768
+    },
+    "error": null,
+    "validacao": {
+      "valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    "qualidade_confianca_global": 0.7,
+    "qualidade_revisado": true,
+    "n_processos": 2,
+    "item_id_teste": "ITEM-f2edb965435d4a6d98f46beadb461b20"
+  },
+  {
+    "questao": "T2",
+    "titulo": "Sombra e triângulos semelhantes",
+    "config": "atual_HIGH",
+    "thinking_level": "HIGH",
+    "started_at": "2026-08-22T12:27:52.593160+00:00",
+    "usage": {
+      "model": "gemini-3-flash-preview",
+      "cached": true,
+      "thinking_level": "HIGH",
+      "duration_ms": 20362.5,
+      "success": true,
+      "error_type": null,
+      "http_status": null,
+      "prompt_token_count": 12761,
+      "cached_content_token_count": 12611,
+      "candidates_token_count": 1697,
+      "thoughts_token_count": 2498,
+      "total_token_count": 16956
+    },
+    "error": null,
+    "validacao": {
+      "valid": true,
+      "errors": [],
+      "warnings": [
+        "distratores[0].erros_esperados[0].erro: sentinela 'erro-nao-catalogado-nesta-versao' usada para 'PROC-QUANT-02', que TEM tipos de erro catalogados (['ERR-05']). A sentinela é para os 13 processos sem catálogo (Manual §7, regra 4)."
+      ]
+    },
+    "qualidade_confianca_global": 0.7,
+    "qualidade_revisado": true,
+    "n_processos": 2,
+    "item_id_teste": "ITEM-cccbc04791dc430ab414eee0dfd2b1f7"
+  },
+  {
+    "questao": "T3",
+    "titulo": "Leitura de gráfico de vendas",
+    "config": "atual_HIGH",
+    "thinking_level": "HIGH",
+    "started_at": "2026-08-22T12:28:12.987774+00:00",
+    "usage": {
+      "model": "gemini-3-flash-preview",
+      "cached": true,
+      "thinking_level": "HIGH",
+      "duration_ms": 223372.7,
+      "success": true,
+      "error_type": null,
+      "http_status": null,
+      "prompt_token_count": 12758,
+      "cached_content_token_count": 12611,
+      "candidates_token_count": 1899,
+      "thoughts_token_count": 62913,
+      "total_token_count": 77570
+    },
+    "error": null,
+    "validacao": {
+      "valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    "qualidade_confianca_global": 0.7,
+    "qualidade_revisado": false,
+    "n_processos": 2,
+    "item_id_teste": "ITEM-622d377bab2a46a9af87ba39a2457f51"
+  },
+  {
+    "questao": "T4",
+    "titulo": "Causa do apagão em bairro isolado",
+    "config": "atual_HIGH",
+    "thinking_level": "HIGH",
+    "started_at": "2026-08-22T12:31:56.394389+00:00",
+    "usage": {
+      "model": "gemini-3-flash-preview",
+      "cached": true,
+      "thinking_level": "HIGH",
+      "duration_ms": 16077.6,
+      "success": true,
+      "error_type": null,
+      "http_status": null,
+      "prompt_token_count": 12828,
+      "cached_content_token_count": 12611,
+      "candidates_token_count": 1868,
+      "thoughts_token_count": 1469,
+      "total_token_count": 16165
+    },
+    "error": null,
+    "validacao": {
+      "valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    "qualidade_confianca_global": 0.7,
+    "qualidade_revisado": true,
+    "n_processos": 1,
+    "item_id_teste": "ITEM-3e056c537eec4eeaab0b6152a9ccdde2"
+  },
+  {
+    "questao": "T5",
+    "titulo": "Leitura de texto informativo sobre reciclagem",
+    "config": "atual_HIGH",
+    "thinking_level": "HIGH",
+    "started_at": "2026-08-22T12:32:12.504627+00:00",
+    "usage": {
+      "model": "gemini-3-flash-preview",
+      "cached": true,
+      "thinking_level": "HIGH",
+      "duration_ms": 225050.0,
+      "success": true,
+      "error_type": null,
+      "http_status": null,
+      "prompt_token_count": 12881,
+      "cached_content_token_count": 12611,
+      "candidates_token_count": 2276,
+      "thoughts_token_count": 62913,
+      "total_token_count": 78070
+    },
+    "error": null,
+    "validacao": {
+      "valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    "qualidade_confianca_global": 0.7,
+    "qualidade_revisado": false,
+    "n_processos": 2,
+    "item_id_teste": "ITEM-88cb5bd3564d4f34b47fb095e8642d01"
+  },
+  {
+    "questao": "T6",
+    "titulo": "Escala de mapa e distância real",
+    "config": "atual_HIGH",
+    "thinking_level": "HIGH",
+    "started_at": "2026-08-22T12:35:57.589603+00:00",
+    "usage": {
+      "model": "gemini-3-flash-preview",
+      "cached": true,
+      "thinking_level": "HIGH",
+      "duration_ms": 15520.7,
+      "success": true,
+      "error_type": null,
+      "http_status": null,
+      "prompt_token_count": 12737,
+      "cached_content_token_count": 12611,
+      "candidates_token_count": 1839,
+      "thoughts_token_count": 1670,
+      "total_token_count": 16246
+    },
+    "error": null,
+    "validacao": {
+      "valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    "qualidade_confianca_global": 0.7,
+    "qualidade_revisado": true,
+    "n_processos": 2,
+    "item_id_teste": "ITEM-1ea7c20eae954cc490e8a9611b145655"
+  },
+  {
+    "questao": "T7",
+    "titulo": "Símbolos de segurança em rótulo químico",
+    "config": "atual_HIGH",
+    "thinking_level": "HIGH",
+    "started_at": "2026-08-22T12:36:13.141808+00:00",
+    "usage": {
+      "model": "gemini-3-flash-preview",
+      "cached": true,
+      "thinking_level": "HIGH",
+      "duration_ms": 287955.5,
+      "success": true,
+      "error_type": null,
+      "http_status": null,
+      "prompt_token_count": 12862,
+      "cached_content_token_count": 12611,
+      "candidates_token_count": 2040,
+      "thoughts_token_count": 62913,
+      "total_token_count": 77815
+    },
+    "error": null,
+    "validacao": {
+      "valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    "qualidade_confianca_global": 0.7,
+    "qualidade_revisado": false,
+    "n_processos": 2,
+    "item_id_teste": "ITEM-c72271fc6fd543cea9020446b7dce0ec"
+  },
+  {
+    "questao": "T8",
+    "titulo": "Proporção em receita culinária",
+    "config": "atual_HIGH",
+    "thinking_level": "HIGH",
+    "started_at": "2026-08-22T13:03:42.104519+00:00",
+    "usage": {
+      "model": "gemini-3-flash-preview",
+      "cached": true,
+      "thinking_level": "HIGH",
+      "duration_ms": 13969.2,
+      "success": true,
+      "error_type": null,
+      "http_status": null,
+      "prompt_token_count": 12749,
+      "cached_content_token_count": 12611,
+      "candidates_token_count": 1542,
+      "thoughts_token_count": 1205,
+      "total_token_count": 15496
+    },
+    "error": null,
+    "validacao": {
+      "valid": true,
+      "errors": [],
+      "warnings": [
+        "intervencoes[0].gatilho (ERR-05, PROC-QUANT-02) não corresponde a nenhum elo de ordem 1. A intervenção é selecionada a partir da RAIZ da cadeia, nunca da manifestação de superfície (Error Trace §1.1)."
+      ]
+    },
+    "qualidade_confianca_global": 0.7,
+    "qualidade_revisado": true,
+    "n_processos": 1,
+    "item_id_teste": "ITEM-136ba7726ffe4af3a34b04b6e7731110"
+  },
+  {
+    "questao": "T1",
+    "titulo": "Diluição de solução salina",
+    "config": "otimizado_MEDIUM",
+    "thinking_level": "MEDIUM",
+    "started_at": "2026-08-22T13:03:56.100803+00:00",
+    "usage": {
+      "model": "gemini-3-flash-preview",
+      "cached": true,
+      "thinking_level": "MEDIUM",
+      "duration_ms": 23383.5,
+      "success": true,
+      "error_type": null,
+      "http_status": null,
+      "prompt_token_count": 12763,
+      "cached_content_token_count": 12611,
+      "candidates_token_count": 1773,
+      "thoughts_token_count": 2323,
+      "total_token_count": 16859
+    },
+    "error": null,
+    "validacao": {
+      "valid": true,
+      "errors": [],
+      "warnings": [
+        "distratores[2].erros_esperados[0].erro: sentinela 'erro-nao-catalogado-nesta-versao' usada para 'PROC-QUANT-02', que TEM tipos de erro catalogados (['ERR-05']). A sentinela é para os 13 processos sem catálogo (Manual §7, regra 4).",
+        "distratores[3].erros_esperados[0].erro: sentinela 'erro-nao-catalogado-nesta-versao' usada para 'PROC-QUANT-02', que TEM tipos de erro catalogados (['ERR-05']). A sentinela é para os 13 processos sem catálogo (Manual §7, regra 4)."
+      ]
+    },
+    "qualidade_confianca_global": 0.7,
+    "qualidade_revisado": true,
+    "n_processos": 1,
+    "item_id_teste": "ITEM-ca7a0f80fd53443b9c033d8249d92b94"
+  },
+  {
+    "questao": "T2",
+    "titulo": "Sombra e triângulos semelhantes",
+    "config": "otimizado_MEDIUM",
+    "thinking_level": "MEDIUM",
+    "started_at": "2026-08-22T13:04:19.509258+00:00",
+    "usage": {
+      "model": "gemini-3-flash-preview",
+      "cached": true,
+      "thinking_level": "MEDIUM",
+      "duration_ms": 23624.3,
+      "success": true,
+      "error_type": null,
+      "http_status": null,
+      "prompt_token_count": 12761,
+      "cached_content_token_count": 12611,
+      "candidates_token_count": 1715,
+      "thoughts_token_count": 2560,
+      "total_token_count": 17036
+    },
+    "error": null,
+    "validacao": {
+      "valid": true,
+      "errors": [],
+      "warnings": [
+        "distratores[0].erros_esperados[0].erro: sentinela 'erro-nao-catalogado-nesta-versao' usada para 'PROC-QUANT-02', que TEM tipos de erro catalogados (['ERR-05']). A sentinela é para os 13 processos sem catálogo (Manual §7, regra 4).",
+        "distratores[1].erros_esperados[0].erro: sentinela 'erro-nao-catalogado-nesta-versao' usada para 'PROC-QUANT-02', que TEM tipos de erro catalogados (['ERR-05']). A sentinela é para os 13 processos sem catálogo (Manual §7, regra 4).",
+        "distratores[2].erros_esperados[0].erro: sentinela 'erro-nao-catalogado-nesta-versao' usada para 'PROC-QUANT-02', que TEM tipos de erro catalogados (['ERR-05']). A sentinela é para os 13 processos sem catálogo (Manual §7, regra 4).",
+        "intervencoes[0].gatilho (ERR-05, PROC-QUANT-02) não corresponde a nenhum elo de ordem 1. A intervenção é selecionada a partir da RAIZ da cadeia, nunca da manifestação de superfície (Error Trace §1.1)."
+      ]
+    },
+    "qualidade_confianca_global": 0.7,
+    "qualidade_revisado": true,
+    "n_processos": 1,
+    "item_id_teste": "ITEM-e1badb9680344f6e8204d86f36267f4b"
+  },
+  {
+    "questao": "T3",
+    "titulo": "Leitura de gráfico de vendas",
+    "config": "otimizado_MEDIUM",
+    "thinking_level": "MEDIUM",
+    "started_at": "2026-08-22T13:04:43.154399+00:00",
+    "usage": {
+      "model": "gemini-3-flash-preview",
+      "cached": true,
+      "thinking_level": "MEDIUM",
+      "duration_ms": 23253.3,
+      "success": true,
+      "error_type": null,
+      "http_status": null,
+      "prompt_token_count": 12758,
+      "cached_content_token_count": 12611,
+      "candidates_token_count": 1963,
+      "thoughts_token_count": 2486,
+      "total_token_count": 17207
+    },
+    "error": null,
+    "validacao": {
+      "valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    "qualidade_confianca_global": 0.7,
+    "qualidade_revisado": true,
+    "n_processos": 2,
+    "item_id_teste": "ITEM-e4225e5f20574949b51083ba750e457f"
+  },
+  {
+    "questao": "T4",
+    "titulo": "Causa do apagão em bairro isolado",
+    "config": "otimizado_MEDIUM",
+    "thinking_level": "MEDIUM",
+    "started_at": "2026-08-22T13:05:06.436787+00:00",
+    "usage": {
+      "model": "gemini-3-flash-preview",
+      "cached": true,
+      "thinking_level": "MEDIUM",
+      "duration_ms": 225638.8,
+      "success": true,
+      "error_type": null,
+      "http_status": null,
+      "prompt_token_count": 12828,
+      "cached_content_token_count": 12611,
+      "candidates_token_count": 1998,
+      "thoughts_token_count": 62915,
+      "total_token_count": 77741
+    },
+    "error": null,
+    "validacao": {
+      "valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    "qualidade_confianca_global": 0.7,
+    "qualidade_revisado": false,
+    "n_processos": 2,
+    "item_id_teste": "ITEM-f6c18c16905043d2b20018f9ec3ddf33"
+  },
+  {
+    "questao": "T5",
+    "titulo": "Leitura de texto informativo sobre reciclagem",
+    "config": "otimizado_MEDIUM",
+    "thinking_level": "MEDIUM",
+    "started_at": "2026-08-22T13:08:52.106034+00:00",
+    "usage": {
+      "model": "gemini-3-flash-preview",
+      "cached": true,
+      "thinking_level": "MEDIUM",
+      "duration_ms": 16623.6,
+      "success": true,
+      "error_type": null,
+      "http_status": null,
+      "prompt_token_count": 12881,
+      "cached_content_token_count": 12611,
+      "candidates_token_count": 1957,
+      "thoughts_token_count": 1470,
+      "total_token_count": 16308
+    },
+    "error": null,
+    "validacao": {
+      "valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    "qualidade_confianca_global": 0.7,
+    "qualidade_revisado": true,
+    "n_processos": 1,
+    "item_id_teste": "ITEM-8998ae17c9794a828d189167e49eb5b9"
+  },
+  {
+    "questao": "T6",
+    "titulo": "Escala de mapa e distância real",
+    "config": "otimizado_MEDIUM",
+    "thinking_level": "MEDIUM",
+    "started_at": "2026-08-22T13:09:08.763187+00:00",
+    "usage": {
+      "model": "gemini-3-flash-preview",
+      "cached": true,
+      "thinking_level": "MEDIUM",
+      "duration_ms": 13814.0,
+      "success": true,
+      "error_type": null,
+      "http_status": null,
+      "prompt_token_count": 12737,
+      "cached_content_token_count": 12611,
+      "candidates_token_count": 1688,
+      "thoughts_token_count": 1301,
+      "total_token_count": 15726
+    },
+    "error": null,
+    "validacao": {
+      "valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    "qualidade_confianca_global": 0.7,
+    "qualidade_revisado": true,
+    "n_processos": 2,
+    "item_id_teste": "ITEM-964108d78b924f19977346366626455e"
+  },
+  {
+    "questao": "T7",
+    "titulo": "Símbolos de segurança em rótulo químico",
+    "config": "otimizado_MEDIUM",
+    "thinking_level": "MEDIUM",
+    "started_at": "2026-08-22T13:09:22.610021+00:00",
+    "usage": {
+      "model": "gemini-3-flash-preview",
+      "cached": true,
+      "thinking_level": "MEDIUM",
+      "duration_ms": 31208.9,
+      "success": true,
+      "error_type": null,
+      "http_status": null,
+      "prompt_token_count": 12862,
+      "cached_content_token_count": 12611,
+      "candidates_token_count": 1941,
+      "thoughts_token_count": 4150,
+      "total_token_count": 18953
+    },
+    "error": null,
+    "validacao": {
+      "valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    "qualidade_confianca_global": 0.7,
+    "qualidade_revisado": true,
+    "n_processos": 2,
+    "item_id_teste": "ITEM-62cba3603def4e9a801b7ecc302ba11a"
+  },
+  {
+    "questao": "T8",
+    "titulo": "Proporção em receita culinária",
+    "config": "otimizado_MEDIUM",
+    "thinking_level": "MEDIUM",
+    "started_at": "2026-08-22T13:09:53.855255+00:00",
+    "usage": {
+      "model": "gemini-3-flash-preview",
+      "cached": true,
+      "thinking_level": "MEDIUM",
+      "duration_ms": 15001.7,
+      "success": true,
+      "error_type": null,
+      "http_status": null,
+      "prompt_token_count": 12749,
+      "cached_content_token_count": 12611,
+      "candidates_token_count": 1752,
+      "thoughts_token_count": 1337,
+      "total_token_count": 15838
+    },
+    "error": null,
+    "validacao": {
+      "valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    "qualidade_confianca_global": 0.7,
+    "qualidade_revisado": true,
+    "n_processos": 1,
+    "item_id_teste": "ITEM-b31b97d40588487490d5495d98b5e0fe"
+  },
+  {
+    "questao": "T1",
+    "titulo": "Diluição de solução salina",
+    "config": "otimizado_LOW",
+    "thinking_level": "LOW",
+    "started_at": "2026-08-22T13:10:08.889230+00:00",
+    "usage": {
+      "model": "gemini-3-flash-preview",
+      "cached": true,
+      "thinking_level": "LOW",
+      "duration_ms": 7907.7,
+      "success": true,
+      "error_type": null,
+      "http_status": null,
+      "prompt_token_count": 12763,
+      "cached_content_token_count": 12611,
+      "candidates_token_count": 1726,
+      "thoughts_token_count": null,
+      "total_token_count": 14489
+    },
+    "error": null,
+    "validacao": {
+      "valid": true,
+      "errors": [],
+      "warnings": [
+        "distratores[2].erros_esperados[0].erro: sentinela 'erro-nao-catalogado-nesta-versao' usada para 'PROC-QUANT-02', que TEM tipos de erro catalogados (['ERR-05']). A sentinela é para os 13 processos sem catálogo (Manual §7, regra 4)."
+      ]
+    },
+    "qualidade_confianca_global": 0.7,
+    "qualidade_revisado": true,
+    "n_processos": 1,
+    "item_id_teste": "ITEM-74f775fcbc7d49f4a0881f41293db1db"
+  },
+  {
+    "questao": "T2",
+    "titulo": "Sombra e triângulos semelhantes",
+    "config": "otimizado_LOW",
+    "thinking_level": "LOW",
+    "started_at": "2026-08-22T13:10:16.826533+00:00",
+    "usage": {
+      "model": "gemini-3-flash-preview",
+      "cached": true,
+      "thinking_level": "LOW",
+      "duration_ms": 8522.1,
+      "success": true,
+      "error_type": null,
+      "http_status": null,
+      "prompt_token_count": 12761,
+      "cached_content_token_count": 12611,
+      "candidates_token_count": 1473,
+      "thoughts_token_count": null,
+      "total_token_count": 14234
+    },
+    "error": null,
+    "validacao": {
+      "valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    "qualidade_confianca_global": 0.7,
+    "qualidade_revisado": true,
+    "n_processos": 2,
+    "item_id_teste": "ITEM-3c6c601cc0b5456198938e1f9304a4a3"
+  },
+  {
+    "questao": "T3",
+    "titulo": "Leitura de gráfico de vendas",
+    "config": "otimizado_LOW",
+    "thinking_level": "LOW",
+    "started_at": "2026-08-22T13:10:25.378152+00:00",
+    "usage": {
+      "model": "gemini-3-flash-preview",
+      "cached": true,
+      "thinking_level": "LOW",
+      "duration_ms": 8066.5,
+      "success": true,
+      "error_type": null,
+      "http_status": null,
+      "prompt_token_count": 12758,
+      "cached_content_token_count": 12611,
+      "candidates_token_count": 1760,
+      "thoughts_token_count": null,
+      "total_token_count": 14518
+    },
+    "error": null,
+    "validacao": {
+      "valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    "qualidade_confianca_global": 0.7,
+    "qualidade_revisado": true,
+    "n_processos": 1,
+    "item_id_teste": "ITEM-33c1401359ad4043b9f9351cdb25e696"
+  },
+  {
+    "questao": "T4",
+    "titulo": "Causa do apagão em bairro isolado",
+    "config": "otimizado_LOW",
+    "thinking_level": "LOW",
+    "started_at": "2026-08-22T13:10:33.470392+00:00",
+    "usage": {
+      "model": "gemini-3-flash-preview",
+      "cached": true,
+      "thinking_level": "LOW",
+      "duration_ms": 8485.0,
+      "success": true,
+      "error_type": null,
+      "http_status": null,
+      "prompt_token_count": 12828,
+      "cached_content_token_count": 12611,
+      "candidates_token_count": 1799,
+      "thoughts_token_count": null,
+      "total_token_count": 14627
+    },
+    "error": null,
+    "validacao": {
+      "valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    "qualidade_confianca_global": 0.7,
+    "qualidade_revisado": true,
+    "n_processos": 1,
+    "item_id_teste": "ITEM-59e916de5124434f9b4418d43739c1b1"
+  },
+  {
+    "questao": "T5",
+    "titulo": "Leitura de texto informativo sobre reciclagem",
+    "config": "otimizado_LOW",
+    "thinking_level": "LOW",
+    "started_at": "2026-08-22T13:10:41.986914+00:00",
+    "usage": {
+      "model": "gemini-3-flash-preview",
+      "cached": true,
+      "thinking_level": "LOW",
+      "duration_ms": 9104.2,
+      "success": true,
+      "error_type": null,
+      "http_status": null,
+      "prompt_token_count": 12881,
+      "cached_content_token_count": 12611,
+      "candidates_token_count": 1862,
+      "thoughts_token_count": null,
+      "total_token_count": 14743
+    },
+    "error": null,
+    "validacao": {
+      "valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    "qualidade_confianca_global": 0.7,
+    "qualidade_revisado": true,
+    "n_processos": 1,
+    "item_id_teste": "ITEM-088831593c3c473cb823911675057cd8"
+  },
+  {
+    "questao": "T6",
+    "titulo": "Escala de mapa e distância real",
+    "config": "otimizado_LOW",
+    "thinking_level": "LOW",
+    "started_at": "2026-08-22T13:10:51.122540+00:00",
+    "usage": {
+      "model": "gemini-3-flash-preview",
+      "cached": true,
+      "thinking_level": "LOW",
+      "duration_ms": 8272.1,
+      "success": true,
+      "error_type": null,
+      "http_status": null,
+      "prompt_token_count": 12737,
+      "cached_content_token_count": 12611,
+      "candidates_token_count": 1821,
+      "thoughts_token_count": null,
+      "total_token_count": 14558
+    },
+    "error": null,
+    "validacao": {
+      "valid": true,
+      "errors": [],
+      "warnings": [
+        "intervencoes[0].gatilho (ERR-05, PROC-QUANT-02) não corresponde a nenhum elo de ordem 1. A intervenção é selecionada a partir da RAIZ da cadeia, nunca da manifestação de superfície (Error Trace §1.1)."
+      ]
+    },
+    "qualidade_confianca_global": 0.7,
+    "qualidade_revisado": false,
+    "n_processos": 2,
+    "item_id_teste": "ITEM-59dae74dbde745709f029cd0ca7922ba"
+  },
+  {
+    "questao": "T7",
+    "titulo": "Símbolos de segurança em rótulo químico",
+    "config": "otimizado_LOW",
+    "thinking_level": "LOW",
+    "started_at": "2026-08-22T13:10:59.424792+00:00",
+    "usage": {
+      "model": "gemini-3-flash-preview",
+      "cached": true,
+      "thinking_level": "LOW",
+      "duration_ms": 8308.1,
+      "success": true,
+      "error_type": null,
+      "http_status": null,
+      "prompt_token_count": 12862,
+      "cached_content_token_count": 12611,
+      "candidates_token_count": 1779,
+      "thoughts_token_count": null,
+      "total_token_count": 14641
+    },
+    "error": null,
+    "validacao": {
+      "valid": true,
+      "errors": [],
+      "warnings": [
+        "intervencoes[0].gatilho (ERR-13, PROC-SIST-02) não corresponde a nenhum elo de ordem 1. A intervenção é selecionada a partir da RAIZ da cadeia, nunca da manifestação de superfície (Error Trace §1.1)."
+      ]
+    },
+    "qualidade_confianca_global": 0.7,
+    "qualidade_revisado": true,
+    "n_processos": 1,
+    "item_id_teste": "ITEM-a3c4d02dc0034204891ee772cca40044"
+  },
+  {
+    "questao": "T8",
+    "titulo": "Proporção em receita culinária",
+    "config": "otimizado_LOW",
+    "thinking_level": "LOW",
+    "started_at": "2026-08-22T13:11:07.761577+00:00",
+    "usage": {
+      "model": "gemini-3-flash-preview",
+      "cached": true,
+      "thinking_level": "LOW",
+      "duration_ms": 6500.2,
+      "success": true,
+      "error_type": null,
+      "http_status": null,
+      "prompt_token_count": 12749,
+      "cached_content_token_count": 12611,
+      "candidates_token_count": 1401,
+      "thoughts_token_count": null,
+      "total_token_count": 14150
+    },
+    "error": null,
+    "validacao": {
+      "valid": false,
+      "errors": [
+        "distratores[1].erros_esperados[0]: o par ('ERR-11', 'PROC-QUANT-02') não existe no catálogo da versão 1.4.1. É proibido emprestar um tipo de erro de outro processo por semelhança (Error Trace R-1; Manual §7, regra 4)."
+      ],
+      "warnings": [
+        "distratores[0].erros_esperados[0].erro: sentinela 'erro-nao-catalogado-nesta-versao' usada para 'PROC-QUANT-02', que TEM tipos de erro catalogados (['ERR-05']). A sentinela é para os 13 processos sem catálogo (Manual §7, regra 4).",
+        "intervencoes[0].gatilho (ERR-05, PROC-QUANT-02) não corresponde a nenhum elo de ordem 1. A intervenção é selecionada a partir da RAIZ da cadeia, nunca da manifestação de superfície (Error Trace §1.1)."
+      ]
+    },
+    "qualidade_confianca_global": 0.7,
+    "qualidade_revisado": true,
+    "n_processos": 1,
+    "item_id_teste": "ITEM-1a09cd79b04d4f2283cbccaaaf9dfe07"
+  }
+]

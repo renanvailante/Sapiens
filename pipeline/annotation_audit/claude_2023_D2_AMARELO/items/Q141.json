@@ -1,0 +1,248 @@
+{
+  "fonte": {
+    "banca": "ENEM",
+    "ano": 2023,
+    "prova": "AMARELO",
+    "numero": 141,
+    "disciplina": "Matemática e suas Tecnologias",
+    "tema": "Sistemas de contagem do tempo (calendário maia)",
+    "conteudo": "Conversão entre ciclos de anos de durações distintas via mínimo múltiplo comum de dias",
+    "arquivo_origem": "2023_PV_impresso_D2_CD5.pdf",
+    "pagina": 18
+  },
+  "questao": {
+    "enunciado": "O calendário maia apresenta duas contagens simultâneas de anos, o chamado ano Tzolkim, composto por 260 dias e que determinava o calendário religioso, e o ano Haab, composto por 365 dias e que determinava o calendário agrícola. Um historiador encontrou evidências de que gerações de uma mesma família governaram certa comunidade maia pelo período de 20 ciclos, sendo cada ciclo formado por 52 anos Haab.\n\nDisponível em: www.suapesquisa.com. Acesso em: 20 ago. 2014.\n\nDe acordo com as informações fornecidas, durante quantos anos Tzolkim aquela comunidade maia foi governada por tal família?",
+    "alternativas": [
+      {
+        "letra": "A",
+        "texto": "741",
+        "correta": false
+      },
+      {
+        "letra": "B",
+        "texto": "1 040",
+        "correta": false
+      },
+      {
+        "letra": "C",
+        "texto": "1 460",
+        "correta": true
+      },
+      {
+        "letra": "D",
+        "texto": "2 100",
+        "correta": false
+      },
+      {
+        "letra": "E",
+        "texto": "5 200",
+        "correta": false
+      }
+    ],
+    "recursos": {
+      "imagens": [],
+      "graficos": [],
+      "tabelas": [],
+      "formulas": []
+    }
+  },
+  "estrutura_cognitiva": {
+    "processos": [
+      {
+        "id": "PROC-QUANT-04",
+        "papel": "nuclear",
+        "peso_no_item": 1.0,
+        "confianca": 0.7,
+        "habilidades": [
+          {
+            "id": "HAB-08",
+            "peso_no_processo": 1.0,
+            "confianca": 0.7,
+            "aproximado": false
+          }
+        ],
+        "evidencias": {
+          "trechos": [
+            "ano Tzolkim, composto por 260 dias",
+            "ano Haab, composto por 365 dias",
+            "20 ciclos, sendo cada ciclo formado por 52 anos Haab"
+          ],
+          "figuras": []
+        },
+        "justificativa": "O item exige converter uma duração expressa em um sistema de contagem de anos (Haab) para outro sistema de contagem (Tzolkim) usando o dia como unidade comum — sem essa conversão de unidade o item é impossível de responder, mesmo com aritmética correta."
+      }
+    ],
+    "dominios": [
+      {
+        "id": "DOM-QUANT",
+        "derivado_de": [
+          "PROC-QUANT-04"
+        ],
+        "peso_no_item": 1.0,
+        "confianca": 0.7,
+        "_estatuto": {
+          "natureza": "classificacao_organizacao",
+          "evidencial": false,
+          "autoridade": "Constituicao §4.5",
+          "nota": "Peso e confianca deste bloco sao de NAVEGACAO E AGRUPAMENTO, nunca de evidencia. Nao alimentam a camada de crenca sobre o estado de um estudante. A unica relacao ponderada com valor diagnostico neste contrato e 'distratores[].erros_esperados[].confianca'.",
+          "metodo_confianca": "media_dos_processos_sustentadores",
+          "metodo_confianca_provisorio": true,
+          "metodo_confianca_motivo": "O Schema 2.2 diz 'confianca herdada dos processos' e NAO define a funcao de heranca. Nenhum documento de camada C1/C2/C3 a define: o White Paper 2.0.1 §4.2 registra que o Axioma da Crenca Calibrada 'nao exige nenhuma familia matematica especifica'. A media e decisao de engenharia deste pipeline, declarada sob GOV-1.0 §6.4 em vez de inserida silenciosamente, e substituivel sem alteracao de contrato."
+        }
+      }
+    ],
+    "competencias": [
+      {
+        "id": "COMP-01",
+        "derivado_de": [
+          "PROC-QUANT-04"
+        ],
+        "peso_no_item": 1.0,
+        "confianca": 0.7,
+        "_estatuto": {
+          "natureza": "classificacao_organizacao",
+          "evidencial": false,
+          "autoridade": "Constituicao §4.5",
+          "nota": "Peso e confianca deste bloco sao de NAVEGACAO E AGRUPAMENTO, nunca de evidencia. Nao alimentam a camada de crenca sobre o estado de um estudante. A unica relacao ponderada com valor diagnostico neste contrato e 'distratores[].erros_esperados[].confianca'.",
+          "metodo_confianca": "media_dos_processos_sustentadores",
+          "metodo_confianca_provisorio": true,
+          "metodo_confianca_motivo": "O Schema 2.2 diz 'confianca herdada dos processos' e NAO define a funcao de heranca. Nenhum documento de camada C1/C2/C3 a define: o White Paper 2.0.1 §4.2 registra que o Axioma da Crenca Calibrada 'nao exige nenhuma familia matematica especifica'. A media e decisao de engenharia deste pipeline, declarada sob GOV-1.0 §6.4 em vez de inserida silenciosamente, e substituivel sem alteracao de contrato."
+        }
+      }
+    ]
+  },
+  "incerteza": {
+    "marcadores": [],
+    "detalhe": "",
+    "requer_arbitragem": false
+  },
+  "distratores": [
+    {
+      "alternativa": "A",
+      "erros_esperados": [
+        {
+          "ordem": 1,
+          "erro": "ERR-05",
+          "processo_afetado": "PROC-QUANT-02",
+          "confianca": 0.4,
+          "mecanismo": "MEC-02"
+        }
+      ],
+      "plausibilidade": {
+        "valor": "media"
+      },
+      "probabilidade_estimada": null,
+      "explicacao": "Aplica a razão entre as durações de ano na direção invertida (260/365 em vez de 365/260) ao converter os 1040 anos Haab para anos Tzolkim: 1040×(260/365)≈741."
+    },
+    {
+      "alternativa": "B",
+      "erros_esperados": [
+        {
+          "ordem": 1,
+          "erro": "ERR-04",
+          "processo_afetado": "PROC-QUANT-04",
+          "confianca": 0.7,
+          "mecanismo": "MEC-04"
+        }
+      ],
+      "plausibilidade": {
+        "valor": "alta"
+      },
+      "probabilidade_estimada": null,
+      "explicacao": "Calcula corretamente 20×52=1040 anos Haab, mas apresenta esse total diretamente como se já fosse a resposta em anos Tzolkim, sem realizar a conversão entre os dois sistemas de contagem."
+    },
+    {
+      "alternativa": "D",
+      "erros_esperados": [
+        {
+          "ordem": 1,
+          "erro": "ERR-03",
+          "processo_afetado": "PROC-SIMB-01",
+          "confianca": 0.4,
+          "mecanismo": "MEC-07"
+        }
+      ],
+      "plausibilidade": {
+        "valor": "baixa"
+      },
+      "probabilidade_estimada": null,
+      "explicacao": "Modela a relação entre os dois calendários pela diferença de dias (365−260=105) em vez da razão entre eles, e multiplica essa diferença pelos 20 ciclos: 20×105=2100."
+    },
+    {
+      "alternativa": "E",
+      "erros_esperados": [
+        {
+          "ordem": 1,
+          "erro": "ERR-04",
+          "processo_afetado": "PROC-QUANT-04",
+          "confianca": 0.4,
+          "mecanismo": "MEC-04"
+        }
+      ],
+      "plausibilidade": {
+        "valor": "baixa"
+      },
+      "probabilidade_estimada": null,
+      "explicacao": "Multiplica diretamente os 20 ciclos pelo número de dias do ano Tzolkim (260), tratando esse valor como se já fosse 'anos Tzolkim por ciclo': 20×260=5200."
+    }
+  ],
+  "intervencoes": [
+    {
+      "id": "INT-07",
+      "gatilho": {
+        "processo": "PROC-QUANT-04",
+        "erro": "ERR-04"
+      },
+      "acao": "Revisão guiada de unidades: antes de converter entre os dois calendários, expressar explicitamente cada grandeza (anos Haab, anos Tzolkim, dias) com sua unidade e verificar que a conversão final está na unidade pedida pelo enunciado.",
+      "prioridade": null
+    },
+    {
+      "id": "INT-03",
+      "gatilho": {
+        "processo": "PROC-QUANT-02",
+        "erro": "ERR-05"
+      },
+      "acao": "Prática guiada de relações proporcionais, com ênfase em identificar qual grandeza cresce e qual diminui ao trocar de unidade, para evitar inverter a razão de conversão.",
+      "prioridade": null
+    },
+    {
+      "id": "INT-02",
+      "gatilho": {
+        "processo": "PROC-SIMB-01",
+        "erro": "ERR-03"
+      },
+      "acao": "Diagrama de tradução: representar visualmente os dois calendários numa linha do tempo comum em dias antes de montar qualquer operação aritmética.",
+      "prioridade": null
+    }
+  ],
+  "pedagogia": {
+    "estrategia": "Converter as duas contagens para uma unidade comum (o dia) usando o mínimo múltiplo comum entre 260 e 365, e então reconverter para a unidade pedida.",
+    "passos": [
+      "Calcular a duração total do período em anos Haab: 20 ciclos × 52 anos = 1040 anos Haab.",
+      "Converter para dias: 1040 anos Haab × 365 dias = 379.600 dias.",
+      "Converter os dias para anos Tzolkim: 379.600 ÷ 260 = 1.460 anos Tzolkim."
+    ],
+    "erros_comuns": [
+      "Confundir a contagem de anos Haab com a de anos Tzolkim sem converter.",
+      "Inverter a razão entre as duas durações de ano."
+    ],
+    "dicas": [
+      "Sempre expresse durações diferentes em uma unidade comum antes de compará-las ou convertê-las.",
+      "260 dias × 73 = 365 dias × 52 = 18.980 dias — esse é o ciclo completo de 52 anos Haab, historicamente conhecido como 'Roda do Calendário'."
+    ],
+    "tempo_estimado_segundos": 150,
+    "nivel_dificuldade": "dificil"
+  },
+  "qualidade": {
+    "confianca_global": 0.7,
+    "revisado": false,
+    "observacoes": "",
+    "apto_para_camada_de_crenca": {
+      "valor": false
+    }
+  },
+  "schema_version": "2.2",
+  "ontology_version": "1.4.1",
+  "item_hash": "11451caec9fd940e1a9b715a67a20dacfe4823488d61934000bc2397bace3d1d",
+  "item_id": "CLAUDE-ITEM-ENEM-2023-AMARELO-Q141"
+}

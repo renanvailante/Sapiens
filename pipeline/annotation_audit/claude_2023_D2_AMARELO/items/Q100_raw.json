@@ -1,0 +1,125 @@
+{
+  "fonte": {
+    "banca": "ENEM",
+    "ano": 2023,
+    "prova": "AMARELO",
+    "numero": 100,
+    "disciplina": "Ciências da Natureza e suas Tecnologias",
+    "tema": "Reprodução Humana",
+    "conteudo": "Fecundação in vitro — papel das enzimas do acrossomo na penetração do espermatozoide",
+    "arquivo_origem": "2023_PV_impresso_D2_CD5.pdf",
+    "pagina": 5
+  },
+  "questao": {
+    "enunciado": "Na fertilização in vitro, espermatozoides são adicionados aos gametas femininos retirados de uma mulher. Após o período de incubação, a fecundação é favorecida pela ação de enzimas. Em um procedimento realizado, observou-se que nenhum dos gametas femininos foi fertilizado e, posteriormente, verificou-se que havia sido adicionado, equivocadamente, um coquetel de inibidores das enzimas do acrossomo, no lugar de um dos nutrientes constituintes do meio de cultura.\n\nO coquetel de inibidores impediu o(a)",
+    "alternativas": [
+      {"letra": "A", "texto": "formação do pronúcleo masculino.", "correta": false},
+      {"letra": "B", "texto": "início da divisão mitótica do zigoto.", "correta": false},
+      {"letra": "C", "texto": "término da segunda divisão meiótica do ovócito.", "correta": false},
+      {"letra": "D", "texto": "passagem do espermatozoide pela corona radiata e zona pelúcida.", "correta": true},
+      {"letra": "E", "texto": "fusão das membranas plasmáticas do ovócito e do espermatozoide.", "correta": false}
+    ],
+    "recursos": {
+      "imagens": [],
+      "graficos": [],
+      "tabelas": [],
+      "formulas": []
+    }
+  },
+  "estrutura_cognitiva": {
+    "processos": [
+      {
+        "id": "PROC-CAUSAL-01",
+        "papel": "nuclear",
+        "peso_no_item": 1.0,
+        "confianca": "alta",
+        "habilidades": [
+          {"id": "HAB-32", "peso_no_processo": 1.0, "confianca": "alta", "aproximado": false}
+        ],
+        "evidencias": {
+          "trechos": [
+            "havia sido adicionado, equivocadamente, um coquetel de inibidores das enzimas do acrossomo",
+            "O coquetel de inibidores impediu o(a)"
+          ],
+          "figuras": []
+        },
+        "justificativa": "O item exige identificar o efeito causal direto da ausência de enzimas acrossômicas ativas: essas enzimas são responsáveis por digerir a corona radiata e a zona pelúcida, permitindo a passagem física do espermatozoide até a membrana do ovócito; sem elas, o processo de fecundação é interrompido nessa etapa inicial, antes de qualquer evento posterior (fusão de membranas, retomada da meiose, formação de pronúcleos ou divisão mitótica)."
+      }
+    ]
+  },
+  "incerteza": {
+    "marcadores": [],
+    "detalhe": "",
+    "requer_arbitragem": false
+  },
+  "distratores": [
+    {
+      "alternativa": "A",
+      "erros_esperados": [
+        {"ordem": 1, "erro": "ERR-07", "processo_afetado": "PROC-CAUSAL-01", "confianca": "media", "mecanismo": "MEC-09"}
+      ],
+      "plausibilidade": {"valor": "media"},
+      "probabilidade_estimada": null,
+      "explicacao": "Seleciona um evento causalmente posterior e dependente da fecundação (formação do pronúcleo masculino só ocorre após a entrada do espermatozoide no ovócito), confundindo uma etapa tardia da cascata com a etapa efetivamente bloqueada pela ausência das enzimas do acrossomo."
+    },
+    {
+      "alternativa": "B",
+      "erros_esperados": [
+        {"ordem": 1, "erro": "ERR-07", "processo_afetado": "PROC-CAUSAL-01", "confianca": "baixa", "mecanismo": "MEC-09"}
+      ],
+      "plausibilidade": {"valor": "baixa"},
+      "probabilidade_estimada": null,
+      "explicacao": "Seleciona um evento ainda mais distante na cadeia causal (a divisão mitótica do zigoto só ocorre após a fecundação estar completa), evidenciando confusão entre a etapa efetivamente impedida (entrada do espermatozoide) e consequências muito posteriores dela."
+    },
+    {
+      "alternativa": "C",
+      "erros_esperados": [
+        {"ordem": 1, "erro": "ERR-07", "processo_afetado": "PROC-CAUSAL-01", "confianca": "media", "mecanismo": "MEC-09"}
+      ],
+      "plausibilidade": {"valor": "alta"},
+      "probabilidade_estimada": null,
+      "explicacao": "Confunde a etapa bloqueada com um evento reativado pela entrada do espermatozoide (o término da segunda divisão meiótica do ovócito é disparado pelo próprio contato/fusão com o espermatozoide), atribuindo o bloqueio a um efeito posterior e dependente, e não à causa direta (impedimento da travessia das enzimas do acrossomo)."
+    },
+    {
+      "alternativa": "E",
+      "erros_esperados": [
+        {"ordem": 1, "erro": "ERR-07", "processo_afetado": "PROC-CAUSAL-01", "confianca": "alta", "mecanismo": "MEC-09"}
+      ],
+      "plausibilidade": {"valor": "alta"},
+      "probabilidade_estimada": null,
+      "explicacao": "Confunde a etapa imediatamente seguinte (fusão das membranas plasmáticas, mediada por proteínas de membrana e não pelas enzimas do acrossomo) com a etapa efetivamente impedida (a travessia da corona radiata e da zona pelúcida, que depende diretamente da digestão enzimática promovida pelo acrossomo)."
+    }
+  ],
+  "intervencoes": [
+    {
+      "id": "INT-08",
+      "gatilho": {"processo": "PROC-CAUSAL-01", "erro": "ERR-07"},
+      "acao": "Treino de distinção causa/correlação com contraexemplos, usando a linha do tempo completa da fecundação (reação acrossômica → travessia da corona radiata e zona pelúcida → fusão de membranas → ativação do ovócito/término da meiose → formação de pronúcleos → singamia → primeira clivagem) para localizar com precisão qual etapa depende de qual causa.",
+      "prioridade": null
+    }
+  ],
+  "pedagogia": {
+    "estrategia": "Construir com o aluno a sequência cronológica e causal completa da fecundação, destacando que as enzimas do acrossomo atuam especificamente na etapa de travessia da corona radiata e da zona pelúcida, anterior a todos os demais eventos listados nas alternativas.",
+    "passos": [
+      "Situar a reação acrossômica como a primeira etapa da fecundação após o contato inicial do espermatozoide com o óvulo.",
+      "Explicar que as enzimas liberadas pelo acrossomo digerem a corona radiata e a zona pelúcida, abrindo caminho físico para o espermatozoide.",
+      "Mostrar que, sem essa travessia, nenhum evento posterior ocorre: nem fusão de membranas, nem retomada da meiose, nem formação de pronúcleos, nem clivagem.",
+      "Reforçar a ordem cronológica dos eventos para evitar a troca da causa direta por uma consequência distante."
+    ],
+    "erros_comuns": [
+      "Selecionar um evento posterior da cascata de fecundação como se fosse a etapa diretamente bloqueada.",
+      "Ignorar que eventos como término da meiose e formação de pronúcleos dependem da fecundação já ter ocorrido.",
+      "Confundir o papel das enzimas do acrossomo com o de proteínas de fusão de membrana."
+    ],
+    "dicas": [
+      "Monte a linha do tempo da fecundação antes de responder: identifique em qual ponto exato da sequência a barreira (falta de enzimas do acrossomo) atua."
+    ],
+    "tempo_estimado_segundos": 100,
+    "nivel_dificuldade": "medio"
+  },
+  "qualidade": {
+    "confianca_global": "alta",
+    "revisado": false,
+    "observacoes": ""
+  }
+}

@@ -1,0 +1,240 @@
+{
+  "fonte": {
+    "banca": "ENEM",
+    "ano": 2023,
+    "prova": "AMARELO",
+    "numero": 98,
+    "disciplina": "Ciências da Natureza e suas Tecnologias",
+    "tema": "Eletrodinâmica",
+    "conteudo": "Associação mista de resistores e lâmpadas — efeito da queima de uma lâmpada sobre o brilho das demais",
+    "arquivo_origem": "2023_PV_impresso_D2_CD5.pdf",
+    "pagina": 4
+  },
+  "questao": {
+    "enunciado": "O circuito com três lâmpadas incandescentes idênticas, representado na figura, consiste em uma associação mista de resistores. Cada lâmpada (L1, L2 e L3) é associada, em paralelo, a um resistor de resistência R, formando um conjunto. Esses conjuntos são associados em série, tendo todas as lâmpadas o mesmo brilho quando ligadas à fonte de energia. Após vários dias em uso, apenas a lâmpada L2 queima, enquanto as demais permanecem acesas.\n\nEm relação à situação em que todas as lâmpadas funcionam, após a queima de L2, os brilhos das lâmpadas serão",
+    "alternativas": [
+      {
+        "letra": "A",
+        "texto": "os mesmos.",
+        "correta": false
+      },
+      {
+        "letra": "B",
+        "texto": "mais intensos.",
+        "correta": false
+      },
+      {
+        "letra": "C",
+        "texto": "menos intensos.",
+        "correta": true
+      },
+      {
+        "letra": "D",
+        "texto": "menos intenso para L1 e o mesmo para L3.",
+        "correta": false
+      },
+      {
+        "letra": "E",
+        "texto": "mais intenso para L1 e menos intenso para L3.",
+        "correta": false
+      }
+    ],
+    "recursos": {
+      "imagens": [
+        {
+          "id": "IMG-01",
+          "tipo": "diagrama de circuito elétrico",
+          "descricao": "Circuito com uma fonte de energia (bateria) ligada a três conjuntos associados em série. Cada conjunto é formado por uma lâmpada (L1, L2 ou L3) associada em paralelo a um resistor de resistência R: o conjunto de L1 (topo), o conjunto de L2 (à direita, entre os outros dois), e o conjunto de L3 (embaixo).",
+          "arquivo": "crops/Q098.png",
+          "ocr": "Fonte de energia; +; -; L1; R; L3; R; R; L2"
+        }
+      ],
+      "graficos": [],
+      "tabelas": [],
+      "formulas": []
+    }
+  },
+  "estrutura_cognitiva": {
+    "processos": [
+      {
+        "id": "PROC-SIST-01",
+        "papel": "nuclear",
+        "peso_no_item": 1.0,
+        "confianca": 0.7,
+        "habilidades": [
+          {
+            "id": "HAB-52",
+            "peso_no_processo": 1.0,
+            "confianca": 0.7,
+            "aproximado": false
+          }
+        ],
+        "evidencias": {
+          "trechos": [
+            "Após vários dias em uso, apenas a lâmpada L2 queima, enquanto as demais permanecem acesas.",
+            "os brilhos das lâmpadas serão"
+          ],
+          "figuras": [
+            "IMG-01"
+          ]
+        },
+        "justificativa": "O item exige prever como o sistema (circuito misto em equilíbrio) responde a uma perturbação (queima de L2, que abre o ramo da lâmpada nesse conjunto): a resistência desse conjunto passa da associação em paralelo (R em paralelo com a lâmpada) para apenas R (maior), aumentando a resistência total do circuito série, reduzindo a corrente total e, portanto, o brilho — uniformemente, pois L1 e L3 continuam em série, recebendo a mesma corrente entre si."
+      }
+    ],
+    "dominios": [
+      {
+        "id": "DOM-SISTEMICO",
+        "derivado_de": [
+          "PROC-SIST-01"
+        ],
+        "peso_no_item": 1.0,
+        "confianca": 0.7,
+        "_estatuto": {
+          "natureza": "classificacao_organizacao",
+          "evidencial": false,
+          "autoridade": "Constituicao §4.5",
+          "nota": "Peso e confianca deste bloco sao de NAVEGACAO E AGRUPAMENTO, nunca de evidencia. Nao alimentam a camada de crenca sobre o estado de um estudante. A unica relacao ponderada com valor diagnostico neste contrato e 'distratores[].erros_esperados[].confianca'.",
+          "metodo_confianca": "media_dos_processos_sustentadores",
+          "metodo_confianca_provisorio": true,
+          "metodo_confianca_motivo": "O Schema 2.2 diz 'confianca herdada dos processos' e NAO define a funcao de heranca. Nenhum documento de camada C1/C2/C3 a define: o White Paper 2.0.1 §4.2 registra que o Axioma da Crenca Calibrada 'nao exige nenhuma familia matematica especifica'. A media e decisao de engenharia deste pipeline, declarada sob GOV-1.0 §6.4 em vez de inserida silenciosamente, e substituivel sem alteracao de contrato."
+        }
+      }
+    ],
+    "competencias": [
+      {
+        "id": "COMP-11",
+        "derivado_de": [
+          "PROC-SIST-01"
+        ],
+        "peso_no_item": 1.0,
+        "confianca": 0.7,
+        "_estatuto": {
+          "natureza": "classificacao_organizacao",
+          "evidencial": false,
+          "autoridade": "Constituicao §4.5",
+          "nota": "Peso e confianca deste bloco sao de NAVEGACAO E AGRUPAMENTO, nunca de evidencia. Nao alimentam a camada de crenca sobre o estado de um estudante. A unica relacao ponderada com valor diagnostico neste contrato e 'distratores[].erros_esperados[].confianca'.",
+          "metodo_confianca": "media_dos_processos_sustentadores",
+          "metodo_confianca_provisorio": true,
+          "metodo_confianca_motivo": "O Schema 2.2 diz 'confianca herdada dos processos' e NAO define a funcao de heranca. Nenhum documento de camada C1/C2/C3 a define: o White Paper 2.0.1 §4.2 registra que o Axioma da Crenca Calibrada 'nao exige nenhuma familia matematica especifica'. A media e decisao de engenharia deste pipeline, declarada sob GOV-1.0 §6.4 em vez de inserida silenciosamente, e substituivel sem alteracao de contrato."
+        }
+      }
+    ]
+  },
+  "incerteza": {
+    "marcadores": [],
+    "detalhe": "",
+    "requer_arbitragem": false
+  },
+  "distratores": [
+    {
+      "alternativa": "A",
+      "erros_esperados": [
+        {
+          "ordem": 1,
+          "erro": "erro-nao-catalogado-nesta-versao",
+          "processo_afetado": "PROC-SIST-01",
+          "confianca": 0.4,
+          "mecanismo": "MEC-01"
+        }
+      ],
+      "plausibilidade": {
+        "valor": "alta"
+      },
+      "probabilidade_estimada": null,
+      "explicacao": "Concepção equivocada e sistemática de que, em um circuito série, a queima de um componente em um conjunto não altera o comportamento dos demais conjuntos, tratando cada trecho como independente e ignorando que a resistência total do circuito muda."
+    },
+    {
+      "alternativa": "B",
+      "erros_esperados": [
+        {
+          "ordem": 1,
+          "erro": "erro-nao-catalogado-nesta-versao",
+          "processo_afetado": "PROC-SIST-01",
+          "confianca": 0.4,
+          "mecanismo": "MEC-01"
+        }
+      ],
+      "plausibilidade": {
+        "valor": "media"
+      },
+      "probabilidade_estimada": null,
+      "explicacao": "Inverte o sentido do efeito: supõe que a perda de um ramo em paralelo (a lâmpada L2) reduz a resistência daquele conjunto (por haver 'menos componentes'), quando na verdade a resistência de um conjunto em paralelo aumenta quando um dos ramos é removido, elevando a resistência total e reduzindo a corrente."
+    },
+    {
+      "alternativa": "D",
+      "erros_esperados": [
+        {
+          "ordem": 1,
+          "erro": "erro-nao-catalogado-nesta-versao",
+          "processo_afetado": "PROC-SIST-01",
+          "confianca": 0.15,
+          "mecanismo": "MEC-01"
+        }
+      ],
+      "plausibilidade": {
+        "valor": "baixa"
+      },
+      "probabilidade_estimada": null,
+      "explicacao": "Assume, por proximidade espacial no diagrama, que apenas a lâmpada mais próxima de L2 (L1) é afetada pela mudança, ignorando que, em uma associação série, a mesma corrente percorre todo o circuito e afeta L1 e L3 igualmente."
+    },
+    {
+      "alternativa": "E",
+      "erros_esperados": [
+        {
+          "ordem": 1,
+          "erro": "erro-nao-catalogado-nesta-versao",
+          "processo_afetado": "PROC-SIST-01",
+          "confianca": 0.15,
+          "mecanismo": "MEC-01"
+        }
+      ],
+      "plausibilidade": {
+        "valor": "baixa"
+      },
+      "probabilidade_estimada": null,
+      "explicacao": "Atribui efeitos opostos e arbitrários a L1 e L3 (um mais intenso, outro menos intenso), desconsiderando que ambas estão no mesmo laço série e devem apresentar exatamente a mesma corrente e, portanto, a mesma variação de brilho."
+    }
+  ],
+  "intervencoes": [
+    {
+      "id": "INT-11",
+      "gatilho": {
+        "processo": "PROC-SIST-01",
+        "erro": "erro-nao-catalogado-nesta-versao"
+      },
+      "acao": "Prática guiada com montagem (real ou simulada) de circuitos mistos, comparando explicitamente a resistência equivalente de um trecho antes e depois da remoção de um ramo em paralelo, para tornar visível o efeito sobre a corrente total.",
+      "prioridade": null
+    }
+  ],
+  "pedagogia": {
+    "estrategia": "Conduzir o aluno a recalcular a resistência equivalente do conjunto afetado (de paralelo para apenas R) e, a partir disso, a resistência total do circuito série, antes de concluir sobre o efeito na corrente e no brilho de cada lâmpada.",
+    "passos": [
+      "Identificar que cada conjunto é uma associação em paralelo entre uma lâmpada e um resistor R.",
+      "Reconhecer que, com L2 queimada (circuito aberto nesse ramo), a resistência do conjunto de L2 passa a ser apenas R (maior que a associação em paralelo anterior).",
+      "Concluir que a resistência total do circuito série aumenta, reduzindo a corrente total fornecida pela fonte.",
+      "Aplicar que, por estarem em série, L1 e L3 recebem a mesma corrente (agora menor), logo ambas ficam menos intensas, igualmente."
+    ],
+    "erros_comuns": [
+      "Tratar os conjuntos do circuito série como independentes entre si.",
+      "Inverter o efeito da remoção de um ramo em paralelo sobre a resistência equivalente.",
+      "Atribuir efeitos diferentes a L1 e L3 apesar de estarem no mesmo laço série."
+    ],
+    "dicas": [
+      "Em um circuito série, todo componente sente a mesma corrente: qualquer mudança na resistência total afeta igualmente todos os elementos em série."
+    ],
+    "tempo_estimado_segundos": 100,
+    "nivel_dificuldade": "medio"
+  },
+  "qualidade": {
+    "confianca_global": 0.7,
+    "revisado": false,
+    "observacoes": "Nenhum tipo de erro do catálogo (ERR-01..13) está vinculado a PROC-SIST-01 na ontologia v1.4; por isso todos os elos de erro desta questão usam a sentinela 'erro-nao-catalogado-nesta-versao', conforme a regra do Manual §7.",
+    "apto_para_camada_de_crenca": {
+      "valor": false
+    }
+  },
+  "schema_version": "2.2",
+  "ontology_version": "1.4.1",
+  "item_hash": "e8eb12527c397d634b63793ad664a75c1eab77435a3758e37ce0d61507d89aa7",
+  "item_id": "CLAUDE-ITEM-ENEM-2023-AMARELO-Q098"
+}

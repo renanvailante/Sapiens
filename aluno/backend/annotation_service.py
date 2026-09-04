@@ -341,3 +341,197 @@ def resumo_rodada(respostas: list[dict[str, Any]]) -> dict[str, Any]:
         "padroes_de_erro": padroes,
         "dados_suficientes_padrao": erros_com_anotacao >= _PADRAO_FREQUENCIA_MINIMA,
     }
+
+
+# ---------- Diagnóstico real (determinístico, nomes reais, sem IA) ----------
+#
+# Diferente do mapa de habilidades cosmético (`cosmetic_skills_map.py`), que
+# expõe só rótulos genéricos de hub por decisão de produto: isto mostra nome
+# real de domínio/competência/processo, com amostra mínima declarada antes de
+# afirmar um ponto fraco ou forte — mesmo princípio de `compute_feedback`
+# (`_FEEDBACK_MIN_RESPOSTAS`), aplicado num nível mais fino que domínio.
+#
+# NÃO é um Error Trace (contrato ETRACE-1.0, `pipeline/docs/error-trace/`): não
+# atribui causa de erro a uma resposta individual do aluno. O produtor de
+# Error Trace está deliberadamente fora de escopo (`DEPLOY.md` §7) até haver
+# especificação estatística. O que `padroes_associados` faz abaixo é mais
+# modesto e não exige essa especificação: quando um PROCESSO tem desempenho
+# real fraco (medido, com amostra) e esse processo tem exatamente um Tipo de
+# Erro catalogado (sem ambiguidade — nunca escolhido por chute entre
+# candidatos), mostra o fato geral do catálogo ("processos assim costumam
+# falhar por X") e a intervenção já catalogada para ele. Isso nunca vira "você
+# cometeu este erro" — só "seu desempenho aqui é fraco, e a causa catalogada
+# mais comum para este processo é X".
+_DIAGNOSTICO_MIN_AMOSTRA = 3
+
+
+def _erros_por_processo() -> dict[str, list[dict]]:
+    """`processo_id` -> Tipos de Erro catalogados para ele (0, 1 ou mais)."""
+    from canonical_ontology import load_ontology
+
+    onto = load_ontology()
+    idx: dict[str, list[dict]] = defaultdict(list)
+    for erro in onto.get("tipos_erro") or []:
+        for pid in erro.get("processos_cognitivos") or []:
+            idx[pid].append(erro)
+    return dict(idx)
+
+
+def _intervencoes_por_id() -> dict[str, dict]:
+    from canonical_ontology import load_ontology
+
+    onto = load_ontology()
+    return {i["id"]: i for i in (onto.get("intervencoes_pedagogicas") or []) if i.get("id")}
+
+
+def _read_firestore_desempenho_detalhado(user_id: str) -> dict[str, Any]:
+    """Como `_read_firestore_answered`, mas guarda respondidas/acertos por
+    PROCESSO além de domínio/competência — granularidade que o diagnóstico
+    real precisa e que o mapa cosmético não expõe. Mesma regra: sem IA, sem
+    inferência causal, só contagem determinística por evento."""
+    client = fs.get_firestore()
+    index = _build_item_index()
+
+    def _zero():
+        return {"respondidas": 0, "acertos": 0}
+
+    dominio_stats: dict[str, dict[str, int]] = defaultdict(_zero)
+    competencia_stats: dict[str, dict[str, int]] = defaultdict(_zero)
+    processo_stats: dict[str, dict[str, int]] = defaultdict(_zero)
+    total_events = 0
+    matched_events = 0
+    unmatched_events = 0
+
+    events = client.collection("students").document(user_id).collection("behavior").stream()
+    for e in events:
+        ev = e.to_dict() or {}
+        if ev.get("status") not in (None, "respondida"):
+            continue
+        total_events += 1
+        chave = next(
+            (k for k in (ev.get("item_id"), ev.get("item_hash")) if k and k in index),
+            None,
+        )
+        item = index.get(chave) if chave else None
+        ec = item.get("estrutura_cognitiva") if item else None
+        if not ec:
+            unmatched_events += 1
+            continue
+        matched_events += 1
+        acertou = bool((ev.get("resposta") or {}).get("acertou"))
+
+        for chave_ec, alvo in (
+            ("dominios", dominio_stats),
+            ("competencias", competencia_stats),
+            ("processos", processo_stats),
+        ):
+            for node in ec.get(chave_ec) or []:
+                nid = node.get("id") if isinstance(node, dict) else node
+                if not nid:
+                    continue
+                stats = alvo[nid]
+                stats["respondidas"] += 1
+                if acertou:
+                    stats["acertos"] += 1
+
+    return {
+        "dominio_stats": dict(dominio_stats),
+        "competencia_stats": dict(competencia_stats),
+        "processo_stats": dict(processo_stats),
+        "total_events": total_events,
+        "matched_events": matched_events,
+        "unmatched_events": unmatched_events,
+    }
+
+
+def _ranking_real(
+    stats: dict[str, dict[str, int]],
+    catalogo: dict[str, str],
+    *,
+    min_amostra: int,
+    ascending: bool,
+) -> list[dict[str, Any]]:
+    linhas = []
+    for nid, s in stats.items():
+        respondidas = s.get("respondidas", 0)
+        if respondidas < min_amostra:
+            continue
+        acertos = s.get("acertos", 0)
+        pct = round(100 * acertos / respondidas, 1) if respondidas else 0.0
+        linhas.append({
+            "id": nid,
+            "nome": catalogo.get(nid, nid),
+            "acertos": acertos,
+            "respondidas": respondidas,
+            "percentual_acerto": pct,
+        })
+    linhas.sort(key=lambda r: r["percentual_acerto"], reverse=not ascending)
+    return linhas
+
+
+def _fortes_fracos(stats: dict[str, dict[str, int]], catalogo: dict[str, str]) -> dict[str, list[dict]]:
+    return {
+        "fracos": _ranking_real(stats, catalogo, min_amostra=_DIAGNOSTICO_MIN_AMOSTRA, ascending=True)[:8],
+        "fortes": _ranking_real(stats, catalogo, min_amostra=_DIAGNOSTICO_MIN_AMOSTRA, ascending=False)[:8],
+    }
+
+
+async def compute_diagnostico_real(user_id: str) -> dict[str, Any]:
+    """Diagnóstico real do aluno: desempenho medido (com amostra mínima) por
+    domínio/competência/processo, com nomes reais da ontologia, mais os
+    processos fracos que têm exatamente um Tipo de Erro catalogado sem
+    ambiguidade — ver nota de escopo acima da seção."""
+    try:
+        agg = await asyncio.to_thread(_read_firestore_desempenho_detalhado, user_id)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("diagnostico-real: leitura do Firestore falhou para %s: %s", user_id, exc)
+        vazio = {"fortes": [], "fracos": []}
+        return {
+            "por_dominio": vazio, "por_competencia": vazio, "por_processo": vazio,
+            "padroes_associados": [],
+            "total_events": 0, "matched_events": 0, "unmatched_events": 0,
+            "coverage": 0.0, "amostra_minima": _DIAGNOSTICO_MIN_AMOSTRA,
+            "ontology_version": ontology_version(),
+        }
+
+    catalogo = _catalogo_nomes()
+    por_dominio = _fortes_fracos(agg["dominio_stats"], catalogo)
+    por_competencia = _fortes_fracos(agg["competencia_stats"], catalogo)
+    por_processo = _fortes_fracos(agg["processo_stats"], catalogo)
+
+    erros_idx = _erros_por_processo()
+    intervencoes_idx = _intervencoes_por_id()
+    padroes_associados = []
+    for ponto in por_processo["fracos"]:
+        candidatos = erros_idx.get(ponto["id"]) or []
+        if len(candidatos) != 1:
+            continue  # 0 = não catalogado nesta versão; >1 = ambíguo — nunca escolhido por chute
+        erro = candidatos[0]
+        intervencao = intervencoes_idx.get(erro.get("intervencao"))
+        padroes_associados.append({
+            "processo_id": ponto["id"],
+            "processo_nome": ponto["nome"],
+            "percentual_acerto": ponto["percentual_acerto"],
+            "respondidas": ponto["respondidas"],
+            "erro_id": erro["id"],
+            "erro_nome": erro.get("nome", erro["id"]),
+            "erro_evidencia_observavel": erro.get("evidencia_observavel", ""),
+            "intervencao_id": erro.get("intervencao"),
+            "intervencao_nome": (intervencao or {}).get("nome", erro.get("intervencao")),
+        })
+
+    total = agg["total_events"]
+    coverage = round(100 * agg["matched_events"] / total, 1) if total else 0.0
+
+    return {
+        "por_dominio": por_dominio,
+        "por_competencia": por_competencia,
+        "por_processo": por_processo,
+        "padroes_associados": padroes_associados[:8],
+        "total_events": total,
+        "matched_events": agg["matched_events"],
+        "unmatched_events": agg["unmatched_events"],
+        "coverage": coverage,
+        "amostra_minima": _DIAGNOSTICO_MIN_AMOSTRA,
+        "ontology_version": ontology_version(),
+    }

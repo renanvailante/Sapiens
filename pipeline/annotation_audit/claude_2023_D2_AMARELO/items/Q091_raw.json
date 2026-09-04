@@ -1,0 +1,122 @@
+{
+  "fonte": {
+    "banca": "ENEM",
+    "ano": 2023,
+    "prova": "AMARELO",
+    "numero": 91,
+    "disciplina": "Ciências da Natureza e suas Tecnologias",
+    "tema": "Ondulatória",
+    "conteudo": "Atenuação da amplitude de uma onda sonora com o aumento do comprimento do meio de propagação (barbante esticado)",
+    "arquivo_origem": "2023_PV_impresso_D2_CD5.pdf",
+    "pagina": 2
+  },
+  "questao": {
+    "enunciado": "Na tirinha de Mauricio de Sousa, os personagens Cebolinha e Cascão fazem uma brincadeira utilizando duas latas e um barbante. Ao perceberem que o som pode ser transmitido através do barbante, resolvem alterar o comprimento do barbante para ficar cada vez mais extenso. As demais condições permaneceram inalteradas durante a brincadeira.\n\n[Tirinha: Cebolinha, à esquerda, segura uma lata próxima ao rosto; um barbante esticado horizontalmente liga essa lata a outra lata segurada por Cascão, à direita, com o rótulo \"LIX\" (lata de lixo) visível; ambos estão de pé sobre grama.]\n\nSOUSA, M. Disponível em: www.monica.com.br. Acesso em: 2 out. 2012 (adaptado).\n\nNa prática, à medida que se aumenta o comprimento do barbante, ocorre a redução de qual característica da onda sonora?",
+    "alternativas": [
+      {"letra": "A", "texto": "Altura.", "correta": false},
+      {"letra": "B", "texto": "Período.", "correta": false},
+      {"letra": "C", "texto": "Amplitude.", "correta": true},
+      {"letra": "D", "texto": "Velocidade.", "correta": false},
+      {"letra": "E", "texto": "Comprimento de onda.", "correta": false}
+    ],
+    "recursos": {
+      "imagens": [
+        {
+          "id": "IMG-01",
+          "tipo": "ilustracao",
+          "descricao": "Tirinha em quadro único: Cebolinha, à esquerda, segura um objeto próximo ao rosto (ouvindo); um barbante esticado horizontalmente conecta essa lata a outra lata segurada por Cascão, à direita, com o rótulo 'LIX' (lata de lixo) visível na lata; ambos os personagens estão de pé sobre grama, ilustrando o brinquedo popular do 'telefone de barbante'.",
+          "arquivo": "crops/Q091.png",
+          "ocr": "LIX"
+        }
+      ],
+      "graficos": [],
+      "tabelas": [],
+      "formulas": []
+    }
+  },
+  "estrutura_cognitiva": {
+    "processos": [
+      {
+        "id": "PROC-CAUSAL-01",
+        "papel": "nuclear",
+        "peso_no_item": 1.0,
+        "confianca": "alta",
+        "habilidades": [
+          {"id": "HAB-34", "peso_no_processo": 1.0, "confianca": "alta", "aproximado": false}
+        ],
+        "evidencias": {
+          "trechos": ["à medida que se aumenta o comprimento do barbante, ocorre a redução de qual característica da onda sonora"],
+          "figuras": ["IMG-01"]
+        },
+        "justificativa": "O item exige relacionar o aumento do comprimento do meio de propagação (barbante) à sua consequência mecânica sobre a onda sonora: em um meio real, a energia da onda se dissipa ao longo do percurso, reduzindo a amplitude, enquanto frequência, período, comprimento de onda e velocidade de propagação são determinados pela fonte e pelo meio, não pela distância percorrida."
+      }
+    ]
+  },
+  "incerteza": {
+    "marcadores": [],
+    "detalhe": "",
+    "requer_arbitragem": false
+  },
+  "distratores": [
+    {
+      "alternativa": "A",
+      "erros_esperados": [
+        {"ordem": 1, "erro": "erro-nao-catalogado-nesta-versao", "processo_afetado": "PROC-MUD-02", "confianca": "media", "mecanismo": "MEC-01"}
+      ],
+      "plausibilidade": {"valor": "media"},
+      "probabilidade_estimada": null,
+      "explicacao": "Confunde 'altura' (grandeza perceptual associada à frequência do som, que permanece constante) com a intensidade/volume percebido (associado à amplitude), atribuindo à altura a redução que na verdade ocorre na amplitude."
+    },
+    {
+      "alternativa": "B",
+      "erros_esperados": [
+        {"ordem": 1, "erro": "erro-nao-catalogado-nesta-versao", "processo_afetado": "PROC-MUD-02", "confianca": "baixa", "mecanismo": "MEC-01"}
+      ],
+      "plausibilidade": {"valor": "baixa"},
+      "probabilidade_estimada": null,
+      "explicacao": "Assume, incorretamente, que o período da onda se altera com a distância percorrida pelo som; o período é determinado pela fonte sonora e permanece invariante ao longo da propagação."
+    },
+    {
+      "alternativa": "D",
+      "erros_esperados": [
+        {"ordem": 1, "erro": "erro-nao-catalogado-nesta-versao", "processo_afetado": "PROC-MUD-02", "confianca": "media", "mecanismo": "MEC-01"}
+      ],
+      "plausibilidade": {"valor": "media"},
+      "probabilidade_estimada": null,
+      "explicacao": "Assume que a velocidade de propagação do som se reduz com o aumento do comprimento do barbante, quando na verdade a velocidade é uma propriedade do meio (tensão e densidade do barbante), não do comprimento percorrido."
+    },
+    {
+      "alternativa": "E",
+      "erros_esperados": [
+        {"ordem": 1, "erro": "erro-nao-catalogado-nesta-versao", "processo_afetado": "PROC-MUD-02", "confianca": "baixa", "mecanismo": "MEC-01"}
+      ],
+      "plausibilidade": {"valor": "baixa"},
+      "probabilidade_estimada": null,
+      "explicacao": "Assume que o comprimento de onda se altera com a distância percorrida; para uma frequência e meio fixos, o comprimento de onda permanece constante."
+    }
+  ],
+  "intervencoes": [],
+  "pedagogia": {
+    "estrategia": "Levar o aluno a diferenciar, entre as grandezas que caracterizam uma onda periódica (amplitude, período, frequência, comprimento de onda, velocidade), quais são determinadas pela fonte/meio (e por isso invariantes ao longo da propagação) e qual delas (amplitude) sofre atenuação real com a distância percorrida em um meio dissipativo.",
+    "passos": [
+      "Identificar as cinco grandezas apresentadas nas alternativas e suas definições físicas.",
+      "Reconhecer que frequência e período são fixados pela fonte sonora, que continua vibrando do mesmo jeito.",
+      "Reconhecer que velocidade e comprimento de onda dependem das propriedades do meio (barbante), que não mudam com o comprimento total.",
+      "Concluir, por eliminação e pelo fenômeno físico real de dissipação de energia, que a amplitude é a grandeza que diminui com o aumento da distância percorrida."
+    ],
+    "erros_comuns": [
+      "Confundir 'altura' (pitch/frequência) com intensidade percebida (amplitude).",
+      "Assumir que qualquer grandeza da onda pode variar com a distância, sem diferenciar o que é fixado pela fonte/meio do que depende do percurso."
+    ],
+    "dicas": [
+      "Pense no que acontece quando alguém grita para outra pessoa cada vez mais longe: a voz não muda de tom (frequência/altura), mas fica mais fraca (perde amplitude/intensidade)."
+    ],
+    "tempo_estimado_segundos": 90,
+    "nivel_dificuldade": "medio"
+  },
+  "qualidade": {
+    "confianca_global": "media",
+    "revisado": false,
+    "observacoes": "Os quatro distratores foram classificados usando a sentinela 'erro-nao-catalogado-nesta-versao' vinculada a PROC-MUD-02 (rastreamento de invariantes), e não ao processo nuclear PROC-CAUSAL-01 desta questão: o erro observado (escolher a grandeza física errada dentre as cinco apresentadas, sem reconhecer o que permanece invariante ao longo da propagação) é mais afim a esse processo, que não tem tipo de erro catalogado na v1.4.1, tornando a sentinela o registro correto e sem aviso. Nenhuma intervenção pedagógica foi registrada para esses distratores por não haver ID de intervenção prescrito no catálogo para a sentinela usada."
+  }
+}

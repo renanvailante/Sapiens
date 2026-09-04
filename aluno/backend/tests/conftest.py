@@ -56,20 +56,31 @@ class FakeCollection:
     def __init__(self):
         self.docs: list[dict] = []
 
+    _OPS = {
+        "$in": lambda atual, alvo: atual in alvo,
+        "$gt": lambda atual, alvo: atual is not None and atual > alvo,
+        "$gte": lambda atual, alvo: atual is not None and atual >= alvo,
+        "$lt": lambda atual, alvo: atual is not None and atual < alvo,
+        "$lte": lambda atual, alvo: atual is not None and atual <= alvo,
+        "$ne": lambda atual, alvo: atual != alvo,
+    }
+
     def _bate(self, doc: dict, query: dict) -> bool:
         for k, v in query.items():
-            if isinstance(v, dict) and "$in" in v:
-                if doc.get(k) not in v["$in"]:
-                    return False
+            if isinstance(v, dict) and any(op in v for op in self._OPS):
+                for op, esperado in v.items():
+                    if not self._OPS[op](doc.get(k), esperado):
+                        return False
             elif doc.get(k) != v:
                 return False
         return True
 
-    async def find_one(self, query: dict, projection: dict | None = None):
-        for doc in self.docs:
-            if self._bate(doc, query):
-                return dict(doc)
-        return None
+    async def find_one(self, query: dict, projection: dict | None = None, sort=None):
+        candidatos = [d for d in self.docs if self._bate(d, query)]
+        if sort:
+            for campo, direcao in reversed(list(sort)):
+                candidatos.sort(key=lambda d: d.get(campo) or "", reverse=direcao < 0)
+        return dict(candidatos[0]) if candidatos else None
 
     async def insert_one(self, doc: dict):
         self.docs.append(dict(doc))
@@ -78,6 +89,9 @@ class FakeCollection:
         for doc in self.docs:
             if self._bate(doc, query):
                 doc.update(update.get("$set", {}))
+                for campo, valor in (update.get("$push") or {}).items():
+                    lista = doc.setdefault(campo, [])
+                    lista.extend(valor["$each"] if isinstance(valor, dict) and "$each" in valor else [valor])
                 return FakeUpdateResult(matched_count=1)
         if upsert:
             novo = dict(query)

@@ -709,3 +709,43 @@ def write_skills_map(uid: str, hexagon: list[dict[str, Any]], feedback: dict[str
         merge=True,
     )
     return updated_at
+
+
+# ======================================================================
+# Perfil cognitivo — snapshot real (não cosmético) do desempenho do aluno,
+# um documento por período (semana ISO, ex. "2026-W36"), nunca sobrescrevendo
+# o passado: students/{uid}/perfil_cognitivo/{periodo}. `periodo` cresce
+# lexicograficamente igual a cronologicamente (ano + semana com 2 dígitos),
+# então "mais recente" é sempre "maior string" — dá pra ordenar sem parsear.
+# Ver `perfil_cognitivo_service.py` para a lógica de quando gerar cada um.
+# ======================================================================
+
+def _perfil_collection_ref(uid: str):
+    return _student_doc_ref(uid).collection("perfil_cognitivo")
+
+
+def write_perfil_cognitivo(uid: str, periodo: str, doc: dict[str, Any]) -> None:
+    _perfil_collection_ref(uid).document(periodo).set(doc)
+
+
+def read_ultimo_perfil(uid: str) -> Optional[dict[str, Any]]:
+    docs = (
+        _perfil_collection_ref(uid)
+        .order_by("periodo", direction=firestore.Query.DESCENDING)
+        .limit(1)
+        .stream()
+    )
+    for snap in docs:
+        return snap.to_dict()
+    return None
+
+
+def list_perfil_historico(uid: str, limit: int = 52) -> list[dict[str, Any]]:
+    """Até `limit` snapshots (padrão: ~1 ano de semanas), mais recente primeiro."""
+    docs = (
+        _perfil_collection_ref(uid)
+        .order_by("periodo", direction=firestore.Query.DESCENDING)
+        .limit(limit)
+        .stream()
+    )
+    return [snap.to_dict() for snap in docs]

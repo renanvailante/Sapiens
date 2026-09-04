@@ -4,63 +4,153 @@
 @tailwind components;
 @tailwind utilities;
 
+/* =========================================================================
+   BIOLUMINESCÊNCIA TECNOLÓGICA — sistema visual do Sapiens
+   =========================================================================
+
+   Uma direção só, aplicada no produto inteiro: fundo abissal, painéis de
+   vidro que deixam o ambiente atravessar, e luz fria (ciano -> azul ->
+   violeta) usada como SINAL, nunca como enfeite.
+
+   As três regras que impedem isto de virar "dark mode com neon":
+
+   1. LUZ É INFORMAÇÃO. Brilho marca o que está ativo, selecionado, vivo ou
+      pedindo ação. Superfície parada não brilha — ela só existe. Um painel
+      inteiro em glow destrói a hierarquia e é o que faz UI escura parecer
+      amadora.
+   2. UMA FAMÍLIA DE MATIZ. Ciano, azul e violeta são a mesma luz em três
+      profundidades. Verde/vermelho/âmbar aparecem só com significado
+      (acerto, erro, aviso) e sempre dessaturados para o ambiente escuro —
+      pastel de tema claro sobre fundo escuro é o que mais denuncia retrofit.
+   3. BORDA FINA, SOMBRA LONGA. A profundidade vem de sombra difusa e de uma
+      linha de 1px com luz por cima, não de contorno grosso nem de degradê
+      chapado.
+
+   A ÚNICA exceção deliberada à superfície escura é `.leitura-clara`: o bloco
+   de enunciado de questão. Numa prova de 45 questões, texto longo em fundo
+   escuro cansa — e conforto de leitura ganha de coerência visual quando os
+   dois brigam. Ver a seção "Superfície de leitura longa".
+   ========================================================================= */
+
 :root {
-    /* Ambiente global: azul escuro, propositalmente pouco saturado — a tela
-       principal do produto, não um elemento de marca. Fica calmo por horas
-       de estudo; o azul vivo da marca (--brand-accent) é reservado para
-       ação/seleção/progresso, nunca para preencher grandes áreas. */
-    --background: 218 46% 11%;
-    --foreground: 220 24% 96%;
-    /* Superfícies (card/popover/dialog) permanecem claras de propósito — é
-       onde o conteúdo é lido, então NÃO seguem o fundo escuro global. */
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 4%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 4%;
-    --primary: 219 66% 22%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 240 5% 96%;
-    --secondary-foreground: 240 6% 10%;
-    --muted: 240 5% 96%;
-    --muted-foreground: 240 4% 40%;
-    --accent: 214 84% 92%;
-    --accent-foreground: 219 66% 22%;
-    --destructive: 349 89% 60%;
+    /* ---- Ambiente ---- */
+    --bio-abismo: #03060d;      /* o fundo mais profundo, atrás de tudo */
+    --bio-profundo: #060c18;
+    --bio-meio: #0a1526;
+
+    /* ---- Luz (a família de matiz única) ---- */
+    --bio-ciano: #4FD9FF;
+    --bio-azul: #4A85E3;        /* azul da marca — a âncora da paleta */
+    --bio-violeta: #8B7BFF;
+    --bio-azul-fundo: #1F4F95;
+
+    /* ---- Tinta ---- */
+    --bio-texto: #E8F2FF;
+    --bio-suave: #A7BCD9;       /* texto secundário */
+    --bio-fraco: #7389A8;       /* legendas, metadados */
+
+    /* ---- Vidro ---- */
+    --bio-vidro: rgba(13, 24, 44, 0.58);
+    --bio-vidro-alto: rgba(17, 31, 55, 0.72);
+    --bio-linha: rgba(150, 200, 255, 0.14);
+    --bio-linha-forte: rgba(150, 200, 255, 0.26);
+    --bio-brilho: rgba(79, 217, 255, 0.35);
+
+    /* ---- Tokens shadcn/ui: agora TODOS escuros ----
+       Antes card/popover eram brancos de propósito ("é onde o conteúdo é
+       lido"). Com a direção bioluminescente a superfície de leitura passou a
+       ser exceção nomeada (`.leitura-clara`), não o padrão. */
+    --background: 219 55% 4%;
+    --foreground: 212 90% 95%;
+    --card: 217 45% 10%;
+    --card-foreground: 212 90% 95%;
+    --popover: 218 48% 8%;
+    --popover-foreground: 212 90% 95%;
+    --primary: 199 100% 65%;
+    --primary-foreground: 219 60% 6%;
+    --secondary: 217 38% 16%;
+    --secondary-foreground: 212 80% 92%;
+    --muted: 217 34% 15%;
+    --muted-foreground: 213 25% 68%;
+    --accent: 217 44% 20%;
+    --accent-foreground: 199 100% 78%;
+    --destructive: 349 72% 58%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 6% 90%;
-    --input: 240 6% 90%;
-    --ring: 217 73% 59%;
-    --chart-1: 158 64% 45%;
-    --chart-2: 349 89% 60%;
-    --chart-3: 38 92% 50%;
-    --chart-4: 217 73% 59%;
-    --chart-5: 219 66% 22%;
+    --border: 213 45% 24%;
+    --input: 213 40% 20%;
+    --ring: 195 100% 62%;
+    --chart-1: 160 70% 52%;
+    --chart-2: 349 80% 66%;
+    --chart-3: 38 90% 60%;
+    --chart-4: 199 100% 65%;
+    --chart-5: 258 90% 72%;
     --radius: 0.75rem;
 
-    /* Identidade Sapiens — Constelação-S */
+    /* Identidade Sapiens — nomes antigos preservados: várias telas usam
+       `var(--brand-*)` direto, e renomear tudo seria churn sem ganho. */
     --brand-navy: #132D5C;
     --brand-navy-deep: #0C1C3A;
-    --brand-accent: #4A85E3;
-    --brand-accent-deep: #1F4F95;
-    --brand-accent-soft: #DBE9FC;
-    --env-bg-1: #0b1424;
-    --env-bg-2: #16233c;
+    --brand-accent: #4FD9FF;
+    --brand-accent-deep: #2E7FD6;
+    --brand-accent-soft: #BFE7FF;
+    --env-bg-1: var(--bio-abismo);
+    --env-bg-2: var(--bio-meio);
 }
 
 * {
     border-color: hsl(var(--border));
 }
 
+/* ---------------- Ambiente: abismo + auroras + malha ----------------
+   Três camadas empilhadas, da mais distante para a mais próxima:
+   auroras frias em movimento muito lento, uma malha de 1px quase invisível
+   (o "tech" de organic tech), e a vinheta que fecha as bordas para o centro
+   ficar sendo o lugar onde se olha. */
 html, body, #root {
-    background:
-        radial-gradient(1400px 720px at 14% -12%, rgba(74,133,227,0.10), transparent 60%),
-        radial-gradient(1100px 680px at 100% 0%, rgba(31,79,149,0.13), transparent 55%),
-        linear-gradient(180deg, var(--env-bg-2) 0%, var(--env-bg-1) 100%);
-    background-attachment: fixed;
-    color: hsl(var(--foreground));
+    background-color: var(--bio-abismo);
+    color: var(--bio-texto);
     font-family: 'Manrope', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    min-height: 100%;
+}
+
+body::before {
+    content: "";
+    position: fixed;
+    inset: -20%;
+    z-index: -2;
+    pointer-events: none;
+    background:
+        radial-gradient(52% 42% at 12% 4%, rgba(79, 217, 255, 0.20), transparent 68%),
+        radial-gradient(46% 40% at 88% 8%, rgba(139, 123, 255, 0.18), transparent 66%),
+        radial-gradient(58% 44% at 70% 62%, rgba(79, 217, 255, 0.09), transparent 70%),
+        radial-gradient(60% 50% at 50% 108%, rgba(74, 133, 227, 0.17), transparent 70%),
+        linear-gradient(180deg, var(--bio-meio) 0%, var(--bio-profundo) 42%, var(--bio-abismo) 100%);
+    animation: aurora-deriva 34s ease-in-out infinite alternate;
+}
+
+/* Malha + vinheta. A malha some quase inteira no olho — é textura, não
+   grade de layout; se ela ficar legível, subiu demais. */
+body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image:
+        linear-gradient(rgba(120, 190, 255, 0.030) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(120, 190, 255, 0.030) 1px, transparent 1px),
+        radial-gradient(circle at 1px 1px, rgba(190, 225, 255, 0.05) 1px, transparent 0);
+    background-size: 64px 64px, 64px 64px, 5px 5px;
+    mask-image: radial-gradient(140% 120% at 50% 0%, #000 30%, transparent 88%);
+    -webkit-mask-image: radial-gradient(140% 120% at 50% 0%, #000 30%, transparent 88%);
+}
+
+@keyframes aurora-deriva {
+    0%   { transform: translate3d(0, 0, 0) scale(1); }
+    50%  { transform: translate3d(1.5%, -1.8%, 0) scale(1.04); }
+    100% { transform: translate3d(-1.2%, 1.4%, 0) scale(1.02); }
 }
 
 .font-display {
@@ -73,24 +163,210 @@ html, body, #root {
     font-variant-numeric: tabular-nums;
 }
 
-/* Subtle grain */
-.grain::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.035) 1px, transparent 0);
-    background-size: 6px 6px;
-    z-index: -1;
+/* `.grain` continua existindo porque telas antigas ainda pedem a classe; a
+   textura agora vem do ambiente, então aqui ela é inerte de propósito. */
+.grain::before { content: none; }
+
+/* ---------------- Superfícies ---------------- */
+
+/* Painel de vidro — a superfície padrão de TODO o produto.
+   `::before` é a linha de luz que corre no topo: é ela que dá a leitura
+   "holográfica" sem precisar de degradê colorido no fundo do painel. */
+.card-sapiens {
+    position: relative;
+    background:
+        linear-gradient(180deg, rgba(28, 48, 82, 0.42) 0%, rgba(10, 19, 35, 0.55) 100%),
+        var(--bio-vidro);
+    backdrop-filter: blur(18px) saturate(135%);
+    -webkit-backdrop-filter: blur(18px) saturate(135%);
+    border: 1px solid var(--bio-linha);
+    box-shadow:
+        inset 0 1px 0 rgba(190, 230, 255, 0.10),
+        0 24px 60px -30px rgba(0, 0, 0, 0.9),
+        0 0 0 1px rgba(4, 8, 16, 0.55);
+    color: var(--bio-texto);
+    overflow: hidden;
 }
 
-/* Sapiens brand mark shimmer */
+.card-sapiens::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 12%;
+    right: 12%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--bio-brilho), transparent);
+    opacity: 0.75;
+    pointer-events: none;
+}
+
+/* Elevação no hover: a luz da borda superior acende, o painel não pula. */
+.lift { transition: transform .22s ease-out, box-shadow .22s ease-out, border-color .22s ease-out; }
+.lift:hover {
+    transform: translateY(-2px);
+    border-color: var(--bio-linha-forte);
+    box-shadow:
+        inset 0 1px 0 rgba(190, 230, 255, 0.16),
+        0 30px 70px -34px rgba(0, 0, 0, 0.95),
+        0 0 34px -14px var(--bio-brilho);
+}
+
+/* Barra de navegação — o mesmo vidro, mais denso, porque fica sobre conteúdo
+   em rolagem e precisa manter o texto legível o tempo todo. */
+.glass {
+    background: linear-gradient(180deg, rgba(8, 16, 30, 0.86) 0%, rgba(6, 12, 24, 0.72) 100%);
+    backdrop-filter: saturate(150%) blur(18px);
+    -webkit-backdrop-filter: saturate(150%) blur(18px);
+    border-bottom: 1px solid var(--bio-linha);
+    box-shadow: 0 1px 0 rgba(120, 190, 255, 0.06), 0 18px 40px -30px rgba(0, 0, 0, 0.9);
+}
+
+/* Ambiente de marca (login, prova) — mesma família, mais saturada. */
+.exam-shell {
+    background:
+        radial-gradient(58% 46% at 10% -6%, rgba(79, 217, 255, 0.20), transparent 64%),
+        radial-gradient(52% 46% at 100% 6%, rgba(139, 123, 255, 0.20), transparent 60%),
+        linear-gradient(180deg, #0a1730 0%, var(--bio-abismo) 100%);
+    background-attachment: fixed;
+}
+
+/* ---------------- Superfície de leitura longa ----------------
+   Exceção nomeada e única: o bloco onde o aluno lê enunciado e alternativas.
+   Papel frio, levemente azulado, com a mesma borda luminosa do resto — não é
+   um retângulo branco esquecido do tema antigo, é uma folha iluminada dentro
+   do ambiente escuro. Dentro dela, os utilitários claros do Tailwind voltam a
+   valer (ver o final do arquivo). */
+.leitura-clara {
+    position: relative;
+    background: linear-gradient(180deg, #F4F9FF 0%, #E7F1FB 100%);
+    border: 1px solid rgba(120, 180, 240, 0.35);
+    box-shadow:
+        0 0 0 1px rgba(6, 14, 28, 0.6),
+        0 30px 70px -30px rgba(0, 0, 0, 0.85),
+        0 0 44px -20px var(--bio-brilho);
+    color: #0B1B33;
+}
+
+.leitura-clara::before { content: none; }
+
+/* ---------------- Ação ----------------
+   O botão primário é o objeto mais brilhante da tela, e é o único que tem
+   direito a isso: ele é a única coisa que o aluno precisa achar sem procurar. */
+.btn-sapiens {
+    position: relative;
+    background: linear-gradient(135deg, #5FDCFF 0%, #3E86E8 52%, #6A6BF0 100%);
+    color: #041020;
+    font-weight: 700;
+    border: 1px solid rgba(190, 240, 255, 0.45);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.45),
+        0 10px 30px -12px rgba(79, 217, 255, 0.55),
+        0 0 0 1px rgba(4, 10, 22, 0.4);
+    transition: transform .18s ease-out, box-shadow .18s ease-out, filter .18s ease-out;
+}
+.btn-sapiens:hover:not(:disabled) {
+    filter: brightness(1.07);
+    transform: translateY(-1px);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.55),
+        0 16px 40px -12px rgba(79, 217, 255, 0.75),
+        0 0 0 1px rgba(4, 10, 22, 0.4);
+}
+.btn-sapiens:active:not(:disabled) { transform: translateY(0) scale(0.97); filter: brightness(0.95); }
+.btn-sapiens:disabled { filter: grayscale(0.5) brightness(0.7); box-shadow: none; }
+
+/* Botão secundário/fantasma — vidro com borda que acende no hover. */
+.btn-vidro {
+    background: rgba(255, 255, 255, 0.045);
+    border: 1px solid var(--bio-linha);
+    color: var(--bio-texto);
+    transition: border-color .18s ease-out, background-color .18s ease-out, box-shadow .18s ease-out;
+}
+.btn-vidro:hover:not(:disabled) {
+    border-color: var(--bio-linha-forte);
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0 24px -10px var(--bio-brilho);
+}
+
+/* CTA quente (aulas particulares). Único âmbar do produto: contraponto
+   humano no meio da luz fria. Vira vidro âmbar, não placa amarela chapada. */
+.cta-calor {
+    position: relative;
+    background:
+        linear-gradient(180deg, rgba(255, 196, 92, 0.16) 0%, rgba(120, 76, 12, 0.20) 100%),
+        var(--bio-vidro);
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    border: 1px solid rgba(255, 198, 110, 0.30);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 222, 170, 0.20),
+        0 24px 60px -32px rgba(0, 0, 0, 0.9),
+        0 0 40px -22px rgba(255, 186, 84, 0.55);
+}
+.btn-calor {
+    background: linear-gradient(135deg, #FFD98A 0%, #F2A93B 100%);
+    color: #2A1704;
+    font-weight: 700;
+    border: 1px solid rgba(255, 226, 176, 0.5);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 10px 28px -14px rgba(242, 169, 59, 0.8);
+    transition: transform .18s ease-out, filter .18s ease-out;
+}
+.btn-calor:hover:not(:disabled) { filter: brightness(1.06); transform: translateY(-1px); }
+
+.pill { transition: transform .18s ease-out, background-color .18s ease-out, box-shadow .18s ease-out, border-color .18s ease-out; }
+.pill:active { transform: scale(0.97); }
+
+/* ---------------- A Mentis ----------------
+   A entidade cognitiva respira: pulso lento e contido. A regra de arte é
+   "mentor, não mascote" — nada de easing elástico, nada de salto. */
+@keyframes mentis-pulso {
+    0%, 100% { opacity: 0.55; transform: scale(1); }
+    50%      { opacity: 1;    transform: scale(1.045); }
+}
+@keyframes mentis-orbita {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+@keyframes mentis-piscar {
+    0%, 92%, 100% { transform: scaleY(1); }
+    96%           { transform: scaleY(0.08); }
+}
+.mentis-halo { animation: mentis-pulso 4.5s ease-in-out infinite; transform-origin: center; }
+.mentis-orbita { animation: mentis-orbita 26s linear infinite; transform-origin: center; }
+.mentis-olho { animation: mentis-piscar 7s ease-in-out infinite; transform-origin: center; }
+
+/* Cursor de "a Mentis está escrevendo" — três pontos que acendem em onda. */
+@keyframes mentis-digitando {
+    0%, 60%, 100% { opacity: 0.25; transform: translateY(0); }
+    30%           { opacity: 1;    transform: translateY(-2px); }
+}
+.mentis-ponto { animation: mentis-digitando 1.3s ease-in-out infinite; }
+.mentis-ponto:nth-child(2) { animation-delay: .18s; }
+.mentis-ponto:nth-child(3) { animation-delay: .36s; }
+
+/* Balão de fala da Mentis — vidro com a borda esquerda acesa, para o olho
+   separar quem fala sem precisar de avatar em toda mensagem. */
+.bolha-mentis {
+    background: linear-gradient(180deg, rgba(30, 54, 92, 0.5) 0%, rgba(11, 21, 38, 0.62) 100%);
+    border: 1px solid var(--bio-linha);
+    border-left: 2px solid rgba(79, 217, 255, 0.55);
+    box-shadow: 0 18px 44px -30px rgba(0, 0, 0, 0.95), inset 0 1px 0 rgba(190, 230, 255, 0.08);
+    color: var(--bio-texto);
+}
+.bolha-aluno {
+    background: linear-gradient(135deg, rgba(79, 217, 255, 0.16) 0%, rgba(106, 107, 240, 0.16) 100%);
+    border: 1px solid rgba(150, 210, 255, 0.24);
+    color: var(--bio-texto);
+}
+
+/* ---------------- Animações herdadas ---------------- */
+
 @keyframes shimmer {
     0% { background-position: -200% 0; }
     100% { background-position: 200% 0; }
 }
 .shimmer {
-    background: linear-gradient(90deg, var(--brand-accent) 0%, #ffffff 50%, var(--brand-accent) 100%);
+    background: linear-gradient(90deg, var(--bio-azul) 0%, var(--bio-ciano) 45%, #ffffff 55%, var(--bio-azul) 100%);
     background-size: 200% 100%;
     -webkit-background-clip: text;
     background-clip: text;
@@ -98,7 +374,6 @@ html, body, #root {
     animation: shimmer 6s ease-in-out infinite;
 }
 
-/* Reveal animation */
 @keyframes reveal {
     from { opacity: 0; transform: translateY(12px); }
     to { opacity: 1; transform: translateY(0); }
@@ -109,64 +384,6 @@ html, body, #root {
 .reveal-delay-3 { animation-delay: .24s; }
 .reveal-delay-4 { animation-delay: .32s; }
 
-/* Pill button transitions */
-.pill { transition: transform .18s ease-out, background-color .18s ease-out, box-shadow .18s ease-out; }
-.pill:active { transform: scale(0.97); }
-
-/* Glass — vidro escuro, para se fundir ao ambiente imersivo em vez de
-   destoar como uma barra branca sobre o fundo azul-escuro. */
-.glass {
-    background: rgba(9,17,31,0.62);
-    backdrop-filter: saturate(140%) blur(16px);
-    -webkit-backdrop-filter: saturate(140%) blur(16px);
-    border-bottom: 1px solid rgba(255,255,255,0.08);
-}
-
-/* Card lift */
-.lift { transition: transform .18s ease-out, box-shadow .18s ease-out; }
-.lift:hover { transform: translateY(-2px); box-shadow: 0 8px 24px -12px rgba(0,0,0,0.12); }
-
-/* Selection */
-::selection { background: var(--brand-navy); color: #fff; }
-
-/* ---------------- Identidade Sapiens: CTA, cards, ambiente de prova ---------------- */
-
-/* Botão primário — gradiente da marca; o anel claro garante que ele se
-   destaque tanto sobre cards brancos quanto sobre o ambiente azul-escuro. */
-.btn-sapiens {
-    background: linear-gradient(135deg, var(--brand-accent) 0%, var(--brand-navy) 100%);
-    color: #fff;
-    box-shadow: 0 0 0 1px rgba(255,255,255,0.14) inset, 0 1px 2px rgba(12,28,58,0.16), 0 10px 24px -8px rgba(74,133,227,0.45);
-    transition: transform .18s ease-out, box-shadow .18s ease-out, filter .18s ease-out;
-}
-.btn-sapiens:hover:not(:disabled) {
-    filter: brightness(1.08);
-    transform: translateY(-1px);
-    box-shadow: 0 0 0 1px rgba(255,255,255,0.2) inset, 0 2px 4px rgba(12,28,58,0.2), 0 16px 30px -8px rgba(74,133,227,0.6);
-}
-.btn-sapiens:active:not(:disabled) { transform: translateY(0) scale(0.97); filter: brightness(0.96); }
-.btn-sapiens:disabled { filter: grayscale(0.25); box-shadow: none; }
-
-/* Superfície de conteúdo — branco com gradiente muito sutil e profundidade
-   para se destacar do ambiente azul-escuro. É a "página" onde o aluno lê e
-   decide; usada em todo o produto, não só na prova. */
-.card-sapiens {
-    background: linear-gradient(180deg, #ffffff 0%, #f5f9ff 100%);
-    border: 1px solid rgba(19,45,92,0.08);
-    box-shadow: 0 20px 50px -25px rgba(6,16,36,0.55);
-}
-
-/* Painel de marca — usado em áreas que merecem o azul mais vívido da marca
-   (ex.: painel do login), além do ambiente global mais discreto. */
-.exam-shell {
-    background:
-        radial-gradient(1100px 520px at 12% -8%, rgba(74,133,227,0.32), transparent 60%),
-        radial-gradient(900px 520px at 100% 8%, rgba(31,79,149,0.38), transparent 55%),
-        linear-gradient(180deg, #16336b 0%, #0c1c3a 100%);
-    background-attachment: fixed;
-}
-
-/* Microinteração: pequena resposta ao selecionar uma alternativa */
 @keyframes select-pop {
     0% { transform: scale(1); }
     45% { transform: scale(1.02); }
@@ -174,38 +391,42 @@ html, body, #root {
 }
 .select-pop { animation: select-pop .26s ease-out; }
 
-@media (prefers-reduced-motion: reduce) {
-    .select-pop, .reveal, .reveal-delay-1, .reveal-delay-2, .reveal-delay-3, .reveal-delay-4, .shimmer {
-        animation: none !important;
-    }
-    .lift:hover, .btn-sapiens:hover, .btn-sapiens:active, .pill:active {
-        transform: none !important;
-    }
-}
+::selection { background: rgba(79, 217, 255, 0.30); color: #fff; }
 
-/* Focus */
-button:focus-visible, a:focus-visible, input:focus-visible, [role="button"]:focus-visible {
-    outline: 2px solid hsl(var(--ring));
+button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, [role="button"]:focus-visible {
+    outline: 2px solid var(--bio-ciano);
     outline-offset: 2px;
     border-radius: 8px;
 }
 
-/* Feed: hide scrollbar for the snap-scroll container */
 .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 
+/* Rolagem: a barra padrão do sistema é a última coisa clara que sobra numa
+   tela escura — e denuncia o tema mais do que qualquer componente. */
+* { scrollbar-color: rgba(120, 180, 240, 0.28) transparent; scrollbar-width: thin; }
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+    background: rgba(120, 180, 240, 0.20);
+    border: 3px solid transparent;
+    background-clip: content-box;
+    border-radius: 999px;
+}
+*::-webkit-scrollbar-thumb:hover { background: rgba(120, 180, 240, 0.36); background-clip: content-box; }
+
 /* ---------------- Tour de boas-vindas (primeiro login) ---------------- */
-/* Balão-guia: mesma superfície clara de .card-sapiens, com uma borda em
-   gradiente animado (navy <-> accent) — vivo o bastante pra prender o olho
-   sem sair da paleta do produto. */
 @keyframes tour-border-flow {
     0%, 100% { background-position: 0% 50%; }
     50% { background-position: 100% 50%; }
 }
 .tour-bubble {
     position: relative;
-    background: linear-gradient(180deg, #ffffff 0%, #f5f9ff 100%);
-    box-shadow: 0 24px 60px -20px rgba(6, 16, 36, 0.65);
+    background: linear-gradient(180deg, rgba(20, 38, 66, 0.94) 0%, rgba(8, 16, 30, 0.96) 100%);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    color: var(--bio-texto);
+    box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.9);
 }
 .tour-bubble::before {
     content: "";
@@ -213,7 +434,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, [role="button"]:focu
     inset: -2px;
     border-radius: inherit;
     padding: 2px;
-    background: linear-gradient(120deg, var(--brand-accent), var(--brand-navy-deep), var(--brand-accent));
+    background: linear-gradient(120deg, var(--bio-ciano), var(--bio-violeta), var(--bio-ciano));
     background-size: 220% 220%;
     animation: tour-border-flow 5s ease infinite;
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
@@ -222,7 +443,6 @@ button:focus-visible, a:focus-visible, input:focus-visible, [role="button"]:focu
     pointer-events: none;
 }
 
-/* Cursor de digitação — bem rápido, some quando o balão termina de escrever. */
 @keyframes tour-cursor-blink {
     0%, 45% { opacity: 1; }
     50%, 100% { opacity: 0; }
@@ -231,17 +451,13 @@ button:focus-visible, a:focus-visible, input:focus-visible, [role="button"]:focu
     display: inline-block;
     width: 2px;
     margin-left: 1px;
-    background: var(--brand-accent);
+    background: var(--bio-ciano);
     animation: tour-cursor-blink .8s step-end infinite;
 }
 
-/* Realce no elemento da UI que o passo atual está explicando — um anel que
-   pulsa, sem tentar escapar do stacking context do elemento real (por isso
-   não usa um overlay escurecendo a tela inteira, que quebraria dentro do
-   <Nav> sticky). */
 @keyframes tour-spotlight-pulse {
-    0%, 100% { box-shadow: 0 0 0 4px rgba(74, 133, 227, 0.55); }
-    50% { box-shadow: 0 0 0 7px rgba(74, 133, 227, 0.8); }
+    0%, 100% { box-shadow: 0 0 0 4px rgba(79, 217, 255, 0.45); }
+    50% { box-shadow: 0 0 0 7px rgba(79, 217, 255, 0.75); }
 }
 .tour-spotlight {
     position: relative;
@@ -249,8 +465,177 @@ button:focus-visible, a:focus-visible, input:focus-visible, [role="button"]:focu
     animation: tour-spotlight-pulse 1.8s ease-in-out infinite;
 }
 
+/* =========================================================================
+   CAMADA DE TRADUÇÃO DE UTILITÁRIOS
+   =========================================================================
+
+   28 telas foram escritas para superfície CLARA (`bg-white`, `text-zinc-900`,
+   `bg-emerald-50`...). Reescrever as ~210 ocorrências à mão espalharia a
+   decisão de cor por dezenas de arquivos e garantiria divergência na próxima
+   tela nova. Aqui o utilitário claro é traduzido UMA vez para o equivalente
+   bioluminescente, e o Tailwind continua sendo escrito do jeito normal.
+
+   Especificidade: `:root .classe` (0,2,0) vence o utilitário do Tailwind
+   (0,1,0) independentemente da ordem de saída do build — não depende de
+   `!important` nem de onde o PostCSS resolveu colocar cada bloco.
+
+   Escopo: só o que é neutro-claro ou pastel-de-tema-claro. `text-white`,
+   `bg-white/10`, `border-white/15` e os âmbares do CTA quente já nasceram
+   para fundo escuro e não são tocados.
+
+   `.leitura-clara` reverte tudo isto dentro dela (fim do arquivo).
+   ========================================================================= */
+
+/* ---- Superfícies neutras ---- */
+:root .bg-white {
+    background-color: rgba(16, 29, 51, 0.55);
+    backdrop-filter: blur(14px) saturate(130%);
+    -webkit-backdrop-filter: blur(14px) saturate(130%);
+    border-color: var(--bio-linha);
+    color: var(--bio-texto);
+}
+:root .bg-white\/80 { background-color: rgba(16, 29, 51, 0.5); color: var(--bio-texto); }
+:root .bg-white\/40 { background-color: rgba(255, 255, 255, 0.10); }
+:root .bg-zinc-50   { background-color: rgba(255, 255, 255, 0.035); }
+:root .bg-zinc-100  { background-color: rgba(255, 255, 255, 0.06); }
+:root .bg-zinc-200  { background-color: rgba(255, 255, 255, 0.10); }
+:root .bg-zinc-300  { background-color: rgba(255, 255, 255, 0.14); }
+:root .bg-slate-50  { background-color: rgba(255, 255, 255, 0.035); }
+:root .bg-slate-100 { background-color: rgba(255, 255, 255, 0.06); }
+
+/* ---- Tinta neutra ---- */
+:root .text-zinc-950, :root .text-zinc-900, :root .text-slate-900 { color: var(--bio-texto); }
+:root .text-zinc-800, :root .text-slate-800 { color: #D5E4F7; }
+:root .text-zinc-700, :root .text-slate-700 { color: var(--bio-suave); }
+:root .text-zinc-600, :root .text-slate-600 { color: #9AB0CE; }
+:root .text-zinc-500, :root .text-slate-500 { color: var(--bio-fraco); }
+:root .text-zinc-400 { color: #63789A; }
+:root .text-zinc-300 { color: #8DA3C2; }
+:root .text-zinc-200 { color: #B9CCE5; }
+
+/* ---- Linhas ---- */
+:root .border-zinc-100, :root .border-slate-200 { border-color: rgba(150, 200, 255, 0.09); }
+:root .border-zinc-200 { border-color: var(--bio-linha); }
+:root .border-zinc-300 { border-color: var(--bio-linha-forte); }
+/* `border-zinc-900` marca estado escolhido em fundo claro; no escuro o que
+   marca escolha é luz, não escuridão. */
+:root .border-zinc-900 { border-color: rgba(79, 217, 255, 0.7); box-shadow: 0 0 22px -8px var(--bio-brilho); }
+:root .divide-zinc-100 > * + * { border-color: rgba(150, 200, 255, 0.09); }
+
+/* ---- Semânticos: pastel de tema claro -> tinta translúcida do mesmo matiz.
+       Acerto, erro e aviso continuam sendo verde, vermelho e âmbar; o que
+       muda é que passam a ser LUZ sobre o escuro, não papel colorido. ---- */
+:root .bg-emerald-50  { background-color: rgba(16, 185, 129, 0.10); border-color: rgba(16, 185, 129, 0.24); }
+:root .bg-rose-50     { background-color: rgba(244, 63, 94, 0.10);  border-color: rgba(244, 63, 94, 0.26); }
+:root .bg-rose-100    { background-color: rgba(244, 63, 94, 0.16); }
+:root .bg-amber-50    { background-color: rgba(245, 158, 11, 0.10); border-color: rgba(245, 158, 11, 0.26); }
+:root .bg-amber-100   { background-color: rgba(245, 158, 11, 0.16); }
+:root .bg-sky-50      { background-color: rgba(56, 189, 248, 0.10); border-color: rgba(56, 189, 248, 0.26); }
+:root .bg-blue-50     { background-color: rgba(74, 133, 227, 0.12); }
+
+:root .border-emerald-100 { border-color: rgba(16, 185, 129, 0.28); }
+:root .border-rose-100    { border-color: rgba(244, 63, 94, 0.26); }
+:root .border-rose-200    { border-color: rgba(244, 63, 94, 0.34); }
+:root .border-amber-100   { border-color: rgba(245, 158, 11, 0.26); }
+:root .border-amber-200   { border-color: rgba(245, 158, 11, 0.34); }
+:root .border-amber-300   { border-color: rgba(245, 158, 11, 0.42); }
+:root .border-sky-100     { border-color: rgba(56, 189, 248, 0.28); }
+
+:root .text-emerald-700, :root .text-emerald-800 { color: #5FE9BC; }
+:root .text-rose-700, :root .text-rose-800 { color: #FF93A8; }
+:root .text-amber-700, :root .text-amber-800 { color: #FFC978; }
+:root .text-amber-900 { color: #FFD9A0; }
+:root .text-sky-700, :root .text-sky-800 { color: #7FD8FF; }
+:root .text-blue-700 { color: #8CBBFF; }
+:root .text-indigo-700 { color: #A9A2FF; }
+
+/* ---- Cores da marca usadas como TINTA ----
+       `sapiens-navy` e `accentSoft` nasceram para marcar hierarquia sobre
+       papel branco. Sobre o abismo, navy é praticamente invisível e
+       accentSoft é uma placa clara no meio do vidro — os dois viram luz. */
+:root .text-sapiens-navy { color: #BFE7FF; }
+:root .text-sapiens-accentDeep { color: #7FD8FF; }
+:root .border-sapiens-navy\/15 { border-color: var(--bio-linha); }
+:root .bg-sapiens-accentSoft { background-color: rgba(79, 217, 255, 0.13); }
+:root .bg-sapiens-accentSoft\/60 { background-color: rgba(79, 217, 255, 0.09); }
+:root .from-sapiens-accentSoft { --tw-gradient-from: rgba(79, 217, 255, 0.16) var(--tw-gradient-from-position); }
+:root .ring-sapiens-accentSoft { --tw-ring-color: rgba(79, 217, 255, 0.35); }
+:root .bg-sapiens-navy { background-color: rgba(19, 45, 92, 0.55); }
+
+/* ---- Semânticos em -600: mesma lógica dos -700 ---- */
+:root .text-rose-600 { color: #FF93A8; }
+:root .text-emerald-600 { color: #5FE9BC; }
+:root .text-amber-600 { color: #FFC978; }
+:root .text-sky-600 { color: #7FD8FF; }
+
+/* ---- Campos de formulário ---- */
+:root input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+:root textarea,
+:root select {
+    background-color: rgba(255, 255, 255, 0.04);
+    border-color: var(--bio-linha);
+    color: var(--bio-texto);
+}
+:root input::placeholder, :root textarea::placeholder { color: #5F7593; }
+:root input:focus, :root textarea:focus, :root select:focus {
+    border-color: rgba(79, 217, 255, 0.55);
+    box-shadow: 0 0 0 3px rgba(79, 217, 255, 0.12);
+}
+
+/* ---- Reversão dentro da superfície de leitura longa ----
+   Declarada por último e com a mesma especificidade (0,2,0) do bloco acima,
+   então vence pela ordem: dentro de `.leitura-clara` o Tailwind claro volta a
+   significar o que significava. */
+.leitura-clara .bg-white, .leitura-clara.bg-white {
+    background-color: #FFFFFF;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    color: #0B1B33;
+}
+.leitura-clara .bg-white\/80 { background-color: rgba(255, 255, 255, 0.86); color: #0B1B33; }
+.leitura-clara .bg-zinc-50  { background-color: #FAFAFA; }
+.leitura-clara .bg-zinc-100 { background-color: #F4F4F5; }
+.leitura-clara .bg-zinc-200 { background-color: #E4E4E7; }
+.leitura-clara .text-zinc-950, .leitura-clara .text-zinc-900 { color: #09090B; }
+.leitura-clara .text-zinc-800 { color: #27272A; }
+.leitura-clara .text-zinc-700 { color: #3F3F46; }
+.leitura-clara .text-zinc-600 { color: #52525B; }
+.leitura-clara .text-zinc-500 { color: #71717A; }
+.leitura-clara .text-zinc-400 { color: #A1A1AA; }
+.leitura-clara .border-zinc-100 { border-color: #F4F4F5; }
+.leitura-clara .border-zinc-200 { border-color: #E4E4E7; }
+.leitura-clara .border-zinc-300 { border-color: #D4D4D8; }
+.leitura-clara .border-zinc-900 { border-color: #2E7FD6; box-shadow: 0 0 0 1px rgba(46, 127, 214, 0.35); }
+.leitura-clara .text-sapiens-navy { color: #132D5C; }
+.leitura-clara .text-sapiens-accentDeep { color: #1F4F95; }
+.leitura-clara .border-sapiens-navy\/15 { border-color: rgba(19, 45, 92, 0.15); }
+.leitura-clara .bg-sapiens-accentSoft { background-color: #DBE9FC; }
+.leitura-clara .text-rose-600 { color: #E11D48; }
+.leitura-clara .text-rose-700, .leitura-clara .text-rose-800 { color: #BE123C; }
+.leitura-clara .text-emerald-600 { color: #059669; }
+.leitura-clara .text-emerald-700, .leitura-clara .text-emerald-800 { color: #047857; }
+.leitura-clara .text-amber-600 { color: #D97706; }
+.leitura-clara .bg-rose-50 { background-color: #FFF1F2; border-color: #FECDD3; }
+.leitura-clara .bg-emerald-50 { background-color: #ECFDF5; border-color: #A7F3D0; }
+.leitura-clara .bg-amber-50 { background-color: #FFFBEB; border-color: #FDE68A; }
+.leitura-clara input, .leitura-clara textarea, .leitura-clara select {
+    background-color: #FFFFFF;
+    border-color: #E4E4E7;
+    color: #0B1B33;
+}
+
+/* ---------------- Movimento reduzido ----------------
+   Tudo que se move aqui é ambiente ou confirmação — nada carrega informação
+   que só exista no movimento, então desligar não esconde nada. */
 @media (prefers-reduced-motion: reduce) {
-    .tour-bubble::before { animation: none; }
-    .tour-cursor { animation: none; }
-    .tour-spotlight { animation: none; box-shadow: 0 0 0 4px rgba(74, 133, 227, 0.6); }
+    body::before { animation: none; }
+    .select-pop, .reveal, .reveal-delay-1, .reveal-delay-2, .reveal-delay-3, .reveal-delay-4,
+    .shimmer, .mentis-halo, .mentis-orbita, .mentis-olho, .mentis-ponto,
+    .tour-bubble::before, .tour-cursor {
+        animation: none !important;
+    }
+    .tour-spotlight { animation: none; box-shadow: 0 0 0 4px rgba(79, 217, 255, 0.6); }
+    .lift:hover, .btn-sapiens:hover, .btn-sapiens:active, .btn-calor:hover, .pill:active {
+        transform: none !important;
+    }
 }

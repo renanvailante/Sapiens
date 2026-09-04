@@ -1,0 +1,229 @@
+{
+  "fonte": {
+    "banca": "ENEM",
+    "ano": 2023,
+    "prova": "AMARELO",
+    "numero": 111,
+    "disciplina": "Ciências da Natureza e suas Tecnologias",
+    "tema": "Fisiologia vegetal",
+    "conteudo": "Função do floema no transporte de nutrientes orgânicos e efeito do anelamento (girdling) na sobrevivência da planta",
+    "arquivo_origem": "2023_PV_impresso_D2_CD5.pdf",
+    "pagina": 7
+  },
+  "questao": {
+    "enunciado": "Barbatimão é o nome popular de uma árvore cuja casca é utilizada para fins medicinais. Essa casca é constituída principalmente de dois tecidos vegetais: periderme e floema. A extração da casca tem levado à morte muitos indivíduos dessa espécie, quando o corte retira um anel completo ao longo da circunferência do tronco. Aqueles que têm parte da casca retirada sem completar essa circunferência podem sobreviver.\n\nA morte desses indivíduos, decorrente da retirada do anel completo da casca, é provocada pela interrupção da",
+    "alternativas": [
+      {
+        "letra": "A",
+        "texto": "fotossíntese.",
+        "correta": false
+      },
+      {
+        "letra": "B",
+        "texto": "transpiração.",
+        "correta": false
+      },
+      {
+        "letra": "C",
+        "texto": "troca de gases.",
+        "correta": false
+      },
+      {
+        "letra": "D",
+        "texto": "formação de brotos.",
+        "correta": false
+      },
+      {
+        "letra": "E",
+        "texto": "nutrição das raízes.",
+        "correta": true
+      }
+    ],
+    "recursos": {
+      "imagens": [],
+      "graficos": [],
+      "tabelas": [],
+      "formulas": []
+    }
+  },
+  "estrutura_cognitiva": {
+    "processos": [
+      {
+        "id": "PROC-ESPACO-03",
+        "papel": "nuclear",
+        "peso_no_item": 1.0,
+        "confianca": 0.7,
+        "habilidades": [
+          {
+            "id": "HAB-16",
+            "peso_no_processo": 1.0,
+            "confianca": 0.7,
+            "aproximado": false
+          }
+        ],
+        "evidencias": {
+          "trechos": [
+            "casca é constituída principalmente de dois tecidos vegetais: periderme e floema",
+            "quando o corte retira um anel completo ao longo da circunferência do tronco"
+          ],
+          "figuras": []
+        },
+        "justificativa": "O item exige reconhecer que o floema, tecido periférico organizado em anel sob a casca, tem como papel funcional o transporte de nutrientes orgânicos (seiva elaborada) da parte aérea até as raízes; interromper esse anel interrompe esse transporte e provoca a morte por falta de nutrição das raízes."
+      }
+    ],
+    "dominios": [
+      {
+        "id": "DOM-ESPACO",
+        "derivado_de": [
+          "PROC-ESPACO-03"
+        ],
+        "peso_no_item": 1.0,
+        "confianca": 0.7,
+        "_estatuto": {
+          "natureza": "classificacao_organizacao",
+          "evidencial": false,
+          "autoridade": "Constituicao §4.5",
+          "nota": "Peso e confianca deste bloco sao de NAVEGACAO E AGRUPAMENTO, nunca de evidencia. Nao alimentam a camada de crenca sobre o estado de um estudante. A unica relacao ponderada com valor diagnostico neste contrato e 'distratores[].erros_esperados[].confianca'.",
+          "metodo_confianca": "media_dos_processos_sustentadores",
+          "metodo_confianca_provisorio": true,
+          "metodo_confianca_motivo": "O Schema 2.2 diz 'confianca herdada dos processos' e NAO define a funcao de heranca. Nenhum documento de camada C1/C2/C3 a define: o White Paper 2.0.1 §4.2 registra que o Axioma da Crenca Calibrada 'nao exige nenhuma familia matematica especifica'. A media e decisao de engenharia deste pipeline, declarada sob GOV-1.0 §6.4 em vez de inserida silenciosamente, e substituivel sem alteracao de contrato."
+        }
+      }
+    ],
+    "competencias": [
+      {
+        "id": "COMP-03",
+        "derivado_de": [
+          "PROC-ESPACO-03"
+        ],
+        "peso_no_item": 1.0,
+        "confianca": 0.7,
+        "_estatuto": {
+          "natureza": "classificacao_organizacao",
+          "evidencial": false,
+          "autoridade": "Constituicao §4.5",
+          "nota": "Peso e confianca deste bloco sao de NAVEGACAO E AGRUPAMENTO, nunca de evidencia. Nao alimentam a camada de crenca sobre o estado de um estudante. A unica relacao ponderada com valor diagnostico neste contrato e 'distratores[].erros_esperados[].confianca'.",
+          "metodo_confianca": "media_dos_processos_sustentadores",
+          "metodo_confianca_provisorio": true,
+          "metodo_confianca_motivo": "O Schema 2.2 diz 'confianca herdada dos processos' e NAO define a funcao de heranca. Nenhum documento de camada C1/C2/C3 a define: o White Paper 2.0.1 §4.2 registra que o Axioma da Crenca Calibrada 'nao exige nenhuma familia matematica especifica'. A media e decisao de engenharia deste pipeline, declarada sob GOV-1.0 §6.4 em vez de inserida silenciosamente, e substituivel sem alteracao de contrato."
+        }
+      }
+    ]
+  },
+  "incerteza": {
+    "marcadores": [],
+    "detalhe": "",
+    "requer_arbitragem": false
+  },
+  "distratores": [
+    {
+      "alternativa": "A",
+      "erros_esperados": [
+        {
+          "ordem": 1,
+          "erro": "erro-nao-catalogado-nesta-versao",
+          "processo_afetado": "PROC-ESPACO-03",
+          "confianca": 0.4,
+          "mecanismo": "MEC-01"
+        }
+      ],
+      "plausibilidade": {
+        "valor": "media"
+      },
+      "probabilidade_estimada": null,
+      "explicacao": "O estudante pode confundir a casca com o principal sítio da fotossíntese, ignorando que esse processo ocorre majoritariamente nas folhas e não é interrompido pela retirada do anel de casca."
+    },
+    {
+      "alternativa": "B",
+      "erros_esperados": [
+        {
+          "ordem": 1,
+          "erro": "erro-nao-catalogado-nesta-versao",
+          "processo_afetado": "PROC-ESPACO-03",
+          "confianca": 0.7,
+          "mecanismo": "MEC-01"
+        }
+      ],
+      "plausibilidade": {
+        "valor": "alta"
+      },
+      "probabilidade_estimada": null,
+      "explicacao": "Erro clássico de confundir a função do floema (transporte de nutrientes orgânicos) com a do xilema (condução de água, ligada à transpiração); como o xilema permanece intacto no anelamento, a transpiração não é a causa direta da morte, mas a proximidade conceitual entre os dois tecidos condutores torna esta alternativa atraente."
+    },
+    {
+      "alternativa": "C",
+      "erros_esperados": [
+        {
+          "ordem": 1,
+          "erro": "erro-nao-catalogado-nesta-versao",
+          "processo_afetado": "PROC-ESPACO-03",
+          "confianca": 0.4
+        }
+      ],
+      "plausibilidade": {
+        "valor": "media"
+      },
+      "probabilidade_estimada": null,
+      "explicacao": "O estudante pode associar a casca (onde há lenticelas) à troca gasosa e supor que sua remoção interrompe a respiração, quando na verdade a morte decorre da interrupção do transporte de nutrientes pelo floema, não das trocas gasosas."
+    },
+    {
+      "alternativa": "D",
+      "erros_esperados": [
+        {
+          "ordem": 1,
+          "erro": "erro-nao-catalogado-nesta-versao",
+          "processo_afetado": "PROC-ESPACO-03",
+          "confianca": 0.15
+        }
+      ],
+      "plausibilidade": {
+        "valor": "baixa"
+      },
+      "probabilidade_estimada": null,
+      "explicacao": "Alternativa pouco relacionada ao mecanismo fisiológico central do item; pode atrair apenas por associação vaga entre 'crescimento' e 'sobrevivência', sem base conceitual direta no papel do floema."
+    }
+  ],
+  "intervencoes": [
+    {
+      "id": "INT-11",
+      "gatilho": {
+        "processo": "PROC-ESPACO-03",
+        "erro": "erro-nao-catalogado-nesta-versao"
+      },
+      "acao": "Retomar com o estudante um esquema comparativo dos tecidos vegetais (periderme, floema, xilema) e suas funções (proteção, transporte de nutrientes orgânicos, transporte de água), destacando a posição espacial do floema logo abaixo da casca e sua relação com a nutrição das raízes, para evitar confundi-lo com fotossíntese, transpiração ou trocas gasosas.",
+      "prioridade": null
+    }
+  ],
+  "pedagogia": {
+    "estrategia": "Ensinar a diferenciar estrutura e função dos tecidos vegetais de transporte (floema x xilema) e localizar espacialmente onde cada processo fisiológico ocorre na planta, antes de aplicar esse conhecimento a um cenário de dano físico (anelamento).",
+    "passos": [
+      "Identificar os tecidos citados no enunciado (periderme e floema) e sua localização na casca.",
+      "Relembrar a função do floema: transporte de seiva elaborada (nutrientes orgânicos produzidos na fotossíntese) da parte aérea para as raízes.",
+      "Relacionar a remoção completa do anel de floema à interrupção total desse transporte.",
+      "Concluir que a consequência é a privação de nutrientes das raízes, levando à morte da planta."
+    ],
+    "erros_comuns": [
+      "Confundir floema com xilema e associar o dano à transpiração.",
+      "Achar que a fotossíntese ocorre na casca e é diretamente interrompida.",
+      "Ignorar que o problema é o transporte de nutrientes, não a troca gasosa."
+    ],
+    "dicas": [
+      "Lembre-se: floema leva 'comida' (açúcares) para baixo, até as raízes; xilema leva água para cima.",
+      "Pergunte-se: qual tecido foi cortado e qual é a função específica dele?"
+    ],
+    "tempo_estimado_segundos": 90,
+    "nivel_dificuldade": "medio"
+  },
+  "qualidade": {
+    "confianca_global": 0.7,
+    "revisado": false,
+    "observacoes": "Enunciado e alternativas lidos integralmente na imagem do recorte; nenhuma limitação de leitura identificada.",
+    "apto_para_camada_de_crenca": {
+      "valor": false
+    }
+  },
+  "schema_version": "2.2",
+  "ontology_version": "1.4.1",
+  "item_hash": "f1d6c5393ff3b561996beafae14f9f62c41d618daabe67eb007eab51c02e3116",
+  "item_id": "CLAUDE-ITEM-ENEM-2023-AMARELO-Q111"
+}

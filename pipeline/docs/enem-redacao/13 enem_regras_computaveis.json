@@ -1,0 +1,307 @@
+{
+  "id": "ENEM-REGRAS-JSON-1.0",
+  "titulo_documento": "Regras Computáveis — Correção de Redações do Enem 2025",
+  "versao": "1.0.1",
+  "estado": "apoio_externo",
+  "declaracao_de_nao_normatividade": "Não é fonte de categorias cognitivas do Sapiens (GOV-1.0 §1.1). Membro de um Conjunto Normativo Indivisível (GOV-1.0 §4.2) junto com '12 ENEM 2025 - Matriz de Correcao Estruturada.md': este JSON é autoridade sobre estrutura, cardinalidade e valores numéricos; o documento em prosa é autoridade sobre justificativa, critério e fronteira. Nenhuma regra aqui vincula um corretor de produção até que uma transação C4 explícita a adote.",
+  "criado_em": "2026-08-24T15:18:20Z",
+  "atualizado_em": "2026-08-25T15:39:50Z",
+  "camada": "apoio_externo",
+  "cni_membros": ["12 ENEM 2025 - Matriz de Correcao Estruturada.md"],
+  "deriva_de": "ENEM-FONTE-1.0@1.0.0",
+  "fonte": {
+    "arquivo_original": "a_redacao_no_enem_2025_cartilha_do_participante.pdf",
+    "editora": "INEP/MEC — DAEB",
+    "publicado_em": "setembro de 2025",
+    "sha256": "d8ab44dcbf5af808829d9dee89d23e7efa4f59df022b99102fac87489b870288",
+    "paginas_totais": 78,
+    "convencao_paginacao": "página física do PDF (1-78); todo campo fonte_pagina_fisica deste documento usa essa convenção, igual à usada em ENEM-FONTE-1.0"
+  },
+  "escala": {
+    "nota_total_min": 0,
+    "nota_total_max": 1000,
+    "nota_total_formula": "soma das 5 competências",
+    "nota_por_competencia_min": 0,
+    "nota_por_competencia_max": 200,
+    "niveis_possiveis_por_competencia": [0, 40, 80, 120, 160, 200],
+    "nota_final_participante": "média aritmética das notas totais dos dois avaliadores independentes (GERAL-02)",
+    "fonte_pagina_fisica": 8
+  },
+  "avaliacao": {
+    "numero_avaliadores_iniciais": 2,
+    "requisito_avaliadores": "graduados em Letras ou Linguística, avaliação independente",
+    "regra_discrepancia": {
+      "id": "GERAL-03",
+      "condicoes": [
+        "diferenca_nota_total > 100",
+        "diferenca_em_qualquer_competencia > 80"
+      ],
+      "operador_entre_condicoes": "OR",
+      "fonte_pagina_fisica": 8
+    },
+    "fluxo_discrepancia": {
+      "id": "GERAL-04",
+      "passo_1": "avaliador(a) terceiro(a) independente avalia; nota final = média das duas notas totais que mais se aproximarem entre as três",
+      "passo_2_se_persistir": "banca de três avaliadores(as) atribui a nota final",
+      "fonte_pagina_fisica": 9
+    }
+  },
+  "etapa_0_elegibilidade": {
+    "descricao": "Executar ANTES de pontuar qualquer competência. Se qualquer gatilho disparar, a nota final é 0 e nenhuma competência é avaliada — EXCETO onde explicitamente marcado como escopo_localizado.",
+    "gatilhos_zero_redacao_inteira": [
+      {"id": "ZERO-01", "nome": "fuga_total_ao_tema", "descricao": "nem o assunto mais amplo nem o tema específico são desenvolvidos", "escopo": "redacao_inteira", "fonte_pagina_fisica": [9, 26, 29], "decidivel_mecanicamente": false},
+      {"id": "ZERO-02", "nome": "nao_atendimento_tipo_dissertativo_argumentativo", "descricao": "não obediência ao tipo dissertativo-argumentativo", "escopo": "redacao_inteira", "fonte_pagina_fisica": [9, 29], "decidivel_mecanicamente": false},
+      {"id": "ZERO-03", "nome": "texto_em_branco", "descricao": "ausência de texto escrito na Folha de Redação", "escopo": "redacao_inteira", "fonte_pagina_fisica": 9, "decidivel_mecanicamente": true},
+      {"id": "ZERO-04", "nome": "texto_insuficiente", "descricao": "até 7 linhas manuscritas (ou até 10 linhas em Braille), após desconsiderar linhas de cópia (ver COPIA-01)", "escopo": "redacao_inteira", "limite_linhas_manuscrito": 7, "limite_linhas_braille": 10, "ambiguidade": "AMB-01 (limite inferior exato do que conta como 'insuficiente' vs aceitável não é 100% explícito)", "fonte_pagina_fisica": 9, "decidivel_mecanicamente": true},
+      {"id": "ZERO-05", "nome": "anulacao_por_conteudo_improprio", "descricao": "impropérios, desenhos e outras formas propositais de anulação", "escopo": "redacao_inteira", "fonte_pagina_fisica": 9, "decidivel_mecanicamente": false},
+      {"id": "ZERO-06", "nome": "parte_deliberadamente_desconectada", "descricao": "ver bloco 'partes_desconectadas' abaixo", "escopo": "redacao_inteira", "fonte_pagina_fisica": [9, 10, 11], "decidivel_mecanicamente": false},
+      {"id": "ZERO-07", "nome": "identificacao_fora_do_local_permitido", "descricao": "nome, assinatura, rubrica ou identificação fora do espaço destinado", "escopo": "redacao_inteira", "fonte_pagina_fisica": 9, "decidivel_mecanicamente": true},
+      {"id": "ZERO-08", "nome": "predominancia_lingua_estrangeira", "descricao": "texto predominante ou integralmente em língua estrangeira", "escopo": "redacao_inteira", "fonte_pagina_fisica": 10, "decidivel_mecanicamente": true},
+      {"id": "ZERO-09", "nome": "texto_ilegivel", "descricao": "impossibilita leitura por dois avaliadores independentes", "escopo": "redacao_inteira", "fonte_pagina_fisica": 10, "decidivel_mecanicamente": false, "nota": "aplicável apenas a redação manuscrita; sem sentido para texto já transcrito digitalmente"},
+      {"id": "ZERO-10", "nome": "predominancia_outro_tipo_textual", "descricao": "predominância de características de tipo textual diferente do dissertativo-argumentativo, mesmo se as demais competências estivessem bem atendidas", "escopo": "redacao_inteira", "distinto_de": "penalização parcial em COMP-II quando há apenas 'traços' de outro tipo — ver AMB-06", "fonte_pagina_fisica": 28, "decidivel_mecanicamente": false},
+      {"id": "ZERO-11", "nome": "titulo_anulavel", "descricao": "título com desenho, sinal gráfico sem função evidente, impropério etc.", "escopo": "redacao_inteira", "fonte_pagina_fisica": 11, "decidivel_mecanicamente": false}
+    ],
+    "gatilhos_zero_localizado": [
+      {"id": "DH-ZERO-01", "nome": "proposta_desrespeita_direitos_humanos", "descricao": "proposta de intervenção que desrespeita direitos humanos", "escopo": "apenas_competencia_V", "fonte_pagina_fisica": [37, 39], "decidivel_mecanicamente": false}
+    ],
+    "efeito_critico": {
+      "id": "ZERO-EFEITO-01",
+      "descricao": "Se ZERO-01 ou ZERO-02/ZERO-10 disparar, a redação NÃO é avaliada em nenhuma competência (não apenas zerada na Competência II) — a nota final da prova de redação é 0.",
+      "fonte_pagina_fisica": 29
+    },
+    "partes_desconectadas": {
+      "id": "DESCONECTADA-01",
+      "exemplos_configuram": [
+        "reflexões sobre o próprio processo de escrita, a prova ou o próprio desempenho",
+        "bilhetes destinados à banca avaliadora",
+        "mensagens políticas ou de protesto, orações, mensagens religiosas",
+        "frases desconectadas do corpo do texto sem relação com tema/argumentação",
+        "trechos de música, hino, poema ou qualquer texto desarticulado da argumentação"
+      ],
+      "excecao": {
+        "id": "DESCONECTADA-02",
+        "descricao": "elemento não configura desconexão automaticamente se estiver devidamente articulado à argumentação construída ao longo da redação; exige inserção proposital, pontual e desarticulada para anular",
+        "decidivel_mecanicamente": false
+      },
+      "fonte_pagina_fisica": [10, 11]
+    },
+    "copia": {
+      "id": "COPIA-01",
+      "regra": "linhas compostas integral ou parcialmente por cópia da Prova de Redação e/ou do Caderno de Questões são desconsideradas da contagem de linhas mínimas (interage com ZERO-04)",
+      "id_penalizacao": "COPIA-02",
+      "regra_penalizacao": "cópia recorrente dos textos motivadores penaliza a Competência II (refletido no nível 80 da tabela COMP-II) e, em patamar não quantificado pela fonte, pode levar à anulação ('anulada como cópia')",
+      "ambiguidade": "AMB-08 (patamar de anulação por cópia não quantificado)",
+      "fonte_pagina_fisica": [10, 17, 28]
+    }
+  },
+  "competencias": [
+    {
+      "id": "COMP-I",
+      "numero": 1,
+      "nome": "Domínio da modalidade escrita formal da língua portuguesa",
+      "enunciado_oficial": "Demonstrar domínio da modalidade escrita formal da língua portuguesa.",
+      "aspectos_avaliados": ["convenções da escrita", "gramaticais", "escolha de registro", "escolha vocabular", "estrutura sintática"],
+      "fonte_pagina_fisica_definicao": [12, 13],
+      "fonte_pagina_fisica_tabela": 16,
+      "rotulo_edicao_na_fonte": "Enem 2025",
+      "niveis": [
+        {"pontos": 200, "descricao": "Demonstra excelente domínio da modalidade escrita formal da língua portuguesa e de escolha de registro. Desvios gramaticais ou de convenções da escrita serão aceitos somente como excepcionalidade e quando não caracterizarem reincidência."},
+        {"pontos": 160, "descricao": "Demonstra bom domínio da modalidade escrita formal da língua portuguesa e de escolha de registro, com poucos desvios gramaticais e de convenções da escrita."},
+        {"pontos": 120, "descricao": "Demonstra domínio mediano da modalidade escrita formal da língua portuguesa e de escolha de registro, com alguns desvios gramaticais e de convenções da escrita."},
+        {"pontos": 80, "descricao": "Demonstra domínio insuficiente da modalidade escrita formal da língua portuguesa, com muitos desvios gramaticais, de escolha de registro e de convenções da escrita."},
+        {"pontos": 40, "descricao": "Demonstra domínio precário da modalidade escrita formal da língua portuguesa, de forma sistemática, com diversificados e frequentes desvios gramaticais, de escolha de registro e de convenções da escrita."},
+        {"pontos": 0, "descricao": "Demonstra desconhecimento da modalidade escrita formal da língua portuguesa."}
+      ]
+    },
+    {
+      "id": "COMP-II",
+      "numero": 2,
+      "nome": "Compreensão da proposta e aplicação de conceitos das áreas de conhecimento",
+      "enunciado_oficial": "Compreender a proposta de redação e aplicar conceitos das várias áreas de conhecimento para desenvolver o tema dentro dos limites estruturais do texto dissertativo-argumentativo em prosa.",
+      "aspectos_avaliados": ["tipo dissertativo-argumentativo", "aderência ao tema (fuga/tangenciamento)", "repertório sociocultural produtivo"],
+      "fonte_pagina_fisica_definicao": [14, 15, 16, 17],
+      "fonte_pagina_fisica_tabela": 28,
+      "rotulo_edicao_na_fonte": "Enem 2024",
+      "ambiguidade_rotulo": "AMB-03 (rótulo de edição inconsistente entre as 5 tabelas na mesma cartilha)",
+      "niveis": [
+        {"pontos": 200, "descricao": "Desenvolve o tema por meio de argumentação consistente, a partir de um repertório sociocultural produtivo, e apresenta excelente domínio do texto dissertativo-argumentativo."},
+        {"pontos": 160, "descricao": "Desenvolve o tema por meio de argumentação consistente e apresenta bom domínio do texto dissertativo-argumentativo, com proposição, argumentação e conclusão."},
+        {"pontos": 120, "descricao": "Desenvolve o tema por meio de argumentação previsível e apresenta domínio mediano do texto dissertativo-argumentativo, com proposição, argumentação e conclusão."},
+        {"pontos": 80, "descricao": "Desenvolve o tema recorrendo à cópia de trechos dos textos motivadores ou apresenta domínio insuficiente do texto dissertativo-argumentativo, não atendendo à estrutura com proposição, argumentação e conclusão."},
+        {"pontos": 40, "descricao": "Apresenta o assunto, tangenciando o tema, ou demonstra domínio precário do texto dissertativo-argumentativo, com traços constantes de outros tipos textuais."},
+        {"pontos": 0, "descricao": "Fuga ao tema/não atendimento à estrutura dissertativo-argumentativa. Nestes casos a redação recebe nota 0 (zero) e é anulada.", "nota": "consistente com ZERO-EFEITO-01 — este nível 0 reflete a anulação total, não uma penalização isolada desta competência"}
+      ],
+      "cap_por_tangenciamento": {"pontos_maximos": 40, "origem": "TEMA-02", "fonte_pagina_fisica": 27},
+      "repertorio_de_bolso": {
+        "id": "REPERTORIO-01",
+        "definicao": "referência pronta, memorizada, usada de forma genérica/decorada/forçada, sem conexão genuína com o tema",
+        "criterios_repertorio_produtivo": ["pertinente ao assunto tratado", "bem contextualizado e articulado com os argumentos", "evidencia compreensão e relação com o problema discutido"],
+        "decidivel_mecanicamente": false,
+        "ambiguidade": "AMB-04",
+        "fonte_pagina_fisica": [18, 19, 20, 21, 22, 23]
+      }
+    },
+    {
+      "id": "COMP-III",
+      "numero": 3,
+      "nome": "Seleção, relação, organização e interpretação de informações em defesa de um ponto de vista",
+      "enunciado_oficial": "Selecionar, relacionar, organizar e interpretar informações, fatos, opiniões e argumentos em defesa de um ponto de vista.",
+      "aspectos_avaliados": ["projeto de texto", "desenvolvimento dos argumentos", "progressão temática", "ausência de lacunas de sentido"],
+      "fonte_pagina_fisica_definicao": [29, 30, 31],
+      "fonte_pagina_fisica_tabela": 32,
+      "rotulo_edicao_na_fonte": "Enem 2025",
+      "niveis": [
+        {"pontos": 200, "descricao": "Apresenta informações, fatos e opiniões relacionados ao tema proposto, de forma consistente e organizada, configurando autoria, em defesa de um ponto de vista."},
+        {"pontos": 160, "descricao": "Apresenta informações, fatos e opiniões relacionados ao tema, de forma organizada, com indícios de autoria, em defesa de um ponto de vista."},
+        {"pontos": 120, "descricao": "Apresenta informações, fatos e opiniões relacionados ao tema, limitados aos argumentos dos textos motivadores e pouco organizados, em defesa de um ponto de vista."},
+        {"pontos": 80, "descricao": "Apresenta informações, fatos e opiniões relacionados ao tema, mas desorganizados ou contraditórios e limitados aos argumentos dos textos motivadores, em defesa de um ponto de vista."},
+        {"pontos": 40, "descricao": "Apresenta informações, fatos e opiniões pouco relacionados ao tema ou incoerentes e sem defesa de um ponto de vista."},
+        {"pontos": 0, "descricao": "Apresenta informações, fatos e opiniões não relacionados ao tema e sem defesa de um ponto de vista."}
+      ],
+      "cap_por_tangenciamento": {"pontos_maximos": 40, "origem": "TEMA-02", "fonte_pagina_fisica": 27}
+    },
+    {
+      "id": "COMP-IV",
+      "numero": 4,
+      "nome": "Mecanismos linguísticos (coesão) necessários à construção da argumentação",
+      "enunciado_oficial": "Demonstrar conhecimento dos mecanismos linguísticos necessários para a construção da argumentação.",
+      "aspectos_avaliados": ["operadores argumentativos", "estruturação de parágrafos e períodos", "referenciação"],
+      "fonte_pagina_fisica_definicao": [32, 33, 34, 35],
+      "fonte_pagina_fisica_tabela": 35,
+      "rotulo_edicao_na_fonte": "Enem 2024",
+      "ambiguidade_rotulo": "AMB-03",
+      "niveis": [
+        {"pontos": 200, "descricao": "Articula bem as partes do texto e apresenta repertório diversificado de recursos coesivos."},
+        {"pontos": 160, "descricao": "Articula as partes do texto, com poucas inadequações, e apresenta repertório diversificado de recursos coesivos."},
+        {"pontos": 120, "descricao": "Articula as partes do texto, de forma mediana, com inadequações, e apresenta repertório pouco diversificado de recursos coesivos."},
+        {"pontos": 80, "descricao": "Articula as partes do texto, de forma insuficiente, com muitas inadequações, e apresenta repertório limitado de recursos coesivos."},
+        {"pontos": 40, "descricao": "Articula as partes do texto de forma precária."},
+        {"pontos": 0, "descricao": "Não articula as informações."}
+      ],
+      "cap_por_tangenciamento": {"aplicavel": "indeterminado", "ambiguidade": "AMB-07 — fonte silente sobre se o cap de tangenciamento se aplica a esta competência"}
+    },
+    {
+      "id": "COMP-V",
+      "numero": 5,
+      "nome": "Proposta de intervenção respeitando os direitos humanos",
+      "enunciado_oficial": "Elaborar proposta de intervenção para o problema abordado, respeitando os direitos humanos.",
+      "aspectos_avaliados": ["ação interventiva concreta", "agente executor", "meio de execução", "efeito/finalidade", "detalhamento adicional", "respeito aos direitos humanos"],
+      "elementos_proposta_completa": ["ação", "agente (individual|familiar|comunitário|social|político|governamental)", "meio de execução", "efeito/finalidade", "detalhamento"],
+      "perguntas_guia_oficiais": [
+        "O que é possível apresentar como solução para o problema?",
+        "Que ação deve ser tomada para que a solução seja alcançada?",
+        "Quem deve executá-la?",
+        "Como viabilizar essa solução?",
+        "Qual efeito ela pode alcançar?",
+        "Que outra informação pode ser acrescentada para detalhar a proposta?"
+      ],
+      "nao_configura_proposta": [
+        "apenas constatar a falta de algo, sem indicar ação (ex.: 'faltam investimentos em X')",
+        "estruturas condicionais vagas (ex.: 'se X for feito, o resultado poderá ser Y')"
+      ],
+      "fonte_pagina_fisica_definicao": [35, 36, 37, 38],
+      "fonte_pagina_fisica_tabela": 39,
+      "rotulo_edicao_na_fonte": "Enem 2025",
+      "niveis": [
+        {"pontos": 200, "descricao": "Elabora muito bem proposta de intervenção, detalhada, relacionada ao tema e articulada à discussão desenvolvida no texto."},
+        {"pontos": 160, "descricao": "Elabora bem proposta de intervenção relacionada ao tema e articulada à discussão desenvolvida no texto."},
+        {"pontos": 120, "descricao": "Elabora, de forma mediana, proposta de intervenção relacionada ao tema e articulada à discussão desenvolvida no texto."},
+        {"pontos": 80, "descricao": "Elabora, de forma insuficiente, proposta de intervenção relacionada ao tema, ou não articulada com a discussão desenvolvida no texto."},
+        {"pontos": 40, "descricao": "Apresenta proposta de intervenção vaga, precária ou relacionada apenas ao assunto."},
+        {"pontos": 0, "descricao": "Não apresenta proposta de intervenção ou apresenta proposta não relacionada ao tema ou ao assunto."}
+      ],
+      "cap_por_tangenciamento": {"pontos_maximos": 40, "origem": "TEMA-02", "fonte_pagina_fisica": 27},
+      "direitos_humanos": {
+        "principios_gerais_DH-01": ["dignidade humana", "igualdade de direitos", "reconhecimento e valorização das diferenças e diversidades", "laicidade do Estado", "democracia na educação", "transversalidade, vivência e globalidade", "sustentabilidade socioambiental"],
+        "base_legal": "artigo 3º da Resolução nº 1 de 30/05/2012 (Diretrizes Nacionais para a Educação em Direitos Humanos)",
+        "sempre_contrarias_DH-02": ["defesa de tortura, mutilação, execução sumária ou qualquer forma de 'justiça com as próprias mãos'", "incitação a violência motivada por raça, etnia, gênero, credo, opinião política, condição física, origem geográfica ou socioeconômica", "qualquer forma de discurso de ódio contra grupos sociais específicos"],
+        "instancias_especificas_tema_2024_DH-03": {
+          "nota": "NÃO generalizável a outras edições — ver AMB-05. Exemplo de aplicação de DH-01/DH-02 ao tema 'Desafios para a valorização da herança africana no Brasil'.",
+          "portatil": false
+        },
+        "gatilho_zero": "DH-ZERO-01",
+        "fonte_pagina_fisica": [37, 38, 39]
+      }
+    }
+  ],
+  "tema": {
+    "metodologia_decomposicao": {
+      "descricao": "decompor a frase temática oficial da edição em elementos obrigatórios; verificar quantos são desenvolvidos e articulados entre si",
+      "portatil_entre_edicoes": true,
+      "exemplo_2024": {
+        "frase_tematica": "Desafios para a valorização da herança africana no Brasil",
+        "elementos_obrigatorios": ["Desafios", "Valorização", "Herança africana", "Brasil"],
+        "portatil_entre_edicoes": false
+      }
+    },
+    "fuga_total": {"id": "TEMA-01", "definicao": "nem o assunto mais amplo nem o tema específico são desenvolvidos", "efeito": "ZERO-01 → ZERO-EFEITO-01 (zera redação inteira)", "fonte_pagina_fisica": 26},
+    "tangenciamento": {"id": "TEMA-02", "definicao": "abordagem parcial baseada somente no assunto mais amplo, sem o recorte específico", "efeito": "cap de 40 pontos em COMP-II, COMP-III, COMP-V; efeito sobre COMP-I e COMP-IV indeterminado (AMB-07)", "fonte_pagina_fisica": 27}
+  },
+  "tipo_textual": {
+    "definicao_dissertativo_argumentativo": {"id": "TIPO-01", "descricao": "organiza-se com base na defesa de um ponto de vista, fundamentado com argumentos; dupla natureza argumentativa (defende posição) e dissertativa (explica/justifica)", "fonte_pagina_fisica": [27, 28]},
+    "fronteira_zero_vs_penalizacao": {
+      "id": "TIPO-02",
+      "zero_redacao_inteira_se": "predominância de características de outro tipo textual, mesmo que as demais competências estivessem atendidas",
+      "penalizacao_parcial_comp_ii_se": "muitas características de outro tipo textual em meio a um texto ainda predominantemente dissertativo-argumentativo",
+      "limiar_quantitativo_definido_pela_fonte": false,
+      "ambiguidade": "AMB-06",
+      "fonte_pagina_fisica": 28
+    }
+  },
+  "titulo": {
+    "id": "TITULO-01",
+    "opcional": true,
+    "conta_como_linha_escrita": true,
+    "avaliado_por_competencia": false,
+    "pode_anular_redacao_inteira": true,
+    "condicao_anulacao": "desenhos, sinais gráficos sem função evidente, impropérios etc.",
+    "gatilho": "ZERO-11",
+    "fonte_pagina_fisica": 11
+  },
+  "atendimento_especializado": [
+    {"id": "ATEND-01", "publico": "surdos(as) ou com deficiência auditiva", "base_legal": "Lei nº 13.146/2015, art. 30, inciso VI", "documento_dedicado_existe": true, "documento_dedicado_incluido_neste_canon": false, "fonte_pagina_fisica": [11, 12]},
+    {"id": "ATEND-02", "publico": "participantes com dislexia", "base_legal": "Lei nº 13.146/2015, art. 30, inciso VI", "documento_dedicado_existe": true, "documento_dedicado_incluido_neste_canon": false, "fonte_pagina_fisica": 12},
+    {"id": "ATEND-03", "publico": "participantes com Transtorno do Espectro Autista (TEA)", "base_legal": "Lei nº 13.146/2015, art. 30, inciso VI", "avaliado_por": "banca especializada desde 2020", "documento_dedicado_existe": true, "documento_dedicado_incluido_neste_canon": false, "fonte_pagina_fisica": 12},
+    {"id": "ATEND-04", "descricao": "regimes especializados exigem aprovação prévia de documento/declaração/parecer antes da correção", "fonte_pagina_fisica": 11}
+  ],
+  "secoes_nao_extraidas": [
+    {"id": "LEITURA-GUIADA-REF", "paginas_fisicas": [40, 41], "motivo": "aplica regras já extraídas a um exemplo concreto; não introduz regra nova"},
+    {"id": "AMOSTRA-REF", "paginas_fisicas": [42, 72], "motivo": "10 redações comentadas qualitativamente, sem nota numérica por competência atribuída explicitamente no texto — não gera dado de calibração"},
+    {"id": "LEIAMAIS-REF", "paginas_fisicas": [73, 75], "motivo": "recomendação de leitura, não é critério de correção"}
+  ],
+  "ambiguidades": [
+    {"id": "AMB-01", "resumo": "limite inferior exato de 'texto insuficiente' não é 100% explícito"},
+    {"id": "AMB-02", "resumo": "'parte deliberadamente desconectada' exige julgamento de articulação argumentativa, sem teste mecânico"},
+    {"id": "AMB-03", "resumo": "rótulo de edição ('Enem 2024' vs 'Enem 2025') inconsistente entre as 5 tabelas de competência na mesma cartilha"},
+    {"id": "AMB-04", "resumo": "'repertório de bolso' não é lista fechada; depende de julgamento sobre articulação"},
+    {"id": "AMB-05", "resumo": "lista de violações de direitos humanos específicas ao tema de 2024 não é generalizável a outras edições"},
+    {"id": "AMB-06", "resumo": "fronteira entre 'predominância de outro tipo textual' (zero total) e 'traços' (penalização em COMP-II) não é quantificada"},
+    {"id": "AMB-07", "resumo": "fonte silente sobre se o cap de tangenciamento (máx. 40 pts) se aplica às Competências I e IV"},
+    {"id": "AMB-08", "resumo": "patamar de cópia dos textos motivadores que leva a 'anulada como cópia' não é quantificado"},
+    {"id": "AMB-09", "resumo": "seção Amostra de Redações não contém dados numéricos rotulados para calibração de modelo"}
+  ],
+  "changelog": [
+    {
+      "tx": "TX-2026-08-24T151820Z-enem-canon-v1",
+      "timestamp": "2026-08-24T15:18:20Z",
+      "classe": "criação",
+      "alteracao": "Criação do documento, estruturação computável derivada de ENEM-FONTE-1.0@1.0.0 e ENEM-MATRIZ-1.0@1.0.0",
+      "autoriza": "Pedido do usuário, 2026-08-24",
+      "co_alterados": [
+        "11 Cartilha ENEM 2025 - Extracao da Fonte Oficial.md",
+        "12 ENEM 2025 - Matriz de Correcao Estruturada.md",
+        "README.md (mesmo diretório)"
+      ]
+    },
+    {
+      "tx": "TX-2026-08-25T153950Z-enem-canon-fidelity-v1.1",
+      "timestamp": "2026-08-25T15:39:50Z",
+      "classe": "II — Errata + I — Correção de Fidelidade (GOV-1.0 §3.3)",
+      "alteracao": "(1) Errata: chave de topo duplicada 'titulo' (string do título do documento) colidia com a chave 'titulo' da regra TITULO-01 no mesmo objeto JSON; json.load mantinha silenciosamente só a última ocorrência, tornando o título do documento inacessível por essa chave. Renomeada para 'titulo_documento'; a chave 'titulo' de TITULO-01 não foi alterada. (2) Correção de Fidelidade: 'competencias[COMP-II]' não portava 'cap_por_tangenciamento', embora 'tema.tangenciamento.efeito' (neste mesmo documento) e a Matriz de Correção Estruturada §1 (linhas 91-92) e §3/AMB-07 (linha 207) já registrassem, desde a criação do canon em TX-2026-08-24T151820Z-enem-canon-v1, que o cap de 40 pontos por tangenciamento se aplica a II, III e V — não apenas III e V. Adicionado 'cap_por_tangenciamento: {pontos_maximos: 40, origem: TEMA-02, fonte_pagina_fisica: 27}' a COMP-II, idêntico em forma ao já presente em COMP-III e COMP-V. Nenhuma decisão nova: alinhamento a decisão já registrada em documento de mesma camada (CNI, GOV-1.0 §4.2). Nenhuma ambiguidade listada em 'ambiguidades' foi afetada — AMB-07 permanece restrita ao silêncio da fonte sobre Competências I e IV.",
+      "autoriza": "Identificação do usuário durante implementação de aluno/backend/redacao/canon.py, 2026-08-25; decisão de referência: campo 'tema.tangenciamento.efeito' deste documento e '12 ENEM 2025 - Matriz de Correcao Estruturada.md' linhas 91-92 e 207",
+      "co_alterados": [
+        "12 ENEM 2025 - Matriz de Correcao Estruturada.md (changelog apenas — conteúdo já correto, nenhuma alteração normativa)"
+      ]
+    }
+  ]
+}

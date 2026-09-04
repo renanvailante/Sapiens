@@ -5,8 +5,10 @@ import Nav from "../components/Nav";
 import { ArrowRight, Check, X, RotateCw, Sparkles, BookOpen, ChevronLeft } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import FormulaMath from "../components/FormulaMath";
+import Mentis from "../components/Mentis";
 
 const APP_VERSION = "sapiens-web-1.0";
+const MENTIS_COST = 7; // espelha EXPLICACAO_COST em mentis_routes.py — só p/ desabilitar o botão sem saldo, o servidor é quem cobra de fato
 
 // "AMARELO" -> "Amarelo" — só para exibição das cores de caderno do ENEM.
 const capitalizar = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : s);
@@ -111,6 +113,7 @@ function QuestionRunner({ filtro, onExit }) {
   const [rodadaResumo, setRodadaResumo] = useState(null); // devolutiva unificada da rodada (10/10, 5/5 etc.): Sparks + IA juntos
   const [pulso, setPulso] = useState(false); // destaque breve na barra ao responder
   const [sparks, setSparks] = useState(null);
+  const [explicacao, setExplicacao] = useState(null); // { loading, paragrafos, erro } — da questão ATUAL, some ao avançar
   const startRef = useRef(Date.now());
   const changesRef = useRef(0);
   const respostasSessaoRef = useRef([]); // [{item_id, alternativa_escolhida, acertou}], só desta sessão
@@ -307,9 +310,26 @@ function QuestionRunner({ filtro, onExit }) {
   const proxima = () => {
     setSelected(null);
     setResult(null);
+    setExplicacao(null);
     changesRef.current = 0;
     startRef.current = Date.now();
     setIdx((i) => i + 1);
+  };
+
+  // Explicação completa da Mentis: paga (MENTIS_COST Sparks), cacheada por
+  // item no servidor — pedir de novo na MESMA questão (outro aluno, ou este
+  // aluno revisitando) não gera texto novo nem cobra uma segunda chamada ao
+  // Gemini, mas ainda cobra os Sparks (o valor entregue é o mesmo).
+  const pedirExplicacao = async () => {
+    if (!item || explicacao?.loading || explicacao?.paragrafos) return;
+    setExplicacao({ loading: true });
+    try {
+      const { data } = await api.post("/mentis/explicacao", { item_id: item.item_id });
+      setExplicacao({ paragrafos: data.paragrafos });
+      if (typeof data.sparks_balance === "number") setSparks(data.sparks_balance);
+    } catch (e) {
+      setExplicacao({ erro: errMsg(e, "Não foi possível gerar a explicação agora.") });
+    }
   };
 
   // A devolutiva (Sparks + IA) já foi buscada em `responder()`, no mesmo
@@ -382,7 +402,11 @@ function QuestionRunner({ filtro, onExit }) {
         </div>
       )}
 
-      <article className="card-sapiens rounded-2xl p-6 md:p-8">
+      {/* `leitura-clara`: a única superfície clara que sobrou no produto. Numa
+          prova de 45 questões, enunciado longo em vidro escuro cansa — conforto
+          de leitura ganha da coerência visual quando os dois brigam. Ver a seção
+          "Superfície de leitura longa" em index.css. */}
+      <article className="card-sapiens leitura-clara rounded-2xl p-6 md:p-8">
         <div className="mb-4 flex flex-wrap gap-2">
           {tags.map((t, i) => (
             <span key={i} className="rounded-full bg-sapiens-accentSoft px-3 py-1 text-xs font-medium text-sapiens-navy">{t}</span>
@@ -533,6 +557,35 @@ function QuestionRunner({ filtro, onExit }) {
             {(result.feedback?.mensagens || []).map((m, i) => (
               <p key={i} className={`mt-2 text-sm leading-relaxed ${result.acertou ? "text-emerald-800" : "text-rose-800"}`}>{m}</p>
             ))}
+
+            {!explicacao?.paragrafos && (
+              <button
+                onClick={pedirExplicacao}
+                disabled={explicacao?.loading || (sparks != null && sparks < MENTIS_COST)}
+                data-testid="mentis-explicacao-btn"
+                className="mt-3 inline-flex items-center gap-2 rounded-full border border-sapiens-navy/15 bg-white px-3.5 py-2 text-xs font-bold text-sapiens-navy shadow-sm transition hover:border-sapiens-accent hover:shadow disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Mentis className="w-4 h-4" variante="icone" estado={explicacao?.loading ? "analise" : "neutra"} />
+                {explicacao?.loading
+                  ? "A Mentis está lendo a questão…"
+                  : sparks != null && sparks < MENTIS_COST
+                  ? `Saldo insuficiente (${MENTIS_COST} Sparks)`
+                  : `Saiba mais com a Mentis · ${MENTIS_COST} Sparks`}
+              </button>
+            )}
+            {explicacao?.erro && (
+              <p className="mt-2 text-xs font-medium text-rose-600" data-testid="mentis-explicacao-erro">{explicacao.erro}</p>
+            )}
+            {explicacao?.paragrafos && (
+              <div className="mt-4 rounded-xl border border-zinc-200 bg-white/80 p-4" data-testid="mentis-explicacao">
+                <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-sapiens-navy">
+                  <Mentis className="w-4 h-4" variante="icone" /> Explicação completa da Mentis
+                </div>
+                {explicacao.paragrafos.map((p, i) => (
+                  <p key={i} className="mt-2 text-sm leading-relaxed text-zinc-700">{p}</p>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

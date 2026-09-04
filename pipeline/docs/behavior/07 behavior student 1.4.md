@@ -1,0 +1,23 @@
+{ "_governanca": { "id": "BEH-1.1", "titulo": "Contrato do Evento de Resposta do Estudante", "schema_version_atual": "1.1", "estado": "ativo", "camada": "C4", "supersedes": "1.0", "criado_em": "2026-08-17T02:56:33Z", "atualizado_em": "2026-08-17T17:46:26Z", "governado_por": "GOV-1.0", "governed_by_conteudo": ["White Paper Sapiens 2.0", "Constituição da Ontologia Sapiens", "Ontologia Cognitiva Sapiens v1.4.1", "Especificação do Error Trace v1.0"], "compativel_com": { "ontologia": ">=1.4.1, <2.0", "item_schema": ">=2.2, <3.0", "error_trace": ">=1.0, <2.0" }, "changelog_ref": "TX-2026-08-17T174626Z-behavior-v1.1", "nota_de_nome_de_arquivo": "O nome do arquivo conserva o sufixo '1.4', que NÃO é a versão deste contrato e NÃO é a versão da ontologia — é resíduo de nomeação. A versão deste contrato é 'schema_version': '1.1'; a versão da ontologia é declarada em 'ontology_version'. O nome é conservado por estabilidade de citação (GOV-1.0 §6.1: a versão vive no campo, não no nome). A ambiguidade fica aqui declarada em vez de silenciosa." },
+
+"schema_version": "Versão semântica do contrato deste evento de behavior, '1.1'. Não confundir com a versão da ontologia nem com a versão do contrato de item.",
+
+"ontology_version": "ACRESCENTADO NA 1.1, OBRIGATÓRIO. Versão exata da ontologia canônica contra a qual o item estava anotado no momento da resposta, por exemplo '1.4.1'. Exigido por GOV-1.0 §6.1. Sem este campo, um evento não pode ser reinterpretado depois de a ontologia mudar de versão MAIOR, porque não há como saber contra qual catálogo o item estava anotado quando o estudante respondeu.",
+
+"event_id": "Identificador único e imutável deste evento de interação. É a chave pela qual um Error Trace se liga a esta resposta (ver Especificação do Error Trace §2.1). Este contrato NÃO armazena o traço de erro: o traço é objeto separado, produzido em tempo de execução pelo motor diagnóstico.", "attempt_id": "Identificador único da tentativa à qual este evento pertence.",
+
+"student_id": "Identificador único do aluno que realizou a interação.", "item_id": "Identificador único da questão/item respondido.",
+
+"item_schema_version": "Versão do schema utilizada pelo item no momento em que a interação ocorreu.", "item_hash": "Hash criptográfico do conteúdo canônico do item no momento da resposta, permitindo identificar exatamente a versão do item utilizada.",
+
+"timestamp": "Data e hora em que a interação foi finalizada, em formato ISO 8601 e com timezone.",
+
+"contexto": { "tipo": "Tipo de atividade em que o item foi respondido, conforme os valores definidos pelo contrato canônico do Sapiens.", "prova_id": "Identificador único da avaliação, prova ou atividade à qual o item pertence, quando aplicável.", "origem": "Origem ou fonte do item, conforme os valores definidos pelo contrato canônico do Sapiens." },
+
+"resposta": { "alternativa_escolhida": "Identificador da alternativa selecionada pelo aluno.", "acertou": "Resultado da correção da resposta, calculado exclusivamente pelo backend a partir do item e de seu gabarito canônicos." },
+
+"desempenho": { "_estatuto": "ESTATUTO DECLARADO NA 1.1. Os campos deste bloco correspondem ao que o White Paper 1.0 chamava de Indicador Comportamental — o traço extraível diretamente do comportamento de resposta. Esse nível foi removido na transição para a arquitetura vigente: a Constituição, Capítulo 3, define seis tipos de nó e nenhum é o Indicador Comportamental (ver 'EXT-WP1-1.0', item L1). CONSEQUÊNCIA VINCULANTE: estes campos são COLETADOS E REGISTRADOS, e NÃO alimentam atualização de crença sobre o estado cognitivo do estudante. O canal de evidência além de acerto/erro permanece regido pelo Grau de Liberdade GL-3 do White Paper 2.0, que está ABERTO — latência em posição secundária, autorrelato e observação docente fora de escopo. Nenhuma inferência cognitiva pode ser derivada destes campos até que uma camada superior os defina. A recuperação do Indicador Comportamental como camada transversal depende da Constituição e não foi antecipada aqui.", "tempo_resposta_segundos": "Tempo decorrido, em segundos, entre o início da interação e sua finalização.", "numero_tentativas": "Número ordinal da tentativa do aluno para responder este item dentro do contexto da atividade.", "mudou_resposta": "Indica se o aluno alterou a alternativa selecionada antes de finalizar a resposta." },
+
+"status": "Estado da interação no ciclo de resposta, utilizando exclusivamente os valores definidos pelo contrato canônico do Sapiens.",
+
+"metadados": { "dispositivo": "Tipo de dispositivo utilizado pelo aluno no momento da interação.", "versao_aplicacao": "Versão da aplicação responsável por registrar o evento." } }

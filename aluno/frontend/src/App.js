@@ -29,6 +29,8 @@ const LearningMap = lazy(() => import("./pages/LearningMap"));
 const History = lazy(() => import("./pages/History"));
 const Trash = lazy(() => import("./pages/Trash"));
 const SkillsMap = lazy(() => import("./pages/SkillsMap"));
+const Diagnostico = lazy(() => import("./pages/Diagnostico"));
+const MentisChat = lazy(() => import("./pages/MentisChat"));
 const SparksStore = lazy(() => import("./pages/SparksStore"));
 const Feed = lazy(() => import("./pages/Feed"));
 const Questoes = lazy(() => import("./pages/Questoes"));
@@ -85,6 +87,8 @@ function AppRouter() {
       <Route path="/history" element={<ProtectedRoute><Pagina titulo="Histórico"><History /></Pagina></ProtectedRoute>} />
       <Route path="/trash" element={<ProtectedRoute><Pagina titulo="Lixeira"><Trash /></Pagina></ProtectedRoute>} />
       <Route path="/cognitive-profile" element={<ProtectedRoute><Pagina titulo="Mapa cognitivo"><SkillsMap /></Pagina></ProtectedRoute>} />
+      <Route path="/diagnostico" element={<ProtectedRoute><Pagina titulo="Diagnóstico real"><Diagnostico /></Pagina></ProtectedRoute>} />
+      <Route path="/mentis" element={<ProtectedRoute><Pagina titulo="Mentis"><MentisChat /></Pagina></ProtectedRoute>} />
       <Route path="/sparks" element={<ProtectedRoute><Pagina titulo="Sparks"><SparksStore /></Pagina></ProtectedRoute>} />
       <Route path="/feed" element={<ProtectedRoute><Pagina titulo="Feed"><Feed /></Pagina></ProtectedRoute>} />
       <Route path="/redacao" element={<ProtectedRoute><Pagina titulo="Redação"><Redacao /></Pagina></ProtectedRoute>} />
@@ -115,7 +119,9 @@ export default function App() {
               <AppRouter />
             </Suspense>
           </ErrorBoundary>
-          <Toaster position="top-center" richColors closeButton />
+          {/* `theme="dark"`: o Sonner nasce claro e um toast branco era a única
+              coisa do produto que continuava em tema claro sobre o ambiente novo. */}
+          <Toaster position="top-center" richColors closeButton theme="dark" />
         </AuthProvider>
       </BrowserRouter>
     </div>
