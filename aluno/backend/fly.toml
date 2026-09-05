@@ -26,10 +26,34 @@ primary_region = "gru"          # São Paulo: menor latência para o piloto
   # Sincronização Firestore -> questoes_public. Explícito de propósito: a
   # máquina de desenvolvimento roda com 0 (congelamento do saneamento do
   # corpus) e produção herdava o default de 300 do código — a divergência não
-  # aparecia em lugar nenhum. O Firestore é a fonte da verdade do acervo, e
-  # 300s é frequente o bastante para uma prova nova aparecer sem clique manual,
-  # raro o bastante para não pressionar a cota de leitura.
-  FIRESTORE_AUTO_SYNC_SECONDS = "300"
+  # aparecia em lugar nenhum.
+  #
+  # 2026-09-04 — ERA 300s, E ISSO DERRUBAVA O SITE TODO DIA. A linha antiga
+  # dizia que 300s era "raro o bastante para não pressionar a cota de leitura".
+  # Era o contrário, e a conta nunca tinha sido feita:
+  #
+  #   `admin_routes._read_all_firestore("itens")` lê o acervo INTEIRO a cada
+  #   ciclo — sem detectar mudança, sem filtro incremental.
+  #   268 documentos x 288 ciclos/dia = 77.184 leituras/dia.
+  #   Cota gratuita do Firestore (plano Spark) = 50.000 leituras/dia.
+  #
+  # O laço sozinho consumia 154% da cota diária antes de qualquer aluno abrir
+  # o site. Todo fim de tarde o Firestore passava a responder 429 e QUALQUER
+  # rota autenticada quebrava (`ensure_student_profile` e `ler_agregado` estão
+  # no caminho de quase tudo) — o aluno não conseguia responder questão nem
+  # usar ferramenta nenhuma.
+  #
+  # 6h = 1.072 leituras/dia (2% da cota). O acervo justifica: o `updated_at`
+  # mais recente dos 268 itens é de 2026-08-22, ou seja, ele passa semanas sem
+  # mudar. E quando muda, o admin tem `POST /admin/firestore/sync` para
+  # publicar na hora, sem esperar o ciclo.
+  #
+  # ARMADILHA: existe um SECRET do Fly com este mesmo nome, e secret vence o
+  # `[env]` daqui. Mudar só esta linha não muda nada em produção — foi o que
+  # aconteceu na primeira tentativa de corrigir o incidente. Para valer:
+  #     flyctl secrets set FIRESTORE_AUTO_SYNC_SECONDS=<valor> -a sapiens-aluno
+  # e confira com `flyctl ssh console -a sapiens-aluno -C "printenv ..."`.
+  FIRESTORE_AUTO_SYNC_SECONDS = "21600"
   # Teto de espera das chamadas ao Gemini (ver ai_service).
   GEMINI_TIMEOUT_SEGUNDOS = "30"
   GEMINI_TIMEOUT_VISION_SEGUNDOS = "60"

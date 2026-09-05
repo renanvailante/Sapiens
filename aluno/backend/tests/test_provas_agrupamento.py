@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import asyncio
 import sys
+
+import pytest
 from pathlib import Path
 
 BACKEND = Path(__file__).resolve().parent.parent
@@ -223,13 +225,54 @@ class TestListQuestoesPublicoFiltro:
 
 
 class TestMinhasRespondidas:
-    def test_formato_da_resposta_para_aluno_sem_historico(self):
+    """Estes testes eram os únicos da suíte que abriam conexão real com o
+    Firestore. Duas consequências, as duas ruins: ficavam vermelhos sempre que
+    a cota diária do projeto estourava (foi o que aconteceu em 2026-09-04, com
+    a suíte acusando um defeito que não existia), e cada execução local gastava
+    leitura da mesma cota que o app de produção precisa. Agora o agregado é
+    dublado — o que o teste verifica é o CONTRATO da rota, que não depende de
+    haver banco nenhum atrás."""
+
+    def _chamar(self, monkeypatch, agregado=None, erro=None):
+        """`agregado` para o caminho feliz, `erro` para o caminho de falha —
+        um dublê só, para o teste de erro não ser apagado por um segundo
+        `monkeypatch` do caminho feliz."""
         import firestore_routes as fr
+        import firestore_service as fs
         from models import User
 
-        async def _chamar():
+        def _ler(uid):
+            if erro is not None:
+                raise erro
+            return agregado or {}
+
+        monkeypatch.setattr(fs, "ler_agregado", _ler)
+
+        async def _ir():
             u = User(email="ops@example.com", name="x", user_id="user_offline_teste_sem_historico")
             return await fr.minhas_respondidas(user=u)
 
-        r = _run(_chamar())
-        assert r == {"item_ids": []}
+        return _run(_ir())
+
+    def test_formato_da_resposta_para_aluno_sem_historico(self, monkeypatch):
+        assert self._chamar(monkeypatch, {}) == {"item_ids": []}
+
+    def test_item_ids_vem_ordenados_e_sem_repeticao_do_agregado(self, monkeypatch):
+        r = self._chamar(monkeypatch, {"item_ids_respondidos": ["IT-C", "IT-A", "IT-B"]})
+        assert r == {"item_ids": ["IT-A", "IT-B", "IT-C"]}
+
+    def test_cota_esgotada_vira_503_e_nao_vaza_a_excecao_do_sdk(self, monkeypatch):
+        """A regressão do incidente: cota estourada respondia 502 com a
+        mensagem interna do SDK do Google no corpo, visível para o aluno."""
+        from google.api_core import exceptions as google_exceptions
+        from fastapi import HTTPException
+
+        with pytest.raises(HTTPException) as exc:
+            self._chamar(
+                monkeypatch,
+                erro=google_exceptions.ResourceExhausted("Quota exceeded. projeto=sapiens-dataset"),
+            )
+        assert exc.value.status_code == 503
+        assert exc.value.headers.get("Retry-After")
+        assert "sapiens-dataset" not in str(exc.value.detail)
+        assert "Quota exceeded" not in str(exc.value.detail)

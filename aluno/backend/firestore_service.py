@@ -132,12 +132,39 @@ def _initial_behavior_doc(uid: str, email: Optional[str] = None, name: Optional[
     }
 
 
+# Alunos cujo documento já foi confirmado neste processo. `ensure_student_profile`
+# e `ensure_student_behavior` são checagens de EXISTÊNCIA, e existência aqui é
+# monotônica: uma vez criado, o documento não deixa de existir. Sem esta memória,
+# cada uma custava 1 leitura do Firestore por REQUISIÇÃO — e elas estão no
+# caminho de quase toda rota autenticada (`/diagnostico`, `/skills-map`,
+# `/mentis/*`, `/students/me/*`), então um aluno navegando pagava leitura só
+# para perguntar de novo algo cuja resposta nunca muda.
+#
+# Deliberadamente em memória do processo, como o `rate_limit`: com mais de uma
+# máquina cada uma aquece o próprio conjunto, o que custa 1 leitura por aluno
+# por máquina e continua correto — `ref.set()` é idempotente. Reiniciar limpa,
+# que é o comportamento desejado (nunca serve como fonte de verdade).
+_PROVISIONADO_PROFILE: set[str] = set()
+_PROVISIONADO_BEHAVIOR: set[str] = set()
+
+
+def esquecer_provisionamento(uid: str) -> None:
+    """Tira o aluno da memória de provisionamento. Para testes e para o caso
+    de um documento ser apagado à mão em produção."""
+    _PROVISIONADO_PROFILE.discard(uid)
+    _PROVISIONADO_BEHAVIOR.discard(uid)
+
+
 def ensure_student_behavior(uid: str, email: Optional[str] = None, name: Optional[str] = None) -> bool:
     """Create the behavior_student doc if it does not yet exist. Returns True if created."""
+    if uid in _PROVISIONADO_BEHAVIOR:
+        return False
     ref = _behavior_ref(uid)
     if ref.get().exists:
+        _PROVISIONADO_BEHAVIOR.add(uid)
         return False
     ref.set(_initial_behavior_doc(uid, email, name))
+    _PROVISIONADO_BEHAVIOR.add(uid)
     return True
 
 
@@ -187,8 +214,11 @@ def ensure_student_profile(uid: str, name: Optional[str] = None, email: Optional
     """Cria o documento de profile do aluno em students/{uid} se ainda não existir.
     Deve ser chamado no login (via provisionamento já existente). Retorna True se criou.
     """
+    if uid in _PROVISIONADO_PROFILE:
+        return False
     ref = _student_doc_ref(uid)
     if ref.get().exists:
+        _PROVISIONADO_PROFILE.add(uid)
         return False
     ref.set({
         "nome": name,
@@ -196,6 +226,7 @@ def ensure_student_profile(uid: str, name: Optional[str] = None, email: Optional
         "created_at": _now_iso(),
         "sparks_balance": SPARKS_INITIAL_BALANCE,
     })
+    _PROVISIONADO_PROFILE.add(uid)
     return True
 
 
@@ -461,22 +492,71 @@ def get_activity_dates(uid: str, limit: int = 3000) -> list[str]:
     return sorted(dias, reverse=True)[:limit]
 
 
+# Teto de segurança da varredura de alunos: o custo é 1 leitura por aluno, o
+# que é barato para dezenas ou centenas e deixa de ser para dezenas de milhares.
+_TETO_ALUNOS_VARRIDOS = 5000
+
+
 def list_students_with_behavior(limit: int = 500) -> list[dict[str, Any]]:
-    """Agrega, via collection group query, todos os alunos com pelo menos um
-    evento de behavior registrado (schema canônico), com contagem e último evento."""
-    events = get_firestore().collection_group("behavior").limit(5000).stream()
-    by_student: dict[str, dict[str, Any]] = {}
-    for snap in events:
-        ev = snap.to_dict() or {}
-        sid = ev.get("student_id")
-        if not sid:
+    """Alunos com pelo menos um evento de behavior, com contagem e último evento.
+
+    Lê o AGREGADO de cada aluno (`students/{uid}.agregado`), não a coleção de
+    eventos. Custo: 1 leitura por aluno, no lugar de 1 por EVENTO.
+
+    Antes era `collection_group("behavior").limit(5000)`, que tinha dois
+    problemas — um de custo e um de correção:
+
+    * **Custo.** 5.000 leituras por chamada, num universo de 50.000/dia. O laço
+      diário de perfil cognitivo sozinho gastava 10% da cota do dia só para
+      descobrir quem tinha respondido algo novo. Com ~20 alunos, o agregado
+      responde a mesma pergunta em ~20 leituras.
+    * **Correção — e este era o pior.** O `limit(5000)` truncava em silêncio.
+      Passando de 5.000 eventos somados na plataforma, alunos simplesmente
+      sumiam desta lista: não apareciam para o admin e paravam de ter perfil
+      cognitivo recalculado, sem erro nenhum em lugar algum. Era um defeito
+      latente esperando o produto crescer.
+
+    O agregado é mantido por `_atualizar_agregado` a cada resposta e
+    reconstruído sob demanda por `ler_agregado`. Aluno que responde antes do
+    agregado existir cai no reparo abaixo, que é caro por aluno mas raro e
+    definitivo — depois dele, o aluno passa a ter agregado como todo mundo.
+    """
+    client = get_firestore()
+    rows: list[dict[str, Any]] = []
+    varridos = 0
+    for snap in client.collection("students").stream():
+        varridos += 1
+        if varridos > _TETO_ALUNOS_VARRIDOS:
+            # Truncar em SILÊNCIO foi o defeito da versão anterior (o
+            # `limit(5000)` sobre eventos). Aqui o teto existe só para uma base
+            # muito maior não virar uma varredura surpresa, e ele GRITA no log
+            # quando é atingido — para virar tarefa de paginar de verdade, não
+            # um sumiço inexplicável de alunos.
+            logger.error(
+                "list_students_with_behavior: base passou de %d alunos e a listagem foi "
+                "truncada. Está na hora de paginar esta consulta.", _TETO_ALUNOS_VARRIDOS,
+            )
+            break
+        dados = snap.to_dict() or {}
+        agregado = dados.get("agregado")
+        if agregado is None:
+            # Aluno anterior ao agregado (ou com gravação perdida): reconstrói
+            # uma vez. `reconstruir_agregado` persiste, então na próxima
+            # chamada ele já entra pelo caminho barato.
+            try:
+                agregado = reconstruir_agregado(snap.id)
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("Agregado de %s não pôde ser reconstruído: %s", snap.id, exc)
+                continue
+        total = int(agregado.get("total_respostas") or 0)
+        if total <= 0:
             continue
-        agg = by_student.setdefault(sid, {"student_id": sid, "count": 0, "last_at": None})
-        agg["count"] += 1
-        ts = ev.get("timestamp")
-        if ts and (agg["last_at"] is None or ts > agg["last_at"]):
-            agg["last_at"] = ts
-    rows = sorted(by_student.values(), key=lambda r: r["last_at"] or "", reverse=True)
+        rows.append({
+            "student_id": snap.id,
+            "count": total,
+            "last_at": agregado.get("atualizado_em"),
+        })
+    rows.sort(key=lambda r: r["last_at"] or "", reverse=True)
     return rows[:limit]
 
 

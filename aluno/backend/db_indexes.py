@@ -89,6 +89,16 @@ INDICES: list[tuple[str, list[tuple[str, int]], dict]] = [
     ("redacao_avaliacoes", [("redacao_id", pymongo.ASCENDING)], {"name": "avaliacao_por_redacao"}),
     ("aulas_particulares", [("created_at", pymongo.DESCENDING)], {"name": "aulas_recentes"}),
 
+    # --- cache do agregado derivado do Firestore ---
+    # Ver `annotation_service._agregado_com_cache`: troca N leituras do
+    # Firestore (uma por evento de behavior do aluno) por 1. O documento é
+    # descartável — o TTL só evita que a coleção cresça sem fim conforme os
+    # alunos vão respondendo e as chaves antigas deixam de ser consultadas.
+    ("perfil_derivado_cache", [("expurgo_em_dt", pymongo.ASCENDING)],
+     {"name": "perfil_derivado_cache_ttl", "expireAfterSeconds": 0}),
+    ("perfil_derivado_cache", [("user_id", pymongo.ASCENDING)],
+     {"name": "perfil_derivado_por_aluno"}),
+
     # --- chat da Mentis ---
     # A busca por sessão ativa (`mentis_routes._sessao_ativa`) roda em toda
     # abertura do chat e em toda mensagem enviada: filtra por aluno e por

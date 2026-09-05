@@ -8,6 +8,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from collections import defaultdict
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import firestore_service as fs
@@ -85,6 +86,92 @@ def _build_item_index(force: bool = False) -> dict[str, dict]:
                 mapping[chave] = item
     _ITEM_INDEX = mapping
     return mapping
+
+
+# ---------------------------------------------------------------------------
+# Cache do agregado derivado do Firestore — 1 leitura no lugar de N
+# ---------------------------------------------------------------------------
+#
+# `_read_firestore_answered` e `_read_firestore_desempenho_detalhado` varrem a
+# coleção `students/{uid}/behavior` INTEIRA, sem limite, e são chamadas por
+# `/diagnostico`, `/cognitive-profile`, `/skills-map`, o laço diário de perfil
+# cognitivo e a abertura de sessão da Mentis. Um aluno com 400 respostas
+# custava 400 leituras do Firestore POR ABERTURA de qualquer uma dessas telas —
+# e recarregar a página pagava tudo de novo.
+#
+# Isso é exatamente a forma do incidente de 2026-09-04 (cota diária do Firestore
+# esgotada, 429 em toda rota autenticada), só que na dimensão do aluno em vez da
+# do acervo: ali era um laço relendo 268 itens a cada 5 min, aqui é a tela mais
+# usada do produto relendo o histórico a cada clique. Com dez alunos ativos
+# revisitando o diagnóstico, a cota vai embora do mesmo jeito.
+#
+# A chave de invalidação é `total_respostas`, que `firestore_service.ler_agregado`
+# devolve em UMA leitura e que `_atualizar_agregado` incrementa a cada resposta:
+# aluno respondeu algo novo -> contagem muda -> chave muda -> recalcula. É o
+# mesmo princípio que `perfil_cognitivo_service.atualizar_todos_os_perfis` já
+# usava para decidir se valia a pena reprocessar alguém; aqui ele passa a valer
+# para toda leitura, não só para o laço diário.
+#
+# Duas salvaguardas contra cache velho:
+#  * `ontology_version()` entra na chave — reanotação do catálogo invalida tudo;
+#  * TTL de 6h, porque `_atualizar_agregado` pode falhar em silêncio (ele loga e
+#    segue, para não perder a resposta do aluno). Sem o TTL, uma contagem que
+#    parou de subir congelaria o perfil para sempre.
+#
+# O cache vive no Mongo, não no Firestore: é justamente o banco que não tem cota
+# de leitura para estourar.
+
+_CACHE_DERIVADO_TTL_SEGUNDOS = 6 * 3600
+_CACHE_DERIVADO_VERSAO = "v1"
+
+
+async def _agregado_com_cache(escopo: str, user_id: str, ler_do_firestore) -> dict[str, Any]:
+    """Devolve o agregado derivado de `escopo`, do cache quando possível.
+
+    Nunca é o caminho crítico: qualquer falha do cache (Mongo ausente, leitura
+    ou gravação com erro) cai de volta na leitura direta do Firestore. Cache é
+    otimização de custo, jamais uma dependência para o resultado existir.
+    """
+    if _db is None:  # testes offline e qualquer chamador sem Mongo ligado
+        return await asyncio.to_thread(ler_do_firestore, user_id)
+
+    try:
+        agregado = await asyncio.to_thread(fs.ler_agregado, user_id)
+        contagem = int(agregado.get("total_respostas") or 0)
+    except Exception as exc:  # noqa: BLE001
+        # Sem a contagem não há chave de invalidação confiável. Recalcular é
+        # caro, mas servir dado potencialmente errado é pior.
+        logger.warning("cache derivado (%s): agregado indisponível para %s: %s", escopo, user_id, exc)
+        return await asyncio.to_thread(ler_do_firestore, user_id)
+
+    chave = ":".join((_CACHE_DERIVADO_VERSAO, escopo, user_id, str(contagem), ontology_version() or ""))
+    agora = datetime.now(timezone.utc)
+    try:
+        doc = await _db.perfil_derivado_cache.find_one({"_id": chave})
+        if doc and (doc.get("expira_em") or "") > agora.isoformat():
+            return doc["valor"]
+    except Exception:  # noqa: BLE001
+        logger.exception("cache derivado (%s): leitura falhou — seguindo para o Firestore", escopo)
+
+    valor = await asyncio.to_thread(ler_do_firestore, user_id)
+    try:
+        await _db.perfil_derivado_cache.update_one(
+            {"_id": chave},
+            {"$set": {
+                "valor": valor,
+                "user_id": user_id,
+                "escopo": escopo,
+                "total_respostas": contagem,
+                "expira_em": (agora + timedelta(seconds=_CACHE_DERIVADO_TTL_SEGUNDOS)).isoformat(),
+                # Campo BSON de data só para o TTL do Mongo — sobre string ISO o
+                # TTL não roda (mesma armadilha documentada em `db_indexes`).
+                "expurgo_em_dt": agora + timedelta(days=7),
+            }},
+            upsert=True,
+        )
+    except Exception:  # noqa: BLE001
+        logger.exception("cache derivado (%s): gravação falhou — a próxima chamada relê o Firestore", escopo)
+    return valor
 
 
 def _read_firestore_answered(user_id: str) -> dict[str, Any]:
@@ -167,7 +254,7 @@ async def compute_cognitive_profile(user_id: str) -> dict[str, Any]:
     uma questao que aciona o processo correspondente. Sem IA/LLM.
     """
     try:
-        agg = await asyncio.to_thread(_read_firestore_answered, user_id)
+        agg = await _agregado_com_cache("answered", user_id, _read_firestore_answered)
     except Exception as exc:  # noqa: BLE001
         logger.warning("cognitive-profile: leitura do Firestore falhou para %s: %s", user_id, exc)
         return {
@@ -482,7 +569,7 @@ async def compute_diagnostico_real(user_id: str) -> dict[str, Any]:
     processos fracos que têm exatamente um Tipo de Erro catalogado sem
     ambiguidade — ver nota de escopo acima da seção."""
     try:
-        agg = await asyncio.to_thread(_read_firestore_desempenho_detalhado, user_id)
+        agg = await _agregado_com_cache("desempenho", user_id, _read_firestore_desempenho_detalhado)
     except Exception as exc:  # noqa: BLE001
         logger.warning("diagnostico-real: leitura do Firestore falhou para %s: %s", user_id, exc)
         vazio = {"fortes": [], "fracos": []}

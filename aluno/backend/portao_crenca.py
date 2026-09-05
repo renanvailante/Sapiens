@@ -20,7 +20,12 @@ Daí os três modos:
                 entram no agregado que alimenta o mapa de habilidades.
     circulacao  item não apto também sai da prova. É a leitura mais estrita;
                 mede-se o custo antes de ligar (ver o relatório da Fase 2).
-    desligado   comportamento anterior. Só para depuração.
+    desligado   comportamento anterior. Depuração — e, desde 2026-09-04, o
+                modo do piloto: com o corpus inteiro sem revisão humana, o
+                Motor Cognitivo ficava vazio para todo aluno. O bloqueio saiu,
+                a regra não: `motor_cognitivo` marca como `provisorio` todo
+                traço que entra sem revisão, e a tela do aluno declara isso.
+                Reverter é `fly secrets unset PORTAO_CRENCA_MODO`.
 
 `PORTAO_CRENCA_MODO` escolhe. Como todo o corpus está hoje com o portão
 fechado — e vai continuar até haver revisão humana registrada —, ligar

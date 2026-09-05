@@ -1,3 +1,11 @@
+# ATENÇÃO: este arquivo NÃO é aplicado pelo deploy do Fly.
+#
+# O build roda com o contexto na RAIZ do repositório (ver o cabeçalho de
+# fly.toml), e o Docker só lê o `.dockerignore` da raiz do contexto. As regras
+# que valem estão em `/.dockerignore`. Este arquivo só teria efeito num build
+# feito com `docker build aluno/backend/`, que não é como a plataforma sobe.
+# Mantido para esse caso; se editar exclusões de deploy, edite o da raiz.
+
 venv/
 .venv/
 __pycache__/

@@ -30,6 +30,7 @@ const History = lazy(() => import("./pages/History"));
 const Trash = lazy(() => import("./pages/Trash"));
 const SkillsMap = lazy(() => import("./pages/SkillsMap"));
 const Diagnostico = lazy(() => import("./pages/Diagnostico"));
+const Motor = lazy(() => import("./pages/Motor"));
 const MentisChat = lazy(() => import("./pages/MentisChat"));
 const SparksStore = lazy(() => import("./pages/SparksStore"));
 const Feed = lazy(() => import("./pages/Feed"));
@@ -88,6 +89,7 @@ function AppRouter() {
       <Route path="/trash" element={<ProtectedRoute><Pagina titulo="Lixeira"><Trash /></Pagina></ProtectedRoute>} />
       <Route path="/cognitive-profile" element={<ProtectedRoute><Pagina titulo="Mapa cognitivo"><SkillsMap /></Pagina></ProtectedRoute>} />
       <Route path="/diagnostico" element={<ProtectedRoute><Pagina titulo="Diagnóstico real"><Diagnostico /></Pagina></ProtectedRoute>} />
+      <Route path="/motor" element={<ProtectedRoute><Pagina titulo="Motor cognitivo"><Motor /></Pagina></ProtectedRoute>} />
       <Route path="/mentis" element={<ProtectedRoute><Pagina titulo="Mentis"><MentisChat /></Pagina></ProtectedRoute>} />
       <Route path="/sparks" element={<ProtectedRoute><Pagina titulo="Sparks"><SparksStore /></Pagina></ProtectedRoute>} />
       <Route path="/feed" element={<ProtectedRoute><Pagina titulo="Feed"><Feed /></Pagina></ProtectedRoute>} />

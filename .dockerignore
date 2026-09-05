@@ -1,32 +1,52 @@
-# Build context é a raiz do repo (ver aluno/backend/fly.toml). Sem este
-# arquivo NA RAIZ, o Docker ignora o .dockerignore que existe dentro de
-# aluno/backend/ (Docker só lê .dockerignore do diretório do build context) —
-# e `COPY aluno/backend/ /app/` empacotava o `.env` real (segredos e config
-# de dev local, ex. MONGO_URL=127.0.0.1, FIRESTORE_AUTO_SYNC_SECONDS=0) direto
-# na imagem de produção. Padrões sem "/" na frente casam em qualquer profundidade.
-.env
-.env.*
-!.env.example
-venv/
-.venv/
-__pycache__/
-*.pyc
-.pytest_cache/
-node_modules/
-.git/
+# Contexto de build do backend do aluno.
+#
+# O build roda a partir da RAIZ do repositório (ver o cabeçalho de
+# aluno/backend/fly.toml): o Dockerfile precisa de `pipeline/docs/ontology/` e
+# de dois validadores em `pipeline/backend/`, que vivem fora de aluno/backend.
+#
+# ATENÇÃO: o Docker só lê o `.dockerignore` da RAIZ DO CONTEXTO. O arquivo em
+# `aluno/backend/.dockerignore` nunca foi aplicado — o contexto ia inteiro, com
+# `.git` (60 MB), `pipeline/backend/_storage` (412 MB), `annotation_audit`
+# (19 MB), node_modules e os venvs. Em 2026-09-04 isso deixou o `fly deploy`
+# transferindo centenas de MB por mais de 6 minutos e falhando por timeout de
+# rede, com a correção da cota do Firestore ficando de fora sem ninguém notar.
+#
+# O Dockerfile copia exatamente quatro coisas:
+#   aluno/backend/
+#   pipeline/docs/ontology/ontology_v1.4.json
+#   pipeline/backend/ontology_validator.py
+#   pipeline/backend/item_contract.py
+# Tudo o mais aqui é peso morto no contexto.
 
-# Segredos e dados locais NUNCA precisam ir para o builder. O contexto do build
-# é a raiz do repo e o Fly usa builder remoto: sem estas linhas, a chave privada
-# da service account do Firebase (.secrets/) viajava para uma máquina remota a
-# cada deploy, e 99 MB de dados do Mongo local iam junto, deixando todo deploy
-# lento. Nada disto é COPY-ado pelo Dockerfile — o problema é o envio, não a
-# imagem.
-.secrets/
-.mongodb-data/
-.saneamento/
-.wrangler/
-.logs/
-auditoria/
-test_reports/
-cadernos enem/
-*.log
+.git
+.saneamento
+.wrangler
+.claude
+**/.DS_Store
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/venv
+**/.venv
+**/node_modules
+**/build
+**/dist
+
+# segredos nunca entram na imagem; os exemplos são documentação
+**/.env
+**/.env.*
+!**/.env.example
+
+# artefatos pesados e código que o backend do aluno não usa
+pipeline/backend/_storage
+pipeline/annotation_audit
+pipeline/frontend
+pipeline/scripts
+pipeline/docs/_superseded
+cadernos enem
+auditoria
+professor
+aluno/frontend
+
+# testes não vão para a imagem de produção (paridade com o .dockerignore antigo)
+aluno/backend/tests

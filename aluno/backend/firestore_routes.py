@@ -14,6 +14,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field
 
 import rate_limit
+from firestore_http import safe_call as _safe_call
 from auth import require_user, require_admin
 from models import User
 import ai_service
@@ -77,14 +78,6 @@ class BehaviorPayload(BaseModel):
             if f:
                 out["flags"] = f
         return out
-
-
-def _safe_call(fn, *args, **kwargs):
-    try:
-        return fn(*args, **kwargs)
-    except Exception as exc:  # noqa: BLE001
-        logger.exception("Firestore call failed: %s", exc)
-        raise HTTPException(status_code=502, detail=f"Firestore error: {exc}")
 
 
 # ---------- Reads: pipeline ----------

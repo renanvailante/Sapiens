@@ -40,6 +40,7 @@ import events_routes as events_module
 import firestore_routes as firestore_module
 import skills_map_routes as skills_map_module
 import diagnostico_routes as diagnostico_module
+import motor_routes as motor_module
 import perfil_cognitivo_service
 import mentis_routes as mentis_module
 import aulas_particulares_routes as aulas_particulares_module
@@ -287,6 +288,7 @@ api_router.include_router(events_module.router)
 api_router.include_router(firestore_module.router)
 api_router.include_router(skills_map_module.router)
 api_router.include_router(diagnostico_module.router)
+api_router.include_router(motor_module.router)
 api_router.include_router(mentis_module.router)
 api_router.include_router(aulas_particulares_module.router)
 api_router.include_router(sparks_module.router)

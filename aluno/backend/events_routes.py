@@ -20,15 +20,11 @@ from models import User
 import annotation_service
 import firestore_service as fs
 import perfil_cognitivo_service
+from firestore_http import safe_call as _safe
 
 router = APIRouter(prefix="", tags=["events"])
 
 
-def _safe(fn, *args, **kwargs):
-    try:
-        return fn(*args, **kwargs)
-    except Exception as exc:  # noqa: BLE001
-        raise HTTPException(status_code=502, detail=f"Firestore error: {exc}")
 
 
 @router.get("/students")

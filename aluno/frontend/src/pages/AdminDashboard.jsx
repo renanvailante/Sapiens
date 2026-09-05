@@ -103,8 +103,28 @@ export default function AdminDashboard() {
           </button>
         </div>
 
+        {/* Painel do professor: app separado, só vitrine — visualiza dado já
+            processado aqui, nunca gera diagnóstico próprio (ver a própria
+            tela de login dele). Link externo, não rota interna. */}
+        <a
+          href="https://sapiens-professor.pages.dev"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-10 lift card-sapiens hover:border-sapiens-accent rounded-2xl p-6 flex items-start gap-4"
+          data-testid="admin-link-professor"
+        >
+          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-sapiens-accent to-sapiens-navy text-white flex items-center justify-center shrink-0">
+            <GraduationCap className="w-5 h-5" strokeWidth={1.7} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="font-display font-bold text-lg tracking-tight text-zinc-950">Painel do professor</div>
+            <div className="mt-1 text-sm text-zinc-500">App separado, com visão por turma/aluno/processo e evolução no tempo — abre em outra aba.</div>
+            <div className="mt-3 flex items-center gap-1 text-xs text-zinc-900 font-medium">Abrir <ArrowRight className="w-3 h-3" /></div>
+          </div>
+        </a>
+
         {/* Sections */}
-        <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
           {SECTIONS.map(s => (
             <Link key={s.to} to={s.to}
               className="lift card-sapiens hover:border-sapiens-accent rounded-2xl p-6 flex items-start gap-4"

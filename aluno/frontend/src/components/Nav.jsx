@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { api } from "../lib/api";
-import { LogOut, Compass, History, Zap, Brain, ShieldCheck, MoreHorizontal, Trash2, LayoutGrid, GraduationCap, PenLine, Stethoscope, MessageCircle } from "lucide-react";
+import { LogOut, Compass, History, Zap, Brain, ShieldCheck, MoreHorizontal, Trash2, LayoutGrid, GraduationCap, PenLine, Stethoscope, MessageCircle, Crosshair } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTitle, SheetDescription } from "./ui/sheet";
 import BrandMark from "./BrandMark";
@@ -18,6 +18,7 @@ const PRIMARY_LINKS = [
   { to: "/mentis", icon: MessageCircle, label: "Mentis", testid: "nav-mentis", mascote: true },
 ];
 const SECONDARY_LINKS = [
+  { to: "/motor", icon: Crosshair, label: "Motor", testid: "nav-motor" },
   { to: "/diagnostico", icon: Stethoscope, label: "Diagnóstico", testid: "nav-diagnostico" },
   { to: "/redacao", icon: PenLine, label: "Redação", testid: "nav-redacao" },
   { to: "/history", icon: History, label: "Histórico", testid: "nav-history" },
