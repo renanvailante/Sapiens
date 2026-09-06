@@ -58,75 +58,15 @@ async def perfil_de_aluno(uid: str, _: User = Depends(require_admin)):
 
 @router.get("/panorama")
 async def panorama(
-    limite_alunos: int = Query(50, ge=1, le=200),
+    limite_eventos: int = Query(1500, ge=100, le=5000),
     _: User = Depends(require_admin),
 ):
-    """Quais causas RAIZ dominam a base, e em quantos alunos.
+    """Visão da base inteira — uma varredura só (ver `motor_cognitivo.panorama`).
 
-    Serve à decisão de conteúdo (que intervenção vale produzir primeiro) e à
-    revisão de ontologia — que, sob GOV-1.0 §11.2 Classe B e Error Trace R-7,
-    é **humana**: este endpoint informa, nunca altera o catálogo.
-
-    O laço é sequencial de propósito: cada perfil varre o histórico de um
-    aluno no Firestore, e disparar 200 varreduras em paralelo transformaria
-    um painel de admin em pico de leitura no banco de produção.
+    `limite_eventos` é teto de LEITURA do Firestore, não de resultado. Os
+    números são deliberadamente pequenos: a cota do plano gratuito é de 50 mil
+    leituras/dia e foi estourada em produção em 2026-09-04 — com um teto de
+    20 mil, um único clique de admin queimava 40% do dia. 1.500 por padrão,
+    5.000 no máximo (3% e 10% da cota).
     """
-    alunos = await asyncio.to_thread(fs.list_students_with_behavior, limite_alunos)
-    por_erro: dict[str, dict] = {}
-    por_processo: dict[str, dict] = {}
-    barrados = analisados = com_traco = 0
-
-    for aluno in alunos:
-        uid = aluno.get("student_id")
-        if not uid:
-            continue
-        try:
-            p = await asyncio.to_thread(motor_cognitivo.perfil, uid)
-        except Exception:  # noqa: BLE001
-            logger.exception("panorama: perfil falhou para %s", uid)
-            continue
-        analisados += 1
-        barrados += p["portao"]["tracos_barrados"]
-        if p["portao"]["tracos_no_perfil"]:
-            com_traco += 1
-        for linha in p["mapa_de_erros"]["raizes"]:
-            balde = por_erro.setdefault(
-                linha["erro_id"],
-                {
-                    "erro_id": linha["erro_id"],
-                    "erro_nome": linha["erro_nome"],
-                    "intervencao_id": linha["intervencao_id"],
-                    "intervencao_nome": linha["intervencao_nome"],
-                    "alunos": 0,
-                    "ocorrencias": 0,
-                    "peso": 0.0,
-                },
-            )
-            balde["alunos"] += 1
-            balde["ocorrencias"] += linha["ocorrencias"]
-            balde["peso"] = round(balde["peso"] + linha["peso"], 3)
-        for linha in p["habilidades_prioritarias"]:
-            if linha["origem"] != "error_trace":
-                continue
-            balde = por_processo.setdefault(
-                linha["processo_id"],
-                {
-                    "processo_id": linha["processo_id"],
-                    "processo_nome": linha["processo_nome"],
-                    "dominio_nome": linha["dominio_nome"],
-                    "alunos": 0,
-                    "peso": 0.0,
-                },
-            )
-            balde["alunos"] += 1
-            balde["peso"] = round(balde["peso"] + linha["peso_raiz"], 3)
-
-    return {
-        "alunos_analisados": analisados,
-        "alunos_com_traco_valido": com_traco,
-        "tracos_barrados_pelo_portao": barrados,
-        "portao": motor_cognitivo.portao_crenca.modo(),
-        "causas_raiz": sorted(por_erro.values(), key=lambda l: (-l["peso"], -l["alunos"])),
-        "habilidades": sorted(por_processo.values(), key=lambda l: (-l["peso"], -l["alunos"])),
-        "ontology_version": motor_cognitivo.ontology_version(),
-    }
+    return await asyncio.to_thread(motor_cognitivo.panorama, limite_eventos)

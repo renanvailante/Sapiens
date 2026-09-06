@@ -241,6 +241,9 @@ function HabilidadeCard({ linha }) {
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <Chip className={origem.classe}>{origem.chip}</Chip>
+          {linha.provisorio && (
+            <Chip className="text-amber-800 bg-amber-100 border-amber-200">hipótese provisória</Chip>
+          )}
           {linha.percentual_acerto !== null && (
             <span className="font-mono-alt text-xs text-zinc-500">
               {linha.percentual_acerto}% de acerto em {linha.respondidas}q
@@ -254,10 +257,19 @@ function HabilidadeCard({ linha }) {
         </div>
         {linha.erro_dominante && (
           <div className="mt-3 text-sm">
-            <span className="text-zinc-500">Causa mais provável: </span>
-            <span className="font-semibold text-zinc-800">{linha.erro_dominante.nome}</span>
-            {linha.erro_dominante.evidencia_observavel && (
-              <span className="text-zinc-500"> — {linha.erro_dominante.evidencia_observavel}</span>
+            {linha.erro_dominante.sem_catalogo ? (
+              <span className="text-zinc-500">
+                Você erra aqui de forma consistente, mas o catálogo desta versão ainda não nomeia a causa —
+                não há intervenção prescrita para ela.
+              </span>
+            ) : (
+              <>
+                <span className="text-zinc-500">Causa mais provável: </span>
+                <span className="font-semibold text-zinc-800">{linha.erro_dominante.nome}</span>
+                {linha.erro_dominante.evidencia_observavel && (
+                  <span className="text-zinc-500"> — {linha.erro_dominante.evidencia_observavel}</span>
+                )}
+              </>
             )}
           </div>
         )}
@@ -354,7 +366,13 @@ export default function Motor() {
           <div className="mt-4 card-sapiens rounded-2xl p-4 md:p-5 flex items-start gap-3" data-testid="motor-aviso-portao">
             <ShieldAlert className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
             <div>
-              <div className="font-display font-bold text-zinc-950">Segurando por revisão humana</div>
+              <div className="font-display font-bold text-zinc-950">
+                {data.indisponivel
+                  ? "Não deu para ler seu histórico agora"
+                  : data.provisorio
+                    ? "Leitura provisória"
+                    : "Segurando por revisão humana"}
+              </div>
               <p className="text-sm text-zinc-600 mt-1">{data.aviso}</p>
             </div>
           </div>
@@ -362,14 +380,28 @@ export default function Motor() {
 
         {fila.length === 0 ? (
           <div className="mt-6 card-sapiens rounded-2xl p-6 text-center" data-testid="motor-vazio">
-            <div className="font-display font-bold text-lg text-zinc-950">Ainda não dá para apontar nada.</div>
+            <div className="font-display font-bold text-lg text-zinc-950">
+              {data.indisponivel ? "Seu histórico não respondeu agora." : "Ainda não dá para apontar nada."}
+            </div>
             <p className="mt-2 text-sm text-zinc-500 max-w-md mx-auto">
-              Uma habilidade só entra nesta fila quando ela é a raiz de pelo menos {data.amostra_minima.tracos_raiz}{" "}
-              erros seus. Um erro isolado não é padrão — é dado insuficiente.
+              {data.indisponivel ? (
+                <>Isto é uma falha de leitura, não um retrato seu. Recarregue em alguns minutos.</>
+              ) : (
+                <>
+                  Uma habilidade só entra nesta fila quando ela é a raiz de pelo menos{" "}
+                  {data.amostra_minima.tracos_raiz} erros seus. Um erro isolado não é padrão — é dado insuficiente.
+                </>
+              )}
             </p>
-            <Link to="/exams" className="pill inline-flex mt-4 text-sm font-medium btn-sapiens px-4 py-2 rounded-full">
-              Praticar questões
-            </Link>
+            {data.indisponivel ? (
+              <button onClick={load} className="pill inline-flex mt-4 text-sm font-medium btn-sapiens px-4 py-2 rounded-full" data-testid="motor-recarregar">
+                Tentar de novo
+              </button>
+            ) : (
+              <Link to="/exams" className="pill inline-flex mt-4 text-sm font-medium btn-sapiens px-4 py-2 rounded-full">
+                Praticar questões
+              </Link>
+            )}
           </div>
         ) : (
           <div className="mt-8">
@@ -412,6 +444,10 @@ export default function Motor() {
           Metodologia: cada erro vira uma cadeia ordenada (Error Trace v{data.etrace_version}), lida da anotação da
           questão contra a ontologia v{data.ontology_version}. A intervenção sai sempre do elo raiz. Nenhuma
           atribuição é determinística — todo elo carrega confiança, e nada aqui altera o catálogo.
+          {data.provisorio && (
+            <> Enquanto a anotação das questões não passar por revisão humana, o que você lê aqui é
+            hipótese declarada, não conclusão.</>
+          )}
         </div>
       </div>
     </div>

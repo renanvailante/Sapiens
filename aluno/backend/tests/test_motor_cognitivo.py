@@ -26,6 +26,15 @@ import motor_cognitivo as motor  # noqa: E402
 import portao_crenca  # noqa: E402
 
 
+@pytest.fixture(autouse=True)
+def _sem_memoria_entre_testes():
+    """`_ler_historico` memoriza o histórico por aluno para não estourar a
+    cota de leitura do Firestore. Entre testes isso vazaria estado."""
+    motor.esquecer_historico()
+    yield
+    motor.esquecer_historico()
+
+
 def _evento(event_id="e1", alternativa="B", acertou=False, item_id="I-1", ts="2026-09-01T10:00:00Z"):
     return {
         "event_id": event_id,
@@ -359,3 +368,113 @@ class TestProvisorioComPortaoDesligado:
         p = motor.perfil("u1")
         por_desempenho = [l for l in p["habilidades_prioritarias"] if l["origem"] == "desempenho"]
         assert por_desempenho and all(l["provisorio"] is False for l in por_desempenho)
+
+
+class TestFalhaDeLeitura:
+    """Firestore fora do ar não pode virar "você ainda não praticou".
+
+    O custo de leitura em si (não varrer o histórico duas vezes) é travado por
+    `TestMemoriaDoMotor`, em `tests/test_custo_firestore.py`, contando leituras
+    reais — não se duplica a garantia aqui.
+    """
+
+    def test_cota_estourada_vira_indisponivel_e_nao_aluno_sem_dados(self, monkeypatch):
+        chamadas = {"n": 0}
+
+        def _explode(uid):
+            chamadas["n"] += 1
+            raise RuntimeError("429 Quota exceeded")
+
+        monkeypatch.setattr(motor, "_ler_historico", _explode)
+        p1 = motor.perfil("u1")
+        p2 = motor.perfil("u1")
+        assert chamadas["n"] == 2, "a falha nunca pode ser memorizada"
+        assert p1["indisponivel"] is True
+        assert "tente de novo" in p1["aviso"]
+        assert p2["indisponivel"] is True
+
+    def test_leitura_boa_nao_escreve_na_memoria_de_ler_historico(self, monkeypatch):
+        """`falha_de_leitura` é do envelope, não do dicionário memorizado."""
+        memorizado = {
+            "tracos": [], "processo_stats": {}, "itens_respondidos": set(),
+            "eventos": 0, "respondidos": 0, "eventos_com_item": 0, "erros": 0,
+        }
+        monkeypatch.setattr(motor, "_ler_historico", lambda uid: memorizado)
+        assert motor._historico("u1")["falha_de_leitura"] is False
+        assert "falha_de_leitura" not in memorizado
+
+
+class TestSentinelaNaFila:
+    """Sentinela como raiz é evidência legítima (R-2) mas não prescreve nada.
+    Ela aparece — esconder evidência seria pior — porém abaixo das linhas que
+    têm intervenção catalogada, para o aluno não abrir primeiro a que não tem
+    o que fazer."""
+
+    def _traco_sentinela(self, i):
+        cadeia = [{"ordem": 1, "erro": "erro-nao-catalogado-nesta-versao",
+                   "processo_afetado": "PROC-ESPACO-01", "confianca": 0.7}]
+        return motor.produzir_traco("u1", _evento(event_id=f"s{i}"), _item(cadeia))
+
+    def test_sentinela_vem_depois_mesmo_com_peso_maior(self):
+        tracos = [self._traco_sentinela(i) for i in range(3)]  # peso 2.1
+        tracos += [motor.produzir_traco("u1", _evento(event_id=f"e{i}"), _item(CADEIA)) for i in range(2)]  # peso 1.4
+        fila = motor._priorizar(tracos, {})
+        assert fila[0]["processo_id"] == "PROC-SIMB-01"
+        assert fila[0]["sem_intervencao_catalogada"] is False
+        assert fila[1]["processo_id"] == "PROC-ESPACO-01"
+        assert fila[1]["sem_intervencao_catalogada"] is True
+        assert fila[1]["erro_dominante"]["sem_catalogo"] is True
+        assert fila[1]["intervencao"] is None
+
+
+class TestPanoramaNaoMenteQuandoTrunca:
+    """`/motor/panorama` tem teto de leitura porque a cota é finita. Um teto
+    que corta a base em silêncio produz um retrato falso com cara de completo
+    — o mesmo defeito que fazia alunos sumirem de `list_students_with_behavior`."""
+
+    class _Snap:
+        def __init__(self, dados):
+            self._d = dados
+
+        def to_dict(self):
+            return self._d
+
+    class _Query:
+        def __init__(self, docs):
+            self._docs = docs
+
+        def limit(self, n):
+            return TestPanoramaNaoMenteQuandoTrunca._Query(self._docs[:n])
+
+        def stream(self):
+            return iter(self._docs)
+
+    class _Cliente:
+        def __init__(self, docs):
+            self._docs = docs
+
+        def collection_group(self, _nome):
+            return TestPanoramaNaoMenteQuandoTrunca._Query(self._docs)
+
+    def _montar(self, monkeypatch, n_eventos):
+        import annotation_service
+        docs = [
+            self._Snap({"student_id": "U1", "status": "respondida",
+                        "resposta": {"acertou": True}})
+            for _ in range(n_eventos)
+        ]
+        monkeypatch.setattr(motor.fs, "get_firestore", lambda: self._Cliente(docs))
+        monkeypatch.setattr(annotation_service, "_build_item_index", lambda force=False: {})
+
+    def test_avisa_quando_bate_no_teto(self, monkeypatch):
+        self._montar(monkeypatch, n_eventos=50)
+        p = motor.panorama(limite_eventos=10)
+        assert p["truncado"] is True
+        assert p["eventos_vistos"] == 10
+        assert p["limite_eventos"] == 10
+
+    def test_base_inteira_lida_nao_e_marcada_truncada(self, monkeypatch):
+        self._montar(monkeypatch, n_eventos=5)
+        p = motor.panorama(limite_eventos=10)
+        assert p["truncado"] is False
+        assert p["eventos_vistos"] == 5

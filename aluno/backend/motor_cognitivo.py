@@ -440,6 +440,47 @@ def _ler_historico(uid: str) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 
+# ---------------------------------------------------------------------------
+# Leitura do histórico com falha DECLARADA
+# ---------------------------------------------------------------------------
+#
+# A memória que evita reler o histórico é a de `_ler_historico` (memo por
+# `total_respostas`, acima) — não há uma segunda camada aqui de propósito. Um
+# cache por tempo na frente daquela memória só faria mal: ela invalida no
+# instante em que o aluno responde algo novo, e um TTL a manteria velha por
+# minutos em troca de economizar uma leitura do Mongo, que não tem cota.
+#
+# O que falta lá, e é o que este envelope acrescenta, é a distinção entre
+# "sem dados" e "não deu para ler".
+
+
+def _historico_vazio(falhou: bool) -> dict[str, Any]:
+    return {
+        "tracos": [], "processo_stats": {}, "itens_respondidos": set(),
+        "eventos": 0, "respondidos": 0, "eventos_com_item": 0, "erros": 0,
+        "falha_de_leitura": falhou,
+    }
+
+
+def _historico(uid: str) -> dict[str, Any]:
+    """Histórico do aluno com a falha declarada em vez de silenciada.
+
+    Firestore fora do ar ou cota estourada NUNCA pode virar "aluno sem
+    dados": isso mandaria o aluno responder mais questões atrás de um perfil
+    que não ia aparecer de jeito nenhum. A falha volta marcada em
+    `falha_de_leitura`, e nada dela entra na memória de `_ler_historico`.
+
+    A cópia rasa existe para não escrever a chave dentro do dicionário
+    memorizado, que pertence a `_ler_historico`.
+    """
+    try:
+        dados = _ler_historico(uid)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("motor: leitura do histórico falhou para %s: %s", uid, exc)
+        return _historico_vazio(True)
+    return {**dados, "falha_de_leitura": False}
+
+
 def _agregar_erros(tracos: list[dict]) -> dict[str, Any]:
     """Separa RAIZ de MANIFESTAÇÃO. A separação é a razão de ser do objeto:
     tratar a manifestação de superfície na intervenção é pedagogicamente
@@ -573,10 +614,18 @@ def _priorizar(tracos: list[dict], processo_stats: dict[str, dict[str, int]]) ->
         erro_id = max(raiz_erro[pid].items(), key=lambda kv: kv[1])[0]
         catalogado = cat["erros"].get(erro_id) or {}
         int_id = catalogado.get("intervencao")
+        # Sentinela como raiz dominante: a evidência é real (o aluno falha
+        # mesmo neste processo), mas a v1.4.1 não nomeia a causa — 13 dos 25
+        # processos não têm Tipo de Erro. A linha continua aparecendo, porque
+        # esconder evidência seria pior; mas vai DEPOIS das que têm
+        # intervenção catalogada, senão o aluno abre primeiro justamente a
+        # que não tem o que prescrever.
+        sem_catalogo = erro_id in SENTINELAS
         linha = _base(pid)
         linha.update(
             {
                 "origem": "error_trace",
+                "sem_intervencao_catalogada": sem_catalogo,
                 "peso_raiz": round(peso, 3),
                 "ocorrencias_raiz": raiz_conta[pid],
                 # Quantas dessas raízes vieram de anotação ainda não revisada
@@ -587,6 +636,7 @@ def _priorizar(tracos: list[dict], processo_stats: dict[str, dict[str, int]]) ->
                 "erro_dominante": {
                     "id": erro_id,
                     "nome": _nome_erro(erro_id),
+                    "sem_catalogo": sem_catalogo,
                     "evidencia_observavel": catalogado.get("evidencia_observavel") or "",
                     "peso": round(raiz_erro[pid][erro_id], 3),
                 },
@@ -598,7 +648,13 @@ def _priorizar(tracos: list[dict], processo_stats: dict[str, dict[str, int]]) ->
             }
         )
         fila.append(linha)
-    fila.sort(key=lambda l: (-l["peso_raiz"], l["percentual_acerto"] if l["percentual_acerto"] is not None else 100))
+    fila.sort(
+        key=lambda l: (
+            l["sem_intervencao_catalogada"],  # prescritíveis primeiro
+            -l["peso_raiz"],
+            l["percentual_acerto"] if l["percentual_acerto"] is not None else 100,
+        )
+    )
 
     ja_listados = {l["processo_id"] for l in fila}
     medidos = [
@@ -619,6 +675,7 @@ def _priorizar(tracos: list[dict], processo_stats: dict[str, dict[str, int]]) ->
         linha.update(
             {
                 "origem": "desempenho",
+                "sem_intervencao_catalogada": True,
                 "peso_raiz": 0.0,
                 "ocorrencias_raiz": 0,
                 "ocorrencias_provisorias": 0,
@@ -654,14 +711,7 @@ def _particionar_pelo_portao(tracos: list[dict]) -> tuple[list[dict], list[dict]
 def perfil(uid: str) -> dict[str, Any]:
     """Perfil cognitivo completo do aluno. Uma leitura do histórico, nenhuma
     chamada a modelo, nenhum Spark cobrado."""
-    try:
-        hist = _ler_historico(uid)
-    except Exception as exc:  # noqa: BLE001
-        logger.warning("motor: leitura do histórico falhou para %s: %s", uid, exc)
-        hist = {
-            "tracos": [], "processo_stats": {}, "itens_respondidos": set(),
-            "eventos": 0, "respondidos": 0, "eventos_com_item": 0, "erros": 0,
-        }
+    hist = _historico(uid)
 
     aptos, barrados = _particionar_pelo_portao(hist["tracos"])
     mapa = _agregar_erros(aptos)
@@ -679,7 +729,12 @@ def perfil(uid: str) -> dict[str, Any]:
     provisorios = [t for t in aptos if not t["apto_para_camada_de_crenca"]]
 
     aviso = None
-    if barrados and not aptos:
+    if hist.get("falha_de_leitura"):
+        aviso = (
+            "Não foi possível ler o seu histórico agora. Isto não quer dizer que você não "
+            "tenha dados — tente de novo em alguns minutos."
+        )
+    elif barrados and not aptos:
         aviso = (
             f"{len(barrados)} erro(s) seu(s) já têm explicação anotada, mas as questões "
             "correspondentes ainda não passaram por revisão humana — por regra do próprio "
@@ -698,6 +753,7 @@ def perfil(uid: str) -> dict[str, Any]:
         "etrace_version": ETRACE_VERSION,
         "produtor": PRODUTOR,
         "provisorio": bool(provisorios),
+        "indisponivel": bool(hist.get("falha_de_leitura")),
         "portao": {
             "modo": portao_crenca.modo(),
             "tracos_produzidos": len(hist["tracos"]),
@@ -719,6 +775,107 @@ def perfil(uid: str) -> dict[str, Any]:
     }
 
 
+def panorama(limite_eventos: int = 5000) -> dict[str, Any]:
+    """Quais causas RAIZ dominam a base inteira, e em quantos alunos.
+
+    **Uma** varredura da collection group `behavior`, não uma por aluno. A
+    versão óbvia — listar alunos e chamar `perfil()` para cada um — custa a
+    varredura da collection group MAIS o histórico completo de cada aluno; com
+    50 alunos isso é a cota diária do plano gratuito num único clique de
+    admin. Aqui o mesmo stream que descobre quem respondeu já traz o que
+    responderam.
+
+    Informa; nunca altera catálogo (Error Trace R-7, GOV-1.0 §11.2 Classe B).
+    """
+    index = annotation_service._build_item_index()
+    client = fs.get_firestore()
+
+    por_aluno: dict[str, list[dict]] = defaultdict(list)
+    lidos = vistos = 0
+    for snap in client.collection_group("behavior").limit(limite_eventos).stream():
+        vistos += 1
+        ev = snap.to_dict() or {}
+        uid = ev.get("student_id")
+        if not uid or ev.get("status") not in (None, "respondida"):
+            continue
+        lidos += 1
+        if (ev.get("resposta") or {}).get("acertou") is not False:
+            continue
+        chave = next((k for k in (ev.get("item_id"), ev.get("item_hash")) if k and k in index), None)
+        item = index.get(chave) if chave else None
+        if not item:
+            continue
+        traco = produzir_traco(uid, ev, item)
+        if traco:
+            por_aluno[uid].append(traco)
+
+    cat = _catalogo()
+    por_erro: dict[str, dict] = {}
+    por_processo: dict[str, dict] = {}
+    barrados = provisorios = com_traco = 0
+
+    for uid, tracos in por_aluno.items():
+        aptos, fora = _particionar_pelo_portao(tracos)
+        barrados += len(fora)
+        provisorios += sum(1 for t in aptos if not t["apto_para_camada_de_crenca"])
+        if not aptos:
+            continue
+        com_traco += 1
+        for linha in _agregar_erros(aptos)["raizes"]:
+            balde = por_erro.setdefault(
+                linha["erro_id"],
+                {
+                    "erro_id": linha["erro_id"], "erro_nome": linha["erro_nome"],
+                    "intervencao_id": linha["intervencao_id"],
+                    "intervencao_nome": linha["intervencao_nome"],
+                    "alunos": 0, "ocorrencias": 0, "peso": 0.0,
+                },
+            )
+            balde["alunos"] += 1
+            balde["ocorrencias"] += linha["ocorrencias"]
+            balde["peso"] = round(balde["peso"] + linha["peso"], 3)
+        for linha in _priorizar(aptos, {}):
+            if linha["origem"] != "error_trace":
+                continue
+            balde = por_processo.setdefault(
+                linha["processo_id"],
+                {
+                    "processo_id": linha["processo_id"], "processo_nome": linha["processo_nome"],
+                    "dominio_nome": linha["dominio_nome"], "alunos": 0, "peso": 0.0,
+                },
+            )
+            balde["alunos"] += 1
+            balde["peso"] = round(balde["peso"] + linha["peso_raiz"], 3)
+
+    # Bateu no teto: a leitura parou no meio da base. Um painel que mostra
+    # "as causas raiz da base" a partir de uma amostra truncada SEM avisar é
+    # pior que um painel que não existe — foi o mesmo defeito que fazia alunos
+    # sumirem calados de `list_students_with_behavior`.
+    truncado = vistos >= limite_eventos
+    if truncado:
+        logger.warning(
+            "panorama: teto de %d eventos atingido — o retrato está incompleto. "
+            "Suba `limite_eventos` cientes do custo, ou leia por recorte.",
+            limite_eventos,
+        )
+
+    return {
+        "gerado_em": _now_iso(),
+        "eventos_lidos": lidos,
+        "eventos_vistos": vistos,
+        "limite_eventos": limite_eventos,
+        "truncado": truncado,
+        "alunos_com_erro_anotado": len(por_aluno),
+        "alunos_com_traco_valido": com_traco,
+        "tracos_barrados_pelo_portao": barrados,
+        "tracos_provisorios": provisorios,
+        "portao": portao_crenca.modo(),
+        "causas_raiz": sorted(por_erro.values(), key=lambda l: (-l["peso"], -l["alunos"])),
+        "habilidades": sorted(por_processo.values(), key=lambda l: (-l["peso"], -l["alunos"])),
+        "ontology_version": cat["version"],
+    }
+
+
 def detalhe(uid: str, processo_id: str) -> dict[str, Any] | None:
     """O que o aluno vê ao clicar numa habilidade: a evidência (os traços em
     que aquele processo é a raiz), a intervenção e o que praticar.
@@ -729,7 +886,7 @@ def detalhe(uid: str, processo_id: str) -> dict[str, Any] | None:
     if processo_id not in cat["processos"]:
         return None
 
-    hist = _ler_historico(uid)
+    hist = _historico(uid)
     aptos, barrados = _particionar_pelo_portao(hist["tracos"])
     do_processo = [t for t in aptos if t["cadeia"][0]["processo_afetado"] == processo_id]
     # A manifestação não seleciona intervenção, mas é evidência legítima de
