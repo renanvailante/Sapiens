@@ -71,6 +71,7 @@ async def list_packages(_: User = Depends(require_user)):
                 "sparks_amount": p.sparks_amount,
                 "price_cents": p.price_cents,
                 "currency": p.currency,
+                "highlight": p.highlight,
             }
             for p in sparks_store.list_packages()
         ],

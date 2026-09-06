@@ -199,7 +199,7 @@ class TestListagemDeAlunos:
         monkeypatch.setattr(fs, "reconstruir_agregado", _reconstruir)
         linhas = fs.list_students_with_behavior()
         assert chamadas == ["legado"]
-        assert linhas == [{"student_id": "legado", "count": 7, "last_at": "2026-09-02"}]
+        assert linhas == [{"student_id": "legado", "nome": None, "email": None, "count": 7, "last_at": "2026-09-02"}]
 
     def test_falha_ao_reconstruir_nao_derruba_a_listagem_inteira(self, monkeypatch):
         snaps = [

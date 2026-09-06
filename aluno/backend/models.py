@@ -6,6 +6,8 @@ answer keys in English and/or Spanish, keyed by question number.
 from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
+import re
+import unicodedata
 import uuid
 
 from pydantic import BaseModel, Field, EmailStr
@@ -19,9 +21,32 @@ def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def _slug_nome(nome: str) -> str:
+    """Nome -> ascii minúsculo, só [a-z0-9_], sem acento. Vazio vira 'aluno'."""
+    sem_acento = unicodedata.normalize("NFKD", nome or "").encode("ascii", "ignore").decode("ascii")
+    slug = re.sub(r"[^a-zA-Z0-9]+", "_", sem_acento).strip("_").lower()
+    return slug[:24] or "aluno"
+
+
+def generate_user_id(nome: str) -> str:
+    """`user_id` legível: nome do aluno na frente, poucos dígitos atrás.
+
+    Admin/professor identificam o aluno lendo o próprio id (`renan_vailante_a1b2`),
+    sem precisar de um segundo campo — o sufixo hex existe só para nunca colidir
+    entre dois alunos de mesmo nome; `auth.py` ainda checa unicidade antes de
+    gravar, porque hex[:4] tem espaço de colisão pequeno o bastante para não
+    confiar só nele.
+    """
+    return f"{_slug_nome(nome)}_{uuid.uuid4().hex[:4]}"
+
+
 # ---------- Users ----------
 
 class User(BaseModel):
+    # Fallback só para construções que não passam `name` explicitamente (ex.:
+    # deserializar um doc já existente do Mongo, que já tem user_id salvo).
+    # Criação de conta nova SEMPRE passa `user_id=generate_user_id(nome)`
+    # explícito em `auth.py` — nunca cai neste default.
     user_id: str = Field(default_factory=lambda: f"user_{uuid.uuid4().hex[:12]}")
     email: EmailStr
     name: str
@@ -146,6 +171,11 @@ class SignupRequest(BaseModel):
     email: EmailStr
     name: str = Field(..., min_length=1, max_length=120)
     password: str = Field(..., min_length=8, max_length=200)
+    # Opcional: código de promoção que troca o bônus padrão de Sparks do
+    # cadastro pelo valor programado no código (ver `promo_codes_routes.py`).
+    # Um código inválido/expirado nunca barra a criação da conta — só cai
+    # no bônus padrão, como se não tivesse sido informado.
+    promo_code: str | None = Field(default=None, max_length=40)
 
 
 class LoginRequest(BaseModel):
@@ -212,6 +242,31 @@ class CreateAulaParticularRequest(BaseModel):
 
 class UpdateAulaParticularStatusRequest(BaseModel):
     status: str
+
+
+# ---------- Códigos promocionais ----------
+#
+# Um código é opcional no cadastro (e-mail/senha ou Google) e troca o bônus
+# padrão de Sparks (`firestore_service.SPARKS_INITIAL_BALANCE`) pela
+# quantidade programada aqui pelo admin. O catálogo vive no Mongo — é
+# configuração de produto, não estado do aluno (que vive só no Firestore).
+
+class PromoCode(BaseModel):
+    code: str
+    sparks_amount: int = Field(..., ge=1, le=100_000)
+    active: bool = True
+    usos: int = 0
+    created_at: str = Field(default_factory=_now_iso)
+
+
+class CreatePromoCodeRequest(BaseModel):
+    code: str = Field(..., min_length=3, max_length=40)
+    sparks_amount: int = Field(..., ge=1, le=100_000)
+
+
+class UpdatePromoCodeRequest(BaseModel):
+    sparks_amount: int | None = Field(default=None, ge=1, le=100_000)
+    active: bool | None = None
 
 
 # ---------- Redação (corretor ENEM) ----------

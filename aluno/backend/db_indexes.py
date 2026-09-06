@@ -98,6 +98,14 @@ INDICES: list[tuple[str, list[tuple[str, int]], dict]] = [
     ("redacao_feedbacks", [("user_id", pymongo.ASCENDING)], {"name": "feedbacks_do_aluno"}),
     ("aulas_particulares", [("created_at", pymongo.DESCENDING)], {"name": "aulas_recentes"}),
 
+    # Reivindicações de geração de questões novas do banco de treino
+    # (`treino_routes`). Mesmo desenho de `redacao_cobrancas`: `_id`
+    # (`user:chave`) já é único por padrão do Mongo, este índice é só para
+    # auditoria por usuário. Sem TTL: uma reivindicação concluída prova que o
+    # pedido já foi feito e os Sparks já foram devolvidos.
+    ("treino_geracoes", [("user_id", pymongo.ASCENDING), ("criado_em", pymongo.DESCENDING)],
+     {"name": "geracoes_treino_do_aluno"}),
+
     # --- cache do agregado derivado do Firestore ---
     # Ver `annotation_service._agregado_com_cache`: troca N leituras do
     # Firestore (uma por evento de behavior do aluno) por 1. O documento é
@@ -123,6 +131,19 @@ INDICES: list[tuple[str, list[tuple[str, int]], dict]] = [
     # --- monitoramento ---
     ("client_errors", [("recebido_em_dt", pymongo.ASCENDING)],
      {"name": "client_errors_ttl", "expireAfterSeconds": 30 * 24 * 3600}),
+
+    # --- sugestões de correção de questão (bandeira) ---
+    ("question_reports", [("report_id", pymongo.ASCENDING)],
+     {"name": "report_id_unico", "unique": True}),
+    ("question_reports", [("item_id", pymongo.ASCENDING), ("created_at", pymongo.ASCENDING)],
+     {"name": "reportes_por_questao"}),
+    ("question_reports", [("status", pymongo.ASCENDING)], {"name": "reportes_por_status"}),
+
+    # --- códigos de promoção ---
+    # `validar_e_registrar_uso` faz `find_one_and_update` por `code`; a
+    # unicidade é o que impede o admin de criar dois códigos iguais numa
+    # corrida entre duas abas do painel.
+    ("promo_codes", [("code", pymongo.ASCENDING)], {"name": "promo_code_unico", "unique": True}),
 
     # --- recuperação de senha ---
     ("password_resets", [("token_hash", pymongo.ASCENDING)],

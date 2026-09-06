@@ -30,7 +30,7 @@ from fastapi import APIRouter, Body, Cookie, Depends, HTTPException, Request, Re
 
 import rate_limit
 import settings
-from models import LoginRequest, SignupRequest, User, UserSession
+from models import LoginRequest, SignupRequest, User, UserSession, generate_user_id
 
 logger = logging.getLogger("sapiens.auth")
 
@@ -66,6 +66,22 @@ def _check_password(pw: str, hashed: str) -> bool:
 
 def _new_session_token() -> str:
     return f"tok_{uuid.uuid4().hex}{uuid.uuid4().hex}"
+
+
+async def _gerar_user_id_unico(nome: str) -> str:
+    """`user_id` legível (nome + poucos dígitos), com checagem de colisão.
+
+    `generate_user_id` já reduz o espaço de colisão ao mínimo (hex[:4] após
+    o nome), mas não é infinito — diferente do e-mail, `user_id` não tem
+    índice único no banco vindo de fora, então a checagem é aqui.
+    """
+    for _ in range(5):
+        candidato = generate_user_id(nome)
+        if not await _db.users.find_one({"user_id": candidato}, {"_id": 1}):
+            return candidato
+    # Praticamente inatingível (colidir 5x seguidas em hex[:4]) — mas um
+    # fallback determinístico é melhor que um 500 numa conta nova.
+    return f"user_{uuid.uuid4().hex[:12]}"
 
 
 async def _create_session(user_id: str) -> str:
@@ -146,21 +162,39 @@ async def require_admin(request: Request) -> User:
     return user
 
 
+async def _bonus_de_cadastro(promo_code: str | None) -> int:
+    """Sparks iniciais da conta nova: valor do código de promoção se um
+    código ativo foi informado, senão o bônus padrão. Importado aqui dentro
+    (não no topo do módulo) porque `promo_codes_routes` importa `require_admin`
+    deste próprio arquivo — import no topo criaria um ciclo.
+    """
+    import firestore_service as fs
+    import promo_codes_routes as promo_module
+
+    valor = await promo_module.validar_e_registrar_uso(promo_code)
+    return valor if valor is not None else fs.SPARKS_INITIAL_BALANCE
+
+
 @router.post("/signup")
 async def signup(
     payload: SignupRequest,
     response: Response,
     _: None = Depends(rate_limit.por_ip("signup")),
 ):
+    import firestore_service as fs
+
     existing = await _db.users.find_one({"email": payload.email}, {"_id": 0})
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
     user = User(
+        user_id=await _gerar_user_id_unico(payload.name),
         email=payload.email, name=payload.name, provider="email",
         password_hash=_hash_password(payload.password),
         is_admin=_is_admin_email(payload.email),
     )
     await _db.users.insert_one(user.model_dump())
+    sparks_iniciais = await _bonus_de_cadastro(payload.promo_code)
+    fs.ensure_student_profile(user.user_id, user.name, user.email, initial_sparks=sparks_iniciais)
     token = await _create_session(user.user_id)
     _set_cookie(response, token)
     return {
@@ -192,7 +226,11 @@ async def login(
 
 
 @router.post("/google")
-async def google_sign_in(response: Response, id_token: str = Body(..., embed=True)):
+async def google_sign_in(
+    response: Response,
+    id_token: str = Body(..., embed=True),
+    promo_code: str | None = Body(default=None, embed=True),
+):
     """Troca um ID token do Firebase pela sessão do Sapiens.
 
     O token é verificado com a credencial de serviço do projeto: assinatura,
@@ -259,10 +297,15 @@ async def google_sign_in(response: Response, id_token: str = Body(..., embed=Tru
         campos["email_verificado"] = True
         await _db.users.update_one({"user_id": user_id}, {"$set": campos})
     else:
-        novo = User(email=email, name=nome, picture=foto, provider="google",
-                    is_admin=admin, email_verificado=True)
+        novo = User(
+            user_id=await _gerar_user_id_unico(nome),
+            email=email, name=nome, picture=foto, provider="google",
+            is_admin=admin, email_verificado=True,
+        )
         await _db.users.insert_one(novo.model_dump())
         user_id = novo.user_id
+        sparks_iniciais = await _bonus_de_cadastro(promo_code)
+        fs.ensure_student_profile(user_id, nome, email, initial_sparks=sparks_iniciais)
 
     token = await _create_session(user_id)
     _set_cookie(response, token)

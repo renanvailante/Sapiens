@@ -320,6 +320,35 @@ def test_canon_da_redacao_resolve_no_layout_do_container(tmp_path, monkeypatch):
     assert canon._caminho_canon() == arquivo
 
 
+# ------------------------------------------- banco de treino no container
+def test_dockerfile_leva_o_banco_de_treino_para_a_imagem():
+    """Mesma classe de bug do canon da redação: sem a linha `COPY`, o app
+    sobe normalmente e só falha (503 "banco de treino indisponível") no
+    primeiro clique num balão de `/treino` em produção."""
+    conteudo = (BACKEND / "Dockerfile").read_text(encoding="utf-8")
+    assert "banco_treino_habilidades_v1.json" in conteudo
+    assert "TREINO_HABILIDADES_PATH" in conteudo
+
+
+def test_banco_de_treino_resolve_no_layout_do_container(tmp_path, monkeypatch):
+    """No container `treino_habilidades.py` fica direto em `/app/`, com só
+    DOIS ancestrais (`/app`, `/`). Diferente de `redacao/canon.py` (que já
+    sofreu o bug de indexar um `parents[N]` fixo), `_candidatos()` aqui
+    percorre `aqui.parents` inteiro sem indexar posição nenhuma — este teste
+    prova que isso realmente não estoura em um diretório raso."""
+    import treino_habilidades as th
+
+    monkeypatch.delenv("TREINO_HABILIDADES_PATH", raising=False)
+    monkeypatch.delenv("SAPIENS_CONTRACTS_PATH", raising=False)
+    monkeypatch.setattr(th, "__file__", "/app/treino_habilidades.py")
+    assert th._caminho_banco()  # não levanta
+
+    arquivo = tmp_path / "banco.json"
+    arquivo.write_text(json.dumps({"habilidades": [{"hab_id": f"HAB-{i:02d}"} for i in range(1, 57)]}), encoding="utf-8")
+    monkeypatch.setenv("TREINO_HABILIDADES_PATH", str(arquivo))
+    assert th._caminho_banco() == arquivo
+
+
 def test_requirements_tem_o_dicionario_do_corretor():
     """`redacao/heuristicas.py` importa `spellchecker` para a Competência I. O
     pacote não estava em requirements.txt: em produção o import falhava, o

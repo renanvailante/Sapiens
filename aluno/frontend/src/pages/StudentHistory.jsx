@@ -241,7 +241,7 @@ export default function StudentHistory() {
             <option value="">Selecione o aluno…</option>
             {students.map(s => (
               <option key={s.student_id} value={s.student_id}>
-                {s.student_id} · {s.count} evento(s)
+                {s.nome || s.student_id} · {s.count} evento(s)
               </option>
             ))}
           </select>

@@ -36,6 +36,7 @@ import exam_images_routes as exam_images_module
 import feed_routes as feed_module
 import annotation_routes as annotation_module
 import admin_routes as admin_module
+import promo_codes_routes as promo_codes_module
 import events_routes as events_module
 import firestore_routes as firestore_module
 import skills_map_routes as skills_map_module
@@ -46,7 +47,10 @@ import mentis_routes as mentis_module
 import aulas_particulares_routes as aulas_particulares_module
 import sparks_routes as sparks_module
 import redacao_routes as redacao_module
+import treino_routes as treino_module
+import perfil_publico_routes as perfil_publico_module
 import client_errors_routes as client_errors_module
+import question_reports_routes as question_reports_module
 import db_indexes
 from enem_seed import migrate_and_seed
 from feed_seed import seed_feed
@@ -61,12 +65,15 @@ exam_images_module.set_db(db)
 feed_module.set_db(db)
 annotation_module.set_db(db)
 admin_module.set_db(db)
+promo_codes_module.set_db(db)
 firestore_module.set_db(db)
 mentis_module.set_db(db)
 aulas_particulares_module.set_db(db)
 sparks_module.set_db(db)
 redacao_module.set_db(db)
+treino_module.set_db(db)
 client_errors_module.set_db(db)
+question_reports_module.set_db(db)
 
 app = FastAPI(
     title="Sapiens",
@@ -284,6 +291,7 @@ api_router.include_router(exam_images_module.router)
 api_router.include_router(feed_module.router)
 api_router.include_router(annotation_module.router)
 api_router.include_router(admin_module.router)
+api_router.include_router(promo_codes_module.router)
 api_router.include_router(events_module.router)
 api_router.include_router(firestore_module.router)
 api_router.include_router(skills_map_module.router)
@@ -293,7 +301,10 @@ api_router.include_router(mentis_module.router)
 api_router.include_router(aulas_particulares_module.router)
 api_router.include_router(sparks_module.router)
 api_router.include_router(redacao_module.router)
+api_router.include_router(treino_module.router)
+api_router.include_router(perfil_publico_module.router)
 api_router.include_router(client_errors_module.router)
+api_router.include_router(question_reports_module.router)
 app.include_router(api_router)
 
 

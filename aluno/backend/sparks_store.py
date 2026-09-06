@@ -18,14 +18,17 @@ class SparksPackage:
     sparks_amount: int
     price_cents: int
     currency: str = "BRL"
+    highlight: str | None = None  # selo de destaque, ex.: "Mais escolhido"
 
 
+# Catálogo aprovado 2026-09.
 PACKAGES: dict[str, SparksPackage] = {
     p.package_id: p
     for p in [
-        SparksPackage("spark_200", "200 Sparks", 200, 1990),
-        SparksPackage("spark_500", "500 Sparks", 500, 3990),
-        SparksPackage("spark_1200", "1.200 Sparks", 1200, 7990),
+        SparksPackage("spark_200", "200 Sparks", 200, 990),
+        SparksPackage("spark_600", "600 Sparks", 600, 2490),
+        SparksPackage("spark_1500", "1.500 Sparks", 1500, 5490, highlight="Mais escolhido"),
+        SparksPackage("spark_4000", "4.000 Sparks", 4000, 11990, highlight="Melhor valor"),
     ]
 }
 

@@ -393,32 +393,6 @@ async def _ja_desbloqueada(uid: str, chave: str) -> bool:
         return True
 
 
-@router.get("/intervencao")
-async def estado_intervencao(
-    erro_id: str,
-    processo_id: str,
-    user: User = Depends(require_user),
-):
-    """Estado da intervenção para uma causa raiz. **De graça e sem IA.**
-
-    Devolve a prévia autoral (que já existia em `intervencoes`) e diz se o
-    aluno já desbloqueou. Não lê saldo de Sparks de propósito: quem chama já
-    tem o saldo na tela, e uma leitura do Firestore por render é justamente o
-    tipo de custo que derrubou o app em 2026-09-04.
-    """
-    par = _resolver_par(erro_id, processo_id)
-    chave = _chave_intervencao(par)
-    desbloqueada = await _ja_desbloqueada(user.user_id, chave)
-    conteudo = await llm_cache.get(_db.mentis_intervencoes, chave) if desbloqueada else None
-    return {
-        "causa": par,
-        "previa": intervencoes.previa(erro_id),
-        "desbloqueada": desbloqueada,
-        "custo": 0 if desbloqueada else INTERVENCAO_COST,
-        "conteudo": conteudo,
-    }
-
-
 @router.post("/intervencao")
 async def abrir_intervencao(
     payload: IntervencaoPayload,

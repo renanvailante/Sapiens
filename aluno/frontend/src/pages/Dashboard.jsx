@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
+import IntervencaoMentis from "../components/IntervencaoMentis";
 import Nav from "../components/Nav";
 import OnboardingTour from "../components/OnboardingTour";
 import AulasParticularesModal from "../components/AulasParticularesModal";
@@ -114,6 +115,7 @@ export default function Dashboard() {
   const [hubs, setHubs] = useState([]);
   const [totalRespondidas, setTotalRespondidas] = useState(0);
   const [rounds, setRounds] = useState([]);
+  const [fracos, setFracos] = useState([]);
   const [loaded, setLoaded] = useState(false);
   const [falhou, setFalhou] = useState(false);
   const [showTour, setShowTour] = useState(false);
@@ -138,8 +140,14 @@ export default function Dashboard() {
       api.get("/skills-map").then(({ data }) => data.hubs || []),
       api.get("/firestore/students/me/respondidas").then(({ data }) => (data.item_ids || []).length),
       api.get("/firestore/students/me/rounds").then(({ data }) => data.rounds || []),
+      // Pontos fracos COM causa raiz identificada — é o que torna a
+      // dificuldade clicável e tratável. Memorizado no servidor por
+      // `total_respostas`, então recarregar o painel não revarre o histórico.
+      api.get("/motor/perfil").then(({ data }) =>
+        (data.habilidades_prioritarias || []).filter((l) => l.origem === "error_trace" && l.erro_dominante),
+      ),
     ]).then((resultados) => {
-      const [a, s, dates, h, respondidas, r] = resultados;
+      const [a, s, dates, h, respondidas, r, f] = resultados;
       const valor = (res, vazio) => (res.status === "fulfilled" ? res.value : vazio);
 
       setAnalyses(valor(a, []));
@@ -148,6 +156,7 @@ export default function Dashboard() {
       setHubs(valor(h, []));
       setTotalRespondidas(valor(respondidas, 0));
       setRounds(valor(r, []));
+      setFracos(valor(f, []));
       setFalhou(resultados.some((res) => res.status === "rejected"));
       setLoaded(true);
     });
@@ -399,6 +408,40 @@ export default function Dashboard() {
             )}
           </div>
         </div>
+
+        {/* O que travou você — dificuldades com CAUSA identificada, cada uma
+            clicável para a intervenção que a trata. Diferente de "Domínio
+            estimado" ao lado, que mostra percentual por frente: aqui a
+            unidade não é a matéria, é o modo de errar. */}
+        {fracos.length > 0 && (
+          <div className="mt-4 card-sapiens rounded-2xl p-6" data-testid="dash-fracos">
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-2 font-mono-alt text-[10px] uppercase tracking-[0.3em] text-zinc-400">
+                <Target className="w-3.5 h-3.5" /> O que travou você
+              </div>
+              <Link to="/motor" className="text-xs text-sapiens-accentDeep hover:underline inline-flex items-center gap-1">
+                Ver todas <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+            <p className="text-sm text-zinc-500 mb-4">
+              Não é a matéria — é o jeito de errar que se repete. Abra uma para a Mentis tratar a causa.
+            </p>
+            <div className="space-y-3">
+              {fracos.slice(0, 3).map((f) => (
+                <IntervencaoMentis
+                  key={f.processo_id}
+                  erroId={f.erro_dominante.id}
+                  processoId={f.processo_id}
+                  causaNome={f.erro_dominante.nome}
+                  processoNome={f.processo_nome}
+                  sparks={sparks}
+                  onSparks={setSparks}
+                  testid={`dash-intervencao-${f.processo_id}`}
+                />
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Conquistas — poucas e significativas, nunca uma coleção de badges */}
         <div className="mt-4 card-sapiens rounded-2xl p-5" data-testid="dash-achievements" data-tour="dash-achievements">

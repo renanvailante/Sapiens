@@ -6,6 +6,8 @@ import { ArrowRight, Check, X, RotateCw, Sparkles, BookOpen, ChevronLeft } from 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import FormulaMath from "../components/FormulaMath";
 import Mentis from "../components/Mentis";
+import IntervencaoMentis from "../components/IntervencaoMentis";
+import ReportarQuestao from "../components/ReportarQuestao";
 
 const APP_VERSION = "sapiens-web-1.0";
 const MENTIS_COST = 7; // espelha EXPLICACAO_COST em mentis_routes.py — só p/ desabilitar o botão sem saldo, o servidor é quem cobra de fato
@@ -407,10 +409,13 @@ function QuestionRunner({ filtro, onExit }) {
           de leitura ganha da coerência visual quando os dois brigam. Ver a seção
           "Superfície de leitura longa" em index.css. */}
       <article className="card-sapiens leitura-clara rounded-2xl p-6 md:p-8">
-        <div className="mb-4 flex flex-wrap gap-2">
-          {tags.map((t, i) => (
-            <span key={i} className="rounded-full bg-sapiens-accentSoft px-3 py-1 text-xs font-medium text-sapiens-navy">{t}</span>
-          ))}
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap gap-2">
+            {tags.map((t, i) => (
+              <span key={i} className="rounded-full bg-sapiens-accentSoft px-3 py-1 text-xs font-medium text-sapiens-navy">{t}</span>
+            ))}
+          </div>
+          <ReportarQuestao itemId={item.item_id} />
         </div>
 
         <p className="whitespace-pre-line text-[15px] leading-relaxed text-zinc-800">
@@ -576,6 +581,23 @@ function QuestionRunner({ filtro, onExit }) {
             {explicacao?.erro && (
               <p className="mt-2 text-xs font-medium text-rose-600" data-testid="mentis-explicacao-erro">{explicacao.erro}</p>
             )}
+            {/* Causa raiz: veio junto da própria resposta (`register_answer` já
+                tinha o item na mão), então não custou nenhuma leitura extra
+                descobrir que existe uma dificuldade tratável aqui. */}
+            {!result.acertou && result.causa_raiz && (
+              <div className="mt-3">
+                <IntervencaoMentis
+                  erroId={result.causa_raiz.erro_id}
+                  processoId={result.causa_raiz.processo_id}
+                  sparks={sparks}
+                  onSparks={setSparks}
+                  testid="mentis-intervencao"
+                  evidencia={[{ banca: item?.fonte?.banca, ano: item?.fonte?.ano, numero: item?.fonte?.numero,
+                               detalhe: `você marcou ${selected}` }]}
+                />
+              </div>
+            )}
+
             {explicacao?.paragrafos && (
               <div className="mt-4 rounded-xl border border-zinc-200 bg-white/80 p-4" data-testid="mentis-explicacao">
                 <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-sapiens-navy">

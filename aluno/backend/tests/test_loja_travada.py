@@ -115,7 +115,7 @@ def test_catalogo_continua_visivel(loja_desligada, mp_explode):
     permite ao aluno saber o que existe — e o botão fica desabilitado, porque
     a public key nunca chega."""
     resposta = _run(rotas.list_packages(_=_user()))
-    assert len(resposta["packages"]) == 3
+    assert len(resposta["packages"]) == 4
 
 
 def test_webhook_continua_rejeitando_assinatura_invalida():

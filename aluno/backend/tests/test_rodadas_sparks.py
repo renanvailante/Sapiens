@@ -168,12 +168,22 @@ class _FakeStudentDoc:
 
 
 class TestSparksBalance:
-    def test_aluno_novo_comeca_com_255(self, monkeypatch):
+    def test_aluno_novo_comeca_com_o_bonus_padrao(self, monkeypatch):
         doc = _FakeStudentDoc()
         monkeypatch.setattr(fs, "_student_doc_ref", lambda uid: doc)
         criado = fs.ensure_student_profile("uid-1", "Nome", "n@x.com")
         assert criado is True
-        assert doc.to_dict()["sparks_balance"] == 255
+        assert doc.to_dict()["sparks_balance"] == fs.SPARKS_INITIAL_BALANCE
+
+    def test_aluno_novo_com_codigo_de_promocao_recebe_o_valor_do_codigo(self, monkeypatch):
+        # uid distinto do teste acima: `ensure_student_profile` marca o uid
+        # como já provisionado num set em módulo (`_PROVISIONADO_PROFILE`),
+        # que sobrevive entre testes da mesma classe no mesmo worker.
+        doc = _FakeStudentDoc()
+        monkeypatch.setattr(fs, "_student_doc_ref", lambda uid: doc)
+        criado = fs.ensure_student_profile("uid-promo-1", "Nome", "n@x.com", initial_sparks=500)
+        assert criado is True
+        assert doc.to_dict()["sparks_balance"] == 500
 
     def test_ensure_sparks_balance_nao_sobrescreve_saldo_existente(self, monkeypatch):
         doc = _FakeStudentDoc({"sparks_balance": 300})
@@ -185,8 +195,8 @@ class TestSparksBalance:
         saldo inicial na primeira vez que é consultado — nunca fica sem saldo."""
         doc = _FakeStudentDoc({"nome": "Antigo"})
         monkeypatch.setattr(fs, "_student_doc_ref", lambda uid: doc)
-        assert fs.ensure_sparks_balance("uid-1") == 255
-        assert doc.to_dict()["sparks_balance"] == 255
+        assert fs.ensure_sparks_balance("uid-1") == fs.SPARKS_INITIAL_BALANCE
+        assert doc.to_dict()["sparks_balance"] == fs.SPARKS_INITIAL_BALANCE
         assert doc.to_dict()["nome"] == "Antigo"  # backfill não apaga o resto do doc
 
 

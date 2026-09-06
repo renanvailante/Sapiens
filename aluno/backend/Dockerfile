@@ -34,9 +34,15 @@ COPY pipeline/backend/item_contract.py         /app/contracts/item_contract.py
 # respondia erro em produção porque o dado nunca tinha sido copiado.
 COPY ["pipeline/docs/enem-redacao/13 enem_regras_computaveis.json", "/app/contracts/enem-redacao/13 enem_regras_computaveis.json"]
 
+# Banco de treino (HAB-01..HAB-56) — mesma classe de bug do canon acima:
+# sem esta linha, `treino_habilidades.py` sobe, mas toda a tela /treino
+# responde 503 "banco de treino indisponível" no primeiro acesso em produção.
+COPY pipeline/docs/treino-habilidades/banco_treino_habilidades_v1.json /app/contracts/treino-habilidades/banco_treino_habilidades_v1.json
+
 ENV SAPIENS_ONTOLOGY_PATH=/app/contracts/ontology/ontology_v1.4.json \
     SAPIENS_CONTRACTS_PATH=/app/contracts \
-    ENEM_CANON_PATH="/app/contracts/enem-redacao/13 enem_regras_computaveis.json"
+    ENEM_CANON_PATH="/app/contracts/enem-redacao/13 enem_regras_computaveis.json" \
+    TREINO_HABILIDADES_PATH=/app/contracts/treino-habilidades/banco_treino_habilidades_v1.json
 
 # `ontology_validator` resolve o catálogo por caminho relativo ao próprio
 # arquivo (`parent.parent/docs/ontology/...`). Dentro da imagem esse caminho

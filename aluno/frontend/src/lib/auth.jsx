@@ -29,8 +29,11 @@ export function AuthProvider({ children }) {
     setUser(data.user);
     return data.user;
   };
-  const signup = async (name, email, password) => {
-    const { data } = await api.post("/auth/signup", { name, email, password });
+  const signup = async (name, email, password, promoCode) => {
+    const { data } = await api.post("/auth/signup", {
+      name, email, password,
+      promo_code: promoCode?.trim() || undefined,
+    });
     localStorage.setItem("sapiens_token", data.token);
     setUser(data.user);
     return data.user;
@@ -39,10 +42,15 @@ export function AuthProvider({ children }) {
    * Login com Google: o Firebase autentica, o backend verifica o ID token e
    * emite a MESMA sessão do fluxo de e-mail/senha. Daqui para a frente não há
    * diferença — o resto do app não sabe por qual porta a pessoa entrou.
+   * `promoCode` só importa se essa for a primeira vez da conta — o backend
+   * ignora o campo quando a conta já existe.
    */
-  const loginGoogle = async () => {
+  const loginGoogle = async (promoCode) => {
     const idToken = await entrarComGoogle();
-    const { data } = await api.post("/auth/google", { id_token: idToken });
+    const { data } = await api.post("/auth/google", {
+      id_token: idToken,
+      promo_code: promoCode?.trim() || undefined,
+    });
     localStorage.setItem("sapiens_token", data.token);
     setUser(data.user);
     return data.user;

@@ -1,6 +1,6 @@
 import "./App.css";
 import { Suspense, lazy } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "sonner";
 import { AuthProvider } from "./lib/auth";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -28,9 +28,8 @@ const StudyPlan = lazy(() => import("./pages/StudyPlan"));
 const LearningMap = lazy(() => import("./pages/LearningMap"));
 const History = lazy(() => import("./pages/History"));
 const Trash = lazy(() => import("./pages/Trash"));
-const SkillsMap = lazy(() => import("./pages/SkillsMap"));
-const Diagnostico = lazy(() => import("./pages/Diagnostico"));
-const Motor = lazy(() => import("./pages/Motor"));
+const PerfilCognitivo = lazy(() => import("./pages/PerfilCognitivo"));
+const TreinoHabilidades = lazy(() => import("./pages/TreinoHabilidades"));
 const MentisChat = lazy(() => import("./pages/MentisChat"));
 const SparksStore = lazy(() => import("./pages/SparksStore"));
 const Feed = lazy(() => import("./pages/Feed"));
@@ -47,6 +46,8 @@ const AdminUsers = lazy(() => import("./pages/AdminUsers"));
 const AdminFeed = lazy(() => import("./pages/AdminFeed"));
 const AdminAnnotations = lazy(() => import("./pages/AdminAnnotations"));
 const AdminAulasParticulares = lazy(() => import("./pages/AdminAulasParticulares"));
+const AdminReportesQuestoes = lazy(() => import("./pages/AdminReportesQuestoes"));
+const AdminPromoCodes = lazy(() => import("./pages/AdminPromoCodes"));
 const StudentHistory = lazy(() => import("./pages/StudentHistory"));
 
 function Carregando() {
@@ -87,9 +88,13 @@ function AppRouter() {
       <Route path="/map/:analysisId" element={<ProtectedRoute><Pagina titulo="Mapa de aprendizagem"><LearningMap /></Pagina></ProtectedRoute>} />
       <Route path="/history" element={<ProtectedRoute><Pagina titulo="Histórico"><History /></Pagina></ProtectedRoute>} />
       <Route path="/trash" element={<ProtectedRoute><Pagina titulo="Lixeira"><Trash /></Pagina></ProtectedRoute>} />
-      <Route path="/cognitive-profile" element={<ProtectedRoute><Pagina titulo="Mapa cognitivo"><SkillsMap /></Pagina></ProtectedRoute>} />
-      <Route path="/diagnostico" element={<ProtectedRoute><Pagina titulo="Diagnóstico real"><Diagnostico /></Pagina></ProtectedRoute>} />
-      <Route path="/motor" element={<ProtectedRoute><Pagina titulo="Motor cognitivo"><Motor /></Pagina></ProtectedRoute>} />
+      <Route path="/cognitive-profile" element={<ProtectedRoute><Pagina titulo="Seu perfil cognitivo"><PerfilCognitivo /></Pagina></ProtectedRoute>} />
+      {/* Motor Cognitivo e Diagnóstico real viraram esta mesma aba — os
+          redirects preservam links salvos/favoritos (inclusive os da
+          própria Dashboard.jsx). */}
+      <Route path="/diagnostico" element={<Navigate to="/cognitive-profile" replace />} />
+      <Route path="/motor" element={<Navigate to="/cognitive-profile" replace />} />
+      <Route path="/treino" element={<ProtectedRoute><Pagina titulo="Banco de treino"><TreinoHabilidades /></Pagina></ProtectedRoute>} />
       <Route path="/mentis" element={<ProtectedRoute><Pagina titulo="Mentis"><MentisChat /></Pagina></ProtectedRoute>} />
       <Route path="/sparks" element={<ProtectedRoute><Pagina titulo="Sparks"><SparksStore /></Pagina></ProtectedRoute>} />
       <Route path="/feed" element={<ProtectedRoute><Pagina titulo="Feed"><Feed /></Pagina></ProtectedRoute>} />
@@ -100,6 +105,8 @@ function AppRouter() {
       <Route path="/admin/feed" element={<AdminRoute><Pagina titulo="Admin · Feed"><AdminFeed /></Pagina></AdminRoute>} />
       <Route path="/admin/annotations" element={<AdminRoute><Pagina titulo="Admin · Anotações"><AdminAnnotations /></Pagina></AdminRoute>} />
       <Route path="/admin/aulas-particulares" element={<AdminRoute><Pagina titulo="Admin · Aulas particulares"><AdminAulasParticulares /></Pagina></AdminRoute>} />
+      <Route path="/admin/reportes-questoes" element={<AdminRoute><Pagina titulo="Admin · Sugestões de correção"><AdminReportesQuestoes /></Pagina></AdminRoute>} />
+      <Route path="/admin/promo-codes" element={<AdminRoute><Pagina titulo="Admin · Códigos de promoção"><AdminPromoCodes /></Pagina></AdminRoute>} />
       <Route path="/admin/users" element={<AdminRoute><Pagina titulo="Admin · Usuários"><AdminUsers /></Pagina></AdminRoute>} />
       <Route path="/admin/history" element={<AdminRoute><Pagina titulo="Admin · Histórico"><StudentHistory /></Pagina></AdminRoute>} />
 

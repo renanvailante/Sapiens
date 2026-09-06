@@ -45,9 +45,9 @@ class TestCatalogo:
         assert sparks_store.is_valid_frequency(30) is True
 
     def test_preco_e_quantidade_vem_so_do_catalogo_do_servidor(self):
-        pkg = sparks_store.get_package("spark_500")
+        pkg = sparks_store.get_package("spark_600")
         assert pkg is not None
-        assert (pkg.sparks_amount, pkg.price_cents) == (500, 3990)
+        assert (pkg.sparks_amount, pkg.price_cents) == (600, 2490)
 
 
 # =================================================== assinatura de webhook
@@ -194,15 +194,15 @@ class TestCreatePurchase:
         db = FakeDB()
         user = _user()
 
-        result = _run(svc.create_purchase(db, user, "spark_500", {
+        result = _run(svc.create_purchase(db, user, "spark_600", {
             "token": "card-token-abc", "payment_method_id": "visa", "installments": 1,
         }))
 
-        assert captured["transaction_amount"] == 39.90
+        assert captured["transaction_amount"] == 24.90
         assert "sparks_amount" not in captured  # nunca manda quantidade de Sparks ao MP
         assert result["status"] == "pending"
         stored = _run(db.sparks_payments.find_one({"purchase_id": result["purchase_id"]}))
-        assert stored["sparks_amount"] == 500
+        assert stored["sparks_amount"] == 600
         assert stored["credited"] is False
         assert stored["source"] == "manual"
 
@@ -231,7 +231,7 @@ class TestCreateAutoRecharge:
 
         assert captured["auto_recurring"]["frequency"] == 30
         assert captured["auto_recurring"]["frequency_type"] == "days"
-        assert captured["auto_recurring"]["transaction_amount"] == 19.90
+        assert captured["auto_recurring"]["transaction_amount"] == 9.90
         assert captured["card_token_id"] == "card-tok"
         assert doc["active"] is True
         assert doc["baseline"] == 50
@@ -324,7 +324,7 @@ class TestProcessPaymentWebhook:
 
         db = FakeDB()
         _run(db.sparks_auto_recharge.insert_one({
-            "user_id": "user-1", "active": True, "package_id": "spark_500",
+            "user_id": "user-1", "active": True, "package_id": "spark_600",
             "mp_preapproval_id": "mp-sub-1", "status": "authorized",
         }))
 
@@ -333,7 +333,7 @@ class TestProcessPaymentWebhook:
         stored = _run(db.sparks_payments.find_one({"mp_payment_id": "mp-cycle-1"}))
         assert stored["source"] == "auto_recharge"
         assert stored["user_id"] == "user-1"
-        assert stored["sparks_amount"] == 500
+        assert stored["sparks_amount"] == 600
 
     def test_pagamento_sem_correspondencia_conhecida_nao_credita_ninguem(self, monkeypatch):
         calls: list[str] = []

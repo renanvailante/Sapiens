@@ -35,11 +35,11 @@ def _safe_reembolso(uid: str, cost: int):
 
 router = APIRouter(prefix="", tags=["skills-map"])
 
-# TEMPORÁRIO: custo achatado em 10 Sparks (1ª geração e as seguintes) a
-# pedido do produto, enquanto o mapa está em validação — reverter para os
-# valores normais (100 / 500) quando o produto pedir.
-SKILLS_MAP_FIRST_COST = 10  # a primeira geração do aluno custa menos, p/ incentivar experimentar
-SKILLS_MAP_COST = 10  # toda geração seguinte
+# Economia de Sparks 2026-09: "Feedback geral da trilha/habilidade" custa 20
+# Sparks, flat, 1ª geração e as seguintes — substitui o esquema temporário
+# anterior (achatado em 10 enquanto o mapa estava em validação).
+SKILLS_MAP_FIRST_COST = 20
+SKILLS_MAP_COST = 20
 
 _ZERO_HEXAGON = [{"hub": h["hub"], "label": h["label"], "mastery": 0.0} for h in HUBS]
 

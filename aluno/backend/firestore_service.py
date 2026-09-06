@@ -207,12 +207,22 @@ def _behavior_collection_ref(uid: str):
     return _student_doc_ref(uid).collection("behavior")
 
 
-SPARKS_INITIAL_BALANCE = 255  # saldo inicial de todo aluno novo (Sparks — economia de recompensa).
+SPARKS_INITIAL_BALANCE = 100  # bônus padrão de aluno novo SEM código de promoção válido.
 
 
-def ensure_student_profile(uid: str, name: Optional[str] = None, email: Optional[str] = None) -> bool:
+def ensure_student_profile(
+    uid: str,
+    name: Optional[str] = None,
+    email: Optional[str] = None,
+    initial_sparks: Optional[int] = None,
+) -> bool:
     """Cria o documento de profile do aluno em students/{uid} se ainda não existir.
     Deve ser chamado no login (via provisionamento já existente). Retorna True se criou.
+
+    `initial_sparks` é passado só pelo signup (`auth.py`), que já sabe se um
+    código de promoção válido trocou o bônus padrão — os demais chamadores
+    (rotas protegidas comuns, que só existem para cobrir perfis antigos ou
+    uma corrida com o signup) não passam nada e caem no padrão.
     """
     if uid in _PROVISIONADO_PROFILE:
         return False
@@ -224,7 +234,7 @@ def ensure_student_profile(uid: str, name: Optional[str] = None, email: Optional
         "nome": name,
         "email": email,
         "created_at": _now_iso(),
-        "sparks_balance": SPARKS_INITIAL_BALANCE,
+        "sparks_balance": initial_sparks if initial_sparks is not None else SPARKS_INITIAL_BALANCE,
     })
     _PROVISIONADO_PROFILE.add(uid)
     return True
@@ -435,6 +445,54 @@ def ler_agregado(uid: str) -> dict[str, Any]:
     return agregado
 
 
+# ---------------------------------------------------------------------------
+# Agregado do banco de treino (HAB-01..HAB-56) — mesma disciplina do agregado
+# acima: nada pode custar O(eventos) por requisição (ver
+# `project_aluno_disciplina_leitura_firestore`). Um contador por HAB dentro do
+# MESMO documento `students/{uid}`, atualizado com `Increment` a cada
+# resposta e lido em uma leitura só — é o que alimenta os balões de pontos
+# fortes/fracos em `/treino`.
+# ---------------------------------------------------------------------------
+
+
+def increment_treino_stats(uid: str, hab_id: str, acertou: bool) -> None:
+    """Idempotente por natureza (Increment nunca duplica um valor já
+    somado): reprocessar o mesmo evento duas vezes soma duas respostas de
+    verdade, não é um bug — cada resposta de treino é uma tentativa real,
+    igual ao agregado de itens do Enem."""
+    try:
+        _student_doc_ref(uid).set(
+            {
+                "treino_agregado": {
+                    hab_id: {
+                        "respondidas": firestore.Increment(1),
+                        "acertos": firestore.Increment(1 if acertou else 0),
+                        "atualizado_em": _now_iso(),
+                    }
+                }
+            },
+            merge=True,
+        )
+    except Exception as exc:  # noqa: BLE001
+        # O evento de behavior já foi gravado — que é o dado que importa. Um
+        # agregado de treino desatualizado só atrasa o balão ficar colorido,
+        # nunca perde a resposta do aluno.
+        logger.warning("Agregado de treino de %s não pôde ser atualizado (%s): %s", uid, hab_id, exc)
+
+
+def ler_treino_stats(uid: str) -> dict[str, dict[str, int]]:
+    """`{hab_id: {respondidas, acertos}}` em uma leitura do mesmo documento
+    já lido em outros lugares (`_student_doc_ref`)."""
+    snap = _student_doc_ref(uid).get()
+    dados = (snap.to_dict() or {}) if snap.exists else {}
+    bruto = dados.get("treino_agregado") or {}
+    return {
+        hab_id: {"respondidas": v.get("respondidas", 0), "acertos": v.get("acertos", 0)}
+        for hab_id, v in bruto.items()
+        if isinstance(v, dict)
+    }
+
+
 def get_student_behavior_history(uid: str, limit: int = 1000) -> list[dict[str, Any]]:
     """Lê o histórico de eventos de behavior (schema canônico) de um aluno,
     do mais recente para o mais antigo."""
@@ -553,6 +611,8 @@ def list_students_with_behavior(limit: int = 500) -> list[dict[str, Any]]:
             continue
         rows.append({
             "student_id": snap.id,
+            "nome": dados.get("nome"),
+            "email": dados.get("email"),
             "count": total,
             "last_at": agregado.get("atualizado_em"),
         })
@@ -561,13 +621,18 @@ def list_students_with_behavior(limit: int = 500) -> list[dict[str, Any]]:
 
 
 # ======================================================================
-# Sparks — recompensa por rodada (10 questões; a última rodada do bloco de
-# 45 fecha com 5). Estrutura:
+# Sparks — recompensa por rodada do ENEM (10 questões; a última rodada do
+# bloco de 45 fecha com 5). Estrutura:
 #   students/{uid}.sparks_balance              -> saldo corrente (int)
 #   students/{uid}/sparks_rounds/{round_key}   -> UM doc por rodada concluída,
 #                                                  auditável (prova/rodada/itens)
 #                                                  e a própria prova de que a
 #                                                  rodada já foi paga.
+#
+# Separado do ganho POR QUESTÃO do banco de treino de habilidades
+# (`grant_question_sparks`, mais abaixo) — são dois produtos diferentes
+# (prova completa vs. treino avulso por habilidade), cada um com sua própria
+# regra de recompensa, e por isso duas chaves de idempotência diferentes.
 # ======================================================================
 
 def _sparks_round_ref(uid: str, round_key: str):
@@ -640,6 +705,84 @@ def grant_round_sparks(
     if acertos:
         _student_doc_ref(uid).update({"sparks_balance": firestore.Increment(acertos)})
     return {"ja_concedido": False, **round_doc}
+
+
+def _question_spark_ref(uid: str, item_id: str):
+    return _student_doc_ref(uid).collection("sparks_questoes").document(item_id)
+
+
+def grant_question_sparks(uid: str, item_id: str, amount: int = 1) -> dict[str, Any]:
+    """Credita Sparks por uma questão CONCLUÍDA (respondida), UMA única vez —
+    nunca de novo se o aluno responder a mesma questão outra vez.
+
+    Mesmo padrão atômico de `grant_round_sparks`/`grant_purchase_sparks`:
+    `DocumentReference.create()` em `students/{uid}/sparks_questoes/{item_id}`
+    só tem sucesso na primeira vez; retomada, refresh ou corrida de
+    requisições repetidas caem em `AlreadyExists` e não creditam de novo.
+    """
+    ref = _question_spark_ref(uid, item_id)
+    doc = {
+        "item_id": item_id,
+        "student_id": uid,
+        "sparks_ganhos": amount,
+        "created_at": _now_iso(),
+    }
+    try:
+        ref.create(doc)
+    except gcloud_exceptions.AlreadyExists:
+        existente = ref.get().to_dict() or {}
+        return {"ja_concedido": True, "sparks_ganhos": 0, **existente}
+
+    _student_doc_ref(uid).update({"sparks_balance": firestore.Increment(amount)})
+    return {"ja_concedido": False, **doc}
+
+
+def _report_spark_ref(uid: str, report_id: str):
+    return _student_doc_ref(uid).collection("sparks_reports").document(report_id)
+
+
+def grant_report_sparks(uid: str, report_id: str, amount: int = 5) -> dict[str, Any]:
+    """Credita Sparks por uma sugestão de correção de questão APROVADA por um
+    admin, UMA única vez por `report_id` — mesmo padrão atômico de
+    `grant_question_sparks`/`grant_round_sparks`/`grant_purchase_sparks`.
+    """
+    ref = _report_spark_ref(uid, report_id)
+    doc = {
+        "report_id": report_id,
+        "student_id": uid,
+        "sparks_ganhos": amount,
+        "created_at": _now_iso(),
+    }
+    try:
+        ref.create(doc)
+    except gcloud_exceptions.AlreadyExists:
+        existente = ref.get().to_dict() or {}
+        return {"ja_concedido": True, "sparks_ganhos": 0, **existente}
+
+    _student_doc_ref(uid).update({"sparks_balance": firestore.Increment(amount)})
+    return {"ja_concedido": False, **doc}
+
+
+def grant_admin_sparks(uid: str, *, amount: int, admin_email: str, motivo: str = "") -> dict[str, Any]:
+    """Credita Sparks manualmente por ação de um admin (suporte, ajuste de
+    saldo, teste). Ao contrário de `grant_round_sparks`/`grant_question_sparks`/
+    `grant_purchase_sparks`, não existe uma chave de negócio natural para
+    deduplicar aqui — é uma decisão humana avulsa, não um evento que se repete
+    sozinho por retry/refresh, então não há `create()` idempotente: dois
+    cliques do admin creditam duas vezes, do mesmo jeito que dois PIX
+    creditam duas vezes. Fica registrado em `sparks_admin_grants` para
+    auditoria (quem, quanto, por quê, quando).
+    """
+    doc = {
+        "amount": amount,
+        "admin_email": admin_email,
+        "motivo": motivo,
+        "created_at": _now_iso(),
+    }
+    ref = _student_doc_ref(uid).collection("sparks_admin_grants").document()
+    ref.set(doc)
+    _student_doc_ref(uid).update({"sparks_balance": firestore.Increment(amount)})
+    return {"grant_id": ref.id, **doc}
 
 
 def count_answers_for_item(uid: str, item_id: str) -> int:

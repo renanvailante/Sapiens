@@ -351,7 +351,7 @@ export default function SparksStore() {
         <h1 className="font-display text-4xl md:text-5xl font-extrabold tracking-tighter text-white" data-testid="sparks-title">
           Quanto custa usar a inteligência do Sapiens.
         </h1>
-        <p className="mt-3 text-white/60 max-w-lg">Sparks alimentam os recursos que usam IA. Ganhe praticando, ou compre quando precisar de mais.</p>
+        <p className="mt-3 text-white/60 max-w-lg">Sparks alimentam os recursos que usam IA. Ganhe praticando, ou compre quando precisar de mais. Sparks não expiram.</p>
 
         <div className="mt-8 card-sapiens rounded-2xl p-6 flex items-center justify-between gap-4">
           <div>
@@ -390,9 +390,21 @@ export default function SparksStore() {
           </div>
         )}
 
-        <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {packages.map((p) => (
-            <div key={p.package_id} className="lift card-sapiens rounded-2xl p-6 flex flex-col" data-testid={`sparks-package-${p.package_id}`}>
+            <div
+              key={p.package_id}
+              className={`lift card-sapiens rounded-2xl p-6 flex flex-col relative ${p.highlight ? "ring-2 ring-sapiens-accent" : ""}`}
+              data-testid={`sparks-package-${p.package_id}`}
+            >
+              {p.highlight && (
+                <span
+                  className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-sapiens-accent text-white text-[10px] font-bold uppercase tracking-wide px-3 py-1 whitespace-nowrap"
+                  data-testid={`sparks-package-highlight-${p.package_id}`}
+                >
+                  {p.highlight}
+                </span>
+              )}
               <div className="flex items-center gap-2 font-display font-extrabold text-2xl text-zinc-950">
                 <Zap className="w-5 h-5 text-amber-500" fill="currentColor" /> {p.sparks_amount}
               </div>

@@ -13,6 +13,7 @@ export default function Login() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [promoCode, setPromoCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [busyGoogle, setBusyGoogle] = useState(false);
   const [aceitouTermos, setAceitouTermos] = useState(false);
@@ -20,7 +21,7 @@ export default function Login() {
   const comGoogle = async () => {
     setBusyGoogle(true);
     try {
-      await loginGoogle();
+      await loginGoogle(mode === "signup" ? promoCode : undefined);
       nav("/dashboard");
     } catch (e) {
       // Fechar o popup não é erro: `mensagemDeErroGoogle` devolve null nesse
@@ -38,7 +39,7 @@ export default function Login() {
     setBusy(true);
     try {
       if (mode === "login") await login(email, password);
-      else await signup(name, email, password);
+      else await signup(name, email, password, promoCode);
       toast.success("Bem-vindo ao Sapiens.");
       nav("/dashboard", { replace: true });
     } catch (err) {
@@ -120,6 +121,14 @@ export default function Login() {
               className="w-full border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:border-sapiens-accent outline-none"
               data-testid="login-password"
             />
+            {mode === "signup" && (
+              <input
+                value={promoCode} onChange={(e) => setPromoCode(e.target.value)}
+                placeholder="Código de promoção (opcional)"
+                className="w-full border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:border-sapiens-accent outline-none"
+                data-testid="login-promo-code"
+              />
+            )}
             {mode === "signup" && (
               <label className="flex items-start gap-2.5 pt-1 text-xs text-zinc-500 leading-relaxed cursor-pointer">
                 <input

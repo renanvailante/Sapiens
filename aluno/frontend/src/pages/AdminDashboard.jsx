@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { api, errMsg} from "../lib/api";
 import Nav from "../components/Nav";
-import { FileText, Zap, Brain, Users, ClipboardList, ArrowRight, ShieldCheck, RefreshCw, Database, GraduationCap } from "lucide-react";
+import { FileText, Zap, Brain, Users, ClipboardList, ArrowRight, ShieldCheck, RefreshCw, Database, GraduationCap, Flag, Ticket, Gift } from "lucide-react";
 
 function StatCard({ label, value, hint }) {
   return (
@@ -24,6 +24,10 @@ const SECTIONS = [
     desc: "Ingerir JSONs anotados por IA especializada — versionados, verbatim." },
   { to: "/admin/aulas-particulares", icon: GraduationCap, title: "Aulas particulares",
     desc: "Ver e responder solicitações de aula particular dos alunos." },
+  { to: "/admin/reportes-questoes", icon: Flag, title: "Sugestões de correção",
+    desc: "Reportes da bandeira em cada questão, agrupados por questão. Aprovar credita 5 Sparks." },
+  { to: "/admin/promo-codes", icon: Ticket, title: "Códigos de promoção",
+    desc: "Criar e gerenciar códigos que dão Sparks de bônus no cadastro." },
   { to: "/admin/history", icon: ClipboardList, title: "Histórico do Aluno",
     desc: "Response Event Store — histórico append-only por aluno com filtros." },
   { to: "/admin/users", icon: Users, title: "Usuários & permissões",
@@ -34,9 +38,32 @@ export default function AdminDashboard() {
   const [summary, setSummary] = useState(null);
   const [syncing, setSyncing] = useState(false);
   const [lastSync, setLastSync] = useState(null);
+  const [grantEmail, setGrantEmail] = useState("");
+  const [grantAmount, setGrantAmount] = useState("");
+  const [granting, setGranting] = useState(false);
   useEffect(() => {
     api.get("/admin/summary").then(({ data }) => setSummary(data)).catch(() => {});
   }, []);
+
+  const handleGrant = async (e) => {
+    e.preventDefault();
+    const valor = parseInt(grantAmount, 10);
+    if (!grantEmail.trim() || !valor || valor < 1) {
+      toast.error("Informe um e-mail e uma quantidade de Sparks válida.");
+      return;
+    }
+    setGranting(true);
+    try {
+      await api.post("/admin/sparks/grant", { email: grantEmail.trim(), amount: valor, motivo: "Crédito manual via painel admin" });
+      toast.success(`${valor} Sparks creditados para ${grantEmail.trim()}.`);
+      setGrantEmail("");
+      setGrantAmount("");
+    } catch (e2) {
+      toast.error(errMsg(e2, "Falha ao creditar Sparks."));
+    } finally {
+      setGranting(false);
+    }
+  };
 
   const handleSync = async () => {
     setSyncing(true);
@@ -102,6 +129,38 @@ export default function AdminDashboard() {
             {syncing ? "Sincronizando…" : "Sincronizar Firestore"}
           </button>
         </div>
+
+        {/* Crédito manual de Sparks: ferramenta de suporte/teste — ajusta o
+            saldo de um aluno por e-mail, sem passar por compra nem cupom. */}
+        <form onSubmit={handleGrant} className="mt-10 card-sapiens rounded-2xl p-6 flex flex-col md:flex-row gap-4 md:items-end">
+          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-sapiens-accent to-sapiens-navy text-white flex items-center justify-center shrink-0">
+            <Gift className="w-5 h-5" strokeWidth={1.7} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="font-display font-bold text-lg tracking-tight text-zinc-950 mb-3">Creditar Sparks manualmente</div>
+            <div className="flex flex-col md:flex-row gap-3">
+              <input
+                type="email" value={grantEmail} onChange={(e) => setGrantEmail(e.target.value)}
+                placeholder="email@aluno.com"
+                className="flex-1 border border-zinc-200 rounded-xl px-4 py-2.5 text-sm focus:border-sapiens-accent outline-none"
+                data-testid="admin-grant-sparks-email"
+              />
+              <input
+                type="number" min={1} value={grantAmount} onChange={(e) => setGrantAmount(e.target.value)}
+                placeholder="Quantidade"
+                className="w-full md:w-40 border border-zinc-200 rounded-xl px-4 py-2.5 text-sm focus:border-sapiens-accent outline-none"
+                data-testid="admin-grant-sparks-amount"
+              />
+              <button
+                type="submit" disabled={granting}
+                className="btn-sapiens shrink-0 rounded-xl px-5 py-2.5 text-sm font-semibold disabled:opacity-50"
+                data-testid="admin-grant-sparks-submit"
+              >
+                {granting ? "Creditando…" : "Creditar"}
+              </button>
+            </div>
+          </div>
+        </form>
 
         {/* Painel do professor: app separado, só vitrine — visualiza dado já
             processado aqui, nunca gera diagnóstico próprio (ver a própria

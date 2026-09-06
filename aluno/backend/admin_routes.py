@@ -4,7 +4,7 @@ from __future__ import annotations
 import asyncio
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr, Field
 
 from auth import require_admin
 from models import User
@@ -64,6 +64,27 @@ async def update_user(user_id: str, payload: UpdateUserRequest, admin: User = De
     if res.matched_count == 0:
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
     return {"ok": True, "is_admin": payload.is_admin}
+
+
+class GrantSparksRequest(BaseModel):
+    email: EmailStr
+    amount: int = Field(..., ge=1, le=1_000_000)
+    motivo: str = Field(default="", max_length=200)
+
+
+@router.post("/sparks/grant")
+async def grant_sparks(payload: GrantSparksRequest, admin: User = Depends(require_admin)):
+    """Credita Sparks manualmente na conta de um aluno, por e-mail — ferramenta
+    de suporte/teste do admin (ajuste pontual de saldo, não uma recompensa de
+    produto). Ver `firestore_service.grant_admin_sparks` sobre por que não há
+    deduplicação aqui: é uma ação humana avulsa, não um evento repetível.
+    """
+    alvo = await _db.users.find_one({"email": payload.email.strip().lower()}, {"_id": 0, "user_id": 1})
+    if not alvo:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado.")
+    return fs.grant_admin_sparks(
+        alvo["user_id"], amount=payload.amount, admin_email=admin.email, motivo=payload.motivo,
+    )
 
 
 # ---------- Firestore sync (admin only) ----------
