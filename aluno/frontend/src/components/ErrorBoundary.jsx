@@ -11,6 +11,27 @@ import { reportarErro } from "../lib/monitoring";
  * mostrar seu próprio estado de erro, ver `useCarregamento`); cobre o que
  * escapou de todo o resto.
  */
+// Toda tela lazy-carregada (ver `App.js`) busca seu chunk pelo hash do build
+// atual. Um aluno com a aba aberta DE ANTES de um deploy carrega o `main.js`
+// velho; ao navegar para uma tela que ainda não tinha aberto, o navegador
+// pede o chunk pelo hash velho — que o deploy novo já substituiu — e o
+// `import()` dinâmico rejeita. Isso não é um bug de produto, é inerente a
+// build com hash de conteúdo; a correção padrão é recarregar a página UMA
+// vez (busca o `main.js` novo, com os hashes certos). A guarda em
+// `sessionStorage` existe só para nunca virar um loop se o recarregamento
+// não resolver por algum outro motivo.
+const CHUNK_RELOAD_KEY = "sapiens_chunk_reload_tentado";
+
+function _eErroDeChunk(erro) {
+  const msg = String(erro?.message || erro || "");
+  return (
+    erro?.name === "ChunkLoadError" ||
+    /loading chunk [\w.-]+ failed/i.test(msg) ||
+    /failed to fetch dynamically imported module/i.test(msg) ||
+    /error loading dynamically imported module/i.test(msg)
+  );
+}
+
 export default class ErrorBoundary extends Component {
   state = { erro: null };
 
@@ -19,6 +40,17 @@ export default class ErrorBoundary extends Component {
   }
 
   componentDidCatch(erro, info) {
+    if (_eErroDeChunk(erro)) {
+      try {
+        if (!sessionStorage.getItem(CHUNK_RELOAD_KEY)) {
+          sessionStorage.setItem(CHUNK_RELOAD_KEY, "1");
+          window.location.reload();
+          return;
+        }
+      } catch {
+        // sessionStorage indisponível (modo privado etc.) — cai no relato normal abaixo.
+      }
+    }
     reportarErro(erro, { origem: "ErrorBoundary", componente: info?.componentStack });
   }
 
