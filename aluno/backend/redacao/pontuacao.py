@@ -87,6 +87,7 @@ def montar_resultado(classificacoes: dict[str, dg.Classificacao]) -> dict[str, A
             "tangenciamento_detectado": None,
             "competencias": [],
             "nota_total": 0,
+            "nota_pontos_estimados": 0,
             "necessita_revisao_humana": bool(itens_revisao),
             "itens_para_revisao": itens_revisao,
             "canon_versao": canon.versao(),
@@ -103,6 +104,7 @@ def montar_resultado(classificacoes: dict[str, dg.Classificacao]) -> dict[str, A
 
     competencias_resultado: list[dict[str, Any]] = []
     nota_total = 0
+    nota_estimada_pontos = 0  # quanto da nota veio de competência não confirmada
     for comp_id in av.COMPETENCIAS:
         c = classificacoes[comp_id]
         if _precisa_revisao(c):
@@ -119,11 +121,29 @@ def montar_resultado(classificacoes: dict[str, dg.Classificacao]) -> dict[str, A
                 cap_aplicado = cap
                 nivel = cap
 
-        contribuicao = nivel if (confirmado and isinstance(nivel, int)) else 0
-        nota_total += contribuicao
+        # A nota soma o MELHOR CANDIDATO DISPONÍVEL, confirmado ou não.
+        #
+        # Antes daqui saía `nivel if confirmado else 0`, e isso não era rigor:
+        # era uma nota errada com cara de nota. Uma competência `AMBIGUO` não
+        # significa "o aluno tirou zero", significa "o método local não teve
+        # suporte para cravar o nível" — somar zero afirma exatamente a coisa
+        # que o Decision Gate existe para não afirmar. Na prática uma redação
+        # boa saía com 560/1000 porque duas das cinco competências não tinham
+        # fechado, e nenhuma tela dizia que a nota estava incompleta.
+        #
+        # O único zero que a nota respeita é zero DECIDIDO: `DH-ZERO-01`
+        # confirmado (tratado acima) e os gatilhos de redação inteira (que
+        # saem antes desta função). A incerteza continua visível item a item
+        # em `confirmado` e em `itens_para_revisao`, e agregada em
+        # `necessita_revisao_humana` — informação para o aluno, não desconto
+        # silencioso na nota dele.
+        pontos = nivel if isinstance(nivel, int) else 0
+        nota_total += pontos
+        if not confirmado:
+            nota_estimada_pontos += pontos
         competencias_resultado.append({
             "id": comp_id,
-            "nivel_pontos": nivel if confirmado else None,
+            "nivel_pontos": pontos,
             "nivel_candidato_nao_confirmado": nivel if not confirmado else None,
             "confirmado": confirmado,
             "cap_aplicado": cap_aplicado,
@@ -136,6 +156,11 @@ def montar_resultado(classificacoes: dict[str, dg.Classificacao]) -> dict[str, A
         "tangenciamento_detectado": tangenciou,
         "competencias": competencias_resultado,
         "nota_total": nota_total,
+        # Quantos pontos da nota vieram de competência não confirmada. A tela
+        # usa isto para dizer o tamanho real da incerteza ("160 dos 720 pontos
+        # são estimativa") em vez de um aviso genérico que some no meio da
+        # página.
+        "nota_pontos_estimados": nota_estimada_pontos,
         "necessita_revisao_humana": bool(itens_revisao),
         "itens_para_revisao": itens_revisao,
         "canon_versao": canon.versao(),

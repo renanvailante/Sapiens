@@ -87,6 +87,15 @@ INDICES: list[tuple[str, list[tuple[str, int]], dict]] = [
      {"name": "redacoes_do_aluno"}),
     ("redacoes", [("redacao_id", pymongo.ASCENDING)], {"name": "redacao_id_idx"}),
     ("redacao_avaliacoes", [("redacao_id", pymongo.ASCENDING)], {"name": "avaliacao_por_redacao"}),
+    # Reivindicações de cobrança (`redacao_routes`). A busca por chave usa o
+    # `_id` (`user:chave`), que já é único e indexado pelo Mongo — o índice
+    # aqui é só para a varredura por usuário numa eventual auditoria de
+    # cobrança. NÃO tem TTL de propósito: uma reivindicação concluída é o
+    # comprovante de que aquele aluno já pagou por aquela correção; apagá-la
+    # devolveria a chave ao pool e um retry tardio cobraria de novo.
+    ("redacao_cobrancas", [("user_id", pymongo.ASCENDING), ("criado_em", pymongo.DESCENDING)],
+     {"name": "cobrancas_do_aluno"}),
+    ("redacao_feedbacks", [("user_id", pymongo.ASCENDING)], {"name": "feedbacks_do_aluno"}),
     ("aulas_particulares", [("created_at", pymongo.DESCENDING)], {"name": "aulas_recentes"}),
 
     # --- cache do agregado derivado do Firestore ---

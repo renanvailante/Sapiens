@@ -182,6 +182,24 @@ def _intervencao_do_erro(erro_id: str) -> str | None:
     return None
 
 
+def previa(erro_id: str) -> dict[str, Any]:
+    """O que o aluno lê ANTES de pagar: o enquadramento autoral já existente.
+
+    Custa zero — nem IA, nem leitura. Existe para o botão de 10 Sparks ser uma
+    escolha informada, e não uma caixa fechada: a prévia diz o objetivo, e o
+    que se compra é o aprofundamento gerado pela Mentis.
+    """
+    int_id = _intervencao_do_erro(erro_id)
+    enq = _ENQUADRAMENTO.get(int_id or "") or _SEM_CATALOGO
+    return {
+        "intervencao_id": int_id,
+        "intervencao_nome": _nome_intervencao(int_id),
+        "objetivo": enq["objetivo"],
+        "como_praticar": list(enq["como_praticar"]),
+        "sinal_de_progresso": enq["sinal_de_progresso"],
+    }
+
+
 def _acoes_dos_itens(tracos: list[dict], processo_id: str, erro_id: str) -> list[dict[str, Any]]:
     """A ação escrita pelo anotador PARA os itens que este aluno errou, quando
     o `gatilho` do bloco casa com a raiz da cadeia dele. É o que torna o plano

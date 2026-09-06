@@ -175,6 +175,41 @@ def _nome_processo(pid: str) -> str:
     return (_catalogo()["processos"].get(pid) or {}).get("nome") or pid
 
 
+def par_diagnostico(erro_id: str, processo_id: str) -> dict[str, Any] | None:
+    """Valida (Tipo de Erro, Processo) contra o catálogo e devolve os rótulos.
+
+    `None` quando o par não é autorizado — a mesma restrição R-1 que o motor
+    aplica a cada elo, aqui exposta para quem recebe o par de FORA (o cliente
+    manda `erro_id`/`processo_id` ao pedir uma intervenção). Sem isto, um par
+    inventado viraria chave nova de cache e uma geração desperdiçada.
+
+    Sentinela é par válido (R-2): ela registra que houve falha e que o
+    catálogo não a nomeia — só não prescreve intervenção.
+    """
+    cat = _catalogo()
+    if processo_id not in cat["processos"]:
+        return None
+    sentinela = erro_id in SENTINELAS
+    if not sentinela and (erro_id, processo_id) not in cat["pares_validos"]:
+        return None
+    catalogado = cat["erros"].get(erro_id) or {}
+    int_id = catalogado.get("intervencao") if not sentinela else None
+    proc = cat["processos"].get(processo_id) or {}
+    return {
+        "erro_id": erro_id,
+        "erro_nome": _nome_erro(erro_id),
+        "sentinela": sentinela,
+        "mecanismo": catalogado.get("mecanismo") or "",
+        "evidencia_observavel": catalogado.get("evidencia_observavel") or "",
+        "processo_id": processo_id,
+        "processo_nome": _nome_processo(processo_id),
+        "processo_definicao": proc.get("definicao_operacional") or "",
+        "intervencao_id": int_id,
+        "intervencao_nome": (cat["intervencoes"].get(int_id) or {}).get("nome") if int_id else None,
+        "ontology_version": cat["version"],
+    }
+
+
 def _confianca(bruta: Any) -> float | None:
     """Normaliza `confianca` para os bins do §5. `None` quando ausente ou
     ilegível — e um elo sem confiança é INVÁLIDO (R-3), não vale 1."""

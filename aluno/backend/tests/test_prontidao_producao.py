@@ -289,3 +289,41 @@ def test_sem_monorepo_e_sem_env_a_mensagem_diz_o_que_fazer(monkeypatch):
     monkeypatch.setattr(co, "_repo_root", lambda: None)
     with pytest.raises(RuntimeError, match="SAPIENS_ONTOLOGY_PATH"):
         co.canonical_path()
+
+
+# --------------------------------------------- canon da redação no container
+def test_dockerfile_leva_o_canon_da_redacao_para_a_imagem():
+    """Mesma classe de bug do corpus canônico, um andar adiante: o corretor de
+    redação lê `pipeline/docs/enem-redacao/13 enem_regras_computaveis.json`, e
+    o Dockerfile não copiava esse arquivo. A imagem subia, `/ready` respondia
+    `ok` (não checa o canon) e TODA submissão de redação em produção morria."""
+    conteudo = (BACKEND / "Dockerfile").read_text(encoding="utf-8")
+    assert "enem_regras_computaveis.json" in conteudo
+    assert "ENEM_CANON_PATH" in conteudo
+
+
+def test_canon_da_redacao_resolve_no_layout_do_container(tmp_path, monkeypatch):
+    """No container este módulo fica em `/app/redacao/canon.py`, que tem só
+    TRÊS ancestrais — `parents[3]` levantava `IndexError` antes de qualquer
+    tentativa de abrir arquivo, e o erro subia como 500 em vez do 503
+    "corretor indisponível" que o código pretendia dar."""
+    from redacao import canon
+
+    monkeypatch.delenv("ENEM_CANON_PATH", raising=False)
+    monkeypatch.delenv("SAPIENS_CONTRACTS_PATH", raising=False)
+    monkeypatch.setattr(canon, "__file__", "/app/redacao/canon.py")
+    assert canon._caminho_canon()  # não levanta
+
+    arquivo = tmp_path / "canon.json"
+    arquivo.write_text('{"competencias": [1, 2, 3, 4, 5]}', encoding="utf-8")
+    monkeypatch.setenv("ENEM_CANON_PATH", str(arquivo))
+    assert canon._caminho_canon() == arquivo
+
+
+def test_requirements_tem_o_dicionario_do_corretor():
+    """`redacao/heuristicas.py` importa `spellchecker` para a Competência I. O
+    pacote não estava em requirements.txt: em produção o import falhava, o
+    `except` engolia, e a competência ficava sem candidato — nota menor, sem
+    nenhum erro visível."""
+    conteudo = (BACKEND / "requirements.txt").read_text(encoding="utf-8")
+    assert "pyspellchecker" in conteudo

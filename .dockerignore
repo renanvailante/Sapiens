@@ -11,11 +11,12 @@
 # transferindo centenas de MB por mais de 6 minutos e falhando por timeout de
 # rede, com a correção da cota do Firestore ficando de fora sem ninguém notar.
 #
-# O Dockerfile copia exatamente quatro coisas:
+# O Dockerfile copia exatamente cinco coisas:
 #   aluno/backend/
 #   pipeline/docs/ontology/ontology_v1.4.json
 #   pipeline/backend/ontology_validator.py
 #   pipeline/backend/item_contract.py
+#   pipeline/docs/enem-redacao/13 enem_regras_computaveis.json  (canon do corretor)
 # Tudo o mais aqui é peso morto no contexto.
 
 .git

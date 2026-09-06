@@ -146,6 +146,26 @@ def _mensagem_de_erro(erro_id: Optional[str]) -> Optional[str]:
     return None
 
 
+def causa_raiz(master: Optional[dict], alternativa_escolhida: Optional[str]) -> Optional[dict[str, str]]:
+    """O par (Tipo de Erro, Processo) do elo RAIZ, para a alternativa marcada.
+
+    `build_feedback` já percorre exatamente esta cadeia para escrever a
+    mensagem; isto só devolve o par em vez de prosa, para quem precisa do
+    diagnóstico e não do texto. Reaproveita os mesmos ajudantes — nenhuma
+    releitura, nenhuma segunda interpretação do contrato.
+    """
+    if not master:
+        return None
+    dist = _distrator(master, alternativa_escolhida)
+    raiz = _elo_raiz(dist) if dist else None
+    if not raiz:
+        return None
+    erro, processo = raiz.get("erro"), raiz.get("processo_afetado")
+    if not erro or not processo:
+        return None
+    return {"erro_id": erro, "processo_id": processo}
+
+
 def build_feedback(
     master: Optional[dict], alternativa_escolhida: Optional[str], acertou: Optional[bool]
 ) -> dict[str, Any]:

@@ -41,6 +41,14 @@ mercadopago==3.5.0
 # --- Figuras de questão (proxy servidor-a-servidor para o pipeline) ---
 httpx==0.28.1
 
+# --- Corretor de redacao (Nivel 1-2, 100% local) ---
+# Dicionario pt embutido no pacote: nenhuma chamada de rede, nenhum download
+# em runtime. Estava FALTANDO aqui enquanto `redacao/heuristicas.py` ja o
+# importava: em producao o `import` falhava, a Competencia I caia no ramo
+# "checagem ortografica local indisponivel" e ficava sem candidato — nota
+# menor, sem nenhum sinal de erro em lugar nenhum.
+pyspellchecker==0.9.0
+
 # --- Suporte ---
 python-dotenv>=1.0.1
 tzdata>=2024.2

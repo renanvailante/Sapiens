@@ -20,7 +20,7 @@ from models import User
 import ai_service
 import annotation_service
 import firestore_service as fs
-from feedback_templates import build_feedback
+from feedback_templates import build_feedback, causa_raiz
 
 logger = logging.getLogger("sapiens.firestore.routes")
 
@@ -220,7 +220,17 @@ async def register_answer(payload: AnswerPayload, user: User = Depends(require_u
         dispositivo=payload.dispositivo,
         versao_aplicacao=payload.versao_aplicacao,
     )
-    return {"acertou": acertou, "correta": correta_letra, "feedback": feedback}
+    # A causa raiz sai de graça: `master` já está carregado para o feedback, e
+    # `causa_raiz` é a mesma leitura de cadeia, sem nenhuma ida ao banco. É ela
+    # que habilita a Intervenção da Mentis logo depois do erro — sem isso, a
+    # tela teria de perguntar ao servidor "esta resposta tem causa?" numa
+    # segunda chamada, pagando de novo o que já estava na mão.
+    return {
+        "acertou": acertou,
+        "correta": correta_letra,
+        "feedback": feedback,
+        "causa_raiz": None if acertou else causa_raiz(master, payload.alternativa_escolhida),
+    }
 
 
 class RespostaSessao(BaseModel):

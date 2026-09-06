@@ -23,13 +23,50 @@ class CanonIndisponivelError(RuntimeError):
     inválido. Nunca derruba o boot do app: só a rota de redação vira 503."""
 
 
-def _caminho_canon() -> Path:
+def _candidatos() -> list[Path]:
+    """Todos os lugares onde o canon pode estar, em ordem de preferência.
+
+    Existe uma lista (e não um caminho único) porque o arquivo mora em dois
+    layouts diferentes e incompatíveis:
+
+      * ÁRVORE DO REPO — `pipeline/docs/enem-redacao/`, quatro níveis acima
+        deste arquivo. É o que vale em desenvolvimento e nos testes.
+      * IMAGEM DE PRODUÇÃO — o Dockerfile copia só `aluno/backend/` para
+        `/app` mais três arquivos de `pipeline/` para `/app/contracts/`. Não
+        existe `pipeline/` dentro do contêiner, e `/app/redacao/canon.py` tem
+        apenas TRÊS ancestrais (`/app/redacao`, `/app`, `/`) — a versão antiga
+        deste módulo indexava `parents[3]` e estourava `IndexError` antes
+        mesmo de tentar abrir arquivo nenhum. Como `_carregar` só trata
+        `FileNotFoundError`/`JSONDecodeError`, o erro subia cru e a rota de
+        redação respondia 500 em TODA submissão em produção — nunca o 503
+        "corretor indisponível" que o código pretendia dar.
+
+    `ENEM_CANON_PATH`, quando definido, vem primeiro e sozinho decide.
+    """
     override = os.environ.get("ENEM_CANON_PATH")
     if override:
-        return Path(override)
-    # aluno/backend/redacao/canon.py -> ... -> raiz do monorepo -> pipeline/docs/enem-redacao/
-    raiz = Path(__file__).resolve().parents[3]
-    return raiz / "pipeline" / "docs" / "enem-redacao" / _ARQUIVO_PADRAO
+        return [Path(override)]
+
+    caminhos: list[Path] = []
+    contracts = os.environ.get("SAPIENS_CONTRACTS_PATH")
+    if contracts:
+        caminhos.append(Path(contracts) / "enem-redacao" / _ARQUIVO_PADRAO)
+
+    aqui = Path(__file__).resolve()
+    for ancestral in aqui.parents:
+        caminhos.append(ancestral / "pipeline" / "docs" / "enem-redacao" / _ARQUIVO_PADRAO)
+        caminhos.append(ancestral / "contracts" / "enem-redacao" / _ARQUIVO_PADRAO)
+    return caminhos
+
+
+def _caminho_canon() -> Path:
+    """O primeiro candidato que existe — ou o primeiro da lista, para que a
+    mensagem de erro cite um caminho concreto em vez de sumir."""
+    candidatos = _candidatos()
+    for caminho in candidatos:
+        if caminho.is_file():
+            return caminho
+    return candidatos[0]
 
 
 _CANON: dict[str, Any] | None = None
@@ -41,7 +78,10 @@ def _carregar() -> dict[str, Any]:
         with caminho.open(encoding="utf-8") as f:
             data = json.load(f)
     except FileNotFoundError as exc:
-        raise CanonIndisponivelError(f"Canon do Enem não encontrado em {caminho}") from exc
+        procurados = ", ".join(str(c) for c in _candidatos()[:6])
+        raise CanonIndisponivelError(
+            f"Canon do Enem não encontrado em {caminho} (procurado em: {procurados})"
+        ) from exc
     except json.JSONDecodeError as exc:
         raise CanonIndisponivelError(f"Canon do Enem em {caminho} não é JSON válido: {exc}") from exc
     if not isinstance(data.get("competencias"), list) or len(data["competencias"]) != 5:

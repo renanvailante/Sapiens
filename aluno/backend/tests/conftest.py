@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 
 import pytest
+from pymongo.errors import DuplicateKeyError
 
 BACKEND = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BACKEND))
@@ -83,7 +84,21 @@ class FakeCollection:
         return dict(candidatos[0]) if candidatos else None
 
     async def insert_one(self, doc: dict):
+        """Aplica a unicidade de `_id` do Mongo real. Sem isto, o dublê
+        aceitaria duas reivindicações com a mesma chave e os testes de
+        idempotência de `redacao_routes` passariam sem provar nada — a
+        garantia inteira depende de `DuplicateKeyError` acontecer."""
+        _id = doc.get("_id")
+        if _id is not None and any(d.get("_id") == _id for d in self.docs):
+            raise DuplicateKeyError(f"E11000 duplicate key error: _id {_id!r}")
         self.docs.append(dict(doc))
+
+    async def find_one_and_update(self, query: dict, update: dict, return_document=True, **kwargs):
+        for doc in self.docs:
+            if self._bate(doc, query):
+                doc.update(update.get("$set", {}))
+                return dict(doc)
+        return None
 
     async def update_one(self, query: dict, update: dict, upsert: bool = False):
         for doc in self.docs:

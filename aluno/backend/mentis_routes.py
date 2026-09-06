@@ -45,9 +45,11 @@ from pydantic import BaseModel, Field
 
 import ai_service
 import annotation_service
+import intervencoes
 import firestore_service as fs
 import llm_cache
 import llm_telemetry
+import motor_cognitivo
 import rate_limit
 from auth import require_user
 from models import User
@@ -240,6 +242,268 @@ async def gerar_explicacao(
 
     await llm_cache.set(_db.mentis_explicacoes, chave, paragrafos)
     return {"paragrafos": paragrafos, "sparks_balance": saldo, "cache": False}
+
+
+# ---------- 1b. Intervenção pedagógica (reutilizável) ----------
+#
+# Diferente do "Saiba mais" acima em tudo que importa para o custo:
+#
+# | | Saiba mais (7) | Intervenção (10) |
+# |-|-|-|
+# | responde | "por que a resposta é essa?" | "por que EU erro assim, e como parar" |
+# | chave | um item | uma CAUSA RAIZ (erro x processo) |
+# | universo | 268 itens e crescendo | 15 pares autorizados na v1.4.1 |
+# | cobra | toda vez | uma vez por aluno, por causa |
+#
+# O universo minúsculo é o ponto. A ontologia autoriza 15 pares
+# (Tipo de Erro x Processo) — mais as sentinelas. Então o produto inteiro tem
+# algumas dezenas de intervenções possíveis, no total, para sempre. A primeira
+# pessoa que abre uma delas paga a única chamada ao Gemini que aquela
+# dificuldade vai custar; todo mundo depois lê Mongo.
+#
+# Nada aqui é gerado por aluno. O que é do aluno — quais questões ELE errou,
+# qual alternativa marcou, a resolução daqueles itens — já está montado, de
+# graça e sem IA, por `motor_cognitivo.detalhe()`, e é a tela que junta as duas
+# metades. Personalizar com IA aqui seria pagar de novo por contexto que o
+# sistema já tem determinístico.
+#
+# A cobrança acontece uma vez por (aluno, causa). Reabrir, dar refresh,
+# navegar e voltar não cobram de novo: o desbloqueio fica registrado no Mongo,
+# e é ele — não o cache do conteúdo — que decide se há cobrança.
+
+INTERVENCAO_COST = 10
+_CACHE_PREFIXO_INTERVENCAO = "intervencao-v1"
+_TIMEOUT_INTERVENCAO = 25.0
+
+INTERVENCAO_SYSTEM = """Você é a Mentis, a entidade cognitiva do Sapiens. Você escreve uma
+INTERVENÇÃO PEDAGÓGICA sobre um tipo de dificuldade cognitiva.
+
+Este texto é REUTILIZÁVEL: fica salvo e será mostrado a qualquer estudante que
+apresente essa mesma dificuldade. Nunca fale de uma questão específica, nunca
+diga "você errou a questão X", nunca suponha a matéria. Fale da dificuldade em
+si, de um jeito que sirva a qualquer conteúdo em que ela apareça.
+
+Voz de professor experiente explicando com calma: direta, concreta, sem jargão
+técnico, sem empolgação de mascote. Trate o estudante por "você".
+
+NÃO use identificadores de catálogo (PROC-, ERR-, HAB-, DOM-, COMP-, INT-).
+
+Responda EXCLUSIVAMENTE com JSON:
+{"o_que_acontece": "2 a 4 frases: como essa falha funciona por dentro, e por que ela engana quem a comete",
+ "exemplo": {"situacao": "1 frase de uma situação concreta e cotidiana onde a falha aparece",
+             "raciocinio_errado": "1 a 2 frases com o passo em falso, escrito de dentro, como quem o cometeu",
+             "correcao": "1 a 2 frases mostrando exatamente onde o raciocínio deveria ter virado"},
+ "treino": ["3 a 5 ações praticáveis numa questão de prova, cada uma em 1 frase no imperativo"],
+ "sinal_de_alerta": "1 frase: o que você sente ou pensa logo antes de cometer essa falha",
+ "checagem": "1 frase: a pergunta que você faz a si mesmo antes de marcar a resposta"}
+Sem markdown, sem texto fora do JSON."""
+
+
+class IntervencaoPayload(BaseModel):
+    erro_id: str
+    processo_id: str
+
+
+def _chave_intervencao(par: dict) -> str:
+    """Chave do conteúdo COMPARTILHADO: versão da ontologia + causa raiz.
+
+    Não entra nada do aluno — é o que torna uma geração aproveitável por
+    todos. A versão entra porque um `ERR-NN` pode mudar de significado entre
+    versões maiores do catálogo, e servir texto velho seria servir outra coisa.
+    """
+    return llm_cache.cache_key(
+        _CACHE_PREFIXO_INTERVENCAO, par["ontology_version"], par["erro_id"], par["processo_id"]
+    )
+
+
+def _montar_prompt_intervencao(par: dict) -> str:
+    linhas = [f"Dificuldade: {par['erro_nome']}"]
+    if par["mecanismo"]:
+        linhas.append(f"Como ela funciona: {par['mecanismo']}")
+    if par["evidencia_observavel"]:
+        linhas.append(f"Como ela aparece na resposta: {par['evidencia_observavel']}")
+    linhas.append(f"Capacidade afetada: {par['processo_nome']}")
+    if par["processo_definicao"]:
+        linhas.append(f"O que essa capacidade envolve: {par['processo_definicao']}")
+    if par["intervencao_nome"]:
+        linhas.append(f"Abordagem pedagógica prescrita: {par['intervencao_nome']}")
+    if par["sentinela"]:
+        linhas.append(
+            "Observação: esta dificuldade ainda não tem causa nomeada no catálogo. "
+            "Escreva a intervenção a partir da capacidade afetada."
+        )
+    return "\n".join(linhas)
+
+
+def _validar_intervencao(resultado: Any) -> dict[str, Any]:
+    if not isinstance(resultado, dict):
+        raise ValueError("Resposta do Gemini não é um objeto JSON.")
+    exemplo = resultado.get("exemplo")
+    treino = resultado.get("treino")
+    if not isinstance(exemplo, dict):
+        raise ValueError("Campo 'exemplo' ausente ou inválido.")
+    if not isinstance(treino, list):
+        raise ValueError("Campo 'treino' ausente ou inválido.")
+    treino = [t.strip() for t in treino if isinstance(t, str) and t.strip()]
+    if len(treino) < 3:
+        raise ValueError(f"Só {len(treino)} passo(s) de treino — mínimo 3.")
+
+    def _txt(valor: Any, campo: str) -> str:
+        if not isinstance(valor, str) or not valor.strip():
+            raise ValueError(f"Campo '{campo}' ausente ou vazio.")
+        return valor.strip()
+
+    return {
+        "o_que_acontece": _txt(resultado.get("o_que_acontece"), "o_que_acontece"),
+        "exemplo": {
+            "situacao": _txt(exemplo.get("situacao"), "exemplo.situacao"),
+            "raciocinio_errado": _txt(exemplo.get("raciocinio_errado"), "exemplo.raciocinio_errado"),
+            "correcao": _txt(exemplo.get("correcao"), "exemplo.correcao"),
+        },
+        "treino": treino[:5],
+        "sinal_de_alerta": _txt(resultado.get("sinal_de_alerta"), "sinal_de_alerta"),
+        "checagem": _txt(resultado.get("checagem"), "checagem"),
+    }
+
+
+def _resolver_par(erro_id: str, processo_id: str) -> dict[str, Any]:
+    par = motor_cognitivo.par_diagnostico(erro_id, processo_id)
+    if par is None:
+        # R-1: o catálogo é a fonte da possibilidade. Um par que ele não
+        # autoriza não é uma dificuldade — e não pode virar chave de cache.
+        raise HTTPException(
+            status_code=422,
+            detail="Esta combinação de dificuldade não existe no catálogo vigente.",
+        )
+    return par
+
+
+def _doc_desbloqueio(uid: str, chave: str) -> str:
+    return f"{uid}|{chave}"
+
+
+async def _ja_desbloqueada(uid: str, chave: str) -> bool:
+    """1 leitura no Mongo (sem cota) decide se há cobrança. Uma falha aqui
+    NÃO pode virar cobrança dupla: no escuro, presume-se desbloqueado."""
+    try:
+        doc = await _db.mentis_intervencoes_abertas.find_one({"_id": _doc_desbloqueio(uid, chave)})
+        return doc is not None
+    except Exception:  # noqa: BLE001
+        logger.exception("Mentis: leitura de desbloqueio falhou para %s — não cobrando de novo.", uid)
+        return True
+
+
+@router.get("/intervencao")
+async def estado_intervencao(
+    erro_id: str,
+    processo_id: str,
+    user: User = Depends(require_user),
+):
+    """Estado da intervenção para uma causa raiz. **De graça e sem IA.**
+
+    Devolve a prévia autoral (que já existia em `intervencoes`) e diz se o
+    aluno já desbloqueou. Não lê saldo de Sparks de propósito: quem chama já
+    tem o saldo na tela, e uma leitura do Firestore por render é justamente o
+    tipo de custo que derrubou o app em 2026-09-04.
+    """
+    par = _resolver_par(erro_id, processo_id)
+    chave = _chave_intervencao(par)
+    desbloqueada = await _ja_desbloqueada(user.user_id, chave)
+    conteudo = await llm_cache.get(_db.mentis_intervencoes, chave) if desbloqueada else None
+    return {
+        "causa": par,
+        "previa": intervencoes.previa(erro_id),
+        "desbloqueada": desbloqueada,
+        "custo": 0 if desbloqueada else INTERVENCAO_COST,
+        "conteudo": conteudo,
+    }
+
+
+@router.post("/intervencao")
+async def abrir_intervencao(
+    payload: IntervencaoPayload,
+    user: User = Depends(require_user),
+    _: None = Depends(rate_limit.por_usuario("llm")),
+):
+    """Abre a intervenção da causa raiz. `INTERVENCAO_COST` Sparks na PRIMEIRA
+    vez de cada aluno em cada causa; depois disso, sempre de graça.
+
+    Ordem deliberada: verifica o desbloqueio ANTES de cobrar. O aluno que dá
+    refresh, volta pelo Painel ou reabre a mesma dificuldade em outra questão
+    não paga duas vezes pela mesma coisa.
+    """
+    par = _resolver_par(payload.erro_id, payload.processo_id)
+    chave = _chave_intervencao(par)
+
+    ja_paga = await _ja_desbloqueada(user.user_id, chave)
+    saldo = None if ja_paga else _cobrar(user.user_id, INTERVENCAO_COST)
+
+    conteudo = await llm_cache.get(_db.mentis_intervencoes, chave)
+    gerou = False
+    if conteudo is None:
+        prompt = _montar_prompt_intervencao(par)
+        inicio = time.monotonic()
+        try:
+            resultado = await ai_service.generate_json_resiliente(
+                INTERVENCAO_SYSTEM, prompt, thinking_level="MINIMAL", timeout=_TIMEOUT_INTERVENCAO
+            )
+            conteudo = _validar_intervencao(resultado)
+            await llm_telemetry.persist(
+                _db.mentis_llm_chamadas,
+                contexto=f"{par['erro_id']}x{par['processo_id']}@{par['ontology_version']}",
+                motivo="intervenção pedagógica reutilizável (primeira vez desta causa raiz)",
+                modelo="gemini (thinking=MINIMAL)",
+                thinking_level="MINIMAL",
+                resultado_estado="ok",
+                duration_ms=(time.monotonic() - inicio) * 1000,
+            )
+        except Exception as exc:  # noqa: BLE001
+            if not ja_paga:
+                saldo_restituido = _safe_reembolso(user.user_id, INTERVENCAO_COST)
+                logger.exception(
+                    "Mentis: intervenção falhou para %s — %d Sparks devolvidos (saldo: %s).",
+                    chave, INTERVENCAO_COST, saldo_restituido,
+                )
+            raise HTTPException(
+                status_code=503,
+                detail="Não foi possível abrir a intervenção agora. Seus Sparks foram devolvidos.",
+            ) from exc
+        gerou = True
+        await llm_cache.set(_db.mentis_intervencoes, chave, conteudo)
+
+    # O desbloqueio é gravado só DEPOIS de existir conteúdo para entregar:
+    # marcar antes deixaria o aluno com a cobrança feita e a porta aberta para
+    # um documento vazio se a geração falhasse.
+    if not ja_paga:
+        try:
+            await _db.mentis_intervencoes_abertas.update_one(
+                {"_id": _doc_desbloqueio(user.user_id, chave)},
+                {"$set": {
+                    "student_id": user.user_id,
+                    "erro_id": par["erro_id"],
+                    "processo_id": par["processo_id"],
+                    "ontology_version": par["ontology_version"],
+                    "custo_pago": INTERVENCAO_COST,
+                    "aberto_em": _agora().isoformat(),
+                }},
+                upsert=True,
+            )
+        except Exception:  # noqa: BLE001
+            # O aluno já pagou e já vai receber o conteúdo. Perder o registro
+            # custa uma cobrança futura indevida, então fica no log para
+            # conciliação — mas nunca derruba a entrega que ele pagou.
+            logger.exception("Mentis: desbloqueio NÃO registrado para %s / %s.", user.user_id, chave)
+
+    return {
+        "causa": par,
+        "previa": intervencoes.previa(par["erro_id"]),
+        "conteudo": conteudo,
+        "desbloqueada": True,
+        "custo": 0,
+        "cobrado": 0 if ja_paga else INTERVENCAO_COST,
+        "sparks_balance": saldo,
+        "gerada_agora": gerou,
+    }
 
 
 # ---------- 2. Chat: o dossiê do aluno ----------

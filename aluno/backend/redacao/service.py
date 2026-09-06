@@ -9,15 +9,50 @@ tema nunca chama o Gemini.
 from __future__ import annotations
 
 import logging
+import os
+from dataclasses import replace
 from typing import Any
 
 import decision_gate as dg
 from redacao import avaliador_local as av
-from redacao import canon, pontuacao
+from redacao import canon, pontuacao, tema_local
 from redacao.escalonamento_redacao import NAO_ESCALONAVEL, resolver_itens
 from redacao.tipos import RedacaoEntrada
 
 logger = logging.getLogger("sapiens.redacao.service")
+
+
+def _escalonamento_ligado() -> bool:
+    """O escalonamento ao Gemini é OPT-IN, desligado por padrão.
+
+    A nota que o aluno paga (correção por Sparks) sai inteira dos Níveis 1-2,
+    que não fazem chamada de rede nenhuma. Não é economia à custa da nota: os
+    itens que sobravam indeterminados eram justamente os três que dependiam
+    de `tema_elementos_obrigatorios`, e `tema_local.py` agora os resolve de
+    graça a partir da própria frase temática. O que restava para o LLM
+    decidir era a diferença entre um nível e o adjacente numa competência —
+    e mesmo isso, quando o modelo discordava da heurística, virava
+    `CONFLITANTE` e ENTRAVA COMO ZERO na nota antiga: pagava-se a chamada
+    para piorar o resultado.
+
+    A explicação personalizada, que é onde um modelo realmente acrescenta
+    algo, é uma compra separada e explícita do aluno (feedback da Mentis).
+
+    Ligue com `REDACAO_ESCALONAR_LLM=1` para reavaliar a decisão com
+    telemetria real (`redacao_llm_chamadas`), sem mexer em código.
+    """
+    return (os.environ.get("REDACAO_ESCALONAR_LLM") or "").strip().lower() in {"1", "true", "sim"}
+
+
+def _com_tema_decomposto(entrada: RedacaoEntrada) -> RedacaoEntrada:
+    """Preenche `tema_elementos_obrigatorios` a partir da frase temática
+    quando o chamador não mandou a decomposição — ver `tema_local.py`."""
+    if entrada.tema_elementos_obrigatorios or not entrada.tema_frase:
+        return entrada
+    elementos = tema_local.elementos_do_tema(entrada.tema_frase)
+    if not elementos:
+        return entrada
+    return replace(entrada, tema_elementos_obrigatorios=elementos)
 
 
 def _motivo(c: dg.Classificacao) -> str:
@@ -56,14 +91,20 @@ def _ja_anulada_localmente(classificacoes: dict[str, dg.Classificacao]) -> bool:
 
 async def corrigir_redacao(entrada: RedacaoEntrada, *, db: Any, redacao_id: str) -> dict[str, Any]:
     canon_versao = canon.versao()
+    entrada = _com_tema_decomposto(entrada)
     classificacoes = av.avaliar(entrada)
 
     if _ja_anulada_localmente(classificacoes):
         resultado = pontuacao.montar_resultado(classificacoes)
         resultado["itens_escalonados_llm"] = []
+        resultado["tema_elementos_usados"] = list(entrada.tema_elementos_obrigatorios)
         return resultado
 
-    pendentes = [item_id for item_id, c in classificacoes.items() if _pode_escalonar(item_id, c, entrada)]
+    pendentes = (
+        [item_id for item_id, c in classificacoes.items() if _pode_escalonar(item_id, c, entrada)]
+        if _escalonamento_ligado()
+        else []
+    )
 
     if pendentes:
         motivos = {item_id: _motivo(classificacoes[item_id]) for item_id in pendentes}
@@ -81,4 +122,5 @@ async def corrigir_redacao(entrada: RedacaoEntrada, *, db: Any, redacao_id: str)
 
     resultado = pontuacao.montar_resultado(classificacoes)
     resultado["itens_escalonados_llm"] = pendentes
+    resultado["tema_elementos_usados"] = list(entrada.tema_elementos_obrigatorios)
     return resultado

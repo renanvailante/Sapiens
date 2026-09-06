@@ -27,8 +27,16 @@ COPY pipeline/docs/ontology/ontology_v1.4.json /app/contracts/ontology/ontology_
 COPY pipeline/backend/ontology_validator.py    /app/contracts/ontology_validator.py
 COPY pipeline/backend/item_contract.py         /app/contracts/item_contract.py
 
+# Canon do Enem (apoio_externo, GOV-1.0 §1.1) — sem este arquivo dentro da
+# imagem, `redacao/canon.py` não acha nada e TODA correção de redação falha.
+# Foi exatamente o que aconteceu entre o lançamento do corretor e 2026-09-06:
+# a feature existia no código, tinha testes passando na árvore do repo, e
+# respondia erro em produção porque o dado nunca tinha sido copiado.
+COPY ["pipeline/docs/enem-redacao/13 enem_regras_computaveis.json", "/app/contracts/enem-redacao/13 enem_regras_computaveis.json"]
+
 ENV SAPIENS_ONTOLOGY_PATH=/app/contracts/ontology/ontology_v1.4.json \
-    SAPIENS_CONTRACTS_PATH=/app/contracts
+    SAPIENS_CONTRACTS_PATH=/app/contracts \
+    ENEM_CANON_PATH="/app/contracts/enem-redacao/13 enem_regras_computaveis.json"
 
 # `ontology_validator` resolve o catálogo por caminho relativo ao próprio
 # arquivo (`parent.parent/docs/ontology/...`). Dentro da imagem esse caminho
