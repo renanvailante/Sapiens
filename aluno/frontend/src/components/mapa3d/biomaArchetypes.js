@@ -1,68 +1,88 @@
-// Configuração visual client-side dos 6 biomas — camada de PRODUTO, igual a
-// `treino_grafo_v0_2.py::BIOMAS` no espírito (nunca a ontologia). Existe só
-// aqui porque o mundo 3D é construído inteiramente no cliente: zero mudança
-// de backend.
+// Identidade visual dos 6 biomas — camada de PRODUTO no cliente, nunca a
+// ontologia. Cada bioma é um DISTRITO da mesma cidade: tem paleta própria,
+// altura própria e um landmark próprio, mas todos são construídos com o
+// mesmo vocabulário (laje, cornija, torre, arcada, escada, ponte, arco).
 //
-// As cores permanecem dentro da família ciano→violeta do sistema de design
-// (index.css: --bio-ciano/--bio-azul/--bio-violeta) — nunca verde/vermelho/
-// âmbar, reservados a certo/errado/aviso. A identidade de cada bioma vem da
-// TOPOGRAFIA (elevation.kind) e da geometria do nó, não de uma cor fora da
-// família.
+// Paleta: cada distrito tem 3 tons de superfície + 1 luz. Os tons são pedra
+// fria dessaturada puxada para o matiz do bioma; a saturação forte fica
+// reservada à LUZ (o `brilho`), que é sempre um dos matizes do sistema de
+// design (ciano -> azul -> violeta, index.css). Nenhum verde/vermelho/âmbar
+// entra como cor de superfície — eles continuam significando
+// acerto/erro/aviso no resto do produto.
+//
+// A leitura de volume (o "Monument Valley") não vem da cor e sim da luz: as
+// faces superiores recebem a luz principal, as laterais caem para o `medio`
+// e o `escuro`, e a cornija de 30cm sob cada laje devolve uma linha clara
+// que separa massa de piso.
 export const BIOMA_ARCHETYPES = {
   perceber: {
-    // "Observar antes de interpretar" — chão raso, quase espelhado.
-    tint: { base: "#4FD9FF", deep: "#0f2a3d", emissive: "#4FD9FF" },
-    elevation: { kind: "flat-reflective", amplitude: 0.6, detailFreq: 0.07, detailAmplitude: 0.18 },
-    nodeGeometry: "disc-ring",
-    ground: { roughness: 0.2, metalness: 0.4 },
+    // "Observar antes de interpretar" — o distrito baixo, quase plano, de
+    // pátios e espelhos d'água. É por onde se entra na cidade.
+    paleta: { claro: "#A5DCEF", medio: "#4C7F9E", escuro: "#204765", brilho: "#4FD9FF" },
+    nivelBase: 0,
+    nivelVariacao: 1,
+    landmark: "patio",
+    formaNo: "anel",
   },
   relacionar: {
-    // "Uma coisa muda em função da outra" — vale em terraços.
-    tint: { base: "#3FBFEA", deep: "#123350", emissive: "#3FBFEA" },
-    elevation: { kind: "terraced", amplitude: 2.4, step: 0.55, detailFreq: 0.05, detailAmplitude: 0.2 },
-    nodeGeometry: "stepped-block",
-    ground: { roughness: 0.55, metalness: 0.12 },
+    // "Uma coisa muda em função da outra" — terraços encadeados, ligados por
+    // escadarias que sobem em duas direções.
+    paleta: { claro: "#9CC9E8", medio: "#446F9C", escuro: "#1C3D63", brilho: "#3FBFEA" },
+    nivelBase: 1,
+    nivelVariacao: 2,
+    landmark: "escadaria",
+    formaNo: "ziggurat",
   },
   representar: {
-    // "Ideia → estrutura manipulável" — platô cristalino, altura quantizada.
-    tint: { base: "#4A85E3", deep: "#16254c", emissive: "#4A85E3" },
-    elevation: { kind: "quantized", amplitude: 2.6, step: 0.5, detailFreq: 0.03, detailAmplitude: 0.05 },
-    nodeGeometry: "crystal-prism",
-    ground: { roughness: 0.3, metalness: 0.3 },
+    // "Ideia -> estrutura manipulável" — platôs cristalinos e torres-grade:
+    // a estrutura aparente, o desenho técnico virado edifício.
+    paleta: { claro: "#A3BCE6", medio: "#4A63A0", escuro: "#213166", brilho: "#4A85E3" },
+    nivelBase: 2,
+    nivelVariacao: 2,
+    landmark: "torre-grade",
+    formaNo: "cristal",
   },
   investigar: {
-    // "Testar uma explicação" — cluster de torres/observatórios.
-    tint: { base: "#6E82E8", deep: "#1c1a48", emissive: "#6E82E8" },
-    elevation: { kind: "spires", amplitude: 3.6, detailFreq: 0.1, detailAmplitude: 0.7 },
-    nodeGeometry: "obelisk",
-    ground: { roughness: 0.6, metalness: 0.1 },
+    // "Testar uma explicação" — o distrito alto, de observatórios e antenas,
+    // de onde se enxerga o resto da cidade.
+    paleta: { claro: "#ADB2EC", medio: "#55589E", escuro: "#292863", brilho: "#6E82E8" },
+    nivelBase: 3,
+    nivelVariacao: 2,
+    landmark: "observatorio",
+    formaNo: "obelisco",
   },
   integrar: {
-    // "O sistema inteiro" — bacia de convergência (amplitude negativa: é o
-    // ponto mais baixo, então pontes de outros biomas descem até ele sem
-    // nenhuma lógica extra de caminho).
-    tint: { base: "#8B7BFF", deep: "#1f1640", emissive: "#8B7BFF" },
-    elevation: { kind: "basin", amplitude: -2.1, detailFreq: 0.05, detailAmplitude: 0.2 },
-    nodeGeometry: "hub-node",
-    ground: { roughness: 0.35, metalness: 0.22 },
+    // "O sistema inteiro" — a bacia: o ponto mais baixo, onde as pontes de
+    // todos os outros distritos descem e se encontram num anfiteatro.
+    paleta: { claro: "#BBADEE", medio: "#6355A6", escuro: "#2F2569", brilho: "#8B7BFF" },
+    nivelBase: 0,
+    nivelVariacao: 1,
+    landmark: "anfiteatro",
+    formaNo: "nucleo",
   },
   decidir: {
-    // "Julgar, classificar, escolher" — platô-cume, elevado e plano no topo.
-    tint: { base: "#A489FF", deep: "#251a44", emissive: "#A489FF" },
-    elevation: { kind: "summit", amplitude: 3.1, detailFreq: 0.04, detailAmplitude: 0.1 },
-    nodeGeometry: "tribunal-block",
-    ground: { roughness: 0.4, metalness: 0.32 },
+    // "Julgar, classificar, escolher" — o cume: pórtico de colunas e um
+    // volume suspenso sobre ele.
+    paleta: { claro: "#C9B7F2", medio: "#7059AE", escuro: "#3A296E", brilho: "#A489FF" },
+    nivelBase: 4,
+    nivelVariacao: 1,
+    landmark: "portico",
+    formaNo: "cubo",
   },
 };
 
-// Tiers visuais por `estado` — substitui `estiloEstado()` do SVG 2D.
-// `unknown` não tem entrada: nunca vira estrutura (fog-of-war), igual hoje.
+// Tiers visuais por `estado` — mesma escada de sempre (substitui o
+// `estiloEstado()` do SVG 2D). `unknown` não tem entrada: continua sendo
+// fog-of-war, mas agora em vez de sumir vira MASSA BRUTA (bloco escuro sem
+// cornija, sem janela, sem objeto) — o quarteirão existe, só não foi
+// iluminado ainda.
 export const ESTADO_TIER = {
-  mastered: { scale: 1.15, emissiveIntensity: 1.1, opacity: 1, label: true, pulse: false },
-  in_progress: { scale: 1.0, emissiveIntensity: 0.65, opacity: 1, label: true, pulse: false },
-  available: { scale: 0.85, emissiveIntensity: 0.3, opacity: 0.92, label: true, pulse: true },
-  discovered: { scale: 0.6, emissiveIntensity: 0.0, opacity: 0.5, label: false, pulse: false },
+  mastered: { escala: 1.15, emissiva: 1.7, janela: "brilho", rotulo: true, pulsa: false },
+  in_progress: { escala: 1.0, emissiva: 1.0, janela: "brilho", rotulo: true, pulsa: false },
+  available: { escala: 0.9, emissiva: 0.5, janela: "brilhoFraco", rotulo: true, pulsa: true },
+  discovered: { escala: 0.7, emissiva: 0.12, janela: "brilhoFraco", rotulo: false, pulsa: false },
 };
 
-// Mesma escala de peso do SVG 2D (`pesoEstado` em TreinoHabilidades.jsx).
+// Mesma escala de peso do mapa SVG anterior — decide o quanto uma conexão
+// está "acesa" na cidade.
 export const PESO_ESTADO = { mastered: 1, in_progress: 0.8, available: 0.5, discovered: 0.22 };
