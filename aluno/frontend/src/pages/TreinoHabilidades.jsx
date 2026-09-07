@@ -483,6 +483,36 @@ export default function TreinoHabilidades() {
     setMapaData((m) => (m ? { ...m, sparks_balance: saldo } : m));
   };
 
+  // No modo mapa o mundo ocupa a tela inteira, em sangria: sem card, sem
+  // título, sem legenda. A navegação flutua por cima. Missão e desfecho
+  // continuam no layout de leitura de sempre — ali o assunto é texto.
+  const modoMapa = !loading && !erro && !missaoHab && !desfecho;
+
+  if (modoMapa) {
+    return (
+      <div className="fixed inset-0 overflow-hidden" style={{ background: "#04070f" }}>
+        <MapaMundo3D
+          biomas={mapaData.biomas}
+          nodeIndex={nodeIndex}
+          arestas={mapaData.arestas}
+          onClickHab={abrirBriefing}
+          focusHabId={briefingHab?.hab_id ?? null}
+          onFecharFoco={fecharBriefing}
+        />
+
+        <div className="absolute inset-x-0 top-0 z-40">
+          <Nav />
+        </div>
+
+        <AnimatePresence>
+          {briefingHab && (
+            <BriefingHUD hab={briefingHab} onFechar={fecharBriefing} onIniciar={iniciarMissao} />
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen">
       <Nav />
@@ -510,7 +540,7 @@ export default function TreinoHabilidades() {
           <div className="mt-8">
             <Missao hab={missaoHab} onSair={sairMissao} onConcluida={concluirMissao} />
           </div>
-        ) : desfecho ? (
+        ) : (
           <DesfechoMissao
             hab={desfecho.hab}
             resultado={desfecho.resultado}
@@ -520,23 +550,6 @@ export default function TreinoHabilidades() {
             onSparks={atualizarSparks}
             onFechar={fecharDesfecho}
           />
-        ) : (
-          <div className="mt-8">
-            <MapaMundo3D
-              biomas={mapaData.biomas}
-              nodeIndex={nodeIndex}
-              arestas={mapaData.arestas}
-              onClickHab={abrirBriefing}
-              focusHabId={briefingHab?.hab_id ?? null}
-              onFecharFoco={fecharBriefing}
-            />
-            <div className="mt-3 flex flex-wrap gap-4 text-xs text-white/50">
-              <span className="inline-flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#4FD9FF]" /> Dominado</span>
-              <span className="inline-flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#8B7BFF]" /> Em progresso</span>
-              <span className="inline-flex items-center gap-1.5"><span className="w-2 h-2 rounded-full border border-white/60" /> Disponível</span>
-              <span className="inline-flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-white/30" /> Percebido</span>
-            </div>
-          </div>
         )}
       </div>
 

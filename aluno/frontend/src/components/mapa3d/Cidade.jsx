@@ -15,13 +15,20 @@ const MATERIAL_POR_TOM = {
   claro: { roughness: 0.6, metalness: 0.05, emissiva: 0, sombra: true },
   medio: { roughness: 0.72, metalness: 0.06, emissiva: 0, sombra: true },
   escuro: { roughness: 0.86, metalness: 0.03, emissiva: 0, sombra: true },
-  brilho: { roughness: 0.32, metalness: 0, emissiva: 1.8, sombra: false },
-  brilhoFraco: { roughness: 0.45, metalness: 0, emissiva: 0.5, sombra: false },
+  brilho: { roughness: 0.32, metalness: 0, emissiva: 2.2, sombra: false },
+  brilhoFraco: { roughness: 0.45, metalness: 0, emissiva: 0.55, sombra: false },
+  // Lâmina d'água do Pantanal: superfície, não volume — reflete a luz da
+  // ilha e deixa a estrutura submersa aparecer por baixo.
+  agua: { roughness: 0.14, metalness: 0.45, emissiva: 0.55, sombra: false, opacidade: 0.72 },
+  // Névoa do que só foi percebido: encobre a silhueta sem apagá-la.
+  nevoa: { roughness: 1, metalness: 0, emissiva: 0.12, sombra: false, opacidade: 0.22, corFixa: "#9FC0E8" },
 };
 
 function corDaPeca(biomaId, tom) {
+  const config = MATERIAL_POR_TOM[tom];
+  if (config?.corFixa) return config.corFixa;
   const paleta = BIOMA_ARCHETYPES[biomaId]?.paleta ?? BIOMA_ARCHETYPES.perceber.paleta;
-  if (tom === "brilho" || tom === "brilhoFraco") return paleta.brilho;
+  if (tom === "brilho" || tom === "brilhoFraco" || tom === "agua") return paleta.brilho;
   return paleta[tom] ?? paleta.medio;
 }
 
@@ -33,6 +40,8 @@ function Geometria({ forma }) {
       return <coneGeometry args={[0.5, 1, 6]} />;
     case "anel":
       return <torusGeometry args={[0.5, 0.055, 8, 32]} />;
+    case "esfera":
+      return <icosahedronGeometry args={[0.5, 1]} />;
     default:
       return <boxGeometry args={[1, 1, 1]} />;
   }
@@ -82,6 +91,9 @@ function Grupo({ chave, forma, biomaId, tom, pecas }) {
         emissiveIntensity={config.emissiva}
         roughness={config.roughness}
         metalness={config.metalness}
+        transparent={config.opacidade !== undefined}
+        opacity={config.opacidade ?? 1}
+        depthWrite={config.opacidade === undefined || config.opacidade > 0.5}
         flatShading
       />
     </instancedMesh>

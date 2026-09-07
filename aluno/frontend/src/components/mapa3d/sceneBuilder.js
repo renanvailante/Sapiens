@@ -1,35 +1,33 @@
 // Transforma a resposta de `GET /treino/mapa` numa descrição de cena pura
-// (sem React/Three): posição de mundo, NÍVEL construído e visibilidade de
-// cada nó/conexão. `treino_grafo_v0_2.py` (backend) continua sendo a única
+// (sem React/Three). `treino_grafo_v0_2.py` (backend) continua sendo a única
 // fonte de `x`, `y`, `estado`, `bioma_id` e `relation` — aqui só se decide
-// em que pavimento da cidade cada coisa fica, 100% no cliente.
+// ONDE, em que ilha e em que altitude cada coisa fica, 100% no cliente.
 //
-// A altura não é mais relevo de ruído: é NÍVEL. A cidade tem pavimentos de
-// altura fixa, e cada habilidade ocupa um deles. Isso é o que faz escada,
-// ponte e platô se encaixarem em vez de flutuarem sobre um terreno ondulado.
+// A composição é um ARQUIPÉLAGO: o vetor do nó em relação à âncora do seu
+// bioma é espalhado (`ESPALHAMENTO`) enquanto as próprias âncoras são
+// afastadas uma da outra (`SEPARACAO_ILHAS`). O resultado são 6 massas de
+// terra distintas, com abismo entre elas — e o vazio passa a fazer parte do
+// desenho, em vez de tudo se aglomerar no centro.
 import { hash01 } from "./noise";
 import { BIOMA_ARCHETYPES, PESO_ESTADO } from "./biomaArchetypes";
-import { BALOES_CURADOS } from "./balloonContent";
 
 export const SOURCE_W = 1000;
 export const SOURCE_H = 640;
 export const SCALE = 0.072;
 
-export const WORLD_WIDTH = SOURCE_W * SCALE * 1.18;
-export const WORLD_DEPTH = SOURCE_H * SCALE * 1.18;
+/** Afastamento entre as ilhas (aplicado às âncoras de bioma). */
+export const SEPARACAO_ILHAS = 2.5;
+/** Espalhamento dos nós DENTRO da própria ilha. */
+export const ESPALHAMENTO = 2.6;
 
-/** Altura de um pavimento. Tudo que sobe na cidade sobe em múltiplos disto. */
+/** Altura de um pavimento. */
 export const NIVEL = 1.7;
 /** Espessura da laje que forma o piso de um quarteirão. */
 export const LAJE = 0.5;
-/** Topo do plinto — o "chão" da cidade, de onde as torres saem. */
-export const BASE_TOPO = 0;
-export const BASE_ESPESSURA = 3.4;
 
 // Espelha `_ANCORA_BIOMA` de treino_grafo_v0_2.py (backend) — camada de
-// produto, não ontologia. Copiado aqui porque o mundo é montado inteiramente
-// no cliente; se o backend rebalancear as âncoras, este mapa precisa ser
-// atualizado junto.
+// produto, não ontologia. Se o backend rebalancear as âncoras, este mapa
+// client-side precisa ser atualizado junto.
 const ANCORA_BIOMA_SRC = {
   perceber: [170, 480],
   relacionar: [430, 560],
@@ -49,63 +47,63 @@ export const ESTADO_LABEL = {
   mastered: "Dominado",
 };
 
-/** Mapeia o canvas virtual 2D do backend (1000×640) para o plano XZ do
- * mundo 3D. `y` do backend vira **Z**; **Y** fica só para altura — nunca
- * confundir os dois eixos. */
-export function toWorld(x, y) {
-  return { x: (x - SOURCE_W / 2) * SCALE, z: (y - SOURCE_H / 2) * SCALE };
-}
-
+/** Centro da ilha de um bioma, no plano XZ do mundo. */
 export const ANCORA_MUNDO = Object.fromEntries(
-  Object.entries(ANCORA_BIOMA_SRC).map(([id, [x, y]]) => [id, toWorld(x, y)]),
+  BIOMA_IDS.map((id) => {
+    const [sx, sy] = ANCORA_BIOMA_SRC[id];
+    return [
+      id,
+      {
+        x: (sx - SOURCE_W / 2) * SCALE * SEPARACAO_ILHAS,
+        z: (sy - SOURCE_H / 2) * SCALE * SEPARACAO_ILHAS,
+      },
+    ];
+  }),
 );
 
-/** Pavimento de uma habilidade: base do distrito + variação estável por
- * `hab_id`. Determinístico — todo aluno vê a mesma cidade. */
+/** Cota do terreno da ilha — cada bioma tem a sua altitude. É o que cria
+ * desnível de verdade entre regiões e obriga as rotas a subirem. */
+export function alturaIlha(biomaId) {
+  return BIOMA_ARCHETYPES[biomaId].nivelBase * NIVEL;
+}
+
+/** Posição de um nó: âncora da ilha + deslocamento local espalhado. */
+export function posicaoDoNo(srcX, srcY, biomaId) {
+  const [ax, ay] = ANCORA_BIOMA_SRC[biomaId];
+  const centro = ANCORA_MUNDO[biomaId];
+  return {
+    x: centro.x + (srcX - ax) * SCALE * ESPALHAMENTO,
+    z: centro.z + (srcY - ay) * SCALE * ESPALHAMENTO,
+  };
+}
+
+/** Pavimento local do nó dentro da própria ilha (0..variação). */
 export function nivelDoNo(habId, biomaId) {
   const arq = BIOMA_ARCHETYPES[biomaId];
-  return arq.nivelBase + Math.floor(hash01(`${habId}:nivel`) * (arq.nivelVariacao + 1));
+  return Math.floor(hash01(`${habId}:nivel`) * (arq.nivelVariacao + 1));
 }
 
-/** Cota do PISO de um pavimento (topo da laje). */
-export function alturaDeNivel(nivel) {
-  return BASE_TOPO + nivel * NIVEL + LAJE;
+/** Cota do piso de um quarteirão: terreno da ilha + pavimento local. */
+export function alturaDoNo(habId, biomaId) {
+  return alturaIlha(biomaId) + nivelDoNo(habId, biomaId) * NIVEL + LAJE;
 }
 
-/** Bioma do ponto do mundo mais próximo — usado para pintar o plinto por
- * distrito. */
-export function biomaMaisProximo(x, z) {
-  let melhor = null;
-  let dist = Infinity;
-  for (const id of BIOMA_IDS) {
-    const a = ANCORA_MUNDO[id];
-    const d = Math.hypot(a.x - x, a.z - z);
-    if (d < dist) {
-      dist = d;
-      melhor = id;
-    }
-  }
-  return { biomaId: melhor, distancia: dist };
-}
-
-/** Resposta de `GET /treino/mapa` + `nodeIndex` (já montado pela página) ->
- * descrição da cena. `nos` traz TODOS os nós (inclusive `unknown`, que viram
- * massa bruta na cidade); `arestas` só as visíveis, com a mesma regra de
- * sempre (as duas pontas != `unknown`). */
+/** Resposta de `GET /treino/mapa` + `nodeIndex` -> descrição da cena.
+ * `nos` traz TODOS os nós (inclusive `unknown`, que viram massa bruta na
+ * ilha); `arestas` só as visíveis, com a mesma regra de sempre. */
 export function construirCena(mapaData, nodeIndex) {
   const nos = [];
   for (const bioma of mapaData.biomas) {
     for (const n of bioma.nodes) {
-      const { x, z } = toWorld(n.x, n.y);
-      const nivel = nivelDoNo(n.hab_id, bioma.bioma_id);
+      const { x, z } = posicaoDoNo(n.x, n.y, bioma.bioma_id);
       nos.push({
         hab_id: n.hab_id,
         nome: n.nome,
         estado: n.estado,
         respondidas: n.respondidas,
         biomaId: bioma.bioma_id,
-        nivel,
-        position: [x, alturaDeNivel(nivel), z],
+        nivel: nivelDoNo(n.hab_id, bioma.bioma_id),
+        position: [x, alturaDoNo(n.hab_id, bioma.bioma_id), z],
       });
     }
   }
@@ -126,93 +124,17 @@ export function construirCena(mapaData, nodeIndex) {
       target: a.target,
       sourceMastered: s.estado === "mastered",
       biomaId: s.biomaId,
+      biomaAlvo: t.biomaId,
       from: s.position,
       to: t.position,
       peso: Math.min(PESO_ESTADO[s.estado], PESO_ESTADO[t.estado]),
     });
   }
 
-  const biomaAnchors = BIOMA_IDS.map((id) => {
-    const bioma = mapaData.biomas.find((b) => b.bioma_id === id);
-    const { x, z } = ANCORA_MUNDO[id];
-    const arq = BIOMA_ARCHETYPES[id];
-    return {
-      biomaId: id,
-      nome: bioma?.nome ?? id,
-      position: [x, alturaDeNivel(arq.nivelBase) + 11.5, z],
-    };
-  });
+  // Extensão do mundo, para enquadrar câmera e névoa sem números mágicos.
+  let raio = 1;
+  for (const n of nos) raio = Math.max(raio, Math.hypot(n.position[0], n.position[2]));
+  const limites = { raio: raio + 16 };
 
-  return { nos, nosVisiveis, arestas, biomaAnchors };
-}
-
-function halton(index, base) {
-  let resultado = 0;
-  let f = 1 / base;
-  let i = index;
-  while (i > 0) {
-    resultado += f * (i % base);
-    i = Math.floor(i / base);
-    f /= base;
-  }
-  return resultado;
-}
-
-/** Balões: 1 por bioma (a `ideia`, já escrita no tom certo) + frases curadas
- * distribuídas por sequência de Halton. Ficam acima do skyline local para
- * não entrar dentro de torre nenhuma. */
-export function construirBaloes(mapaData, nos) {
-  const baloes = [];
-  const ocupados = nos.map((n) => n.position);
-
-  const alturaLocal = (x, z) => {
-    let maior = BASE_TOPO;
-    for (const n of nos) {
-      if (Math.hypot(n.position[0] - x, n.position[2] - z) < 9) {
-        maior = Math.max(maior, n.position[1]);
-      }
-    }
-    return maior;
-  };
-
-  for (const bioma of mapaData.biomas) {
-    const { x, z } = ANCORA_MUNDO[bioma.bioma_id];
-    const angulo = hash01(`${bioma.bioma_id}:ideia`) * Math.PI * 2;
-    const px = x + Math.cos(angulo) * 6.5;
-    const pz = z + Math.sin(angulo) * 6.5;
-    baloes.push({
-      id: `ideia-${bioma.bioma_id}`,
-      texto: bioma.ideia,
-      biomaId: bioma.bioma_id,
-      position: [px, alturaLocal(px, pz) + 3.4, pz],
-      largura: 3.8,
-      altura: 0.95,
-    });
-    ocupados.push([px, 0, pz]);
-  }
-
-  const alvo = Math.min(BALOES_CURADOS.length, 10);
-  let colocados = 0;
-  let tentativa = 1;
-  while (colocados < alvo && tentativa < 600) {
-    const hx = halton(tentativa, 2) * WORLD_WIDTH - WORLD_WIDTH / 2;
-    const hz = halton(tentativa, 3) * WORLD_DEPTH - WORLD_DEPTH / 2;
-    tentativa += 1;
-    const pertoDemais = ocupados.some(([ox, , oz]) => Math.hypot(hx - ox, hz - oz) < 8);
-    if (pertoDemais) continue;
-    const { distancia } = biomaMaisProximo(hx, hz);
-    if (distancia > 24) continue; // fora da cidade
-    baloes.push({
-      id: `curado-${colocados}`,
-      texto: BALOES_CURADOS[colocados],
-      biomaId: biomaMaisProximo(hx, hz).biomaId,
-      position: [hx, alturaLocal(hx, hz) + 3, hz],
-      largura: 3.1,
-      altura: 0.9,
-    });
-    ocupados.push([hx, 0, hz]);
-    colocados += 1;
-  }
-
-  return baloes;
+  return { nos, nosVisiveis, arestas, limites };
 }

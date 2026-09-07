@@ -1,30 +1,28 @@
-// Gerador da CIDADE — a arquitetura é o mapa.
+// Gerador do ARQUIPÉLAGO — a arquitetura é o mapa.
 //
-// Entra a descrição de cena (nós, conexões, biomas) e sai uma lista plana de
-// "peças": volumes primitivos com posição, tamanho, rotação, distrito e tom.
-// Nada aqui sabe o que é React ou Three — `Cidade.jsx` só instancia o que
-// esta lista descreve.
+// Entra a descrição de cena (nós, rotas) e sai uma lista plana de "peças":
+// volumes primitivos com posição, tamanho, rotação, distrito e tom. Nada
+// aqui sabe o que é React ou Three — `Cidade.jsx` só instancia o que esta
+// lista descreve.
 //
-// O vocabulário construtivo é sempre o mesmo, em qualquer distrito:
+// Vocabulário:
+//   ilha         massa de terra em degraus, com falésia na borda e quilha
+//                por baixo — cada bioma é uma ilha separada por abismo
+//   quarteirão   torre + cornija + laje onde uma habilidade se apoia
+//   rota         parábola entre dois nós, como rota de voo; acende com o
+//                progresso e fica interrompida quando o pré-requisito falta
+//   landmark     a estrutura-assinatura da ilha, em escala monumental
+//   vegetação    o que dá caráter de bioma: cerrado, mata, caatinga,
+//                amazônia, pantanal, pampas
+//   névoa        o que encobre o que só foi percebido, não explorado
 //
-//   plinto      base contínua da cidade, em blocos de grade com mureta na borda
-//   torre       a massa que sustenta um quarteirão acima do plinto
-//   cornija     a linha clara de 30cm que separa a massa do piso
-//   laje        o piso do quarteirão, onde a habilidade se apoia
-//   janela      inserto luminoso na fachada — acende conforme o estado
-//   ponte       tabuleiro + guarda-corpo + arco + pilares
-//   escadaria   degraus reais quando as duas pontas estão em pavimentos diferentes
-//   portão      pilastras + verga; selado enquanto o pré-requisito não é dominado
-//   landmark    a peça-assinatura de cada distrito
-//   adereço     arcos soltos, escadas para lugar nenhum, obeliscos, blocos suspensos
-//
-// Tudo é determinístico (hash por `hab_id`/`bioma_id`): a cidade é a mesma
-// para todo aluno, em todo carregamento.
+// Tudo determinístico (hash por `hab_id`/`bioma_id`): mesmo mundo para todo
+// aluno, em todo carregamento.
 import * as CENA from "./sceneBuilder";
 import { BIOMA_ARCHETYPES, ESTADO_TIER } from "./biomaArchetypes";
 import { hash01, seededNoise2D } from "./noise";
 
-const CELULA = 3.6;
+const CELULA = 3.8;
 
 // ---------------------------------------------------------------- primitivas
 
@@ -42,500 +40,433 @@ function cilindro(pecas, bioma, tom, x, base, z, diam, h, rotY = 0) {
   pecas.push({ forma: "cilindro", bioma, tom, pos: [x, base + h / 2, z], size: [diam, h, diam], rotY, rotX: 0 });
 }
 
-function cone(pecas, bioma, tom, x, base, z, diam, h, rotY = 0) {
-  pecas.push({ forma: "cone", bioma, tom, pos: [x, base + h / 2, z], size: [diam, h, diam], rotY, rotX: 0 });
+function cone(pecas, bioma, tom, x, base, z, diam, h, rotX = 0) {
+  const centro = rotX === 0 ? base + h / 2 : base - h / 2;
+  pecas.push({ forma: "cone", bioma, tom, pos: [x, centro, z], size: [diam, h, diam], rotY: 0, rotX });
 }
 
 function anel(pecas, bioma, tom, x, y, z, diam, rotX = -Math.PI / 2, rotY = 0) {
   pecas.push({ forma: "anel", bioma, tom, pos: [x, y, z], size: [diam, diam, diam], rotY, rotX });
 }
 
-/** Arco de volta inteira montado em aduelas (caixas tangentes ao arco). É o
- * que impede a cidade de virar "caixas e linhas": vão vencido por curva. */
+function esfera(pecas, bioma, tom, x, y, z, diam) {
+  pecas.push({ forma: "esfera", bioma, tom, pos: [x, y, z], size: [diam, diam, diam], rotY: 0, rotX: 0 });
+}
+
+/** Arco de volta inteira em aduelas — vão vencido por curva, não por viga. */
 function arco(pecas, bioma, tom, cx, base, cz, vao, ang, espessura = 0.42, aduelas = 9) {
   const r = vao / 2;
   for (let i = 0; i < aduelas; i++) {
     const t = ((i + 0.5) / aduelas) * Math.PI;
     const u = -r * Math.cos(t);
     const y = base + r * Math.sin(t);
-    const comprimento = ((Math.PI * r) / aduelas) * 1.25;
     caixaCentrada(
       pecas, bioma, tom,
       cx + Math.sin(ang) * u, y, cz + Math.cos(ang) * u,
-      espessura, espessura, comprimento,
+      espessura, espessura, ((Math.PI * r) / aduelas) * 1.25,
       ang, t - Math.PI / 2,
     );
   }
 }
 
-// ------------------------------------------------------------------- plinto
+// --------------------------------------------------------------------- ilha
 
-/** O chão da cidade: blocos de grade cobrindo o entorno dos quarteirões, com
- * mureta em toda borda livre. É o que dá a leitura de "diorama" contínuo em
- * vez de plataformas soltas no vazio. */
-function gerarPlinto(nos, pecas) {
-  const ruido = seededNoise2D("plinto");
-  const cols = Math.ceil(CENA.WORLD_WIDTH / CELULA);
-  const rows = Math.ceil(CENA.WORLD_DEPTH / CELULA);
-  const ocupadas = new Map();
+/** Uma ilha: platô em degraus sobre falésia, com quilha apontando para o
+ * abismo. É o que faz cada bioma ser um lugar, e não um setor de um mapa. */
+function gerarIlha(biomaId, nosDoBioma, pecas) {
+  const arq = BIOMA_ARCHETYPES[biomaId];
+  const centro = CENA.ANCORA_MUNDO[biomaId];
+  const topo = CENA.alturaIlha(biomaId);
+  const ruido = seededNoise2D(`ilha:${biomaId}`);
+
+  const alcance = arq.raioIlha + 10;
+  const cols = Math.ceil((alcance * 2) / CELULA);
+  const celulas = new Map();
 
   for (let i = 0; i < cols; i++) {
-    for (let j = 0; j < rows; j++) {
-      const cx = -CENA.WORLD_WIDTH / 2 + (i + 0.5) * CELULA;
-      const cz = -CENA.WORLD_DEPTH / 2 + (j + 0.5) * CELULA;
+    for (let j = 0; j < cols; j++) {
+      const cx = centro.x - alcance + (i + 0.5) * CELULA;
+      const cz = centro.z - alcance + (j + 0.5) * CELULA;
 
-      let distNo = Infinity;
-      let dono = null;
-      for (const no of nos) {
-        const d = Math.hypot(no.position[0] - cx, no.position[2] - cz);
-        if (d < distNo) {
-          distNo = d;
-          dono = no.biomaId;
+      let dentro = Math.hypot(cx - centro.x, cz - centro.z) < arq.raioIlha;
+      if (!dentro) {
+        for (const no of nosDoBioma) {
+          if (Math.hypot(no.position[0] - cx, no.position[2] - cz) < arq.raioIlha * 0.82) {
+            dentro = true;
+            break;
+          }
         }
       }
-      const { biomaId, distancia } = CENA.biomaMaisProximo(cx, cz);
-      if (distancia < distNo) dono = biomaId;
-      if (distNo > 7.4 && distancia > 9.5) continue;
+      // Borda irregular: sem isto a ilha vira um disco perfeito e denuncia
+      // que foi gerada por raio.
+      if (dentro && ruido(cx * 0.085, cz * 0.085) < -0.4) dentro = false;
+      if (!dentro) continue;
 
-      const degrau = ruido(cx * 0.055, cz * 0.055) > 0.2 ? 0.5 : 0;
-      ocupadas.set(`${i}:${j}`, { i, j, cx, cz, dono, topo: CENA.BASE_TOPO - degrau });
+      const degrau = Math.round(ruido(cx * 0.055, cz * 0.055) * 1.1) * 1.1;
+      celulas.set(`${i}:${j}`, { i, j, cx, cz, topo: topo + degrau });
     }
   }
 
-  for (const cel of ocupadas.values()) {
-    caixa(pecas, cel.dono, "escuro", cel.cx, cel.topo - CENA.BASE_ESPESSURA, cel.cz,
-      CELULA, CENA.BASE_ESPESSURA, CELULA);
+  for (const cel of celulas.values()) {
+    caixa(pecas, biomaId, "medio", cel.cx, cel.topo - 1.5, cel.cz, CELULA, 1.5, CELULA);
 
+    let borda = false;
     for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-      if (ocupadas.has(`${cel.i + di}:${cel.j + dj}`)) continue;
-      caixa(
-        pecas, cel.dono, "medio",
-        cel.cx + (di * CELULA) / 2, cel.topo, cel.cz + (dj * CELULA) / 2,
-        di === 0 ? CELULA : 0.5, 0.9, dj === 0 ? CELULA : 0.5,
-      );
+      if (!celulas.has(`${cel.i + di}:${cel.j + dj}`)) {
+        borda = true;
+        break;
+      }
     }
+    // Falésia: a espessura só aparece na borda, que é onde o abismo é lido.
+    const fundura = borda ? 7 + hash01(`${biomaId}:${cel.i}:${cel.j}`) * 6 : 3;
+    caixa(pecas, biomaId, "escuro", cel.cx, cel.topo - 1.5 - fundura, cel.cz, CELULA * 0.99, fundura, CELULA * 0.99);
   }
 
-  return ocupadas;
+  // Quilha: a ilha termina em ponta, flutuando sobre o vazio.
+  const raioReal = arq.raioIlha + 2;
+  cone(pecas, biomaId, "escuro", centro.x, topo - 7, centro.z, raioReal * 1.7, raioReal * 1.5, Math.PI);
+
+  return celulas;
 }
 
 // --------------------------------------------------------------- quarteirão
 
-/** Um quarteirão: torre + cornija + laje + janelas + pedestal. Nó `unknown`
- * vira massa bruta — o quarteirão existe, mas sem detalhe e sem luz. */
 function gerarQuarteirao(no, pecas) {
   const [x, y, z] = no.position;
+  const arq = BIOMA_ARCHETYPES[no.biomaId];
+  const solo = CENA.alturaIlha(no.biomaId);
   const rot = Math.round(hash01(`${no.hab_id}:rot`) * 3) * (Math.PI / 2);
 
   if (no.estado === "unknown") {
-    const h = 0.9 + hash01(`${no.hab_id}:massa`) * 2.1;
-    const w = 2.5 + hash01(`${no.hab_id}:mw`) * 1.3;
-    caixa(pecas, no.biomaId, "escuro", x, CENA.BASE_TOPO, z, w, h, w, rot);
-    caixa(pecas, no.biomaId, "escuro", x, CENA.BASE_TOPO + h, z, w * 0.6, 0.45, w * 0.6, rot);
+    // Massa bruta: o quarteirão existe, sem detalhe e sem luz.
+    const h = 1.6 + hash01(`${no.hab_id}:massa`) * 2.6;
+    const w = 3.4 + hash01(`${no.hab_id}:mw`) * 2.2;
+    caixa(pecas, no.biomaId, "escuro", x, solo, z, w, h, w, rot);
     return;
   }
 
   const tier = ESTADO_TIER[no.estado];
-  const largura = 3.1 + hash01(`${no.hab_id}:w`) * 1.8;
+  const largura = 3.4 + hash01(`${no.hab_id}:w`) * 2.0;
   const baseLaje = y - CENA.LAJE;
-  const alturaTorre = baseLaje - 0.3 - CENA.BASE_TOPO;
+  const alturaTorre = baseLaje - 0.3 - solo;
 
   if (alturaTorre > 0.25) {
-    const larguraTorre = largura * 0.74;
-    caixa(pecas, no.biomaId, "escuro", x, CENA.BASE_TOPO, z, larguraTorre, alturaTorre, larguraTorre, rot);
-
-    // Arcada no térreo das torres altas: a massa deixa de ser um bloco e
-    // passa a ter apoio visível.
-    if (alturaTorre > 3.4) {
+    const lt = largura * 0.72;
+    caixa(pecas, no.biomaId, "escuro", x, solo, z, lt, alturaTorre, lt, rot);
+    if (alturaTorre > 2.6) {
       for (let f = 0; f < 4; f++) {
         const ang = rot + (f * Math.PI) / 2;
-        const off = larguraTorre / 2 + 0.12;
-        arco(
-          pecas, no.biomaId, "medio",
-          x + Math.sin(ang) * off, CENA.BASE_TOPO, z + Math.cos(ang) * off,
-          larguraTorre * 0.62, ang + Math.PI / 2, 0.34, 7,
-        );
+        arco(pecas, no.biomaId, "medio", x + Math.sin(ang) * (lt / 2 + 0.1), solo, z + Math.cos(ang) * (lt / 2 + 0.1),
+          lt * 0.6, ang + Math.PI / 2, 0.3, 7);
       }
     }
-
-    // Janelas: a luz que marca o estado da habilidade, fachada por fachada.
-    const linhas = Math.max(1, Math.floor((alturaTorre - 1.2) / 1.5));
+    const linhas = Math.max(1, Math.floor((alturaTorre - 1) / 1.5));
     for (let l = 0; l < linhas; l++) {
-      const yj = CENA.BASE_TOPO + 1.1 + l * 1.5;
+      const yj = solo + 1 + l * 1.5;
       if (yj > baseLaje - 0.7) break;
       for (let f = 0; f < 4; f++) {
         const ang = rot + (f * Math.PI) / 2;
-        const off = larguraTorre / 2 + 0.04;
-        caixa(
-          pecas, no.biomaId, tier.janela,
-          x + Math.sin(ang) * off, yj, z + Math.cos(ang) * off,
-          largura * 0.28, 0.6, 0.12, ang,
-        );
+        caixa(pecas, no.biomaId, tier.janela, x + Math.sin(ang) * (lt / 2 + 0.04), yj, z + Math.cos(ang) * (lt / 2 + 0.04),
+          largura * 0.26, 0.55, 0.12, ang);
       }
     }
   }
 
-  caixa(pecas, no.biomaId, "medio", x, baseLaje - 0.3, z, largura + 0.75, 0.3, largura + 0.75, rot);
+  caixa(pecas, no.biomaId, "medio", x, baseLaje - 0.32, z, largura + 0.8, 0.32, largura + 0.8, rot);
   caixa(pecas, no.biomaId, "claro", x, baseLaje, z, largura, CENA.LAJE, largura, rot);
-  caixa(pecas, no.biomaId, "medio", x, y, z, 1.2, 0.34, 1.2, rot + 0.45);
+  caixa(pecas, no.biomaId, "medio", x, y, z, 1.3, 0.36, 1.3, rot + 0.45);
 
-  // Guarda-corpo de canto: dois murinhos que dão escala à laje.
-  const cantos = [[1, 1], [-1, -1]];
-  for (const [sx, sz] of cantos) {
-    caixa(
-      pecas, no.biomaId, "medio",
-      x + Math.cos(rot) * sx * (largura / 2 - 0.2) - Math.sin(rot) * sz * (largura / 2 - 0.2),
-      y,
-      z + Math.sin(rot) * sx * (largura / 2 - 0.2) + Math.cos(rot) * sz * (largura / 2 - 0.2),
-      0.9, 0.5, 0.24, rot,
-    );
+  for (const s of [1, -1]) {
+    caixa(pecas, no.biomaId, "medio",
+      x + Math.cos(rot) * s * (largura / 2 - 0.25), y, z + Math.sin(rot) * s * (largura / 2 - 0.25),
+      0.28, 1.5, 0.28, rot);
+    caixa(pecas, no.biomaId, arq ? "brilhoFraco" : "medio",
+      x + Math.cos(rot) * s * (largura / 2 - 0.25), y + 1.5, z + Math.sin(rot) * s * (largura / 2 - 0.25),
+      0.42, 0.16, 0.42, rot);
+  }
+
+  // Névoa do que só foi percebido: a silhueta aparece, o conteúdo não.
+  if (tier.nevoa) {
+    for (let i = 0; i < 4; i++) {
+      const ang = (i / 4) * Math.PI * 2 + hash01(`${no.hab_id}:nev${i}`) * 1.2;
+      const r = largura * 0.5 + hash01(`${no.hab_id}:nr${i}`) * 1.2;
+      esfera(pecas, no.biomaId, "nevoa",
+        x + Math.cos(ang) * r, y + 0.5 + hash01(`${no.hab_id}:nh${i}`) * 1.1, z + Math.sin(ang) * r,
+        largura * (1.15 + hash01(`${no.hab_id}:nd${i}`) * 0.5));
+    }
   }
 }
 
-// ------------------------------------------------------------------ conexão
+// --------------------------------------------------------------------- rota
 
-/** Uma relação vira caminho construído: escadaria quando muda de pavimento,
- * ponte com arco e pilares quando é no mesmo nível. O quanto ela está acesa
- * vem do mesmo `peso` de sempre. */
-function gerarConexao(a, pecas) {
+/** Rota parabólica entre dois nós — desenho de rota de voo. Quanto mais
+ * longo o vão, mais alto o ápice; quanto mais dominada a ligação, mais
+ * acesa. Pré-requisito ainda não dominado: a rota sai da origem e se
+ * interrompe no meio do caminho (leitura, não trava — o destino continua
+ * clicável, como sempre foi). */
+function gerarRota(a, pecas) {
   const [x1, y1, z1] = a.from;
   const [x2, y2, z2] = a.to;
   const dx = x2 - x1;
   const dz = z2 - z1;
-  const dist = Math.hypot(dx, dz);
-  if (dist < 1.2) return;
+  const plano = Math.hypot(dx, dz);
+  if (plano < 1) return;
 
-  const ang = Math.atan2(dx, dz);
-  const dy = y2 - y1;
-  const tom = a.peso >= 0.75 ? "claro" : a.peso >= 0.45 ? "medio" : "escuro";
+  const apice = Math.min(4 + plano * 0.32, 34);
+  const segmentos = Math.max(10, Math.min(26, Math.round(plano / 2.4)));
   const acesa = a.peso >= 0.75;
-  const b = a.biomaId;
-  const perp = [Math.cos(ang), -Math.sin(ang)];
+  const tom = acesa ? "brilho" : a.peso >= 0.45 ? "brilhoFraco" : "medio";
+  const interrompida = a.relation === "prerequisito" && !a.sourceMastered;
+  const ate = interrompida ? Math.floor(segmentos * 0.45) : segmentos;
 
-  if (dist > 22) {
-    // Avenida: vão muito longo não vira ponte no céu. Numa cidade, ligação
-    // de ponta a ponta é via no chão — e é isso que mantém o skyline legível
-    // em vez de virar um emaranhado de rampas cruzando por cima de tudo.
-    // Cota levemente própria por avenida: várias delas se cruzam, e no mesmo
-    // plano exato o z-buffer não decide quem está em cima (aparece como
-    // listrado sujo nas superfícies).
-    const passeio = CENA.BASE_TOPO + 0.09 + hash01(`${a.id}:cota`) * 0.07;
-    caixaCentrada(pecas, b, tom, (x1 + x2) / 2, passeio, (z1 + z2) / 2, 2.2, 0.16, dist * 0.94, ang);
-    const postes = Math.max(2, Math.floor(dist / 9));
-    for (let i = 1; i <= postes; i++) {
-      const t = i / (postes + 1);
-      const px = x1 + dx * t;
-      const pz = z1 + dz * t;
-      for (const s of [1, -1]) {
-        const lx = px + perp[0] * s * 1.5;
-        const lz = pz + perp[1] * s * 1.5;
-        caixa(pecas, b, "medio", lx, passeio, lz, 0.2, 1.9, 0.2, ang);
-        caixa(pecas, b, acesa ? "brilho" : "brilhoFraco", lx, passeio + 1.9, lz, 0.38, 0.22, 0.38, ang);
-      }
-    }
-    if (a.relation === "prerequisito") gerarPortao({ ...a, from: [x1, passeio, z1], to: [x2, passeio, z2] }, pecas, ang, perp);
-    return;
-  }
+  const ponto = (t) => [
+    x1 + dx * t,
+    y1 + (y2 - y1) * t + apice * 4 * t * (1 - t),
+    z1 + dz * t,
+  ];
 
-  if (Math.abs(dy) > 0.8 && dist <= 15) {
-    // Escadaria: degrau real, com espelho e piso, mais os dois montantes.
-    // Só para vãos curtos — num vão longo, 40 degraus viram uma rampa maciça
-    // que atravessa a cidade inteira e come toda a leitura do conjunto.
-    const degraus = Math.max(7, Math.round(Math.abs(dy) / 0.34));
-    const passo = dist / degraus;
-    const subida = dy / degraus;
-    for (let i = 0; i < degraus; i++) {
-      const t = (i + 0.5) / degraus;
-      const py = y1 + subida * i;
-      caixa(
-        pecas, b, tom,
-        x1 + dx * t, py - 0.4, z1 + dz * t,
-        1.5, 0.4 + Math.abs(subida), passo * 1.08, ang,
-      );
-    }
-    if (dist < 12) {
-      const meioY = (y1 + y2) / 2;
-      const inclinacao = -Math.atan2(dy, dist);
-      for (const s of [1, -1]) {
-        caixaCentrada(
-          pecas, b, acesa ? "claro" : "medio",
-          (x1 + x2) / 2 + perp[0] * s * 0.86, meioY - 0.1, (z1 + z2) / 2 + perp[1] * s * 0.86,
-          0.18, 0.5, Math.hypot(dist, dy), ang, inclinacao,
-        );
-      }
-    }
-  } else if (Math.abs(dy) > 0.8) {
-    // Viaduto: tabuleiro inclinado apoiado em pilares. É como um vão longo
-    // vence desnível numa cidade — não com uma escadaria de 40 degraus.
-    const comprimento = Math.hypot(dist, dy);
-    const inclinacao = -Math.atan2(dy, dist);
-    const meioY = (y1 + y2) / 2;
-    caixaCentrada(pecas, b, tom, (x1 + x2) / 2, meioY - 0.3, (z1 + z2) / 2, 1.7, 0.32, comprimento, ang, inclinacao);
-    for (const s of [1, -1]) {
-      caixaCentrada(
-        pecas, b, acesa ? "brilhoFraco" : "medio",
-        (x1 + x2) / 2 + perp[0] * s * 0.84, meioY + 0.1, (z1 + z2) / 2 + perp[1] * s * 0.84,
-        0.15, 0.24, comprimento * 0.98, ang, inclinacao,
-      );
-    }
-    for (const t of [0.28, 0.55, 0.82]) {
-      const py = y1 + dy * t;
-      const altura = py - 0.5 - CENA.BASE_TOPO;
-      if (altura < 1.2) continue;
-      caixa(pecas, b, "escuro", x1 + dx * t, CENA.BASE_TOPO, z1 + dz * t, 0.62, altura, 0.62, ang);
-      caixa(pecas, b, "medio", x1 + dx * t, py - 0.62, z1 + dz * t, 1.1, 0.3, 1.1, ang);
-    }
-  } else {
-    // Ponte: tabuleiro + guarda-corpo + arco sob o vão + pilares até o plinto.
-    const meioY = (y1 + y2) / 2;
-    caixaCentrada(pecas, b, tom, (x1 + x2) / 2, meioY - 0.32, (z1 + z2) / 2, 1.9, 0.34, dist, ang);
-    for (const s of [1, -1]) {
-      caixaCentrada(
-        pecas, b, acesa ? "brilhoFraco" : "medio",
-        (x1 + x2) / 2 + perp[0] * s * 0.92, meioY + 0.12, (z1 + z2) / 2 + perp[1] * s * 0.92,
-        0.16, 0.26, dist * 0.98, ang,
-      );
-    }
-
-    const alturaLivre = meioY - 0.5 - CENA.BASE_TOPO;
-    if (dist > 7 && alturaLivre > 1.6) {
-      const vao = Math.min(dist * 0.5, alturaLivre * 1.9);
-      arco(pecas, b, "medio", (x1 + x2) / 2, meioY - 0.5 - vao / 2, (z1 + z2) / 2, vao, ang, 0.38, 9);
-      for (const t of [0.22, 0.78]) {
-        caixa(
-          pecas, b, "escuro",
-          x1 + dx * t, CENA.BASE_TOPO, z1 + dz * t,
-          0.7, meioY - 0.5 - CENA.BASE_TOPO, 0.7, ang,
-        );
-      }
-    } else if (dist > 4 && alturaLivre > 1) {
-      caixa(pecas, b, "escuro", (x1 + x2) / 2, CENA.BASE_TOPO, (z1 + z2) / 2, 0.7, alturaLivre, 0.7, ang);
-    }
-  }
-
-  if (a.relation === "prerequisito") gerarPortao(a, pecas, ang, perp);
-}
-
-/** Portão de pré-requisito: pilastras + verga sobre o caminho, seladas
- * enquanto a habilidade de origem não estiver dominada. É LEITURA, não trava:
- * o nó de destino continua clicável (o backend nunca bloqueou nada). */
-function gerarPortao(a, pecas, ang, perp) {
-  const [x1, y1, z1] = a.from;
-  const [x2, y2, z2] = a.to;
-  const t = 0.26;
-  const px = x1 + (x2 - x1) * t;
-  const pz = z1 + (z2 - z1) * t;
-  const py = y1 + (y2 - y1) * t;
-  const selado = !a.sourceMastered;
-  const tomPortao = selado ? "medio" : "claro";
-  const b = a.biomaId;
-
-  for (const s of [1, -1]) {
-    caixa(
-      pecas, b, tomPortao,
-      px + perp[0] * s * 1.15, py, pz + perp[1] * s * 1.15,
-      0.42, 2.4, 0.42, ang,
+  for (let i = 0; i < ate; i++) {
+    const p0 = ponto(i / segmentos);
+    const p1 = ponto((i + 1) / segmentos);
+    const sx = p1[0] - p0[0];
+    const sy = p1[1] - p0[1];
+    const sz = p1[2] - p0[2];
+    const horizontal = Math.hypot(sx, sz);
+    caixaCentrada(
+      pecas, a.biomaId, tom,
+      (p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2, (p0[2] + p1[2]) / 2,
+      0.3, 0.14, Math.hypot(horizontal, sy) * 1.06,
+      Math.atan2(sx, sz), -Math.atan2(sy, horizontal),
     );
   }
-  caixa(pecas, b, tomPortao, px, py + 2.4, pz, 3.1, 0.42, 0.5, ang);
-  caixa(
-    pecas, b, selado ? "escuro" : "brilho",
-    px, py + 2.05, pz,
-    selado ? 2.3 : 2.6, selado ? 2.0 : 0.16, selado ? 0.18 : 0.2, ang,
-  );
+
+  // Cais de partida e de chegada: a rota encosta em estrutura, não no ar.
+  anel(pecas, a.biomaId, acesa ? "brilho" : "brilhoFraco", x1, y1 + 0.5, z1, 1.7);
+  if (!interrompida) anel(pecas, a.biomaAlvo ?? a.biomaId, acesa ? "brilho" : "brilhoFraco", x2, y2 + 0.5, z2, 1.7);
+}
+
+// ---------------------------------------------------------------- vegetação
+
+/** O que dá caráter de bioma à ilha. Espalhado nas células livres, longe
+ * dos quarteirões, sempre determinístico. */
+function gerarVegetacao(biomaId, celulas, nosDoBioma, pecas) {
+  const arq = BIOMA_ARCHETYPES[biomaId];
+  const centro = CENA.ANCORA_MUNDO[biomaId];
+
+  for (const cel of celulas.values()) {
+    const semente = `${biomaId}:${cel.i}:${cel.j}`;
+    const sorte = hash01(semente);
+
+    let livre = Math.hypot(cel.cx - centro.x, cel.cz - centro.z) > 5.5;
+    if (livre) {
+      for (const no of nosDoBioma) {
+        if (Math.hypot(no.position[0] - cel.cx, no.position[2] - cel.cz) < 3.6) {
+          livre = false;
+          break;
+        }
+      }
+    }
+    if (!livre) continue;
+
+    const x = cel.cx + (hash01(`${semente}:jx`) - 0.5) * CELULA * 0.7;
+    const z = cel.cz + (hash01(`${semente}:jz`) - 0.5) * CELULA * 0.7;
+    const y = cel.topo;
+    const g = (k) => hash01(`${semente}:${k}`);
+
+    switch (arq.vegetacao) {
+      case "cerrado": {
+        // Campo aberto: pouca coisa, e o que existe é baixo e espalhado.
+        if (sorte > 0.26) break;
+        if (sorte < 0.11) {
+          caixa(pecas, biomaId, "escuro", x, y, z, 2.4 + g("a") * 2.6, 1.1 + g("b") * 1.8, 2.2 + g("c") * 2.2, g("r") * 3);
+          caixa(pecas, biomaId, "medio", x, y + 1.1 + g("b") * 1.8, z, 1.5 + g("c") * 1.2, 0.7, 1.4, g("r") * 3);
+        } else {
+          cilindro(pecas, biomaId, "medio", x, y, z, 0.42, 2.6 + g("h") * 2.2);
+          caixa(pecas, biomaId, "claro", x, y + 2.6 + g("h") * 2.2, z, 3.2, 0.5, 3.2, g("r") * 3);
+        }
+        break;
+      }
+      case "mata": {
+        // Mata fechada: densidade alta, copas em duas camadas.
+        if (sorte > 0.5) break;
+        const alturaTronco = 3.4 + g("h") * 3.6;
+        cilindro(pecas, biomaId, "escuro", x, y, z, 0.55, alturaTronco);
+        caixa(pecas, biomaId, "medio", x, y + alturaTronco, z, 3.8, 1.2, 3.8, g("r") * 3);
+        caixa(pecas, biomaId, "claro", x, y + alturaTronco + 1.2, z, 2.6, 0.9, 2.6, g("r2") * 3);
+        break;
+      }
+      case "caatinga": {
+        // Árido e angular: pedra rachada e cristal.
+        if (sorte > 0.34) break;
+        if (sorte < 0.16) {
+          cone(pecas, biomaId, "claro", x, y, z, 1.8 + g("a") * 1.6, 4.5 + g("b") * 5);
+        } else {
+          caixa(pecas, biomaId, "escuro", x, y, z, 2.6 + g("c") * 2.2, 1.2 + g("d") * 1.6, 2.4, g("r") * 3);
+          cone(pecas, biomaId, "brilhoFraco", x, y + 1.2 + g("d") * 1.6, z, 0.8, 1.8, 0);
+        }
+        break;
+      }
+      case "amazonia": {
+        // Floresta profunda com torre emergindo acima da copa.
+        if (sorte > 0.56) break;
+        const alturaTronco = 4.6 + g("h") * 4.4;
+        cilindro(pecas, biomaId, "escuro", x, y, z, 0.62, alturaTronco);
+        caixa(pecas, biomaId, "medio", x, y + alturaTronco, z, 4.4, 1.5, 4.4, g("r") * 3);
+        caixa(pecas, biomaId, "claro", x, y + alturaTronco + 1.5, z, 3.0, 1.0, 3.0, g("r2") * 3);
+        if (sorte < 0.08) {
+          cilindro(pecas, biomaId, "medio", x, y, z, 0.7, alturaTronco + 5);
+          anel(pecas, biomaId, "brilho", x, y + alturaTronco + 5, z, 2.2);
+        }
+        break;
+      }
+      case "pantanal": {
+        // Água e ilhotas: o chão alaga e as estruturas viram horizontais.
+        if (sorte > 0.52) break;
+        if (sorte < 0.3) {
+          caixa(pecas, biomaId, "agua", x, y - 0.45, z, CELULA * 2.3, 0.34, CELULA * 2.3, g("r") * 3);
+        } else {
+          caixa(pecas, biomaId, "medio", x, y, z, 2.2 + g("a") * 1.4, 0.34, 1.6 + g("b") * 1.2, g("r") * 3);
+          for (let k = 0; k < 3; k++) {
+            cilindro(pecas, biomaId, "claro", x + (g(`k${k}`) - 0.5) * 1.8, y + 0.34, z + (g(`m${k}`) - 0.5) * 1.4,
+              0.16, 0.9 + g(`n${k}`) * 0.9);
+          }
+        }
+        break;
+      }
+      default: {
+        // Pampas: o vazio é o assunto. Só linhas longas e baixas.
+        if (sorte > 0.16) break;
+        caixa(pecas, biomaId, "medio", x, y, z, 7.5 + g("a") * 4, 0.5, 0.4, g("r") * 3);
+        if (sorte < 0.05) caixa(pecas, biomaId, "claro", x, y, z, 1.1, 6 + g("h") * 3.5, 1.1, g("r") * 3);
+        break;
+      }
+    }
+  }
 }
 
 // ----------------------------------------------------------------- landmarks
 
-/** A peça-assinatura de cada distrito — o que faz olhar de longe e saber
- * onde se está. */
+/** A estrutura-assinatura da ilha, em escala monumental: é o que se enxerga
+ * do outro lado do arquipélago e orienta a exploração. */
 function gerarLandmark(biomaId, pecas) {
+  const centro = CENA.ANCORA_MUNDO[biomaId];
+  const base = CENA.alturaIlha(biomaId);
+  const x = centro.x;
+  const z = centro.z;
   const arq = BIOMA_ARCHETYPES[biomaId];
-  const a = CENA.ANCORA_MUNDO[biomaId];
-  const base = CENA.alturaDeNivel(arq.nivelBase) - CENA.LAJE;
-  const x = a.x;
-  const z = a.z;
 
   switch (arq.landmark) {
-    case "patio": {
-      // Pátio de observação: lâmina d'água luminosa cercada de colunas.
-      cilindro(pecas, biomaId, "claro", x, base, z, 11, 0.55);
-      cilindro(pecas, biomaId, "brilhoFraco", x, base + 0.55, z, 6.4, 0.12);
-      for (let i = 0; i < 10; i++) {
-        const ang = (i / 10) * Math.PI * 2;
-        cilindro(pecas, biomaId, "medio", x + Math.cos(ang) * 4.6, base + 0.55, z + Math.sin(ang) * 4.6, 0.5, 2.6);
+    case "mirante": {
+      // Cerrado: formação rochosa escalonada com plataforma de horizonte.
+      for (let i = 0; i < 4; i++) {
+        const r = 9 - i * 1.9;
+        cilindro(pecas, biomaId, i % 2 ? "medio" : "escuro", x, base + i * 2.2, z, r * 2, 2.2);
       }
-      anel(pecas, biomaId, "brilho", x, base + 3.4, z, 5.6);
-      cone(pecas, biomaId, "claro", x, base + 0.6, z, 1.6, 2.2);
+      cilindro(pecas, biomaId, "claro", x, base + 8.8, z, 8.4, 0.7);
+      for (let i = 0; i < 12; i++) {
+        const ang = (i / 12) * Math.PI * 2;
+        cilindro(pecas, biomaId, "claro", x + Math.cos(ang) * 3.6, base + 9.5, z + Math.sin(ang) * 3.6, 0.5, 3.2);
+      }
+      anel(pecas, biomaId, "brilho", x, base + 13.2, z, 8.2);
+      cone(pecas, biomaId, "claro", x, base + 9.5, z, 2.2, 3.4);
       break;
     }
-    case "escadaria": {
-      // Duas escadarias que se cruzam e sobem para um patamar com arco.
-      for (const giro of [0, Math.PI / 2]) {
-        for (let i = 0; i < 9; i++) {
-          const u = -6 + i * 1.35;
-          caixa(
-            pecas, biomaId, i % 2 ? "claro" : "medio",
-            x + Math.sin(giro) * u, base + i * 0.5, z + Math.cos(giro) * u,
-            3.0, 0.5 + 0.5, 1.35, giro,
-          );
-        }
+    case "passarelas": {
+      // Mata Atlântica: passarelas suspensas cruzando sobre a copa.
+      for (let i = 0; i < 5; i++) {
+        const ang = (i / 5) * Math.PI * 2;
+        cilindro(pecas, biomaId, "escuro", x + Math.cos(ang) * 5.5, base, z + Math.sin(ang) * 5.5, 1.5, 9 + i * 0.9);
+        caixa(pecas, biomaId, "claro", x + Math.cos(ang) * 5.5, base + 9 + i * 0.9, z + Math.sin(ang) * 5.5, 3.6, 0.5, 3.6, ang);
       }
-      caixa(pecas, biomaId, "claro", x, base + 4.5, z, 5.2, 0.6, 5.2);
-      arco(pecas, biomaId, "claro", x, base + 5.1, z, 4.2, 0, 0.45, 9);
-      caixa(pecas, biomaId, "brilho", x, base + 5.3, z, 0.9, 0.9, 0.9, Math.PI / 4);
+      for (let i = 0; i < 5; i++) {
+        const a1 = (i / 5) * Math.PI * 2;
+        const a2 = ((i + 2) / 5) * Math.PI * 2;
+        const p1 = [x + Math.cos(a1) * 5.5, base + 9 + i * 0.9, z + Math.sin(a1) * 5.5];
+        const p2 = [x + Math.cos(a2) * 5.5, base + 9 + ((i + 2) % 5) * 0.9, z + Math.sin(a2) * 5.5];
+        const ddx = p2[0] - p1[0];
+        const ddz = p2[2] - p1[2];
+        const comp = Math.hypot(ddx, ddz);
+        caixaCentrada(pecas, biomaId, "medio", (p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2, (p1[2] + p2[2]) / 2,
+          1.1, 0.24, comp, Math.atan2(ddx, ddz), -Math.atan2(p2[1] - p1[1], comp));
+      }
+      cilindro(pecas, biomaId, "brilho", x, base + 14, z, 1.2, 4.5);
       break;
     }
-    case "torre-grade": {
-      // Torre-grade: pavimentos abertos empilhados — estrutura à mostra.
-      const pav = 6;
-      for (let p = 0; p < pav; p++) {
-        const y = base + p * 2.1;
-        const r = 2.6 - p * 0.18;
-        for (let c = 0; c < 4; c++) {
-          const ang = (c / 4) * Math.PI * 2 + Math.PI / 4;
-          caixa(pecas, biomaId, "medio", x + Math.cos(ang) * r, y, z + Math.sin(ang) * r, 0.42, 2.1, 0.42);
-        }
-        caixa(pecas, biomaId, p % 2 ? "claro" : "medio", x, y + 2.1, z, r * 2.5, 0.4, r * 2.5, Math.PI / 4);
-        if (p % 2 === 0) caixa(pecas, biomaId, "brilhoFraco", x, y + 0.7, z, r * 1.5, 0.7, 0.14, Math.PI / 4);
+    case "cristal": {
+      // Caatinga: formação cristalina saindo da pedra rachada.
+      cilindro(pecas, biomaId, "escuro", x, base - 1, z, 13, 2.4);
+      for (let i = 0; i < 7; i++) {
+        const ang = (i / 7) * Math.PI * 2;
+        const r = 2.4 + hash01(`cristal${i}`) * 2.6;
+        const h = 7 + hash01(`cristalh${i}`) * 9;
+        cone(pecas, biomaId, i % 2 ? "claro" : "medio", x + Math.cos(ang) * r, base + 1.4, z + Math.sin(ang) * r,
+          1.6 + hash01(`cristald${i}`) * 1.4, h);
       }
-      cone(pecas, biomaId, "brilho", x, base + pav * 2.1, z, 1.5, 2.4);
+      cone(pecas, biomaId, "brilho", x, base + 1.4, z, 3.2, 18);
       break;
     }
     case "observatorio": {
-      // Observatório: torre cilíndrica, balcão em anel e luneta apontada.
-      cilindro(pecas, biomaId, "escuro", x, base, z, 4.6, 6.5);
-      cilindro(pecas, biomaId, "medio", x, base + 6.5, z, 5.6, 0.5);
-      anel(pecas, biomaId, "claro", x, base + 6.9, z, 6.2);
-      cilindro(pecas, biomaId, "claro", x, base + 7.0, z, 3.4, 1.9);
+      // Amazônia: torre de observação rompendo a copa.
+      cilindro(pecas, biomaId, "escuro", x, base, z, 6.5, 14);
+      for (let i = 0; i < 4; i++) {
+        anel(pecas, biomaId, "medio", x, base + 3 + i * 3.2, z, 7.6);
+      }
+      cilindro(pecas, biomaId, "medio", x, base + 14, z, 9, 1);
+      anel(pecas, biomaId, "brilho", x, base + 15.2, z, 9.6);
+      cilindro(pecas, biomaId, "claro", x, base + 15, z, 5.4, 3.4);
+      cone(pecas, biomaId, "claro", x, base + 18.4, z, 4.4, 4);
+      caixaCentrada(pecas, biomaId, "brilho", x + 2.4, base + 20.5, z + 2.4, 0.8, 0.8, 6.5, Math.PI / 4, -0.6);
+      break;
+    }
+    case "delta": {
+      // Pantanal: lâmina d'água com plataformas horizontais conectadas.
+      cilindro(pecas, biomaId, "agua", x, base - 0.7, z, 22, 0.5);
       for (let i = 0; i < 6; i++) {
         const ang = (i / 6) * Math.PI * 2;
-        caixa(pecas, biomaId, "brilhoFraco", x + Math.cos(ang) * 2.35, base + 2.2, z + Math.sin(ang) * 2.35, 0.5, 3.2, 0.14, -ang);
+        const r = 5 + (i % 2) * 2.6;
+        const px = x + Math.cos(ang) * r;
+        const pz = z + Math.sin(ang) * r;
+        caixa(pecas, biomaId, i % 2 ? "claro" : "medio", px, base - 0.3, pz, 5.2, 0.55, 4.2, ang);
+        caixaCentrada(pecas, biomaId, "medio", (x + px) / 2, base, (z + pz) / 2, 1.5, 0.3, r, ang);
+        cilindro(pecas, biomaId, "brilhoFraco", px, base + 0.25, pz, 0.3, 2.6);
       }
-      caixaCentrada(pecas, biomaId, "brilho", x + 1.2, base + 9.4, z + 1.2, 0.6, 0.6, 3.6, Math.PI / 4, -0.55);
-      cone(pecas, biomaId, "claro", x, base + 8.9, z, 1.2, 1.6);
+      cilindro(pecas, biomaId, "claro", x, base - 0.3, z, 7.5, 1.2);
+      anel(pecas, biomaId, "brilho", x, base + 1.4, z, 7);
       break;
     }
-    case "anfiteatro": {
-      // Bacia: degraus concêntricos descendo até um núcleo de luz. É para cá
-      // que as pontes dos outros distritos desembocam.
-      const aneis = [[9.5, 1.7], [7.6, 1.15], [5.8, 0.6], [4.0, 0.1]];
-      for (const [r, y] of aneis) {
-        cilindro(pecas, biomaId, "medio", x, base + y, z, r * 2, 0.55);
-      }
-      cilindro(pecas, biomaId, "claro", x, base, z, 5.2, 0.2);
-      cilindro(pecas, biomaId, "brilho", x, base + 0.2, z, 2.6, 0.3);
+    default: {
+      // Pampas: monumento no planalto vazio — linha arquitetônica pura.
+      caixa(pecas, biomaId, "medio", x, base - 0.8, z, 22, 0.8, 15);
+      caixa(pecas, biomaId, "claro", x, base, z, 19, 0.6, 12.5);
       for (let i = 0; i < 8; i++) {
-        const ang = (i / 8) * Math.PI * 2;
-        caixa(pecas, biomaId, "claro", x + Math.cos(ang) * 9.9, base + 1.7, z + Math.sin(ang) * 9.9, 0.7, 2.6, 0.7, -ang);
+        const px = x - 7.7 + i * 2.2;
+        cilindro(pecas, biomaId, "claro", px, base + 0.6, z - 3.4, 1.1, 7.5);
+        cilindro(pecas, biomaId, "medio", px, base + 0.6, z + 3.4, 1.1, 7.5);
       }
-      anel(pecas, biomaId, "brilhoFraco", x, base + 4.6, z, 7.4);
+      caixa(pecas, biomaId, "claro", x, base + 8.1, z, 19.5, 1.3, 12.8);
+      caixa(pecas, biomaId, "medio", x, base + 9.4, z, 11, 0.7, 7);
+      caixaCentrada(pecas, biomaId, "brilho", x, base + 14.5, z, 4.4, 4.4, 4.4, Math.PI / 4, 0.35);
       break;
-    }
-    case "portico": {
-      // Pórtico do cume: colunata pesada e um volume suspenso sobre ela.
-      caixa(pecas, biomaId, "medio", x, base - 0.6, z, 12, 0.6, 7.5);
-      caixa(pecas, biomaId, "claro", x, base, z, 11, 0.5, 6.8);
-      for (let i = 0; i < 6; i++) {
-        const px = x - 4.2 + i * 1.7;
-        cilindro(pecas, biomaId, "claro", px, base + 0.5, z - 1.6, 0.85, 3.6);
-        cilindro(pecas, biomaId, "medio", px, base + 0.5, z + 1.6, 0.85, 3.6);
-      }
-      caixa(pecas, biomaId, "claro", x, base + 4.1, z, 11.4, 0.75, 7.2);
-      caixa(pecas, biomaId, "medio", x, base + 4.85, z, 6.5, 0.4, 4.4);
-      caixaCentrada(pecas, biomaId, "brilho", x, base + 7.4, z, 2.6, 2.6, 2.6, Math.PI / 4, 0.3);
-      for (const s of [1, -1]) {
-        caixa(pecas, biomaId, "brilhoFraco", x + s * 5.2, base + 0.5, z, 0.3, 3.4, 0.3);
-      }
-      break;
-    }
-    default:
-      break;
-  }
-}
-
-// ------------------------------------------------------------------ adereços
-
-/** Arcos soltos, escadas que não levam a lugar nenhum, obeliscos e blocos
- * suspensos: é o que enche o vazio entre quarteirões e faz o conjunto ler
- * como cidade, não como diagrama. */
-function gerarAderecos(nos, ocupadas, pecas) {
-  for (const cel of ocupadas.values()) {
-    const semente = `${cel.i}:${cel.j}:adereco`;
-    const sorte = hash01(semente);
-    if (sorte > 0.5) continue;
-
-    let livre = true;
-    for (const no of nos) {
-      if (Math.hypot(no.position[0] - cel.cx, no.position[2] - cel.cz) < 4.6) {
-        livre = false;
-        break;
-      }
-    }
-    if (!livre) continue;
-    for (const id of CENA.BIOMA_IDS) {
-      const a = CENA.ANCORA_MUNDO[id];
-      if (Math.hypot(a.x - cel.cx, a.z - cel.cz) < 9) {
-        livre = false;
-        break;
-      }
-    }
-    if (!livre) continue;
-
-    const tipo = Math.floor(hash01(`${semente}:tipo`) * 5);
-    const rot = hash01(`${semente}:rot`) * Math.PI * 2;
-    const b = cel.dono;
-    const topo = cel.topo;
-
-    switch (tipo) {
-      case 0: // arco solto
-        arco(pecas, b, "medio", cel.cx, topo, cel.cz, 2.6 + hash01(semente + "v") * 1.4, rot, 0.36, 8);
-        break;
-      case 1: { // escada para lugar nenhum
-        const n = 5 + Math.floor(hash01(`${semente}:n`) * 4);
-        for (let i = 0; i < n; i++) {
-          caixa(
-            pecas, b, i % 2 ? "claro" : "medio",
-            cel.cx + Math.sin(rot) * (i * 0.62 - 1.2), topo, cel.cz + Math.cos(rot) * (i * 0.62 - 1.2),
-            1.7, 0.42 + i * 0.42, 0.62, rot,
-          );
-        }
-        break;
-      }
-      case 2: { // obelisco
-        const h = 2.4 + hash01(`${semente}:h`) * 2.6;
-        caixa(pecas, b, "medio", cel.cx, topo, cel.cz, 0.9, h, 0.9, rot);
-        cone(pecas, b, "brilhoFraco", cel.cx, topo + h, cel.cz, 0.9, 0.9, rot);
-        break;
-      }
-      case 3: { // muro baixo com vão
-        caixa(pecas, b, "escuro", cel.cx, topo, cel.cz, 3.2, 1.1, 0.5, rot);
-        caixa(pecas, b, "medio", cel.cx, topo + 1.1, cel.cz, 3.2, 0.25, 0.7, rot);
-        break;
-      }
-      default: { // bloco suspenso
-        const h = 3.4 + hash01(`${semente}:s`) * 2.4;
-        caixaCentrada(
-          pecas, b, "claro", cel.cx, topo + h, cel.cz,
-          1.9, 1.9, 1.9, rot, 0.28,
-        );
-        caixa(pecas, b, "brilhoFraco", cel.cx, topo + h - 1.4, cel.cz, 0.16, 1.2, 0.16);
-        break;
-      }
     }
   }
 }
 
 // ---------------------------------------------------------------------- API
 
-/** Monta a cidade inteira a partir da cena. Retorna a lista plana de peças —
- * ~1.5k volumes, todos instanciáveis por (distrito × tom × forma). */
+/** Monta o arquipélago inteiro a partir da cena. */
 export function construirCidade({ nos, arestas }) {
   const pecas = [];
-  const ocupadas = gerarPlinto(nos, pecas);
+  const porBioma = {};
+  for (const no of nos) (porBioma[no.biomaId] ??= []).push(no);
+
+  for (const id of CENA.BIOMA_IDS) {
+    const doBioma = porBioma[id] ?? [];
+    const celulas = gerarIlha(id, doBioma, pecas);
+    gerarVegetacao(id, celulas, doBioma, pecas);
+    gerarLandmark(id, pecas);
+  }
   for (const no of nos) gerarQuarteirao(no, pecas);
-  for (const a of arestas) gerarConexao(a, pecas);
-  for (const id of CENA.BIOMA_IDS) gerarLandmark(id, pecas);
-  gerarAderecos(nos, ocupadas, pecas);
+  for (const a of arestas) gerarRota(a, pecas);
+
   return pecas;
 }
