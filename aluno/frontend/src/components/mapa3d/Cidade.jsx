@@ -35,7 +35,7 @@ function corDaPeca(biomaId, tom) {
 function Geometria({ forma }) {
   switch (forma) {
     case "cilindro":
-      return <cylinderGeometry args={[0.5, 0.5, 1, 16]} />;
+      return <cylinderGeometry args={[0.5, 0.5, 1, 28]} />;
     case "cone":
       return <coneGeometry args={[0.5, 1, 6]} />;
     case "anel":
@@ -82,7 +82,6 @@ function Grupo({ chave, forma, biomaId, tom, pecas }) {
       args={[undefined, undefined, pecas.length]}
       castShadow={config.sombra}
       receiveShadow={config.sombra}
-      frustumCulled={false}
     >
       <Geometria forma={forma} />
       <meshStandardMaterial

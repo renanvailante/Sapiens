@@ -15,10 +15,12 @@ const COR_ABISMO = "#04070f";
 function NevoaDoAbismo({ raio }) {
   const camadas = useMemo(
     () => [
-      { y: -14, opacidade: 0.16 },
-      { y: -8, opacidade: 0.12 },
-      { y: -3, opacidade: 0.09 },
-      { y: 3, opacidade: 0.06 },
+      { y: -60, opacidade: 0.2 },
+      { y: -40, opacidade: 0.17 },
+      { y: -24, opacidade: 0.14 },
+      { y: -12, opacidade: 0.1 },
+      { y: 2, opacidade: 0.07 },
+      { y: 18, opacidade: 0.05 },
     ],
     [],
   );
@@ -26,7 +28,7 @@ function NevoaDoAbismo({ raio }) {
     <group>
       {camadas.map((c) => (
         <mesh key={c.y} rotation={[-Math.PI / 2, 0, 0]} position={[0, c.y, 0]}>
-          <circleGeometry args={[raio * 2.2, 64]} />
+          <circleGeometry args={[raio * 2.6, 72]} />
           <meshBasicMaterial
             color="#25406B"
             transparent
@@ -69,7 +71,7 @@ export default function MapaMundo3D({ biomas, nodeIndex, arestas, onClickHab, fo
         <color attach="background" args={[COR_ABISMO]} />
         {/* Névoa densa: as ilhas distantes se dissolvem, e o mundo passa a
             parecer maior do que o pedaço que cabe na tela. */}
-        <fogExp2 attach="fog" args={["#0B1938", 0.0023]} />
+        <fogExp2 attach="fog" args={["#0B1938", 0.3 / raio]} />
 
         <hemisphereLight args={["#8FB0F0", "#0A1024", 0.7]} />
         <ambientLight intensity={0.42} />

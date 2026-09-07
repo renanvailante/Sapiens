@@ -20,7 +20,7 @@ export const BIOMA_ARCHETYPES = {
     landmark: "mirante",
     formaNo: "anel",
     vegetacao: "cerrado",
-    raioIlha: 7.4,
+    raioIlha: 26,
   },
   relacionar: {
     // Mata Atlântica — mata fechada, rios, caminhos que se cruzam.
@@ -30,7 +30,7 @@ export const BIOMA_ARCHETYPES = {
     landmark: "passarelas",
     formaNo: "ziggurat",
     vegetacao: "mata",
-    raioIlha: 6.8,
+    raioIlha: 23,
   },
   representar: {
     // Caatinga — geometria árida, pedra, cristal, contraste duro.
@@ -40,7 +40,7 @@ export const BIOMA_ARCHETYPES = {
     landmark: "cristal",
     formaNo: "cristal",
     vegetacao: "caatinga",
-    raioIlha: 6.6,
+    raioIlha: 22,
   },
   investigar: {
     // Amazônia — floresta profunda com torres/observatórios emergindo dela.
@@ -50,7 +50,7 @@ export const BIOMA_ARCHETYPES = {
     landmark: "observatorio",
     formaNo: "obelisco",
     vegetacao: "amazonia",
-    raioIlha: 6.4,
+    raioIlha: 21,
   },
   integrar: {
     // Pantanal — água, ilhotas, canais, estruturas horizontais conectadas.
@@ -60,7 +60,7 @@ export const BIOMA_ARCHETYPES = {
     landmark: "delta",
     formaNo: "nucleo",
     vegetacao: "pantanal",
-    raioIlha: 7.8,
+    raioIlha: 27,
   },
   decidir: {
     // Pampas — planalto aberto, quase vazio, com estrutura monumental.
@@ -70,7 +70,7 @@ export const BIOMA_ARCHETYPES = {
     landmark: "monumento",
     formaNo: "cubo",
     vegetacao: "pampas",
-    raioIlha: 7.2,
+    raioIlha: 24,
   },
 };
 
@@ -81,7 +81,7 @@ export const ESTADO_TIER = {
   mastered: { escala: 1.2, emissiva: 1.9, janela: "brilho", rotulo: true, pulsa: false, nevoa: false },
   in_progress: { escala: 1.05, emissiva: 1.1, janela: "brilho", rotulo: true, pulsa: false, nevoa: false },
   available: { escala: 0.95, emissiva: 0.55, janela: "brilhoFraco", rotulo: true, pulsa: true, nevoa: false },
-  discovered: { escala: 0.72, emissiva: 0.1, janela: "brilhoFraco", rotulo: false, pulsa: false, nevoa: true },
+  discovered: { escala: 0.66, emissiva: 0.04, janela: "medio", rotulo: false, pulsa: false, nevoa: false },
 };
 
 // Mesma escala de peso de sempre — decide o quanto uma rota está acesa.

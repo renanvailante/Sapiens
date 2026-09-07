@@ -93,7 +93,7 @@ export default function NoHabilidade3D({ no, selecionado, onClickHab }) {
     // ESCALA_NO: o objeto precisa ser legível na vista do arquipélago
     // inteiro — no tamanho "real" de mobiliário ele sumiria no telhado do
     // próprio quarteirão.
-    obj.scale.setScalar(2.6 * (tier?.escala ?? 1) * pulso * destaque);
+    obj.scale.setScalar(4.4 * (tier?.escala ?? 1) * pulso * destaque);
     obj.rotation.y = giroBase + (selecionado ? t * 0.35 : t * 0.06);
     obj.position.y = selecionado ? 0.12 + Math.sin(t * 1.6) * 0.06 : 0;
   });
@@ -117,7 +117,7 @@ export default function NoHabilidade3D({ no, selecionado, onClickHab }) {
 
       {/* Alvo de clique generoso: o objeto é pequeno, a área clicável não. */}
       <mesh
-        position={[0, 1.8, 0]}
+        position={[0, 3, 0]}
         onClick={(e) => {
           e.stopPropagation();
           onClickHab(no.hab_id);
@@ -132,18 +132,18 @@ export default function NoHabilidade3D({ no, selecionado, onClickHab }) {
           document.body.style.cursor = "auto";
         }}
       >
-        <boxGeometry args={[3.6, 4.4, 3.6]} />
+        <boxGeometry args={[6.5, 8, 6.5]} />
         <meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </mesh>
 
       {selecionado && (
         <>
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.04, 0]}>
-            <ringGeometry args={[2.0, 2.35, 44]} />
+            <ringGeometry args={[3.4, 3.9, 48]} />
             <meshBasicMaterial color={arq.paleta.brilho} transparent opacity={0.75} />
           </mesh>
-          <mesh position={[0, 18, 0]}>
-            <cylinderGeometry args={[0.26, 0.26, 36, 10, 1, true]} />
+          <mesh position={[0, 32, 0]}>
+            <cylinderGeometry args={[0.42, 0.42, 64, 10, 1, true]} />
             <meshBasicMaterial
               color={arq.paleta.brilho}
               transparent
@@ -158,8 +158,8 @@ export default function NoHabilidade3D({ no, selecionado, onClickHab }) {
 
       {mostrarRotulo && (
         <Text
-          position={[0, 4.4, 0]}
-          fontSize={0.72}
+          position={[0, 7.5, 0]}
+          fontSize={1.25}
           color="#EEF6FF"
           anchorX="center"
           anchorY="bottom"
