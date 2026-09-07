@@ -1,13 +1,15 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { api, errMsg } from "../lib/api";
 import Nav from "../components/Nav";
 import {
   Compass, Check, X, Loader2, ArrowLeft, Sparkles, Waves,
-  PartyPopper, Telescope, ChevronRight,
+  PartyPopper, Telescope,
 } from "lucide-react";
 import ReportarQuestao from "../components/ReportarQuestao";
+import { MapaMundo3D, BriefingHUD } from "../components/mapa3d";
+import { ESTADO_LABEL } from "../components/mapa3d/sceneBuilder";
 
 // A aba Treino deixou de ser uma grade de 56 cartões — as mesmas 56
 // habilidades agora são pontos de um único grafo de exploração
@@ -27,283 +29,20 @@ import ReportarQuestao from "../components/ReportarQuestao";
 // Aceita `?hab=HAB-03` para abrir direto o briefing de uma habilidade — usado
 // pelos deep-links do Motor Cognitivo.
 
-const VIEW_W = 1000;
-const VIEW_H = 640;
-
-const BIOMA_TINTS = ["#4FD9FF", "#3FBFEA", "#4A85E3", "#6E82E8", "#8B7BFF", "#A489FF"];
-
-const ESTADO_LABEL = {
-  unknown: "Não descoberto",
-  discovered: "Percebido",
-  available: "Disponível",
-  in_progress: "Em progresso",
-  mastered: "Dominado",
-};
+// ESTADO_LABEL agora vem de components/mapa3d/sceneBuilder.js (mesmos 5
+// rótulos de sempre); VIEW_W/VIEW_H, BIOMA_TINTS e estiloEstado() eram só do
+// renderizador SVG antigo e foram substituídos pelo mundo 3D em mapa3d/.
 
 const DIFICULDADE_LABEL = { FACIL: "Fácil", MEDIO_FACIL: "Médio-fácil", MEDIO: "Médio", DIFICIL: "Difícil" };
-
-function estiloEstado(estado) {
-  switch (estado) {
-    case "mastered":
-      return { r: 7.5, fill: "#4FD9FF", ring: "rgba(79,217,255,0.95)", glow: "drop-shadow(0 0 12px rgba(79,217,255,0.75))" };
-    case "in_progress":
-      return { r: 7, fill: "#8B7BFF", ring: "rgba(139,123,255,0.9)", glow: "drop-shadow(0 0 9px rgba(139,123,255,0.55))" };
-    case "available":
-      return { r: 6, fill: "rgba(232,242,255,0.55)", ring: "rgba(190,210,235,0.9)", glow: "drop-shadow(0 0 6px rgba(150,200,255,0.35))" };
-    case "discovered":
-      return { r: 4, fill: "rgba(167,188,217,0.28)", ring: "rgba(167,188,217,0.4)", glow: "none" };
-    default:
-      return null; // unknown: invisível de propósito
-  }
-}
-
-// ---------- Canvas do mapa (pan + zoom manual, mouse e toque) ----------
-
-function useMapaTransform() {
-  const [view, setView] = useState({ x: 0, y: 0, k: 1 });
-  const dragRef = useRef(null);
-  const pointers = useRef(new Map());
-  const pinchRef = useRef(null);
-
-  const clampK = (k) => Math.min(2.6, Math.max(0.55, k));
-
-  const onWheel = useCallback((e) => {
-    e.preventDefault();
-    const delta = -e.deltaY * 0.0016;
-    setView((v) => ({ ...v, k: clampK(v.k * (1 + delta)) }));
-  }, []);
-
-  const onPointerDown = useCallback((e) => {
-    e.currentTarget.setPointerCapture?.(e.pointerId);
-    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (pointers.current.size === 1) {
-      setView((v) => { dragRef.current = { x: e.clientX, y: e.clientY, ox: v.x, oy: v.y }; return v; });
-    } else if (pointers.current.size === 2) {
-      dragRef.current = null;
-      const pts = [...pointers.current.values()];
-      setView((v) => { pinchRef.current = { dist: Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y), k: v.k }; return v; });
-    }
-  }, []);
-
-  const onPointerMove = useCallback((e) => {
-    if (!pointers.current.has(e.pointerId)) return;
-    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (pointers.current.size === 2 && pinchRef.current) {
-      const pts = [...pointers.current.values()];
-      const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
-      const k = clampK(pinchRef.current.k * (dist / Math.max(pinchRef.current.dist, 1)));
-      setView((v) => ({ ...v, k }));
-    } else if (dragRef.current) {
-      const dx = e.clientX - dragRef.current.x;
-      const dy = e.clientY - dragRef.current.y;
-      setView((v) => ({ ...v, x: dragRef.current.ox + dx, y: dragRef.current.oy + dy }));
-    }
-  }, []);
-
-  const onPointerUp = useCallback((e) => {
-    pointers.current.delete(e.pointerId);
-    if (pointers.current.size < 2) pinchRef.current = null;
-    if (pointers.current.size === 0) dragRef.current = null;
-    else if (pointers.current.size === 1) {
-      const [[, p]] = pointers.current;
-      setView((v) => { dragRef.current = { x: p.x, y: p.y, ox: v.x, oy: v.y }; return v; });
-    }
-  }, []);
-
-  const recentrar = useCallback(() => setView({ x: 0, y: 0, k: 1 }), []);
-
-  return { view, onWheel, onPointerDown, onPointerMove, onPointerUp, recentrar };
-}
 
 function contarVisiveis(mapaData) {
   if (!mapaData) return 0;
   return mapaData.biomas.reduce((acc, b) => acc + b.nodes.filter((n) => n.estado !== "unknown").length, 0);
 }
 
-// ---------- Nó (uma habilidade) ----------
-
-function NoHabilidade({ hab, onClick }) {
-  const cor = estiloEstado(hab.estado);
-  const [hover, setHover] = useState(false);
-  if (!cor) return null; // unknown: não existe visualmente ainda
-
-  const mostrarNome = hover && hab.estado !== "discovered";
-
-  return (
-    <g
-      transform={`translate(${hab.x} ${hab.y})`}
-      style={{ cursor: "pointer" }}
-      onClick={onClick}
-      onPointerEnter={() => setHover(true)}
-      onPointerLeave={() => setHover(false)}
-      data-testid={`mapa-no-${hab.hab_id}`}
-      data-estado={hab.estado}
-    >
-      {hab.estado === "available" && (
-        <motion.circle
-          r={cor.r}
-          fill="none"
-          stroke={cor.ring}
-          strokeWidth={1}
-          animate={{ r: [cor.r, cor.r + 7, cor.r], opacity: [0.5, 0, 0.5] }}
-          transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
-        />
-      )}
-      <circle
-        r={hover ? cor.r + 1.6 : cor.r}
-        fill={cor.fill}
-        stroke={cor.ring}
-        strokeWidth={1.2}
-        style={{ filter: cor.glow, transition: "r 120ms ease" }}
-      />
-      {hab.estado === "mastered" && (
-        <path d="M -2.6 0 L -0.5 2.4 L 3 -2.6" stroke="#03060d" strokeWidth={1.3} fill="none" strokeLinecap="round" strokeLinejoin="round" />
-      )}
-      {hab.estado === "in_progress" && hab.respondidas > 0 && (
-        <circle r={cor.r + 2.4} fill="none" stroke="#8B7BFF" strokeWidth={1} opacity={Math.min(1, hab.respondidas / 5)} />
-      )}
-      {mostrarNome && (
-        <text
-          y={-13} textAnchor="middle" fontSize={7.5}
-          fill="var(--bio-texto, #E8F2FF)" fontFamily="inherit"
-          paintOrder="stroke" stroke="rgba(3,6,13,0.85)" strokeWidth={3}
-          style={{ pointerEvents: "none" }}
-        >
-          {hab.nome.length > 34 ? hab.nome.slice(0, 33) + "…" : hab.nome}
-        </text>
-      )}
-    </g>
-  );
-}
-
-function BiomaCamada({ bioma, indice }) {
-  const visiveis = bioma.nodes.filter((n) => n.estado !== "unknown");
-  const base = visiveis.length ? visiveis : bioma.nodes;
-  const cx = base.reduce((s, n) => s + n.x, 0) / base.length;
-  const cy = base.reduce((s, n) => s + n.y, 0) / base.length;
-  const raio = 58 + 7 * Math.sqrt(Math.max(visiveis.length, 1));
-  const cor = BIOMA_TINTS[indice % BIOMA_TINTS.length];
-
-  return (
-    <>
-      <circle cx={cx} cy={cy} r={raio} fill={cor} opacity={0.05} />
-      <circle cx={cx} cy={cy} r={raio * 0.55} fill={cor} opacity={0.04} />
-      <text
-        x={cx} y={cy - raio - 8}
-        textAnchor="middle" fontSize={11} fontWeight={800} letterSpacing="0.12em"
-        fill="var(--bio-texto, #E8F2FF)" opacity={0.42} fontFamily="inherit"
-        style={{ textTransform: "uppercase", pointerEvents: "none" }}
-      >
-        {bioma.nome}
-      </text>
-    </>
-  );
-}
-
-function MapaCanvas({ biomas, nodeIndex, arestas, onClickHab }) {
-  const { view, onWheel, onPointerDown, onPointerMove, onPointerUp, recentrar } = useMapaTransform();
-
-  const pesoEstado = { mastered: 1, in_progress: 0.8, available: 0.5, discovered: 0.22 };
-
-  return (
-    <div
-      className="relative rounded-3xl overflow-hidden border border-white/10"
-      style={{
-        background: "radial-gradient(ellipse at 30% 20%, rgba(79,217,255,0.06), transparent 55%), var(--bio-abismo, #03060d)",
-        touchAction: "none", height: "72vh", minHeight: 480,
-      }}
-    >
-      <svg
-        viewBox={`0 0 ${VIEW_W} ${VIEW_H}`} width="100%" height="100%"
-        onWheel={onWheel} onPointerDown={onPointerDown} onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp} onPointerCancel={onPointerUp}
-        style={{ cursor: "grab", display: "block" }}
-        data-testid="mapa-svg"
-      >
-        <g transform={`translate(${view.x} ${view.y}) scale(${view.k})`}>
-          {Array.from({ length: 60 }).map((_, i) => {
-            const seed = (i * 9973) % 10000;
-            return <circle key={i} cx={seed % 1000} cy={(seed * 7) % 640} r={0.5 + (seed % 5) / 5} fill="rgba(200,220,255,0.16)" />;
-          })}
-
-          {biomas.map((b, i) => <BiomaCamada key={b.bioma_id} bioma={b} indice={i} />)}
-
-          {arestas.map((a, i) => {
-            const s = nodeIndex[a.source], t = nodeIndex[a.target];
-            if (!s || !t || s.estado === "unknown" || t.estado === "unknown") return null;
-            const peso = Math.min(pesoEstado[s.estado], pesoEstado[t.estado]);
-            return (
-              <line
-                key={i} x1={s.x} y1={s.y} x2={t.x} y2={t.y}
-                stroke="rgba(150,200,255,0.5)" strokeWidth={0.8} opacity={peso * 0.5}
-              />
-            );
-          })}
-
-          {biomas.flatMap((b) => b.nodes.map((h) => (
-            <NoHabilidade key={h.hab_id} hab={h} onClick={() => onClickHab(nodeIndex[h.hab_id])} />
-          )))}
-        </g>
-      </svg>
-
-      <button
-        onClick={recentrar}
-        className="absolute bottom-4 right-4 inline-flex items-center gap-1.5 text-xs font-medium text-white/70 hover:text-white bg-white/8 hover:bg-white/15 border border-white/10 px-3 py-1.5 rounded-full transition-colors"
-        data-testid="mapa-recentrar"
-      >
-        <Compass className="w-3.5 h-3.5" /> Recentrar
-      </button>
-    </div>
-  );
-}
-
-// ---------- Briefing (antes de começar a missão) ----------
-
-function Briefing({ hab, onFechar, onIniciar }) {
-  const bioma = hab.bioma;
-  return (
-    <motion.div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm px-4 pb-4 sm:pb-4"
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      onClick={onFechar}
-    >
-      <motion.div
-        className="card-sapiens rounded-2xl p-6 md:p-8 max-w-md w-full"
-        initial={{ y: 24, opacity: 0, scale: 0.97 }} animate={{ y: 0, opacity: 1, scale: 1 }} exit={{ y: 12, opacity: 0 }}
-        transition={{ type: "spring", damping: 24, stiffness: 260 }}
-        onClick={(e) => e.stopPropagation()}
-        data-testid="mapa-briefing"
-      >
-        <div className="font-mono-alt text-[10px] uppercase tracking-[0.3em] text-sapiens-accentDeep flex items-center gap-1.5">
-          <Telescope className="w-3.5 h-3.5" /> {bioma.nome}
-        </div>
-        <h2 className="mt-2 font-display text-2xl font-extrabold tracking-tight text-zinc-950">
-          Missão: {hab.nome}
-        </h2>
-        <p className="mt-3 text-sm leading-relaxed text-zinc-600 italic">{bioma.ideia}</p>
-        <div className="mt-4 rounded-xl bg-sapiens-accentSoft/60 border border-sapiens-accent/20 px-4 py-3 text-sm text-zinc-700">
-          {bioma.resumo}
-        </div>
-        <div className="mt-4 text-xs font-mono-alt uppercase tracking-wide text-zinc-400">
-          {ESTADO_LABEL[hab.estado]}
-          {hab.respondidas > 0 && ` · ${hab.respondidas} tentativa(s)`}
-        </div>
-        <div className="mt-6 flex gap-3">
-          <button onClick={onFechar} className="text-sm text-zinc-400 hover:text-zinc-600 px-2" data-testid="mapa-briefing-fechar">
-            Voltar ao mapa
-          </button>
-          <button
-            onClick={onIniciar}
-            className="pill flex-1 inline-flex items-center justify-center gap-2 text-sm font-medium btn-sapiens px-5 py-2.5 rounded-full"
-            data-testid="mapa-briefing-iniciar"
-          >
-            Iniciar missão <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
-      </motion.div>
-    </motion.div>
-  );
-}
+// NoHabilidade, BiomaCamada, MapaCanvas e Briefing viraram o mundo 3D em
+// components/mapa3d/ (MapaMundo3D + BriefingHUD) — mesmo contrato de dados,
+// renderização substituída.
 
 // ---------- Tabela de questão (reaproveitado) ----------
 
@@ -783,7 +522,14 @@ export default function TreinoHabilidades() {
           />
         ) : (
           <div className="mt-8">
-            <MapaCanvas biomas={mapaData.biomas} nodeIndex={nodeIndex} arestas={mapaData.arestas} onClickHab={abrirBriefing} />
+            <MapaMundo3D
+              biomas={mapaData.biomas}
+              nodeIndex={nodeIndex}
+              arestas={mapaData.arestas}
+              onClickHab={abrirBriefing}
+              focusHabId={briefingHab?.hab_id ?? null}
+              onFecharFoco={fecharBriefing}
+            />
             <div className="mt-3 flex flex-wrap gap-4 text-xs text-white/50">
               <span className="inline-flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#4FD9FF]" /> Dominado</span>
               <span className="inline-flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#8B7BFF]" /> Em progresso</span>
@@ -796,7 +542,7 @@ export default function TreinoHabilidades() {
 
       <AnimatePresence>
         {briefingHab && (
-          <Briefing hab={briefingHab} onFechar={fecharBriefing} onIniciar={iniciarMissao} />
+          <BriefingHUD hab={briefingHab} onFechar={fecharBriefing} onIniciar={iniciarMissao} />
         )}
       </AnimatePresence>
     </div>
