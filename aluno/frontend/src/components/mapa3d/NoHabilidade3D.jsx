@@ -93,9 +93,9 @@ export default function NoHabilidade3D({ no, selecionado, onClickHab }) {
     // ESCALA_NO: o objeto precisa ser legível na vista do arquipélago
     // inteiro — no tamanho "real" de mobiliário ele sumiria no telhado do
     // próprio quarteirão.
-    obj.scale.setScalar(4.4 * (tier?.escala ?? 1) * pulso * destaque);
+    obj.scale.setScalar(11 * (tier?.escala ?? 1) * pulso * destaque);
     obj.rotation.y = giroBase + (selecionado ? t * 0.35 : t * 0.06);
-    obj.position.y = selecionado ? 0.12 + Math.sin(t * 1.6) * 0.06 : 0;
+    obj.position.y = selecionado ? 1.2 + Math.sin(t * 1.6) * 0.6 : 0;
   });
 
   if (!tier) return null; // `unknown` continua sendo massa bruta, sem objeto
@@ -117,7 +117,7 @@ export default function NoHabilidade3D({ no, selecionado, onClickHab }) {
 
       {/* Alvo de clique generoso: o objeto é pequeno, a área clicável não. */}
       <mesh
-        position={[0, 3, 0]}
+        position={[0, 8, 0]}
         onClick={(e) => {
           e.stopPropagation();
           onClickHab(no.hab_id);
@@ -132,18 +132,18 @@ export default function NoHabilidade3D({ no, selecionado, onClickHab }) {
           document.body.style.cursor = "auto";
         }}
       >
-        <boxGeometry args={[6.5, 8, 6.5]} />
+        <boxGeometry args={[17, 22, 17]} />
         <meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </mesh>
 
       {selecionado && (
         <>
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.04, 0]}>
-            <ringGeometry args={[3.4, 3.9, 48]} />
+            <ringGeometry args={[9, 10.4, 56]} />
             <meshBasicMaterial color={arq.paleta.brilho} transparent opacity={0.75} />
           </mesh>
-          <mesh position={[0, 32, 0]}>
-            <cylinderGeometry args={[0.42, 0.42, 64, 10, 1, true]} />
+          <mesh position={[0, 95, 0]}>
+            <cylinderGeometry args={[1.1, 1.1, 190, 12, 1, true]} />
             <meshBasicMaterial
               color={arq.paleta.brilho}
               transparent
@@ -158,14 +158,14 @@ export default function NoHabilidade3D({ no, selecionado, onClickHab }) {
 
       {mostrarRotulo && (
         <Text
-          position={[0, 7.5, 0]}
-          fontSize={1.25}
+          position={[0, 24, 0]}
+          fontSize={2.1}
           color="#EEF6FF"
           anchorX="center"
           anchorY="bottom"
-          outlineWidth={0.028}
+          outlineWidth={0.08}
           outlineColor="#03060d"
-          maxWidth={5}
+          maxWidth={44}
           textAlign="center"
         >
           {no.nome.length > 42 ? `${no.nome.slice(0, 41)}…` : no.nome}

@@ -1,5 +1,5 @@
-import { Suspense, useMemo } from "react";
-import { Canvas } from "@react-three/fiber";
+import { Suspense, useMemo, useRef } from "react";
+import { Canvas, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import Cidade from "./Cidade";
 import NoHabilidade3D from "./NoHabilidade3D";
@@ -15,12 +15,12 @@ const COR_ABISMO = "#04070f";
 function NevoaDoAbismo({ raio }) {
   const camadas = useMemo(
     () => [
-      { y: -60, opacidade: 0.2 },
-      { y: -40, opacidade: 0.17 },
-      { y: -24, opacidade: 0.14 },
-      { y: -12, opacidade: 0.1 },
-      { y: 2, opacidade: 0.07 },
-      { y: 18, opacidade: 0.05 },
+      { y: -260, opacidade: 0.2 },
+      { y: -180, opacidade: 0.17 },
+      { y: -110, opacidade: 0.14 },
+      { y: -55, opacidade: 0.1 },
+      { y: 10, opacidade: 0.07 },
+      { y: 80, opacidade: 0.05 },
     ],
     [],
   );
@@ -39,6 +39,50 @@ function NevoaDoAbismo({ raio }) {
         </mesh>
       ))}
     </group>
+  );
+}
+
+/** O sol acompanha o ponto para onde a câmera olha, com o frustum de sombra
+ * apertado em volta dele. Num continente desta escala, um shadow map único
+ * cobrindo tudo daria menos de um texel por metro de terreno — a sombra
+ * viraria mancha. Seguindo o alvo, a sombra é nítida onde se está olhando, e
+ * o que fica longe já está dissolvido na névoa de qualquer jeito. */
+function SolQueSegue({ raio }) {
+  const luzRef = useRef();
+  const alvoRef = useRef();
+  const alvo = useMemo(() => new THREE.Vector3(), []);
+  const extensao = Math.max(150, raio * 0.3);
+
+  useFrame(({ controls }) => {
+    const luz = luzRef.current;
+    const objetoAlvo = alvoRef.current;
+    if (!luz || !objetoAlvo) return;
+    if (controls?.getTarget) controls.getTarget(alvo);
+    luz.position.set(alvo.x + extensao * 1.1, alvo.y + extensao * 1.8, alvo.z + extensao * 0.85);
+    objetoAlvo.position.copy(alvo);
+    objetoAlvo.updateMatrixWorld();
+    luz.target = objetoAlvo;
+  });
+
+  return (
+    <>
+      <object3D ref={alvoRef} />
+      <directionalLight
+        ref={luzRef}
+        intensity={1.7}
+        color="#F6FAFF"
+        castShadow
+        shadow-mapSize-width={2048}
+        shadow-mapSize-height={2048}
+        shadow-camera-left={-extensao}
+        shadow-camera-right={extensao}
+        shadow-camera-top={extensao}
+        shadow-camera-bottom={-extensao}
+        shadow-camera-near={1}
+        shadow-camera-far={extensao * 5}
+        shadow-bias={-0.0012}
+      />
+    </>
   );
 }
 
@@ -75,21 +119,7 @@ export default function MapaMundo3D({ biomas, nodeIndex, arestas, onClickHab, fo
 
         <hemisphereLight args={["#8FB0F0", "#0A1024", 0.7]} />
         <ambientLight intensity={0.42} />
-        <directionalLight
-          position={[raio * 0.6, raio * 0.9, raio * 0.45]}
-          intensity={1.7}
-          color="#F6FAFF"
-          castShadow
-          shadow-mapSize-width={2048}
-          shadow-mapSize-height={2048}
-          shadow-camera-left={-raio}
-          shadow-camera-right={raio}
-          shadow-camera-top={raio}
-          shadow-camera-bottom={-raio}
-          shadow-camera-near={1}
-          shadow-camera-far={raio * 4}
-          shadow-bias={-0.0008}
-        />
+        <SolQueSegue raio={raio} />
         <directionalLight position={[-raio * 0.7, raio * 0.4, -raio * 0.6]} intensity={0.36} color="#FFD9BE" />
         <directionalLight position={[-raio * 0.4, raio * 0.6, raio]} intensity={0.45} color="#CFE1FF" />
 

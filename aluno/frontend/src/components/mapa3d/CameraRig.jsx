@@ -24,18 +24,18 @@ export default function CameraRig({ focoPosicao, raioMundo }) {
     if (!montouRef.current) {
       controles.rotateTo(AZIMUTE_PADRAO, POLAR_PADRAO, false);
       controles.dollyTo(distanciaPadrao, false);
-      controles.moveTo(0, 6, 0, false);
+      controles.moveTo(0, 30, 0, false);
     }
 
     if (focoPosicao) {
       const [fx, fy, fz] = focoPosicao;
       // Pula direto no primeiro foco (deep-link `?hab=`, onde o painel já
       // abre junto) — só anima nas trocas seguintes.
-      controles.setLookAt(fx + 13, fy + 11, fz + 15, fx, fy + 1.5, fz, montouRef.current);
+      controles.setLookAt(fx + 46, fy + 40, fz + 54, fx, fy + 6, fz, montouRef.current);
     } else if (montouRef.current) {
       controles.rotateTo(AZIMUTE_PADRAO, POLAR_PADRAO, true);
       controles.dollyTo(distanciaPadrao, true);
-      controles.moveTo(0, 6, 0, true);
+      controles.moveTo(0, 30, 0, true);
     }
 
     montouRef.current = true;
@@ -47,7 +47,7 @@ export default function CameraRig({ focoPosicao, raioMundo }) {
       makeDefault
       minPolarAngle={0.08}
       maxPolarAngle={Math.PI * 0.495}
-      minDistance={6}
+      minDistance={26}
       maxDistance={Math.max(240, raioMundo * 3)}
       smoothTime={0.42}
       draggingSmoothTime={0.1}

@@ -8,7 +8,7 @@ import {
   PartyPopper, Telescope,
 } from "lucide-react";
 import ReportarQuestao from "../components/ReportarQuestao";
-import { MapaMundo3D, BriefingHUD } from "../components/mapa3d";
+import { MapaMundo3D, BriefingHUD, GuiaMissoes } from "../components/mapa3d";
 import { ESTADO_LABEL } from "../components/mapa3d/sceneBuilder";
 
 // A aba Treino deixou de ser uma grade de 56 cartões — as mesmas 56
@@ -413,6 +413,9 @@ export default function TreinoHabilidades() {
   const [briefingHab, setBriefingHab] = useState(null);
   const [missaoHab, setMissaoHab] = useState(null);
   const [desfecho, setDesfecho] = useState(null); // { hab, resultado, novosPontos }
+  // Foco pedido pelo guia lateral: move só a câmera, sem abrir missão —
+  // por isso é estado próprio, e não `briefingHab`.
+  const [focoLista, setFocoLista] = useState(null);
 
   const carregar = useCallback(() => {
     setLoading(true);
@@ -496,13 +499,21 @@ export default function TreinoHabilidades() {
           nodeIndex={nodeIndex}
           arestas={mapaData.arestas}
           onClickHab={abrirBriefing}
-          focusHabId={briefingHab?.hab_id ?? null}
+          focusHabId={briefingHab?.hab_id ?? focoLista}
           onFecharFoco={fecharBriefing}
         />
 
         <div className="absolute inset-x-0 top-0 z-40">
           <Nav />
         </div>
+
+        <GuiaMissoes
+          biomas={mapaData.biomas}
+          arestas={mapaData.arestas}
+          focoAtual={briefingHab?.hab_id ?? focoLista}
+          onFocar={setFocoLista}
+          onLimparFoco={() => setFocoLista(null)}
+        />
 
         <AnimatePresence>
           {briefingHab && (

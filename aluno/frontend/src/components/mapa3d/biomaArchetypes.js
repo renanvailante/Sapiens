@@ -20,7 +20,7 @@ export const BIOMA_ARCHETYPES = {
     landmark: "mirante",
     formaNo: "anel",
     vegetacao: "cerrado",
-    raioIlha: 26,
+    raioIlha: 84,
   },
   relacionar: {
     // Mata Atlântica — mata fechada, rios, caminhos que se cruzam.
@@ -30,7 +30,7 @@ export const BIOMA_ARCHETYPES = {
     landmark: "passarelas",
     formaNo: "ziggurat",
     vegetacao: "mata",
-    raioIlha: 23,
+    raioIlha: 74,
   },
   representar: {
     // Caatinga — geometria árida, pedra, cristal, contraste duro.
@@ -40,7 +40,7 @@ export const BIOMA_ARCHETYPES = {
     landmark: "cristal",
     formaNo: "cristal",
     vegetacao: "caatinga",
-    raioIlha: 22,
+    raioIlha: 70,
   },
   investigar: {
     // Amazônia — floresta profunda com torres/observatórios emergindo dela.
@@ -50,7 +50,7 @@ export const BIOMA_ARCHETYPES = {
     landmark: "observatorio",
     formaNo: "obelisco",
     vegetacao: "amazonia",
-    raioIlha: 21,
+    raioIlha: 68,
   },
   integrar: {
     // Pantanal — água, ilhotas, canais, estruturas horizontais conectadas.
@@ -60,7 +60,7 @@ export const BIOMA_ARCHETYPES = {
     landmark: "delta",
     formaNo: "nucleo",
     vegetacao: "pantanal",
-    raioIlha: 27,
+    raioIlha: 86,
   },
   decidir: {
     // Pampas — planalto aberto, quase vazio, com estrutura monumental.
@@ -70,7 +70,7 @@ export const BIOMA_ARCHETYPES = {
     landmark: "monumento",
     formaNo: "cubo",
     vegetacao: "pampas",
-    raioIlha: 24,
+    raioIlha: 77,
   },
 };
 

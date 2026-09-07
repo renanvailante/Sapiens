@@ -16,12 +16,12 @@ export const SOURCE_H = 640;
 export const SCALE = 0.072;
 
 /** Afastamento entre as ilhas (aplicado às âncoras de bioma). */
-export const SEPARACAO_ILHAS = 4.6;
+export const SEPARACAO_ILHAS = 22;
 /** Espalhamento dos nós DENTRO da própria ilha. */
-export const ESPALHAMENTO = 4.2;
+export const ESPALHAMENTO = 21;
 
 /** Altura de um pavimento. */
-export const NIVEL = 2.4;
+export const NIVEL = 5.5;
 /** Espessura da laje que forma o piso de um quarteirão. */
 export const LAJE = 0.5;
 
@@ -134,7 +134,7 @@ export function construirCena(mapaData, nodeIndex) {
   // Extensão do mundo, para enquadrar câmera e névoa sem números mágicos.
   let raio = 1;
   for (const n of nos) raio = Math.max(raio, Math.hypot(n.position[0], n.position[2]));
-  const limites = { raio: raio + 45 };
+  const limites = { raio: raio + 150 };
 
   return { nos, nosVisiveis, arestas, limites };
 }
