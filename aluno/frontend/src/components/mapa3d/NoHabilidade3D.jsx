@@ -75,7 +75,7 @@ function geometriaDe(forma) {
 }
 
 /** Um ponto de interesse do mapa. Nunca renderiza `hab_id` nem código de
- * ontologia — só `no.nome`, que já é uma frase em português. */
+ * ontologia, nem a frase original da habilidade: só o rótulo curto. */
 export default function NoHabilidade3D({ no, selecionado, onClickHab }) {
   const arq = BIOMA_ARCHETYPES[no.biomaId];
   const tier = ESTADO_TIER[no.estado];
@@ -100,7 +100,10 @@ export default function NoHabilidade3D({ no, selecionado, onClickHab }) {
 
   if (!tier) return null; // `unknown` continua sendo massa bruta, sem objeto
 
-  const mostrarRotulo = (hover || selecionado) && tier.rotulo;
+  // Vislumbre (`interativo: false`) aparece no mundo como silhueta: dá para
+  // ver que há algo ali, não dá para entrar nem para ler o nome.
+  const interativo = no.interativo !== false;
+  const mostrarRotulo = (hover || selecionado) && tier.rotulo && interativo;
 
   return (
     <group position={no.position}>
@@ -118,19 +121,19 @@ export default function NoHabilidade3D({ no, selecionado, onClickHab }) {
       {/* Alvo de clique generoso: o objeto é pequeno, a área clicável não. */}
       <mesh
         position={[0, 8, 0]}
-        onClick={(e) => {
+        onClick={interativo ? (e) => {
           e.stopPropagation();
           onClickHab(no.hab_id);
-        }}
-        onPointerOver={(e) => {
+        } : undefined}
+        onPointerOver={interativo ? (e) => {
           e.stopPropagation();
           setHover(true);
           document.body.style.cursor = "pointer";
-        }}
-        onPointerOut={() => {
+        } : undefined}
+        onPointerOut={interativo ? () => {
           setHover(false);
           document.body.style.cursor = "auto";
-        }}
+        } : undefined}
       >
         <boxGeometry args={[17, 22, 17]} />
         <meshBasicMaterial transparent opacity={0} depthWrite={false} />
@@ -168,7 +171,7 @@ export default function NoHabilidade3D({ no, selecionado, onClickHab }) {
           maxWidth={44}
           textAlign="center"
         >
-          {no.nome.length > 42 ? `${no.nome.slice(0, 41)}…` : no.nome}
+          {no.rotulo}
         </Text>
       )}
     </group>

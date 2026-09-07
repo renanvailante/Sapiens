@@ -8,7 +8,7 @@ import {
   PartyPopper, Telescope,
 } from "lucide-react";
 import ReportarQuestao from "../components/ReportarQuestao";
-import { MapaMundo3D, BriefingHUD, GuiaMissoes } from "../components/mapa3d";
+import { MapaMundo3D, BriefingHUD, GuiaMissoes, aplicarProgressao } from "../components/mapa3d";
 import { ESTADO_LABEL } from "../components/mapa3d/sceneBuilder";
 
 // A aba Treino deixou de ser uma grade de 56 cartões — as mesmas 56
@@ -301,7 +301,7 @@ function PainelGerar({ habId, sparksPorQuestao }) {
 
 // ---------- Aprofundar com a Mentis (conceito sob demanda, cacheado) ----------
 
-function AprofundarConceito({ habId, habNome, custoConceito, onSparks }) {
+function AprofundarConceito({ habId, habNome, habRotulo, custoConceito, onSparks }) {
   const [estado, setEstado] = useState("idle");
   const [paragrafos, setParagrafos] = useState(null);
   const [cobrado, setCobrado] = useState(null);
@@ -334,7 +334,7 @@ function AprofundarConceito({ habId, habNome, custoConceito, onSparks }) {
       ) : (
         <>
           <p className="mt-1.5 text-sm text-zinc-600">
-            Peça à Mentis uma explicação mais profunda de {habNome.toLowerCase()}, com um exemplo do mundo real.
+            Peça à Mentis uma explicação mais profunda desta missão ({habRotulo}), com um exemplo do mundo real.
           </p>
           {erro && <div className="mt-2 text-xs text-rose-600">{erro}</div>}
           <button
@@ -363,7 +363,7 @@ function DesfechoMissao({ hab, resultado, novosPontos, custoPorQuestao, custoCon
         </div>
         <div className="mt-3 font-display text-xl font-extrabold text-zinc-950">Missão concluída</div>
         <div className="mt-1 text-sm text-zinc-500">
-          {ESTADO_LABEL[resultado.classificacao === "forte" ? "mastered" : "in_progress"]} em {hab.nome}
+          {ESTADO_LABEL[resultado.classificacao === "forte" ? "mastered" : "in_progress"]} em {hab.rotulo}
         </div>
         {resultado.sparksMissao > 0 && (
           <div className="mt-3 inline-flex items-center gap-1.5 text-sm font-bold text-amber-700 bg-amber-50 px-3 py-1.5 rounded-full">
@@ -383,12 +383,12 @@ function DesfechoMissao({ hab, resultado, novosPontos, custoPorQuestao, custoCon
             <div className="mt-2 font-display text-lg font-extrabold text-white">
               {novosPontos === 1 ? "Um novo ponto surgiu no mapa" : `${novosPontos} novos pontos surgiram no mapa`}
             </div>
-            <p className="mt-1 text-sm text-white/70">O território ao redor de {hab.nome.toLowerCase()} se revelou um pouco mais.</p>
+            <p className="mt-1 text-sm text-white/70">O território ao redor de {hab.rotulo} se revelou um pouco mais.</p>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <AprofundarConceito habId={hab.hab_id} habNome={hab.nome} custoConceito={custoConceito} onSparks={onSparks} />
+      <AprofundarConceito habId={hab.hab_id} habNome={hab.nome} habRotulo={hab.rotulo} custoConceito={custoConceito} onSparks={onSparks} />
 
       <PainelGerar habId={hab.hab_id} sparksPorQuestao={custoPorQuestao} />
 
@@ -432,14 +432,21 @@ export default function TreinoHabilidades() {
     api.get("/treino/precos").then(({ data }) => setCustoPorQuestao(data.custo_por_questao)).catch(() => {});
   }, []);
 
+  // Camada de progressão: o backend continua mandando as 56 habilidades com
+  // o estado de sempre; aqui se decide o que já está acessível, o que é só
+  // vislumbre e o que segue oculto. Nada de ontologia, id ou conteúdo muda.
+  const biomasVisiveis = useMemo(
+    () => (mapaData ? aplicarProgressao(mapaData.biomas, mapaData.arestas) : []),
+    [mapaData],
+  );
+
   const nodeIndex = useMemo(() => {
-    if (!mapaData) return {};
     const idx = {};
-    mapaData.biomas.forEach((bioma) => {
+    biomasVisiveis.forEach((bioma) => {
       bioma.nodes.forEach((n) => { idx[n.hab_id] = { ...n, bioma }; });
     });
     return idx;
-  }, [mapaData]);
+  }, [biomasVisiveis]);
 
   // Deep-link ?hab=HAB-03 (Motor Cognitivo) — abre o briefing direto quando o mapa carrega.
   useEffect(() => {
@@ -495,7 +502,7 @@ export default function TreinoHabilidades() {
     return (
       <div className="fixed inset-0 overflow-hidden" style={{ background: "#04070f" }}>
         <MapaMundo3D
-          biomas={mapaData.biomas}
+          biomas={biomasVisiveis}
           nodeIndex={nodeIndex}
           arestas={mapaData.arestas}
           onClickHab={abrirBriefing}
@@ -508,7 +515,7 @@ export default function TreinoHabilidades() {
         </div>
 
         <GuiaMissoes
-          biomas={mapaData.biomas}
+          biomas={biomasVisiveis}
           arestas={mapaData.arestas}
           focoAtual={briefingHab?.hab_id ?? focoLista}
           onFocar={setFocoLista}

@@ -1,116 +1,159 @@
 import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Compass, Lock, ChevronLeft, ChevronRight, Crosshair } from "lucide-react";
+import { Compass, ChevronLeft, ChevronRight, Crosshair } from "lucide-react";
 import { BIOMA_ARCHETYPES } from "./biomaArchetypes";
+import IconeMissao from "./IconeMissao";
+import { destravadaPor } from "./progressao";
 
-// Índice das missões, sobreposto ao mundo. Existe porque um continente
-// grande o bastante para valer a pena explorar é grande o bastante para se
-// perder dentro dele: o mapa continua sendo o assunto, e a lista é o sumário.
+// Trilha de missões, sobreposta ao mundo. Não é um menu de badges: é o mapa
+// da coleção — cada região é uma trilha, as missões aparecem na ordem em que
+// se abrem, ligadas por um trilho contínuo, e o que ainda não foi alcançado
+// aparece como silhueta sem nome.
 //
-// "Trancada" aqui é LEITURA, não trava: o backend nunca bloqueou nada (o
-// estado vem de distância no grafo, nunca de cadeado). O que a lista mostra
-// é a mesma regra que a paisagem já conta — uma rota de pré-requisito fica
-// interrompida no meio do caminho enquanto a habilidade de origem não estiver
-// dominada. Clicar numa missão trancada continua levando a câmera até ela.
+// Nunca exibe a frase original da habilidade nem o código interno: só o
+// rótulo curto e o sigilo (ver missoes.js / glifos.js).
 
-const ORDEM_ESTADO = { mastered: 0, in_progress: 1, available: 2, discovered: 3 };
+const ANEL_ESTADO = {
+  mastered: { anel: 1, preenchido: true },
+  in_progress: { anel: 0.75, preenchido: false },
+  available: { anel: 0.5, preenchido: false },
+};
 
-function classificar(biomas, arestas) {
-  const porId = {};
-  for (const bioma of biomas) {
-    for (const n of bioma.nodes) porId[n.hab_id] = { ...n, bioma };
-  }
-
-  // Pré-requisito ainda não dominado é o que tranca — a mesma condição que
-  // interrompe a rota no mundo 3D.
-  const dependencias = {};
-  for (const a of arestas) {
-    if (a.relation !== "prerequisito") continue;
-    const fonte = porId[a.source];
-    if (!fonte || fonte.estado === "mastered") continue;
-    (dependencias[a.target] ??= []).push(fonte);
-  }
-
-  const grupos = { andamento: [], disponiveis: [], trancadas: [] };
-  for (const no of Object.values(porId)) {
-    if (no.estado === "unknown") continue; // ainda não revelado no mapa
-    const presas = dependencias[no.hab_id];
-    if (presas?.length) grupos.trancadas.push({ ...no, presas });
-    else if (no.estado === "mastered" || no.estado === "in_progress") grupos.andamento.push(no);
-    else grupos.disponiveis.push(no);
-  }
-
-  const ordenar = (lista) =>
-    lista.sort(
-      (a, b) =>
-        (ORDEM_ESTADO[a.estado] ?? 9) - (ORDEM_ESTADO[b.estado] ?? 9) ||
-        a.nome.localeCompare(b.nome, "pt-BR"),
-    );
-  return {
-    andamento: ordenar(grupos.andamento),
-    disponiveis: ordenar(grupos.disponiveis),
-    trancadas: ordenar(grupos.trancadas),
-  };
+function Ladrilho({ no, cor, silhueta, selecionado }) {
+  const forca = ANEL_ESTADO[no.estado] ?? { anel: 0.28, preenchido: false };
+  return (
+    <span
+      className="relative shrink-0 grid place-items-center rounded-xl transition-colors"
+      style={{
+        width: 40,
+        height: 40,
+        background: silhueta ? "rgba(255,255,255,0.03)" : `${cor}14`,
+        border: `1px solid ${silhueta ? "rgba(255,255,255,0.08)" : `${cor}${selecionado ? "" : "55"}`}`,
+        boxShadow: silhueta ? "none" : `0 0 ${selecionado ? 22 : 12}px -6px ${cor}`,
+      }}
+    >
+      <IconeMissao
+        familia={no.familia}
+        variante={no.variante}
+        cor={silhueta ? "#8FA6C4" : cor}
+        opacidade={silhueta ? 0.32 : 0.55 + forca.anel * 0.45}
+        tamanho={22}
+      />
+      {no.estado === "mastered" && (
+        <span
+          className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full"
+          style={{ background: cor, boxShadow: `0 0 8px ${cor}` }}
+        />
+      )}
+    </span>
+  );
 }
 
-function Item({ no, focado, onFocar, trancada }) {
-  const cor = BIOMA_ARCHETYPES[no.bioma.bioma_id]?.paleta.brilho ?? "#4FD9FF";
+function Linha({ no, cor, primeiro, ultimo, selecionado, onFocar, dependencias }) {
+  const silhueta = no.acesso === "entrevisto";
   return (
     <button
       onClick={() => onFocar(no.hab_id)}
       data-testid={`guia-item-${no.hab_id}`}
-      className={`w-full text-left rounded-xl px-3 py-2.5 transition-colors border ${
-        focado ? "bg-white/12 border-white/25" : "bg-white/[0.04] border-transparent hover:bg-white/[0.09]"
+      className={`relative w-full text-left flex items-center gap-3 pl-6 pr-2 py-1.5 rounded-xl transition-colors ${
+        selecionado ? "bg-white/10" : "hover:bg-white/[0.06]"
       }`}
     >
-      <div className="flex items-start gap-2.5">
-        <span
-          className="mt-1.5 w-2 h-2 rounded-full shrink-0"
-          style={{ background: cor, boxShadow: trancada ? "none" : `0 0 10px ${cor}`, opacity: trancada ? 0.4 : 1 }}
-        />
-        <div className="min-w-0 flex-1">
-          <div className={`text-[13px] leading-snug ${trancada ? "text-white/45" : "text-white/90"}`}>
-            {no.nome}
-          </div>
-          <div className="mt-0.5 flex items-center gap-1.5 text-[10px] font-mono-alt uppercase tracking-wider text-white/35">
-            {no.bioma.nome}
-            {trancada && (
-              <>
-                <Lock className="w-2.5 h-2.5" />
-                {no.presas.some((p) => p.estado === "unknown")
-                  ? "depende do que ainda não foi descoberto"
-                  : `depende de ${no.presas[0].nome.toLowerCase()}`}
-              </>
-            )}
-          </div>
-        </div>
-      </div>
+      {/* Trilho: o fio que liga uma missão à seguinte dentro da região. */}
+      <span
+        className="absolute left-[13px] w-px"
+        style={{
+          top: primeiro ? "50%" : 0,
+          bottom: ultimo ? "50%" : 0,
+          background: silhueta
+            ? "repeating-linear-gradient(180deg, rgba(255,255,255,0.16) 0 3px, transparent 3px 7px)"
+            : `linear-gradient(180deg, ${cor}55, ${cor}22)`,
+        }}
+      />
+      <span
+        className="absolute left-[9px] w-2 h-2 rounded-full"
+        style={{ background: silhueta ? "rgba(255,255,255,0.2)" : cor, boxShadow: silhueta ? "none" : `0 0 8px ${cor}` }}
+      />
+
+      <Ladrilho no={no} cor={cor} silhueta={silhueta} selecionado={selecionado} />
+
+      <span className="min-w-0 flex-1">
+        <span className={`block text-[13px] leading-tight ${silhueta ? "text-white/35 italic" : "text-white/90"}`}>
+          {silhueta ? "não alcançado" : no.rotulo}
+        </span>
+        <span className="block mt-0.5 font-mono-alt text-[9.5px] uppercase tracking-[0.16em] text-white/35 truncate">
+          {silhueta
+            ? dependencias.length
+              ? `pratique ${dependencias[0].rotulo}`
+              : "adiante na trilha"
+            : no.estado === "mastered"
+              ? "dominada"
+              : no.estado === "in_progress"
+                ? "em progresso"
+                : "disponível"}
+        </span>
+      </span>
     </button>
   );
 }
 
-function Secao({ titulo, cor, itens, focoAtual, onFocar, trancada = false }) {
-  if (!itens.length) return null;
+function Regiao({ bioma, arestas, biomas, focoAtual, onFocar }) {
+  const cor = BIOMA_ARCHETYPES[bioma.bioma_id]?.paleta.brilho ?? "#4FD9FF";
+
+  // Ordem da trilha: o que já foi praticado primeiro, depois o que está
+  // aberto, e por último o que ainda é silhueta — a mesma ordem em que a
+  // região se abre para o aluno.
+  const ordem = { mastered: 0, in_progress: 1, available: 2, discovered: 3 };
+  const visiveis = useMemo(
+    () =>
+      bioma.nodes
+        .filter((n) => n.acesso !== "oculto")
+        .sort((a, b) => (ordem[a.estado] ?? 9) - (ordem[b.estado] ?? 9) || a.rotulo.localeCompare(b.rotulo, "pt-BR")),
+    [bioma.nodes], // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
+  if (!visiveis.length) return null;
+  const abertas = visiveis.filter((n) => n.acesso === "acessivel").length;
+
   return (
-    <div className="mb-4">
-      <div className="flex items-center gap-2 px-1 mb-1.5">
-        <span className="h-px flex-1" style={{ background: `linear-gradient(90deg, ${cor}, transparent)` }} />
-        <span className="font-mono-alt text-[10px] uppercase tracking-[0.24em]" style={{ color: cor }}>
-          {titulo} · {itens.length}
+    <section className="mb-5">
+      <header className="flex items-center gap-2 px-2 mb-1.5">
+        <span className="w-1.5 h-1.5 rounded-full" style={{ background: cor, boxShadow: `0 0 8px ${cor}` }} />
+        <span className="font-mono-alt text-[10px] uppercase tracking-[0.26em]" style={{ color: cor }}>
+          {bioma.nome}
         </span>
-      </div>
-      <div className="space-y-1">
-        {itens.map((no) => (
-          <Item key={no.hab_id} no={no} focado={focoAtual === no.hab_id} onFocar={onFocar} trancada={trancada} />
+        <span className="h-px flex-1" style={{ background: `linear-gradient(90deg, ${cor}44, transparent)` }} />
+        <span className="font-mono-alt text-[10px] text-white/30">
+          {abertas}/{bioma.nodes.length}
+        </span>
+      </header>
+
+      <div className="relative">
+        {visiveis.map((no, i) => (
+          <Linha
+            key={no.hab_id}
+            no={no}
+            cor={cor}
+            primeiro={i === 0}
+            ultimo={i === visiveis.length - 1}
+            selecionado={focoAtual === no.hab_id}
+            onFocar={onFocar}
+            dependencias={no.acesso === "entrevisto" ? destravadaPor(no.hab_id, biomas, arestas) : []}
+          />
         ))}
       </div>
-    </div>
+    </section>
   );
 }
 
 export default function GuiaMissoes({ biomas, arestas, focoAtual, onFocar, onLimparFoco }) {
   const [aberto, setAberto] = useState(() => typeof window === "undefined" || window.innerWidth >= 1024);
-  const grupos = useMemo(() => classificar(biomas, arestas), [biomas, arestas]);
+
+  const total = useMemo(() => biomas.reduce((acc, b) => acc + b.nodes.length, 0), [biomas]);
+  const abertas = useMemo(
+    () => biomas.reduce((acc, b) => acc + b.nodes.filter((n) => n.acesso === "acessivel").length, 0),
+    [biomas],
+  );
 
   return (
     <div className="absolute left-0 top-16 bottom-0 z-30 flex items-stretch pointer-events-none">
@@ -118,30 +161,50 @@ export default function GuiaMissoes({ biomas, arestas, focoAtual, onFocar, onLim
         {aberto && (
           <motion.aside
             key="guia"
-            initial={{ x: -340, opacity: 0 }}
+            initial={{ x: -360, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
-            exit={{ x: -340, opacity: 0 }}
+            exit={{ x: -360, opacity: 0 }}
             transition={{ type: "spring", damping: 26, stiffness: 240 }}
-            className="card-sapiens pointer-events-auto w-[320px] m-3 rounded-2xl flex flex-col overflow-hidden"
+            className="card-sapiens pointer-events-auto w-[330px] m-3 rounded-2xl flex flex-col overflow-hidden"
             data-testid="guia-missoes"
           >
-            <div className="px-4 pt-4 pb-3">
+            <div className="px-4 pt-4 pb-3 border-b border-white/[0.06]">
               <div className="font-mono-alt text-[10px] uppercase tracking-[0.3em] text-sapiens-accentDeep flex items-center gap-1.5">
-                <Compass className="w-3.5 h-3.5" /> Guia de missões
+                <Compass className="w-3.5 h-3.5" /> Trilhas
+              </div>
+              <div className="mt-1.5 flex items-baseline gap-2">
+                <span className="font-display text-2xl font-extrabold text-white leading-none">{abertas}</span>
+                <span className="text-[11px] text-white/40">de {total} territórios abertos</span>
+              </div>
+              <div className="mt-2 h-1 rounded-full bg-white/[0.07] overflow-hidden">
+                <div
+                  className="h-full rounded-full"
+                  style={{
+                    width: `${(abertas / Math.max(total, 1)) * 100}%`,
+                    background: "linear-gradient(90deg, #4FD9FF, #A45BFF)",
+                  }}
+                />
               </div>
               <button
                 onClick={onLimparFoco}
-                className="mt-2 inline-flex items-center gap-1.5 text-[11px] text-white/50 hover:text-white/85 transition-colors"
+                className="mt-2.5 inline-flex items-center gap-1.5 text-[11px] text-white/45 hover:text-white/85 transition-colors"
                 data-testid="guia-visao-geral"
               >
                 <Crosshair className="w-3 h-3" /> Ver o continente inteiro
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-3 pb-4">
-              <Secao titulo="Disponíveis" cor="#4FD9FF" itens={grupos.disponiveis} focoAtual={focoAtual} onFocar={onFocar} />
-              <Secao titulo="Em andamento" cor="#35E0D8" itens={grupos.andamento} focoAtual={focoAtual} onFocar={onFocar} />
-              <Secao titulo="Trancadas" cor="#A45BFF" itens={grupos.trancadas} focoAtual={focoAtual} onFocar={onFocar} trancada />
+            <div className="flex-1 overflow-y-auto px-2 py-3">
+              {biomas.map((bioma) => (
+                <Regiao
+                  key={bioma.bioma_id}
+                  bioma={bioma}
+                  biomas={biomas}
+                  arestas={arestas}
+                  focoAtual={focoAtual}
+                  onFocar={onFocar}
+                />
+              ))}
             </div>
           </motion.aside>
         )}
@@ -150,7 +213,7 @@ export default function GuiaMissoes({ biomas, arestas, focoAtual, onFocar, onLim
       <button
         onClick={() => setAberto((v) => !v)}
         className="pointer-events-auto self-start mt-3 -ml-1 h-11 w-7 rounded-r-xl bg-white/8 hover:bg-white/16 border border-l-0 border-white/12 text-white/70 flex items-center justify-center transition-colors"
-        aria-label={aberto ? "Recolher guia de missões" : "Abrir guia de missões"}
+        aria-label={aberto ? "Recolher trilhas" : "Abrir trilhas"}
         data-testid="guia-alternar"
       >
         {aberto ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}

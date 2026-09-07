@@ -2,7 +2,10 @@ import { motion } from "framer-motion";
 import { Telescope, ChevronRight } from "lucide-react";
 import { ESTADO_LABEL } from "./sceneBuilder";
 
-/** `Briefing` reestilizado como painel HUD ancorado — "expansão do mapa",
+/** Mostra o RÓTULO curto da missão, nunca a frase original da habilidade —
+ * essa continua sendo dado interno, sem tela que a exiba.
+ *
+ * `Briefing` reestilizado como painel HUD ancorado — "expansão do mapa",
  * não modal administrativo: sem cortina cobrindo o mundo 3D inteiro, só uma
  * vinheta de um lado (o escurecimento de verdade vem do dolly da câmera).
  * Mesmo contrato de props do `Briefing` anterior — a página não muda. */
@@ -31,7 +34,7 @@ export default function BriefingHUD({ hab, onFechar, onIniciar }) {
           <Telescope className="w-3.5 h-3.5" /> {bioma.nome}
         </div>
         <h2 className="mt-2 font-display text-2xl font-extrabold tracking-tight text-zinc-950">
-          Missão: {hab.nome}
+          Missão: {hab.rotulo}
         </h2>
         <p className="mt-3 text-sm leading-relaxed text-zinc-600 italic">{bioma.ideia}</p>
         <div className="mt-4 rounded-xl bg-sapiens-accentSoft/60 border border-sapiens-accent/20 px-4 py-3 text-sm text-zinc-700">

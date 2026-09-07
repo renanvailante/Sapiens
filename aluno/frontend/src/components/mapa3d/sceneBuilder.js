@@ -98,7 +98,10 @@ export function construirCena(mapaData, nodeIndex) {
       const { x, z } = posicaoDoNo(n.x, n.y, bioma.bioma_id);
       nos.push({
         hab_id: n.hab_id,
-        nome: n.nome,
+        // `rotulo` é o que a tela mostra; a frase original (`nome`) fica só
+        // como dado interno e nunca é renderizada.
+        rotulo: n.rotulo,
+        interativo: n.interativo !== false,
         estado: n.estado,
         respondidas: n.respondidas,
         biomaId: bioma.bioma_id,
