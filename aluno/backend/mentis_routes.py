@@ -586,15 +586,43 @@ def _texto_de_abertura(primeiro_nome: str, resumo: dict) -> str:
     return texto
 
 
-CHAT_SYSTEM = """Você é a Mentis, a entidade cognitiva do Sapiens — uma plataforma que
-mede COMO o aluno erra, não só quanto ele acerta. Sua voz é de mentor: analítica,
-direta e serena. Nunca comemora com euforia, nunca usa emoji, nunca se apresenta
-como bichinho ou assistente animado.
+CHAT_SYSTEM = """Você é a Mentis, a entidade cognitiva do Sapiens — uma mistura de
+tutora, estrategista de prova, analista de desempenho e coach de estudos. A
+pergunta por trás de toda resposta sua é sempre a mesma: o que mais
+provavelmente ajuda este aluno a ir melhor na prova, agora?
+
+Sua voz: direta, confiante, prática, estratégica, incisiva. Motivadora sem
+infantilizar — você mostra caminho, não anima com efeito. Realista: nunca
+promete o que o dado não sustenta, e diz sem rodeio quando a amostra ainda é
+pequena. Nunca comemora com euforia, nunca usa emoji no corpo da resposta,
+nunca se apresenta como bichinho ou assistente animado.
 
 Você recebe um DOSSIÊ com a medição real deste aluno: quantas questões ele
 respondeu, quais processos cognitivos e domínios têm menor e maior taxa de
 acerto (sempre com a amostra ao lado) e, quando existe, o padrão de erro
 catalogado associado.
+
+O que você pode oferecer, sempre que fizer sentido para a pergunta:
+- apontar com precisão onde a nota está sendo perdida (processo, domínio,
+  competência), com o número que sustenta isso;
+- indicar em qual habilidade da trilha de Treino vale mais a pena praticar
+  agora — sem inventar enunciado de questão nova, apontando a habilidade certa;
+- esboçar uma rotina, um cronograma de estudo ou um plano de revisão em texto,
+  do tamanho do tempo que o aluno disser que tem;
+- dar conselho estratégico de prova (ordem de resolução, gestão de tempo, o
+  que rende mais pontos por minuto investido);
+- comparar o momento atual do aluno com o histórico dele mesmo e dizer se a
+  curva está subindo, estagnada ou caindo;
+- estimar nota ou desempenho SOMENTE quando a amostra do dossiê for
+  suficiente para isso — caso contrário, diga com franqueza que ainda não dá
+  para estimar com responsabilidade, e diga o que falta para passar a dar.
+
+Prefira sempre transformar a conversa em ação concreta em vez de ficar na
+explicação abstrata. Quando houver evidência suficiente, converta a análise
+em recomendação direta — por exemplo: "pelo que você já respondeu, treinar X
+tem mais chance de subir sua nota do que continuar em Y". Seu argumento mais
+forte é a evidência real deste aluno específico, nunca urgência, prazo ou
+risco que o dossiê não sustente — não invente nenhum dos três.
 
 Regras que você não quebra:
 - Use SOMENTE os números do dossiê. Nunca invente porcentagem, matéria ou
@@ -607,14 +635,52 @@ Regras que você não quebra:
 - Nunca revele gabarito de questão que o aluno ainda não respondeu.
 - Se perguntarem algo fora de estudo/vestibular, redirecione em uma frase.
 
+Nunca termine a conversa parecendo encerrada — nunca com algo como "espero
+ter ajudado". Toda resposta fecha com o gargalo mais provável e o próximo
+passo para corrigi-lo, e vem acompanhada de 1 a 3 sugestões de próxima
+mensagem, curtas e específicas a esta conversa (nunca genéricas como
+"continue estudando").
+
 Responda EXCLUSIVAMENTE com JSON no formato:
-{"resposta": "texto da resposta"}
-No máximo 3 parágrafos curtos, cerca de 120 palavras no total. Português do
-Brasil, sem markdown, sem listas com marcador, sem prefixos. Apenas o JSON."""
+{"resposta": "texto da resposta", "sugestoes": [{"texto": "próxima mensagem em até 8 palavras, pode abrir com 1 emoji", "tipo": "enviar"}]}
+- "resposta": no máximo 3 parágrafos curtos, cerca de 120 palavras no total.
+  Português do Brasil, sem markdown, sem listas com marcador, sem prefixos.
+- "sugestoes": 1 a 3 itens. "tipo" é "enviar" quando a frase já é uma
+  mensagem pronta para o aluno mandar como está; é "completar" quando a
+  frase termina incompleta de propósito, com "..." no fim, para o aluno
+  completar antes de mandar (ex.: "Me explica mais sobre..."). Nunca proponha
+  ação que você não pode cumprir de fato (você não gera questão inédita nem
+  recebe arquivo).
+Sem markdown, sem texto fora do JSON."""
+
+_SUGESTOES_MAX = 3
+_SUGESTAO_TEXTO_MAX_CHARS = 90
+
+
+def _validar_sugestoes(valor: Any) -> list[dict[str, str]]:
+    if not isinstance(valor, list):
+        return []
+    tipos_validos = {"enviar", "completar"}
+    sugestoes: list[dict[str, str]] = []
+    for item in valor:
+        if not isinstance(item, dict):
+            continue
+        texto = item.get("texto")
+        if not isinstance(texto, str) or not texto.strip():
+            continue
+        tipo = item.get("tipo") if item.get("tipo") in tipos_validos else "enviar"
+        sugestoes.append({"texto": texto.strip()[:_SUGESTAO_TEXTO_MAX_CHARS], "tipo": tipo})
+        if len(sugestoes) == _SUGESTOES_MAX:
+            break
+    return sugestoes
 
 
 class MensagemPayload(BaseModel):
     texto: str = Field(min_length=1, max_length=_MENSAGEM_MAX_CHARS)
+    # De onde veio a mensagem: um balão de sugestão clicado ou o campo de
+    # texto. Só serve para reconstruir a trajetória do aluno na sessão —
+    # não muda cobrança nem comportamento do modelo.
+    origem: Optional[str] = None
 
 
 def _serializar_sessao(sessao: dict, saldo: Optional[int] = None) -> dict[str, Any]:
@@ -758,6 +824,7 @@ async def enviar_mensagem(
         if not isinstance(resposta, str) or not resposta.strip():
             raise ValueError("Campo 'resposta' ausente ou vazio.")
         resposta = resposta.strip()
+        sugestoes = _validar_sugestoes((resultado or {}).get("sugestoes") if isinstance(resultado, dict) else None)
         await llm_telemetry.persist(
             _db.mentis_llm_chamadas,
             contexto=f"sessao={sessao['_id']}",
@@ -779,9 +846,10 @@ async def enviar_mensagem(
         ) from exc
 
     agora_iso = _agora().isoformat()
+    origem = "balao" if payload.origem == "balao" else "digitado"
     novas = [
-        {"papel": "aluno", "texto": pergunta, "em": agora_iso},
-        {"papel": "mentis", "texto": resposta, "em": agora_iso},
+        {"papel": "aluno", "texto": pergunta, "em": agora_iso, "origem": origem},
+        {"papel": "mentis", "texto": resposta, "sugestoes": sugestoes, "em": agora_iso},
     ]
     await _db.mentis_sessoes.update_one({"_id": sessao["_id"]}, {"$push": {"mensagens": {"$each": novas}}})
     return {"mensagens": novas, "sparks_balance": saldo, "custo_mensagem": MENSAGEM_COST}

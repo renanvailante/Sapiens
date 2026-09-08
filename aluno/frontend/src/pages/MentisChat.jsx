@@ -24,6 +24,44 @@ const CUSTO_SESSAO_PADRAO = 70;
 const CUSTO_MENSAGEM_PADRAO = 10;
 const MAX_CHARS = 600;
 
+// Balões de abertura: sempre os mesmos, sempre visíveis assim que a sessão
+// abre. Fixos de propósito — não dependem do modelo, então não custam Sparks
+// nem tokens extras só para existir.
+const BALOES_INICIAIS = [
+  { texto: "📈 Quero descobrir o que mais pode aumentar minha nota", tipo: "enviar" },
+  { texto: "💡 Tenho uma dúvida, mas não sei nem por onde começar", tipo: "enviar" },
+  { texto: "🧩 Crie 5 questões para eu descobrir onde estou errando", tipo: "enviar" },
+  { texto: "🎯 Monte um treino só para mim", tipo: "enviar" },
+  { texto: "🔥 Me desafie com algo que eu provavelmente erraria", tipo: "enviar" },
+  { texto: "🔍 Veja o que está impedindo minha evolução", tipo: "enviar" },
+];
+
+/** Fileira de balões clicáveis. "enviar" manda a mensagem na hora, pelo
+ *  mesmo fluxo (e custo) de digitar e apertar enviar. "completar" só
+ *  preenche o campo, para o aluno terminar antes de mandar. */
+function Baloes({ itens, aoClicar, enviando, semSaldo }) {
+  if (!itens || itens.length === 0) return null;
+  return (
+    <div className="flex flex-wrap gap-2 pt-1" data-testid="mentis-baloes">
+      {itens.map((b, i) => {
+        const bloqueado = enviando || (b.tipo !== "completar" && semSaldo);
+        return (
+          <button
+            key={`${b.texto}-${i}`}
+            type="button"
+            onClick={() => aoClicar(b)}
+            disabled={bloqueado}
+            className="rounded-full border border-white/15 bg-white/5 px-3.5 py-2 text-left text-xs text-white/80 transition hover:border-white/25 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+            data-testid="mentis-balao"
+          >
+            {b.texto}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function formatarExpiracao(iso) {
   if (!iso) return null;
   const restante = new Date(iso).getTime() - Date.now();
@@ -194,6 +232,7 @@ export default function MentisChat() {
   const [erro, setErro] = useState(null);
   const [saldo, setSaldo] = useState(null);
   const fimRef = useRef(null);
+  const inputRef = useRef(null);
 
   const custoSessao = sessao?.custo_sessao ?? CUSTO_SESSAO_PADRAO;
   const custoMensagem = sessao?.custo_mensagem ?? CUSTO_MENSAGEM_PADRAO;
@@ -231,9 +270,7 @@ export default function MentisChat() {
     }
   };
 
-  const enviar = async (e) => {
-    e?.preventDefault();
-    const pergunta = texto.trim();
+  const enviarMensagem = async (pergunta, origem) => {
     if (!pergunta || enviando) return;
     if (saldo != null && saldo < custoMensagem) return;
 
@@ -245,7 +282,7 @@ export default function MentisChat() {
     setSessao((s) => ({ ...s, mensagens: [...(s.mensagens || []), provisoria] }));
     setTexto("");
     try {
-      const { data } = await api.post("/mentis/sessao/mensagem", { texto: pergunta });
+      const { data } = await api.post("/mentis/sessao/mensagem", { texto: pergunta, origem });
       setSessao((s) => ({
         ...s,
         mensagens: [...(s.mensagens || []).filter((m) => !m.provisoria), ...data.mensagens],
@@ -260,6 +297,25 @@ export default function MentisChat() {
     } finally {
       setEnviando(false);
     }
+  };
+
+  const enviar = (e) => {
+    e?.preventDefault();
+    enviarMensagem(texto.trim(), "digitado");
+  };
+
+  // Balão "enviar": manda na hora, como se o aluno tivesse digitado — mesmo
+  // fluxo, mesma cobrança. Balão "completar": só preenche o campo, com o
+  // "..." final removido, e devolve o foco para o aluno terminar a frase.
+  const clicarBalao = (balao) => {
+    if (enviando) return;
+    if (balao.tipo === "completar") {
+      const base = balao.texto.replace(/\.{3}\s*$/, "").trimEnd();
+      setTexto(`${base} `);
+      inputRef.current?.focus();
+      return;
+    }
+    enviarMensagem(balao.texto, "balao");
   };
 
   if (carregando) {
@@ -293,6 +349,17 @@ export default function MentisChat() {
   }
 
   const semSaldoMensagem = saldo != null && saldo < custoMensagem;
+
+  // Balões a mostrar agora: os fixos de abertura enquanto só existe a
+  // mensagem de boas-vindas, ou os contextuais que vieram junto da última
+  // resposta da Mentis. Nunca os dois ao mesmo tempo, nunca durante o envio.
+  const ultimaMsg = mensagens[mensagens.length - 1];
+  const mostrarBaloesIniciais = mensagens.length <= 1 && !enviando;
+  const baloesContextuais =
+    !mostrarBaloesIniciais && !enviando && ultimaMsg?.papel === "mentis" && !ultimaMsg.provisoria
+      ? ultimaMsg.sugestoes || []
+      : [];
+  const baloesAtuais = mostrarBaloesIniciais ? BALOES_INICIAIS : baloesContextuais;
 
   return (
     <div className="min-h-screen">
@@ -345,6 +412,14 @@ export default function MentisChat() {
                   </div>
                 </div>
               )}
+              {baloesAtuais.length > 0 && (
+                <Baloes
+                  itens={baloesAtuais}
+                  aoClicar={clicarBalao}
+                  enviando={enviando}
+                  semSaldo={semSaldoMensagem}
+                />
+              )}
               <div ref={fimRef} />
             </div>
 
@@ -358,6 +433,7 @@ export default function MentisChat() {
             <form onSubmit={enviar} className="border-t border-white/10 p-3 md:p-4">
               <div className="flex items-end gap-2">
                 <textarea
+                  ref={inputRef}
                   value={texto}
                   onChange={(e) => setTexto(e.target.value.slice(0, MAX_CHARS))}
                   onKeyDown={(e) => {
