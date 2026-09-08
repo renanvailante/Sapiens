@@ -15,7 +15,9 @@ const AZIMUTE_PADRAO = 0.62;
 export default function CameraRig({ focoPosicao, raioMundo }) {
   const ref = useRef();
   const montouRef = useRef(false);
-  const distanciaPadrao = Math.max(80, raioMundo * 1.7);
+  // A vista de abertura enquadra o arquipélago, não o vazio em volta dele:
+  // a 1.7× as ilhas viravam manchinhas no meio da tela.
+  const distanciaPadrao = Math.max(80, raioMundo * 1.5);
 
   useEffect(() => {
     const controles = ref.current;
@@ -31,7 +33,7 @@ export default function CameraRig({ focoPosicao, raioMundo }) {
       const [fx, fy, fz] = focoPosicao;
       // Pula direto no primeiro foco (deep-link `?hab=`, onde o painel já
       // abre junto) — só anima nas trocas seguintes.
-      controles.setLookAt(fx + 46, fy + 40, fz + 54, fx, fy + 6, fz, montouRef.current);
+      controles.setLookAt(fx + 205, fy + 200, fz + 250, fx, fy + 18, fz, montouRef.current);
     } else if (montouRef.current) {
       controles.rotateTo(AZIMUTE_PADRAO, POLAR_PADRAO, true);
       controles.dollyTo(distanciaPadrao, true);

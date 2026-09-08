@@ -124,7 +124,7 @@ export default function MapaMundo3D({ biomas, nodeIndex, arestas, onClickHab, fo
         <color attach="background" args={[COR_ABISMO]} />
         {/* Névoa densa: as ilhas distantes se dissolvem, e o mundo passa a
             parecer maior do que o pedaço que cabe na tela. */}
-        <fogExp2 attach="fog" args={["#0B1938", 0.3 / raio]} />
+        <fogExp2 attach="fog" args={["#13244A", 0.16 / raio]} />
 
         <hemisphereLight args={["#8FB0F0", "#0A1024", 0.7]} />
         <ambientLight intensity={0.42} />

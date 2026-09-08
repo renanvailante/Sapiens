@@ -79,10 +79,13 @@ export function aplicarProgressao(biomas, arestas) {
 
   const traduzir = (n) => {
     const missao = missaoDe(n.hab_id);
+    // `estadoBackend` preserva o que o servidor disse: a camada de
+    // apresentação reescreve `estado`, e sem isto não dá para saber se o
+    // mundo inteiro já foi dominado.
+    const base = { ...n, ...missao, estadoBackend: n.estado };
     if (acessiveis.has(n.hab_id)) {
       return {
-        ...n,
-        ...missao,
+        ...base,
         acesso: "acessivel",
         interativo: true,
         // Quem já praticou mantém o próprio estado; o resto entra como
@@ -91,9 +94,9 @@ export function aplicarProgressao(biomas, arestas) {
       };
     }
     if (entrevistos.has(n.hab_id)) {
-      return { ...n, ...missao, acesso: "entrevisto", interativo: false, estado: "discovered" };
+      return { ...base, acesso: "entrevisto", interativo: false, estado: "discovered" };
     }
-    return { ...n, ...missao, acesso: "oculto", interativo: false, estado: "unknown" };
+    return { ...base, acesso: "oculto", interativo: false, estado: "unknown" };
   };
 
   return biomas.map((bioma) => ({ ...bioma, nodes: bioma.nodes.map(traduzir) }));

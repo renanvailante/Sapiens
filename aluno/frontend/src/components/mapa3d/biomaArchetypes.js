@@ -11,10 +11,16 @@
 // turquesa, azul, índigo e violeta — frio e elétrico, longe do
 // verde/vermelho/âmbar que no resto do app significam acerto, erro e aviso.
 export const BIOMA_ARCHETYPES = {
+  // Não é um bioma: é o santuário no centro do mundo. Entra aqui só para
+  // emprestar paleta ao renderizador, e nunca aparece em BIOMA_IDS.
+  templo: {
+    paleta: { claro: "#D8CDEE", medio: "#8E82B8", escuro: "#463E6E", brilho: "#C77DFF" },
+    nivelBase: 0, nivelVariacao: 0, landmark: "portico", formaNo: "cubo", vegetacao: "pampas", raioIlha: 40,
+  },
   perceber: {
     // Cerrado — campo aberto, horizonte largo, rocha exposta, vegetação baixa.
     // A ilha de entrada: baixa, ampla, com muito vazio entre as coisas.
-    paleta: { claro: "#7FD8F5", medio: "#2E7FA8", escuro: "#0F3449", brilho: "#4FD9FF" },
+    paleta: { claro: "#E8F4FA", medio: "#9FBACB", escuro: "#4E6577", brilho: "#4FD9FF" },
     nivelBase: 0,
     nivelVariacao: 1,
     landmark: "mirante",
@@ -24,7 +30,7 @@ export const BIOMA_ARCHETYPES = {
   },
   relacionar: {
     // Mata Atlântica — mata fechada, rios, caminhos que se cruzam.
-    paleta: { claro: "#6FE0D2", medio: "#1F8C82", escuro: "#0A3B38", brilho: "#35E0D8" },
+    paleta: { claro: "#CFEBD8", medio: "#6FB98A", escuro: "#2E5F49", brilho: "#35E0D8" },
     nivelBase: 3,
     nivelVariacao: 2,
     landmark: "passarelas",
@@ -34,7 +40,7 @@ export const BIOMA_ARCHETYPES = {
   },
   representar: {
     // Caatinga — geometria árida, pedra, cristal, contraste duro.
-    paleta: { claro: "#7FA6F0", medio: "#2F55A8", escuro: "#111F4E", brilho: "#4A85E3" },
+    paleta: { claro: "#DDE6F5", medio: "#93A7C8", escuro: "#44567A", brilho: "#4A85E3" },
     nivelBase: 6,
     nivelVariacao: 2,
     landmark: "cristal",
@@ -44,7 +50,7 @@ export const BIOMA_ARCHETYPES = {
   },
   investigar: {
     // Amazônia — floresta profunda com torres/observatórios emergindo dela.
-    paleta: { claro: "#9A93F5", medio: "#4A3FB0", escuro: "#181350", brilho: "#7C6BFF" },
+    paleta: { claro: "#D6D4F2", medio: "#9A96D0", escuro: "#4A4685", brilho: "#7C6BFF" },
     nivelBase: 10,
     nivelVariacao: 2,
     landmark: "observatorio",
@@ -54,7 +60,7 @@ export const BIOMA_ARCHETYPES = {
   },
   integrar: {
     // Pantanal — água, ilhotas, canais, estruturas horizontais conectadas.
-    paleta: { claro: "#C293F5", medio: "#6C34B0", escuro: "#260F50", brilho: "#A45BFF" },
+    paleta: { claro: "#E4D2F5", medio: "#A98BD0", escuro: "#573E7F", brilho: "#A45BFF" },
     nivelBase: 1,
     nivelVariacao: 1,
     landmark: "delta",
@@ -64,7 +70,7 @@ export const BIOMA_ARCHETYPES = {
   },
   decidir: {
     // Pampas — planalto aberto, quase vazio, com estrutura monumental.
-    paleta: { claro: "#F09AE4", medio: "#A82F98", escuro: "#400C3B", brilho: "#E45BD8" },
+    paleta: { claro: "#F7D7F0", medio: "#C784B8", escuro: "#6B3A61", brilho: "#E45BD8" },
     nivelBase: 14,
     nivelVariacao: 1,
     landmark: "monumento",

@@ -15,11 +15,13 @@ const MATERIAL_POR_TOM = {
   claro: { roughness: 0.6, metalness: 0.05, emissiva: 0, sombra: true },
   medio: { roughness: 0.72, metalness: 0.06, emissiva: 0, sombra: true },
   escuro: { roughness: 0.86, metalness: 0.03, emissiva: 0, sombra: true },
-  brilho: { roughness: 0.32, metalness: 0, emissiva: 2.2, sombra: false },
+  brilho: { roughness: 0.32, metalness: 0, emissiva: 1.25, sombra: false },
   brilhoFraco: { roughness: 0.45, metalness: 0, emissiva: 0.55, sombra: false },
   // Lâmina d'água do Pantanal: superfície, não volume — reflete a luz da
   // ilha e deixa a estrutura submersa aparecer por baixo.
   agua: { roughness: 0.14, metalness: 0.45, emissiva: 0.55, sombra: false, opacidade: 0.72 },
+  // Santuário ainda selado: pedra morta, sem luz nenhuma.
+  travado: { roughness: 0.95, metalness: 0.02, emissiva: 0, sombra: true, corFixa: "#343A46" },
   // Névoa do que só foi percebido: encobre a silhueta sem apagá-la.
   nevoa: { roughness: 1, metalness: 0, emissiva: 0.12, sombra: false, opacidade: 0.22, corFixa: "#9FC0E8" },
 };

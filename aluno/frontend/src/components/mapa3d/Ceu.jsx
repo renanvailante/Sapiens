@@ -98,16 +98,23 @@ export function Aves({ ancoras }) {
   const ref = useRef();
 
   const { revoadas, total } = useMemo(() => {
-    const lista = ancoras.slice(0, 5).map((a, i) => {
+    // Revoadas sobre as regiões MAIS revoadas soltas cruzando o vazio: o céu
+    // precisa ter movimento em qualquer direção que o aluno olhe.
+    const pontos = [...ancoras, ...ancoras.map((a, i) => ({
+      x: a.x * 0.35 + (hash01(`vagante:${i}:x`) - 0.5) * 2600,
+      z: a.z * 0.35 + (hash01(`vagante:${i}:z`) - 0.5) * 2600,
+      y: a.y + 240,
+    }))];
+    const lista = pontos.map((a, i) => {
       const g = (k) => hash01(`revoada:${i}:${k}`);
       return {
         cx: a.x + (g("x") - 0.5) * 260,
         cz: a.z + (g("z") - 0.5) * 260,
         cy: a.y + 150 + g("y") * 220,
-        raio: 150 + g("r") * 190,
+        raio: 260 + g("r") * 460,
         velocidade: 0.07 + g("v") * 0.06,
         fase: g("f") * Math.PI * 2,
-        aves: 5 + Math.floor(g("n") * 4),
+        aves: 6 + Math.floor(g("n") * 5),
       };
     });
     return { revoadas: lista, total: lista.reduce((acc, r) => acc + r.aves, 0) };
@@ -146,8 +153,8 @@ export function Aves({ ancoras }) {
         euler.set(Math.sin(t * 2.4 + k) * 0.12, -a + Math.PI / 2, 0, "YXZ");
         q.setFromEuler(euler);
         // A batida de asa é a variação da envergadura, não uma animação nova.
-        const envergadura = 15 + Math.sin(t * 5.5 + k * 1.3) * 5;
-        e.set(envergadura, 2.2, 5.5);
+        const envergadura = 24 + Math.sin(t * 5.5 + k * 1.3) * 9;
+        e.set(envergadura, 4.5, 10);
         m.compose(p, q, e);
         malha.setMatrixAt(i, m);
         i += 1;
@@ -160,8 +167,8 @@ export function Aves({ ancoras }) {
 
   return (
     <instancedMesh ref={ref} args={[undefined, undefined, total]} frustumCulled={false}>
-      <coneGeometry args={[0.5, 1, 4]} />
-      <meshStandardMaterial color={COR_AVE} roughness={0.7} emissive={COR_AVE} emissiveIntensity={0.12} flatShading />
+      <octahedronGeometry args={[0.5, 0]} />
+      <meshStandardMaterial color={COR_AVE} roughness={0.7} emissive={COR_AVE} emissiveIntensity={0.06} flatShading />
     </instancedMesh>
   );
 }

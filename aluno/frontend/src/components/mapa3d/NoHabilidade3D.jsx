@@ -93,7 +93,7 @@ export default function NoHabilidade3D({ no, selecionado, onClickHab }) {
     // ESCALA_NO: o objeto precisa ser legível na vista do arquipélago
     // inteiro — no tamanho "real" de mobiliário ele sumiria no telhado do
     // próprio quarteirão.
-    obj.scale.setScalar(11 * (tier?.escala ?? 1) * pulso * destaque);
+    obj.scale.setScalar(15 * (tier?.escala ?? 1) * pulso * destaque);
     obj.rotation.y = giroBase + (selecionado ? t * 0.35 : t * 0.06);
     obj.position.y = selecionado ? 1.2 + Math.sin(t * 1.6) * 0.6 : 0;
   });
@@ -120,7 +120,7 @@ export default function NoHabilidade3D({ no, selecionado, onClickHab }) {
 
       {/* Alvo de clique generoso: o objeto é pequeno, a área clicável não. */}
       <mesh
-        position={[0, 8, 0]}
+        position={[0, 18, 0]}
         onClick={interativo ? (e) => {
           e.stopPropagation();
           onClickHab(no.hab_id);
@@ -135,14 +135,29 @@ export default function NoHabilidade3D({ no, selecionado, onClickHab }) {
           document.body.style.cursor = "auto";
         } : undefined}
       >
-        <boxGeometry args={[17, 22, 17]} />
+        <boxGeometry args={[46, 60, 46]} />
         <meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </mesh>
+
+      {/* Orbe: a esfera acesa que coroa cada ponto — é ela que se enxerga de
+          longe e o que dá volume ao alvo de clique. */}
+      {interativo && (
+        <mesh position={[0, 21, 0]}>
+          <icosahedronGeometry args={[6.5, 1]} />
+          <meshStandardMaterial
+            color={arq.paleta.brilho}
+            emissive={arq.paleta.brilho}
+            emissiveIntensity={tier.emissiva * 1.6 + 0.5}
+            roughness={0.25}
+            flatShading
+          />
+        </mesh>
+      )}
 
       {selecionado && (
         <>
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.04, 0]}>
-            <ringGeometry args={[9, 10.4, 56]} />
+            <ringGeometry args={[15, 17, 56]} />
             <meshBasicMaterial color={arq.paleta.brilho} transparent opacity={0.75} />
           </mesh>
           <mesh position={[0, 95, 0]}>
@@ -161,8 +176,8 @@ export default function NoHabilidade3D({ no, selecionado, onClickHab }) {
 
       {mostrarRotulo && (
         <Text
-          position={[0, 24, 0]}
-          fontSize={2.1}
+          position={[0, 40, 0]}
+          fontSize={4.2}
           color="#EEF6FF"
           anchorX="center"
           anchorY="bottom"

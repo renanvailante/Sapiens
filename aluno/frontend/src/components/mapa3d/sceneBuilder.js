@@ -144,5 +144,8 @@ export function construirCena(mapaData, nodeIndex) {
   for (const n of nos) raio = Math.max(raio, Math.hypot(n.position[0], n.position[2]));
   const limites = { raio: raio + 420 };
 
-  return { nos, nosVisiveis, arestas, limites };
+  // Todas as 56 dominadas? É o que destrava o santuário central.
+  const completo = nos.length > 0 && nos.every((n) => (n.estadoBackend ?? n.estado) === "mastered");
+
+  return { nos, nosVisiveis, arestas, limites, completo };
 }

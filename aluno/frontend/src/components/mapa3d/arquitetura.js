@@ -750,10 +750,71 @@ function gerarSerraGemea(pecas) {
   }
 }
 
+
+// ----------------------------------------------------------- templo central
+
+/** O santuário no meio do mundo, flutuando sobre o vazio — nunca encostado
+ * na terra. Fica SELADO (pedra cinza, sem luz nenhuma) enquanto houver
+ * missão por dominar, e acende quando as 56 caem. Não é bioma, não é missão
+ * e não é clicável: é o que o mundo inteiro está apontando.
+ *
+ * Desenhado numa escala de referência e ampliado, como os demais marcos. */
+function gerarTemploCentral(pecas, completo) {
+  const l = [];
+  const b = "templo";
+  const y = 0;
+  // Selado: tudo vira pedra morta. Aberto: pedra clara com luz violeta.
+  const T = completo
+    ? { massa: "escuro", corpo: "medio", face: "claro", luz: "brilho", halo: "brilhoFraco" }
+    : { massa: "travado", corpo: "travado", face: "travado", luz: "travado", halo: "travado" };
+
+  // Rochedo facetado que sustenta o santuário e termina em ponta no vazio.
+  cone(l, b, T.massa, 0, y, 0, 78, 62, Math.PI);
+  for (let k = 0; k < 7; k++) {
+    const ang = (k / 7) * Math.PI * 2;
+    pedra(l, b, T.massa, Math.cos(ang) * 26, y - 10, Math.sin(ang) * 26, 30, 20, 26, ang, 0.3);
+  }
+  cilindro(l, b, T.corpo, 0, y - 2, 0, 62, 4);
+
+  // Templo: plataforma escalonada, colunata, frontão e o símbolo aceso.
+  for (let i = 0; i < 3; i++) cilindro(l, b, T.corpo, 0, y + 2 + i * 2, 0, 34 - i * 5, 2);
+  for (let i = 0; i < 6; i++) {
+    const px = -10 + i * 4;
+    cilindro(l, b, T.face, px, y + 8, -6, 2.2, 14);
+    cilindro(l, b, T.face, px, y + 8, 6, 2.2, 14);
+  }
+  caixa(l, b, T.face, 0, y + 22, 0, 26, 2.4, 18);
+  cone(l, b, T.face, 0, y + 24.4, 0, 26, 9, 0);
+  caixa(l, b, T.luz, 0, y + 9, 0, 7, 9, 1.2);
+
+  // Coroa de agulhas com esfera acesa no alto — a assinatura da referência.
+  for (let k = 0; k < 9; k++) {
+    const ang = (k / 9) * Math.PI * 2 + 0.25;
+    const r = 24 + (k % 3) * 4;
+    const h = 16 + (k % 4) * 7;
+    const px = Math.cos(ang) * r;
+    const pz = Math.sin(ang) * r;
+    cilindro(l, b, T.corpo, px, y + 2, pz, 5.5, h);
+    cone(l, b, T.face, px, y + 2 + h, pz, 6.5, 7);
+    pedra(l, b, T.luz, px, y + 2 + h + 10, pz, 4.4, 4.4, 4.4);
+  }
+
+  // Anéis de luz orbitando o rochedo.
+  for (const [raioAnel, inclina] of [[46, 0.16], [54, -0.22], [62, 0.08]]) {
+    anel(l, b, T.halo, 0, y - 6, 0, raioAnel * 2, -Math.PI / 2 + inclina);
+  }
+
+  // Alto o bastante para pairar sobre tudo, no centro exato do arquipélago.
+  let alturaMax = 0;
+  for (const id of CENA.BIOMA_IDS) alturaMax = Math.max(alturaMax, CENA.alturaIlha(id));
+  ampliar(pecas, l, 0, 0, 0, 6);
+  for (const p of pecas.slice(pecas.length - l.length)) p.pos[1] += alturaMax + 620;
+}
+
 // ---------------------------------------------------------------------- API
 
 /** Monta o continente inteiro a partir da cena. */
-export function construirCidade({ nos, arestas }) {
+export function construirCidade({ nos, arestas, completo }) {
   const pecas = [];
   const porBioma = {};
   for (const no of nos) (porBioma[no.biomaId] ??= []).push(no);
@@ -769,6 +830,7 @@ export function construirCidade({ nos, arestas }) {
     gerarLandmark(id, pecas);
   }
   gerarSerraGemea(pecas);
+  gerarTemploCentral(pecas, Boolean(completo));
   for (const no of nos) gerarQuarteirao(no, pecas);
   for (const a of arestas) gerarRota(a, pecas);
 
