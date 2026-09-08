@@ -6,7 +6,7 @@ import Nav from "../components/Nav";
 import OnboardingTour from "../components/OnboardingTour";
 import AulasParticularesModal from "../components/AulasParticularesModal";
 import Mentis from "../components/Mentis";
-import { ArrowRight, Sparkles, Flame, Zap, Target, Network, Trophy, ListChecks, Medal, Award, CheckCircle2, GraduationCap, CloudOff, RotateCw } from "lucide-react";
+import { ArrowRight, Sparkles, Flame, Zap, Target, Network, Trophy, ListChecks, Medal, Award, CheckCircle2, GraduationCap, CloudOff, RotateCw, Star, Rocket, Crown, Gem, Layers, CalendarDays, TrendingUp, BookOpen, Compass, Flag } from "lucide-react";
 import { useAuth } from "../lib/auth";
 
 // ---------------- Streak / progresso semanal ----------------
@@ -62,15 +62,29 @@ function computeWeek(dates) {
 const WEEKDAY_LABEL = ["D", "S", "T", "Q", "Q", "S", "S"];
 
 // ---------------- Conquistas ----------------
-// Só 5, deliberadamente (o brief pede "poucas conquistas significativas") —
-// cada uma computada de dados que já existem, nunca de um contador à parte
+// Cada uma computada de dados que já existem, nunca de um contador à parte
 // que poderia divergir do real.
 const ACHIEVEMENTS = [
+  { id: "10q", icon: CheckCircle2, label: "10 questões", check: (ctx) => ctx.totalRespondidas >= 10 },
   { id: "100q", icon: ListChecks, label: "100 questões", check: (ctx) => ctx.totalRespondidas >= 100 },
+  { id: "250q", icon: Layers, label: "250 questões", check: (ctx) => ctx.totalRespondidas >= 250 },
+  { id: "500q", icon: BookOpen, label: "500 questões", check: (ctx) => ctx.totalRespondidas >= 500 },
+  { id: "1000q", icon: Crown, label: "1000 questões", check: (ctx) => ctx.totalRespondidas >= 1000 },
+  { id: "streak3", icon: Flame, label: "3 dias seguidos", check: (ctx) => ctx.streak >= 3 },
   { id: "streak7", icon: Flame, label: "7 dias seguidos", check: (ctx) => ctx.streak >= 7 },
+  { id: "streak14", icon: Rocket, label: "14 dias seguidos", check: (ctx) => ctx.streak >= 14 },
+  { id: "streak30", icon: Star, label: "30 dias seguidos", check: (ctx) => ctx.streak >= 30 },
+  { id: "streak60", icon: Gem, label: "60 dias seguidos", check: (ctx) => ctx.streak >= 60 },
+  { id: "semanaPerfeita", icon: CalendarDays, label: "Semana perfeita", check: (ctx) => ctx.weekActiveDays >= 7 },
+  { id: "mastery60", icon: Compass, label: "1º domínio > 60%", check: (ctx) => ctx.hubs.some((h) => (h.mastery || 0) > 60) },
   { id: "mastery80", icon: Medal, label: "1º domínio > 80%", check: (ctx) => ctx.hubs.some((h) => (h.mastery || 0) > 80) },
   { id: "mastery90", icon: Award, label: "90% em um tópico", check: (ctx) => ctx.hubs.some((h) => (h.mastery || 0) >= 90) },
+  { id: "dominioTotal", icon: TrendingUp, label: "Domínio > 80% em 3 frentes", check: (ctx) => ctx.hubs.filter((h) => (h.mastery || 0) > 80).length >= 3 },
   { id: "firstExam", icon: Trophy, label: "1º simulado completo", check: (ctx) => ctx.analyses.length >= 1 },
+  { id: "exam3", icon: Flag, label: "3 simulados completos", check: (ctx) => ctx.analyses.length >= 3 },
+  { id: "exam10", icon: GraduationCap, label: "10 simulados completos", check: (ctx) => ctx.analyses.length >= 10 },
+  { id: "rounds10", icon: Target, label: "10 rodadas de treino", check: (ctx) => ctx.rounds.length >= 10 },
+  { id: "rounds50", icon: Network, label: "50 rodadas de treino", check: (ctx) => ctx.rounds.length >= 50 },
 ];
 
 // `by_area` (do fluxo de gabarito/Analysis) usa códigos ENEM curtos; o filtro
@@ -187,7 +201,7 @@ export default function Dashboard() {
   const rankedHubs = [...hubs].sort((a, b) => (b.mastery || 0) - (a.mastery || 0));
   const hasMasteryData = hubs.some((h) => (h.mastery || 0) > 0);
 
-  const achievementCtx = { totalRespondidas, streak, hubs, analyses };
+  const achievementCtx = { totalRespondidas, streak, hubs, analyses, rounds, weekActiveDays };
   const achievements = ACHIEVEMENTS.map((a) => ({ ...a, unlocked: a.check(achievementCtx) }));
 
   if (!loaded) {
@@ -443,7 +457,7 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Conquistas — poucas e significativas, nunca uma coleção de badges */}
+        {/* Conquistas — cada uma computada de dados que já existem */}
         <div className="mt-4 card-sapiens rounded-2xl p-5" data-testid="dash-achievements" data-tour="dash-achievements">
           <div className="font-mono-alt text-[10px] uppercase tracking-[0.3em] text-zinc-400 mb-3">Conquistas</div>
           <div className="flex flex-wrap gap-3">
