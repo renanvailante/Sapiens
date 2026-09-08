@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { api } from "../lib/api";
-import { LogOut, Compass, History, Zap, Brain, ShieldCheck, MoreHorizontal, Trash2, LayoutGrid, GraduationCap, PenLine, MessageCircle, BookOpen } from "lucide-react";
+import { LogOut, Compass, History, Zap, Brain, ShieldCheck, MoreHorizontal, Trash2, LayoutGrid, GraduationCap, PenLine, MessageCircle, BookOpen, ListChecks } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTitle, SheetDescription } from "./ui/sheet";
 import BrandMark from "./BrandMark";
@@ -19,6 +19,7 @@ const PRIMARY_LINKS = [
 ];
 const SECONDARY_LINKS = [
   { to: "/treino", icon: BookOpen, label: "Treino", testid: "nav-treino" },
+  { to: "/minhas-questoes", icon: ListChecks, label: "Minhas questões", testid: "nav-minhas-questoes" },
   { to: "/redacao", icon: PenLine, label: "Redação", testid: "nav-redacao" },
   { to: "/history", icon: History, label: "Histórico", testid: "nav-history" },
   { to: "/feed", icon: Zap, label: "Feed", testid: "nav-feed" },

@@ -106,6 +106,14 @@ INDICES: list[tuple[str, list[tuple[str, int]], dict]] = [
     ("treino_geracoes", [("user_id", pymongo.ASCENDING), ("criado_em", pymongo.DESCENDING)],
      {"name": "geracoes_treino_do_aluno"}),
 
+    # Questões novas geradas por IA (`treino_routes.gerar_questoes`), salvas
+    # para reaproveitamento entre alunos: a primeira pessoa a pedir prática
+    # numa habilidade paga a geração, e ela fica disponível para os próximos.
+    ("treino_questoes_ia", [("hab_id", pymongo.ASCENDING)],
+     {"name": "questoes_ia_por_habilidade"}),
+    ("treino_questoes_ia", [("mostrada_para", pymongo.ASCENDING), ("gerada_em", pymongo.DESCENDING)],
+     {"name": "questoes_ia_do_aluno"}),
+
     # --- cache do agregado derivado do Firestore ---
     # Ver `annotation_service._agregado_com_cache`: troca N leituras do
     # Firestore (uma por evento de behavior do aluno) por 1. O documento é

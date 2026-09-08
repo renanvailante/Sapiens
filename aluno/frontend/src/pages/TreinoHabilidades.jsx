@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { api, errMsg } from "../lib/api";
 import Nav from "../components/Nav";
 import {
-  Compass, Check, X, Loader2, ArrowLeft, Sparkles, Waves,
+  Compass, Check, X, Loader2, ArrowLeft, ArrowRight, Sparkles, Waves,
   PartyPopper, Telescope,
 } from "lucide-react";
 import ReportarQuestao from "../components/ReportarQuestao";
+import { useDeclararContextoMentis } from "../lib/mentisContexto";
 import { MapaMundo3D, BriefingHUD, GuiaMissoes, aplicarProgressao } from "../components/mapa3d";
 import { ESTADO_LABEL } from "../components/mapa3d/sceneBuilder";
 
@@ -76,6 +77,7 @@ function TabelaQuestao({ tabela }) {
 
 function Missao({ hab, onSair, onConcluida }) {
   const bioma = hab.bioma;
+  useDeclararContextoMentis(`Praticando a habilidade "${hab.nome}" no Treino.`);
   const [base, setBase] = useState(null);
   const [idx, setIdx] = useState(0);
   const [selecionada, setSelecionada] = useState(null);
@@ -256,9 +258,25 @@ function PainelGerar({ habId, sparksPorQuestao }) {
         <PartyPopper className="w-4.5 h-4.5 text-sapiens-accentDeep" /> Praticar mais nesta habilidade
       </div>
       {resposta ? (
-        <div className="mt-3 rounded-xl bg-amber-50 border border-amber-200 p-3.5" data-testid="treino-gerar-resposta">
-          <div className="font-display font-bold text-sm text-amber-900">Beta indisponível</div>
-          <p className="mt-1 text-xs text-amber-800">{resposta.mensagem}</p>
+        <div
+          className={`mt-3 rounded-xl border p-3.5 ${
+            resposta.status === "ok" ? "bg-emerald-50 border-emerald-200" : "bg-amber-50 border-amber-200"
+          }`}
+          data-testid="treino-gerar-resposta"
+        >
+          <div className={`font-display font-bold text-sm ${resposta.status === "ok" ? "text-emerald-900" : "text-amber-900"}`}>
+            {resposta.status === "ok" ? "Questões prontas" : "Não foi possível agora"}
+          </div>
+          <p className={`mt-1 text-xs ${resposta.status === "ok" ? "text-emerald-800" : "text-amber-800"}`}>{resposta.mensagem}</p>
+          {resposta.status === "ok" && (
+            <Link
+              to={`/minhas-questoes?hab_id=${habId}`}
+              className="pill mt-3 inline-flex items-center gap-1.5 text-xs font-medium btn-sapiens px-4 py-2 rounded-full"
+              data-testid="treino-gerar-ver"
+            >
+              Fazer essas questões <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          )}
         </div>
       ) : (
         <>

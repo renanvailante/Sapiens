@@ -51,6 +51,7 @@ import llm_cache
 import llm_telemetry
 import motor_cognitivo
 import rate_limit
+import treino_habilidades as th
 from auth import require_user
 from models import User
 
@@ -536,6 +537,10 @@ def _montar_dossie(nome: str, diagnostico: dict, agregado: dict) -> dict[str, An
             "para que nenhum ponto forte ou fraco possa ser afirmado. Diga isso com "
             "franqueza e ajude-o a estudar mesmo assim, sem inventar diagnóstico."
         )
+    linhas.append(
+        "Catálogo de habilidades de treino disponíveis (use o hab_id exato ao propor "
+        f"prática): {_catalogo_habilidades_texto()}"
+    )
 
     return {
         "texto": "\n".join(linhas),
@@ -586,43 +591,55 @@ def _texto_de_abertura(primeiro_nome: str, resumo: dict) -> str:
     return texto
 
 
-CHAT_SYSTEM = """Você é a Mentis, a entidade cognitiva do Sapiens — uma mistura de
-tutora, estrategista de prova, analista de desempenho e coach de estudos. A
-pergunta por trás de toda resposta sua é sempre a mesma: o que mais
-provavelmente ajuda este aluno a ir melhor na prova, agora?
+_QUESTOES_GERAR_PADRAO = 5
+_QUESTOES_GERAR_MAX = 5
 
-Sua voz: direta, confiante, prática, estratégica, incisiva. Motivadora sem
-infantilizar — você mostra caminho, não anima com efeito. Realista: nunca
-promete o que o dado não sustenta, e diz sem rodeio quando a amostra ainda é
-pequena. Nunca comemora com euforia, nunca usa emoji no corpo da resposta,
-nunca se apresenta como bichinho ou assistente animado.
+
+def _catalogo_habilidades_texto() -> str:
+    """Uma linha por habilidade (`HAB-01 Nome; HAB-02 Nome; ...`), montada UMA
+    vez por processo (a lista de 56 não muda em runtime) e anexada ao dossiê
+    na abertura da sessão — nunca por mensagem. É o que permite a Mentis
+    propor prática numa habilidade real em vez de inventar um id."""
+    return "; ".join(f"{h['hab_id']} {h['nome']}" for h in th.listar_habilidades())
+
+
+CHAT_SYSTEM = """Você é a Mentis, a entidade cognitiva do Sapiens: uma tutora,
+estrategista de prova, analista de desempenho e coach de estudos.
+
+Sua voz: impessoal, adulta, profissional, tecnológica, objetiva, prática.
+Nunca infantiliza, nunca comemora com euforia, nunca usa emoji no corpo da
+resposta, nunca se apresenta como bichinho ou assistente animado. Direta e
+concreta — prefere uma frase de menos a uma de mais.
 
 Você recebe um DOSSIÊ com a medição real deste aluno: quantas questões ele
 respondeu, quais processos cognitivos e domínios têm menor e maior taxa de
-acerto (sempre com a amostra ao lado) e, quando existe, o padrão de erro
-catalogado associado.
+acerto (sempre com a amostra ao lado), o padrão de erro catalogado quando
+existe, e o catálogo de habilidades de treino disponíveis na plataforma (com
+o identificador exato de cada uma).
 
-O que você pode oferecer, sempre que fizer sentido para a pergunta:
+O que você pode fazer, sempre que fizer sentido para a pergunta:
+- explicar conteúdo e analisar erros com base no que o dossiê mostra;
 - apontar com precisão onde a nota está sendo perdida (processo, domínio,
   competência), com o número que sustenta isso;
-- indicar em qual habilidade da trilha de Treino vale mais a pena praticar
-  agora — sem inventar enunciado de questão nova, apontando a habilidade certa;
-- esboçar uma rotina, um cronograma de estudo ou um plano de revisão em texto,
-  do tamanho do tempo que o aluno disser que tem;
+- propor prática numa habilidade real do catálogo — nunca inventando
+  enunciado de questão você mesma; se decidir que gerar questões novas é o
+  próximo passo, use o campo "acao" descrito abaixo em vez de escrever
+  questões no corpo da resposta;
+- esboçar uma rotina, um cronograma de estudo ou um plano de revisão em
+  texto, do tamanho do tempo que o aluno disser que tem;
 - dar conselho estratégico de prova (ordem de resolução, gestão de tempo, o
   que rende mais pontos por minuto investido);
 - comparar o momento atual do aluno com o histórico dele mesmo e dizer se a
   curva está subindo, estagnada ou caindo;
-- estimar nota ou desempenho SOMENTE quando a amostra do dossiê for
-  suficiente para isso — caso contrário, diga com franqueza que ainda não dá
-  para estimar com responsabilidade, e diga o que falta para passar a dar.
+- estimar nota ou desempenho — inclusive cruzando com padrões de provas
+  anteriores do ENEM quando o dossiê os mencionar — SOMENTE quando a amostra
+  for suficiente para isso; caso contrário, diga com franqueza que ainda não
+  dá para estimar com responsabilidade, e diga o que falta para passar a dar.
 
 Prefira sempre transformar a conversa em ação concreta em vez de ficar na
 explicação abstrata. Quando houver evidência suficiente, converta a análise
 em recomendação direta — por exemplo: "pelo que você já respondeu, treinar X
-tem mais chance de subir sua nota do que continuar em Y". Seu argumento mais
-forte é a evidência real deste aluno específico, nunca urgência, prazo ou
-risco que o dossiê não sustente — não invente nenhum dos três.
+tem mais chance de subir sua nota do que continuar em Y".
 
 Regras que você não quebra:
 - Use SOMENTE os números do dossiê. Nunca invente porcentagem, matéria ou
@@ -631,7 +648,9 @@ Regras que você não quebra:
   fazer para você passar a ter.
 - Amostra pequena é incerteza: um ponto medido em poucas questões é hipótese,
   não veredito, e você fala assim.
-- Nunca use identificadores de catálogo (PROC-, ERR-, HAB-, DOM-, COMP-, INT-).
+- Nunca use os identificadores de catálogo (PROC-, ERR-, DOM-, COMP-, INT-)
+  no texto da resposta — mas PODE e deve usar um `hab_id` (HAB-01..HAB-56) no
+  campo "acao", nunca escrito na resposta em si.
 - Nunca revele gabarito de questão que o aluno ainda não respondeu.
 - Se perguntarem algo fora de estudo/vestibular, redirecione em uma frase.
 
@@ -642,19 +661,25 @@ mensagem, curtas e específicas a esta conversa (nunca genéricas como
 "continue estudando").
 
 Responda EXCLUSIVAMENTE com JSON no formato:
-{"resposta": "texto da resposta", "sugestoes": [{"texto": "próxima mensagem em até 8 palavras, pode abrir com 1 emoji", "tipo": "enviar"}]}
+{"resposta": "texto da resposta", "sugestoes": [{"texto": "próxima mensagem em até 8 palavras, pode abrir com 1 emoji", "tipo": "enviar"}], "acao": null}
 - "resposta": no máximo 3 parágrafos curtos, cerca de 120 palavras no total.
   Português do Brasil, sem markdown, sem listas com marcador, sem prefixos.
 - "sugestoes": 1 a 3 itens. "tipo" é "enviar" quando a frase já é uma
   mensagem pronta para o aluno mandar como está; é "completar" quando a
   frase termina incompleta de propósito, com "..." no fim, para o aluno
   completar antes de mandar (ex.: "Me explica mais sobre..."). Nunca proponha
-  ação que você não pode cumprir de fato (você não gera questão inédita nem
-  recebe arquivo).
+  ação que você não pode cumprir de fato (você não recebe arquivo).
+- "acao": normalmente `null`. Só preencha
+  {"tipo": "gerar_questoes", "hab_id": "HAB-NN", "quantidade": 5} quando você
+  decidir que praticar uma habilidade específica é o próximo passo — use
+  SEMPRE um `hab_id` exato do catálogo do dossiê, nunca um nome livre.
+  `quantidade` entre 1 e 5. Isto NÃO gera as questões nem cobra Sparks
+  sozinho: só aparece como um botão que o aluno decide clicar ou não.
 Sem markdown, sem texto fora do JSON."""
 
 _SUGESTOES_MAX = 3
 _SUGESTAO_TEXTO_MAX_CHARS = 90
+_CONTEXTO_TELA_MAX_CHARS = 200
 
 
 def _validar_sugestoes(valor: Any) -> list[dict[str, str]]:
@@ -675,12 +700,36 @@ def _validar_sugestoes(valor: Any) -> list[dict[str, str]]:
     return sugestoes
 
 
+def _validar_acao(valor: Any) -> Optional[dict[str, Any]]:
+    """Nunca confia no modelo às cegas: um `hab_id` que não existe no
+    catálogo vigente vira `None` (a resposta em si continua válida — só a
+    ação, que teria virado um botão quebrado, é descartada)."""
+    if not isinstance(valor, dict) or valor.get("tipo") != "gerar_questoes":
+        return None
+    hab_id = valor.get("hab_id")
+    if not isinstance(hab_id, str) or hab_id not in {h["hab_id"] for h in th.listar_habilidades()}:
+        return None
+    quantidade = valor.get("quantidade")
+    if not isinstance(quantidade, int) or quantidade < 1:
+        quantidade = _QUESTOES_GERAR_PADRAO
+    quantidade = min(quantidade, _QUESTOES_GERAR_MAX)
+    return {
+        "tipo": "gerar_questoes",
+        "hab_id": hab_id,
+        "quantidade": quantidade,
+        "custo_por_questao": th.CUSTO_POR_QUESTAO_NOVA,
+    }
+
+
 class MensagemPayload(BaseModel):
     texto: str = Field(min_length=1, max_length=_MENSAGEM_MAX_CHARS)
     # De onde veio a mensagem: um balão de sugestão clicado ou o campo de
     # texto. Só serve para reconstruir a trajetória do aluno na sessão —
     # não muda cobrança nem comportamento do modelo.
     origem: Optional[str] = None
+    # O que a tela do aluno mostra agora (widget flutuante global). Lido uma
+    # vez por mensagem, nunca acumulado no histórico — ver `_montar_prompt_chat`.
+    contexto_tela: Optional[str] = Field(default=None, max_length=_CONTEXTO_TELA_MAX_CHARS)
 
 
 def _serializar_sessao(sessao: dict, saldo: Optional[int] = None) -> dict[str, Any]:
@@ -776,11 +825,16 @@ async def abrir_sessao(
     return {**_serializar_sessao(sessao, saldo), "nova": True}
 
 
-def _montar_prompt_chat(dossie_texto: str, mensagens: list[dict], pergunta: str) -> str:
+def _montar_prompt_chat(
+    dossie_texto: str, mensagens: list[dict], pergunta: str, contexto_tela: Optional[str] = None
+) -> str:
     """Contexto fixo + só as últimas `_HISTORICO_TURNOS` trocas + a pergunta.
 
     O corte do histórico é o que mantém o custo de cada mensagem constante:
     sem ele, a 20ª mensagem de uma sessão custaria várias vezes a primeira.
+    `contexto_tela` (o que o widget flutuante vê na hora) é lido AQUI, nunca
+    salvo no dossiê nem replicado nas trocas seguintes — ele descreve a tela
+    de agora, não a de duas mensagens atrás.
     """
     recentes = [m for m in mensagens if m.get("texto")][-(_HISTORICO_TURNOS * 2):]
     partes = [f"DOSSIÊ DO ALUNO:\n{dossie_texto}"]
@@ -789,6 +843,8 @@ def _montar_prompt_chat(dossie_texto: str, mensagens: list[dict], pergunta: str)
             f"{'Aluno' if m.get('papel') == 'aluno' else 'Mentis'}: {m['texto']}" for m in recentes
         )
         partes.append(f"\nCONVERSA ATÉ AQUI:\n{historico}")
+    if contexto_tela:
+        partes.append(f"\nTELA QUE O ALUNO VÊ AGORA: {contexto_tela}")
     partes.append(f"\nPERGUNTA DO ALUNO AGORA:\n{pergunta}")
     return "\n".join(partes)
 
@@ -812,8 +868,9 @@ async def enviar_mensagem(
         raise HTTPException(status_code=422, detail="Escreva uma pergunta.")
 
     saldo = _cobrar(user.user_id, MENSAGEM_COST)
+    contexto_tela = (payload.contexto_tela or "").strip()[:_CONTEXTO_TELA_MAX_CHARS] or None
     prompt = _montar_prompt_chat(
-        (sessao.get("dossie") or {}).get("texto") or "", sessao.get("mensagens") or [], pergunta
+        (sessao.get("dossie") or {}).get("texto") or "", sessao.get("mensagens") or [], pergunta, contexto_tela
     )
     inicio = time.monotonic()
     try:
@@ -825,6 +882,7 @@ async def enviar_mensagem(
             raise ValueError("Campo 'resposta' ausente ou vazio.")
         resposta = resposta.strip()
         sugestoes = _validar_sugestoes((resultado or {}).get("sugestoes") if isinstance(resultado, dict) else None)
+        acao = _validar_acao((resultado or {}).get("acao") if isinstance(resultado, dict) else None)
         await llm_telemetry.persist(
             _db.mentis_llm_chamadas,
             contexto=f"sessao={sessao['_id']}",
@@ -847,9 +905,12 @@ async def enviar_mensagem(
 
     agora_iso = _agora().isoformat()
     origem = "balao" if payload.origem == "balao" else "digitado"
+    aluno_msg = {"papel": "aluno", "texto": pergunta, "em": agora_iso, "origem": origem}
+    if contexto_tela:
+        aluno_msg["contexto_tela"] = contexto_tela
     novas = [
-        {"papel": "aluno", "texto": pergunta, "em": agora_iso, "origem": origem},
-        {"papel": "mentis", "texto": resposta, "sugestoes": sugestoes, "em": agora_iso},
+        aluno_msg,
+        {"papel": "mentis", "texto": resposta, "sugestoes": sugestoes, "acao": acao, "em": agora_iso},
     ]
     await _db.mentis_sessoes.update_one({"_id": sessao["_id"]}, {"$push": {"mensagens": {"$each": novas}}})
     return {"mensagens": novas, "sparks_balance": saldo, "custo_mensagem": MENSAGEM_COST}

@@ -1,8 +1,9 @@
 """Banco de treino (HAB-01..HAB-56): integridade do corpus compilado, o
 agregado O(1) por habilidade, e as rotas — com foco especial no que o Sparks
-do aluno depende: `gerar` sempre termina com o saldo intacto (cobra e
-devolve, geração real ainda não existe), nunca cobra duas vezes pela mesma
-tentativa, e `responder` nunca confia no que o cliente afirma ter acertado.
+do aluno depende: `gerar` cobra por questão efetivamente entregue (do pool
+reaproveitado ou gerada agora) e devolve só o que faltar, nunca cobra duas
+vezes pela mesma tentativa, e `responder` nunca confia no que o cliente
+afirma ter acertado.
 """
 from __future__ import annotations
 
@@ -336,7 +337,7 @@ def test_tres_acertos_seguidos_classificam_como_forte(fake_db, behavior):
     assert hab01["respondidas"] == 3
 
 
-# --------------------------------------------------- gerar (beta indisponível)
+# --------------------------------------------------------------- gerar (IA)
 
 
 def _payload_gerar(chave="chave-teste-1", **kw) -> routes.GerarRequest:
@@ -345,28 +346,108 @@ def _payload_gerar(chave="chave-teste-1", **kw) -> routes.GerarRequest:
     return routes.GerarRequest(**dados)
 
 
-def test_gerar_cobra_e_devolve_tudo_e_nunca_gera_questao(fake_db, carteira):
+def _questao_ia_valida(correta: str = "B") -> dict:
+    return {
+        "enunciado": "Questão de teste gerada por IA.",
+        "alternativas": [{"letra": l, "texto": f"alternativa {l}"} for l in "ABCDE"],
+        "correta": correta,
+        "elucidacao": "Explicação de teste.",
+    }
+
+
+def _mock_gemini_falha(monkeypatch):
+    """Simula o Gemini indisponível — mesmo efeito prático do stub antigo
+    (nenhuma questão entregue), mas agora por uma falha real, não proposital."""
+    async def _falha(*a, **k):
+        raise RuntimeError("gemini fora do ar (teste)")
+    monkeypatch.setattr(routes.ai_service, "generate_json_resiliente", _falha)
+
+
+def _mock_gemini_sucesso(monkeypatch, *, quantidade_generosa: int = 10):
+    """Sempre devolve mais questões válidas do que qualquer teste pede — o
+    endpoint é quem trunca em `faltam` (ver `gerar_questoes`), não o modelo."""
+    async def _sucesso(system, prompt, **kwargs):
+        return {"questoes": [_questao_ia_valida() for _ in range(quantidade_generosa)]}
+    monkeypatch.setattr(routes.ai_service, "generate_json_resiliente", _sucesso)
+
+
+def test_gerar_com_falha_do_modelo_cobra_e_devolve_tudo(fake_db, carteira, monkeypatch):
     routes.set_db(fake_db)
+    _mock_gemini_falha(monkeypatch)
     resposta = _run(routes.gerar_questoes("HAB-01", _payload_gerar(quantidade=2), user=_user()))
 
-    assert resposta["status"] == "indisponivel"
+    assert resposta["status"] == "falhou"
     assert carteira.debitos == [("aluno-1", 6)]
     assert carteira.reembolsos == [("aluno-1", 6)]
     assert carteira.saldos["aluno-1"] == 1000  # saldo intacto no fim
     assert resposta["sparks_cobrados"] == 0
     assert resposta["sparks_devolvidos"] == 6
     assert resposta["sparks_balance"] == 1000
+    assert fake_db.treino_questoes_ia.docs == []
 
 
-def test_gerar_cobra_3_por_questao(fake_db, carteira):
+def test_gerar_com_sucesso_cobra_por_questao_entregue_e_persiste(fake_db, carteira, monkeypatch):
     routes.set_db(fake_db)
-    _run(routes.gerar_questoes("HAB-01", _payload_gerar(quantidade=5), user=_user()))
+    _mock_gemini_sucesso(monkeypatch)
+    resposta = _run(routes.gerar_questoes("HAB-01", _payload_gerar(quantidade=5), user=_user()))
+
+    assert resposta["status"] == "ok"
+    assert resposta["quantidade"] == 5
     assert carteira.debitos == [("aluno-1", 15)]
-    assert carteira.reembolsos == [("aluno-1", 15)]
+    assert carteira.reembolsos == []  # entregou tudo o que cobrou — nada a devolver
+    assert len(fake_db.treino_questoes_ia.docs) == 5
+    assert all(d["hab_id"] == "HAB-01" and "aluno-1" in d["mostrada_para"] for d in fake_db.treino_questoes_ia.docs)
 
 
-def test_mesma_chave_nao_cobra_duas_vezes(fake_db, carteira):
+def test_gerar_reaproveita_pool_da_habilidade_sem_chamar_o_modelo_de_novo(fake_db, carteira, monkeypatch):
+    """O segundo aluno a pedir prática na mesma habilidade paga os mesmos
+    Sparks, mas não gera Gemini de novo — reaproveita o que já existe."""
     routes.set_db(fake_db)
+    _mock_gemini_sucesso(monkeypatch)
+    _run(routes.gerar_questoes("HAB-01", _payload_gerar("chave-pool-k1", quantidade=3), user=_user("aluno-1")))
+    assert len(fake_db.treino_questoes_ia.docs) == 3
+
+    chamou_de_novo = {"n": 0}
+
+    async def _explode_se_chamado(*a, **k):
+        chamou_de_novo["n"] += 1
+        raise AssertionError("não deveria chamar o Gemini de novo — o pool já tem o suficiente")
+
+    monkeypatch.setattr(routes.ai_service, "generate_json_resiliente", _explode_se_chamado)
+    resposta = _run(routes.gerar_questoes("HAB-01", _payload_gerar("chave-pool-k2", quantidade=3), user=_user("aluno-2")))
+
+    assert chamou_de_novo["n"] == 0
+    assert resposta["status"] == "ok"
+    assert resposta["quantidade"] == 3
+    assert carteira.debitos == [("aluno-1", 9), ("aluno-2", 9)]
+    # as mesmas 3 questões agora foram mostradas aos dois alunos
+    assert all(set(d["mostrada_para"]) == {"aluno-1", "aluno-2"} for d in fake_db.treino_questoes_ia.docs)
+
+
+def test_gerar_com_pool_parcial_so_pede_ao_modelo_o_que_falta(fake_db, carteira, monkeypatch):
+    routes.set_db(fake_db)
+    _mock_gemini_sucesso(monkeypatch)
+    _run(routes.gerar_questoes("HAB-01", _payload_gerar("chave-parcial-k1", quantidade=2), user=_user("aluno-1")))
+    assert len(fake_db.treino_questoes_ia.docs) == 2
+
+    pedidos = {"faltam": None}
+
+    async def _captura_prompt(system, prompt, **kwargs):
+        pedidos["faltam"] = prompt
+        return {"questoes": [_questao_ia_valida() for _ in range(10)]}
+
+    monkeypatch.setattr(routes.ai_service, "generate_json_resiliente", _captura_prompt)
+    # aluno-2 pede 5: as 2 do pool valem pra ele, só faltam 3 novas
+    resposta = _run(routes.gerar_questoes("HAB-01", _payload_gerar("chave-parcial-k2", quantidade=5), user=_user("aluno-2")))
+
+    assert resposta["quantidade"] == 5
+    assert "Gere exatamente 3" in pedidos["faltam"]
+    assert len(fake_db.treino_questoes_ia.docs) == 5  # 2 reaproveitadas + 3 novas
+
+
+def test_mesma_chave_nao_cobra_duas_vezes(fake_db, carteira, monkeypatch):
+    routes.set_db(fake_db)
+    _mock_gemini_sucesso(monkeypatch)
     primeira = _run(routes.gerar_questoes("HAB-01", _payload_gerar("k-repetida"), user=_user()))
     segunda = _run(routes.gerar_questoes("HAB-01", _payload_gerar("k-repetida"), user=_user()))
 
@@ -374,15 +455,17 @@ def test_mesma_chave_nao_cobra_duas_vezes(fake_db, carteira):
     assert segunda == primeira
 
 
-def test_chave_nova_cobra_de_novo(fake_db, carteira):
+def test_chave_nova_cobra_de_novo(fake_db, carteira, monkeypatch):
     routes.set_db(fake_db)
+    _mock_gemini_sucesso(monkeypatch)
     _run(routes.gerar_questoes("HAB-01", _payload_gerar("chave-aaa1"), user=_user()))
     _run(routes.gerar_questoes("HAB-01", _payload_gerar("chave-bbb2"), user=_user()))
     assert carteira.debitos == [("aluno-1", 6), ("aluno-1", 6)]
 
 
-def test_mesma_chave_de_outro_aluno_nao_colide(fake_db, carteira):
+def test_mesma_chave_de_outro_aluno_nao_colide(fake_db, carteira, monkeypatch):
     routes.set_db(fake_db)
+    _mock_gemini_sucesso(monkeypatch)
     _run(routes.gerar_questoes("HAB-01", _payload_gerar("chave-mesma"), user=_user("aluno-1")))
     _run(routes.gerar_questoes("HAB-01", _payload_gerar("chave-mesma"), user=_user("aluno-2")))
     assert carteira.debitos == [("aluno-1", 6), ("aluno-2", 6)]
@@ -425,6 +508,7 @@ def test_reembolso_falho_nao_trava_a_chave_para_sempre(fake_db, carteira, monkey
     reembolso), a reivindicação TTL permite retomar depois em vez de queimar
     a chave do aluno para sempre."""
     routes.set_db(fake_db)
+    _mock_gemini_falha(monkeypatch)
 
     chamadas = {"n": 0}
     original = carteira.refund
@@ -437,17 +521,18 @@ def test_reembolso_falho_nao_trava_a_chave_para_sempre(fake_db, carteira, monkey
 
     monkeypatch.setattr(fs, "refund_sparks", _quebra_uma_vez)
     resposta = _run(routes.gerar_questoes("HAB-01", _payload_gerar("chave-instavel"), user=_user()))
-    # _safe_reembolso engoliu a exceção: a resposta ainda sai como "indisponível",
+    # _safe_reembolso engoliu a exceção: a resposta ainda sai como "falhou",
     # e a reivindicação foi marcada concluída mesmo com o reembolso tendo falhado
     # silenciosamente (mesmo contrato de redacao_routes._safe_reembolso).
-    assert resposta["status"] == "indisponivel"
+    assert resposta["status"] == "falhou"
     assert carteira.debitos == [("aluno-1", 6)]
 
 
-def test_concorrencia_na_mesma_chave_so_cobra_uma_vez(fake_db, carteira):
+def test_concorrencia_na_mesma_chave_so_cobra_uma_vez(fake_db, carteira, monkeypatch):
     """Duas requisições 'simultâneas' com a mesma idempotency_key — a
     segunda insert_one já encontra o documento e nunca chega a cobrar."""
     routes.set_db(fake_db)
+    _mock_gemini_sucesso(monkeypatch)
 
     async def _duas_juntas():
         return await asyncio.gather(
@@ -457,4 +542,89 @@ def test_concorrencia_na_mesma_chave_so_cobra_uma_vez(fake_db, carteira):
 
     resultados = _run(_duas_juntas())
     assert carteira.debitos == [("aluno-1", 6)]
-    assert resultados[0]["status"] == resultados[1]["status"] == "indisponivel"
+    assert resultados[0]["status"] == resultados[1]["status"] == "ok"
+    assert resultados[0] == resultados[1]
+
+
+# --------------------------------------------------- minhas questões (IA)
+
+
+def _doc_questao_ia(hab_id="HAB-01", mostrada_para=None, respostas=None) -> dict:
+    return {
+        "_id": "q-1",
+        "hab_id": hab_id,
+        "origem": "mentis_ia",
+        "gerada_em": "2026-09-08T00:00:00+00:00",
+        "gerada_por_uid": "aluno-1",
+        "questao": {
+            "enunciado_antes": "Enunciado.",
+            "tabela": None,
+            "enunciado_depois": "",
+            "alternativas": [{"letra": l, "texto": f"alt {l}"} for l in "ABCDE"],
+            "gabarito": ["B"],
+            "elucidacao": "Porque B.",
+            "dificuldade": "MEDIO",
+        },
+        "mostrada_para": mostrada_para if mostrada_para is not None else ["aluno-1"],
+        "respostas": respostas if respostas is not None else {},
+    }
+
+
+def test_listar_questoes_geradas_so_mostra_o_que_este_aluno_recebeu(fake_db, behavior):
+    fake_db.treino_questoes_ia.docs.append(_doc_questao_ia(mostrada_para=["aluno-1"]))
+    fake_db.treino_questoes_ia.docs.append({**_doc_questao_ia(mostrada_para=["aluno-2"]), "_id": "q-2"})
+    routes.set_db(fake_db)
+
+    resultado = _run(routes.listar_questoes_geradas(hab_id=None, user=_user("aluno-1")))
+    ids = [i["questao_id"] for i in resultado["itens"]]
+    assert ids == ["q-1"]
+    assert resultado["itens"][0]["habilidade_nome"]
+    assert "gabarito" not in resultado["itens"][0]
+
+
+def test_listar_questoes_geradas_mostra_respondida_e_acertou(fake_db, behavior):
+    respostas = {"aluno-1": {"alternativa": "B", "acertou": True, "em": "2026-09-08T00:00:00+00:00"}}
+    fake_db.treino_questoes_ia.docs.append(_doc_questao_ia(respostas=respostas))
+    routes.set_db(fake_db)
+
+    resultado = _run(routes.listar_questoes_geradas(hab_id=None, user=_user("aluno-1")))
+    item = resultado["itens"][0]
+    assert item["respondida"] is True
+    assert item["minha_resposta"] == "B"
+    assert item["acertou"] is True
+
+
+def test_responder_questao_ia_de_outro_aluno_e_404(fake_db, behavior):
+    fake_db.treino_questoes_ia.docs.append(_doc_questao_ia(mostrada_para=["aluno-2"]))
+    routes.set_db(fake_db)
+    with pytest.raises(HTTPException) as exc:
+        _run(routes.responder_questao_ia("q-1", routes.ResponderQuestaoIARequest(alternativa="B"), user=_user("aluno-1")))
+    assert exc.value.status_code == 404
+
+
+def test_responder_questao_ia_corrige_grava_behavior_e_credita_sparks(fake_db, behavior):
+    fake_db.treino_questoes_ia.docs.append(_doc_questao_ia())
+    routes.set_db(fake_db)
+
+    resultado = _run(routes.responder_questao_ia("q-1", routes.ResponderQuestaoIARequest(alternativa="b"), user=_user("aluno-1")))
+    assert resultado["acertou"] is True
+    assert resultado["gabarito"] == ["B"]
+
+    assert len(behavior.eventos) == 1
+    evento = behavior.eventos[0]
+    assert evento["item_id"] == "TREINO-IA:q-1"
+    assert evento["contexto_tipo"] == "treino_questao_ia"
+    assert evento["acertou"] is True
+    assert behavior.saldos["aluno-1"] == behavior.inicial + 1  # grant_question_sparks creditou
+
+
+def test_responder_questao_ia_e_idempotente_na_segunda_vez(fake_db, behavior):
+    fake_db.treino_questoes_ia.docs.append(_doc_questao_ia())
+    routes.set_db(fake_db)
+
+    _run(routes.responder_questao_ia("q-1", routes.ResponderQuestaoIARequest(alternativa="B"), user=_user("aluno-1")))
+    _run(routes.responder_questao_ia("q-1", routes.ResponderQuestaoIARequest(alternativa="C"), user=_user("aluno-1")))
+
+    # a segunda resposta não reescreve behavior nem credita Sparks de novo
+    assert len(behavior.eventos) == 1
+    assert behavior.saldos["aluno-1"] == behavior.inicial + 1

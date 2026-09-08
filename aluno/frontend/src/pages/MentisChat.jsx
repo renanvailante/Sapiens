@@ -2,7 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, errMsg } from "../lib/api";
 import Nav from "../components/Nav";
-import Mentis, { MentisDigitando } from "../components/Mentis";
+import Mentis, { MentisPensando } from "../components/Mentis";
+import Baloes, { BALOES_INICIAIS } from "../components/MentisBaloes";
+import MentisAcaoQuestoes from "../components/MentisAcaoQuestoes";
+import { useContextoMentisAtual } from "../lib/mentisContexto";
 import { Send, Zap, Clock, Target, TrendingUp, AlertCircle } from "lucide-react";
 
 /**
@@ -23,44 +26,6 @@ import { Send, Zap, Clock, Target, TrendingUp, AlertCircle } from "lucide-react"
 const CUSTO_SESSAO_PADRAO = 70;
 const CUSTO_MENSAGEM_PADRAO = 10;
 const MAX_CHARS = 600;
-
-// Balões de abertura: sempre os mesmos, sempre visíveis assim que a sessão
-// abre. Fixos de propósito — não dependem do modelo, então não custam Sparks
-// nem tokens extras só para existir.
-const BALOES_INICIAIS = [
-  { texto: "📈 Quero descobrir o que mais pode aumentar minha nota", tipo: "enviar" },
-  { texto: "💡 Tenho uma dúvida, mas não sei nem por onde começar", tipo: "enviar" },
-  { texto: "🧩 Crie 5 questões para eu descobrir onde estou errando", tipo: "enviar" },
-  { texto: "🎯 Monte um treino só para mim", tipo: "enviar" },
-  { texto: "🔥 Me desafie com algo que eu provavelmente erraria", tipo: "enviar" },
-  { texto: "🔍 Veja o que está impedindo minha evolução", tipo: "enviar" },
-];
-
-/** Fileira de balões clicáveis. "enviar" manda a mensagem na hora, pelo
- *  mesmo fluxo (e custo) de digitar e apertar enviar. "completar" só
- *  preenche o campo, para o aluno terminar antes de mandar. */
-function Baloes({ itens, aoClicar, enviando, semSaldo }) {
-  if (!itens || itens.length === 0) return null;
-  return (
-    <div className="flex flex-wrap gap-2 pt-1" data-testid="mentis-baloes">
-      {itens.map((b, i) => {
-        const bloqueado = enviando || (b.tipo !== "completar" && semSaldo);
-        return (
-          <button
-            key={`${b.texto}-${i}`}
-            type="button"
-            onClick={() => aoClicar(b)}
-            disabled={bloqueado}
-            className="rounded-full border border-white/15 bg-white/5 px-3.5 py-2 text-left text-xs text-white/80 transition hover:border-white/25 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
-            data-testid="mentis-balao"
-          >
-            {b.texto}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
 
 function formatarExpiracao(iso) {
   if (!iso) return null;
@@ -233,6 +198,7 @@ export default function MentisChat() {
   const [saldo, setSaldo] = useState(null);
   const fimRef = useRef(null);
   const inputRef = useRef(null);
+  const contextoTela = useContextoMentisAtual();
 
   const custoSessao = sessao?.custo_sessao ?? CUSTO_SESSAO_PADRAO;
   const custoMensagem = sessao?.custo_mensagem ?? CUSTO_MENSAGEM_PADRAO;
@@ -282,7 +248,11 @@ export default function MentisChat() {
     setSessao((s) => ({ ...s, mensagens: [...(s.mensagens || []), provisoria] }));
     setTexto("");
     try {
-      const { data } = await api.post("/mentis/sessao/mensagem", { texto: pergunta, origem });
+      const { data } = await api.post("/mentis/sessao/mensagem", {
+        texto: pergunta,
+        origem,
+        contexto_tela: contextoTela || undefined,
+      });
       setSessao((s) => ({
         ...s,
         mensagens: [...(s.mensagens || []).filter((m) => !m.provisoria), ...data.mensagens],
@@ -394,13 +364,18 @@ export default function MentisChat() {
                   {m.papel !== "aluno" && (
                     <Mentis className="w-7 h-7 shrink-0 mt-0.5" variante="icone" animada={false} />
                   )}
-                  <div
-                    className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-line ${
-                      m.papel === "aluno" ? "bolha-aluno" : "bolha-mentis"
-                    } ${m.provisoria ? "opacity-60" : ""}`}
-                    data-testid={`mentis-msg-${m.papel}`}
-                  >
-                    {m.texto}
+                  <div className={`max-w-[85%] ${m.papel === "aluno" ? "" : "flex flex-col items-start"}`}>
+                    <div
+                      className={`rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-line ${
+                        m.papel === "aluno" ? "bolha-aluno" : "bolha-mentis"
+                      } ${m.provisoria ? "opacity-60" : ""}`}
+                      data-testid={`mentis-msg-${m.papel}`}
+                    >
+                      {m.texto}
+                    </div>
+                    {m.papel === "mentis" && i === mensagens.length - 1 && (
+                      <MentisAcaoQuestoes acao={m.acao} />
+                    )}
                   </div>
                 </div>
               ))}
@@ -408,7 +383,7 @@ export default function MentisChat() {
                 <div className="flex gap-2.5 items-center">
                   <Mentis className="w-7 h-7 shrink-0" variante="icone" estado="analise" />
                   <div className="bolha-mentis rounded-2xl px-4 py-3">
-                    <MentisDigitando />
+                    <MentisPensando ativo={enviando} />
                   </div>
                 </div>
               )}

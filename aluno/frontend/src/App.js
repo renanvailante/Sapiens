@@ -3,11 +3,13 @@ import { Suspense, lazy } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "sonner";
 import { AuthProvider } from "./lib/auth";
+import { MentisContextoProvider } from "./lib/mentisContexto";
 import ErrorBoundary from "./components/ErrorBoundary";
 import TituloDaPagina from "./components/TituloDaPagina";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
 import FirestoreStudentProvisioner from "./components/FirestoreStudentProvisioner";
+import MentisWidget from "./components/MentisWidget";
 
 // Entrada e prática vêm no bundle principal: são o caminho que todo aluno
 // percorre, e adiar o carregamento delas trocaria peso por um flash de
@@ -30,6 +32,7 @@ const History = lazy(() => import("./pages/History"));
 const Trash = lazy(() => import("./pages/Trash"));
 const PerfilCognitivo = lazy(() => import("./pages/PerfilCognitivo"));
 const TreinoHabilidades = lazy(() => import("./pages/TreinoHabilidades"));
+const MinhasQuestoes = lazy(() => import("./pages/MinhasQuestoes"));
 const MentisChat = lazy(() => import("./pages/MentisChat"));
 const SparksStore = lazy(() => import("./pages/SparksStore"));
 const Feed = lazy(() => import("./pages/Feed"));
@@ -95,6 +98,7 @@ function AppRouter() {
       <Route path="/diagnostico" element={<Navigate to="/cognitive-profile" replace />} />
       <Route path="/motor" element={<Navigate to="/cognitive-profile" replace />} />
       <Route path="/treino" element={<ProtectedRoute><Pagina titulo="Banco de treino"><TreinoHabilidades /></Pagina></ProtectedRoute>} />
+      <Route path="/minhas-questoes" element={<ProtectedRoute><Pagina titulo="Minhas questões"><MinhasQuestoes /></Pagina></ProtectedRoute>} />
       <Route path="/mentis" element={<ProtectedRoute><Pagina titulo="Mentis"><MentisChat /></Pagina></ProtectedRoute>} />
       <Route path="/sparks" element={<ProtectedRoute><Pagina titulo="Sparks"><SparksStore /></Pagina></ProtectedRoute>} />
       <Route path="/feed" element={<ProtectedRoute><Pagina titulo="Feed"><Feed /></Pagina></ProtectedRoute>} />
@@ -122,15 +126,20 @@ export default function App() {
     <div className="App">
       <BrowserRouter>
         <AuthProvider>
-          <FirestoreStudentProvisioner />
-          <ErrorBoundary>
-            <Suspense fallback={<Carregando />}>
-              <AppRouter />
-            </Suspense>
-          </ErrorBoundary>
-          {/* `theme="dark"`: o Sonner nasce claro e um toast branco era a única
-              coisa do produto que continuava em tema claro sobre o ambiente novo. */}
-          <Toaster position="top-center" richColors closeButton theme="dark" />
+          <MentisContextoProvider>
+            <FirestoreStudentProvisioner />
+            <ErrorBoundary>
+              <Suspense fallback={<Carregando />}>
+                <AppRouter />
+              </Suspense>
+            </ErrorBoundary>
+            {/* Ícone sempre visível, em toda página logada — ver
+                `MentisWidget.jsx` para por que ele se esconde em /mentis. */}
+            <MentisWidget />
+            {/* `theme="dark"`: o Sonner nasce claro e um toast branco era a única
+                coisa do produto que continuava em tema claro sobre o ambiente novo. */}
+            <Toaster position="top-center" richColors closeButton theme="dark" />
+          </MentisContextoProvider>
         </AuthProvider>
       </BrowserRouter>
     </div>

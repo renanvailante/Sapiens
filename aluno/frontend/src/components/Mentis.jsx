@@ -22,6 +22,8 @@
  * o anel vira borrão e a gota some — o que sobrevive em qualquer escala é
  * núcleo + olhos, então em tamanho pequeno é só isso que se desenha.
  */
+import { useEffect, useState } from "react";
+
 export default function Mentis({
   className = "w-10 h-10",
   estado = "neutra",
@@ -133,5 +135,39 @@ export function MentisDigitando({ className = "" }) {
         <span key={i} className="mentis-ponto w-1.5 h-1.5 rounded-full bg-[#4FD9FF]" />
       ))}
     </span>
+  );
+}
+
+// Frases curtas do estado de processamento — só aparecem enquanto HÁ uma
+// chamada real em curso (`ativo` segue 1:1 a promise pendente de quem usa
+// isto). Nunca uma etapa fixa fingindo trabalho que não está acontecendo:
+// é rotação cosmética sobre uma espera real, não uma barra de progresso falsa.
+const FRASES_PENSANDO = [
+  "Estou analisando seu desempenho…",
+  "Procurando um padrão nos seus erros.",
+  "Estou calibrando a dificuldade.",
+  "Estou escolhendo as questões mais úteis.",
+  "Cruzando isso com o seu histórico.",
+  "Verificando a evidência antes de responder.",
+];
+
+/** Mesmos pontinhos de `MentisDigitando`, com uma frase de status ao lado que
+ *  troca a cada ~2s enquanto `ativo` for true. Começa num índice aleatório
+ *  para não repetir sempre a mesma abertura entre uma chamada e outra. */
+export function MentisPensando({ ativo, className = "" }) {
+  const [i, setI] = useState(() => Math.floor(Math.random() * FRASES_PENSANDO.length));
+
+  useEffect(() => {
+    if (!ativo) return undefined;
+    const id = setInterval(() => setI((prev) => (prev + 1) % FRASES_PENSANDO.length), 1900);
+    return () => clearInterval(id);
+  }, [ativo]);
+
+  if (!ativo) return null;
+  return (
+    <div className={`inline-flex items-center gap-2 ${className}`} aria-live="polite">
+      <MentisDigitando />
+      <span className="text-xs text-white/50">{FRASES_PENSANDO[i]}</span>
+    </div>
   );
 }

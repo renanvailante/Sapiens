@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, errMsg } from "../lib/api";
 import Nav from "../components/Nav";
+import { useDeclararContextoMentis } from "../lib/mentisContexto";
 import { Brain, ThumbsUp, Target, Loader2 } from "lucide-react";
 
 // Substitui Motor Cognitivo + Diagnóstico real + Mapa de Habilidades por uma
@@ -39,6 +40,13 @@ export default function PerfilCognitivo() {
   };
 
   useEffect(carregar, []);
+
+  const primeiroFraco = dados?.fracos?.[0]?.rotulo;
+  useDeclararContextoMentis(
+    primeiroFraco
+      ? `Vendo o perfil cognitivo. Ponto de atenção mostrado na tela: "${primeiroFraco}".`
+      : "Vendo o perfil cognitivo."
+  );
 
   return (
     <div className="min-h-screen">

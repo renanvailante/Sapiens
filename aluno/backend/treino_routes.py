@@ -14,16 +14,26 @@ Três operações:
    Diagnóstico real (que resolvem eventos contra a coleção `itens`) ignoram
    estes eventos automaticamente, sem precisar de nenhum filtro extra).
 3. `POST /treino/habilidade/{hab_id}/gerar` — 3 Sparks por questão nova.
-   Geração ainda NÃO existe: cobra, tenta, falha de propósito, devolve todos
-   os Sparks e avisa "beta indisponível". Mesma reivindicação idempotente por
-   `idempotency_key` do corretor de redação (`redacao_routes.py`) — duplo
-   clique ou retry não cobram duas vezes, e uma queda do processo entre
-   cobrança e reembolso é recuperável (TTL de retomada).
+   Gera de verdade via Gemini, mas primeiro tenta servir do pool
+   compartilhado (`treino_questoes_ia`): a primeira pessoa a pedir prática
+   numa habilidade paga a geração, os próximos reaproveitam sem gastar Gemini
+   de novo — cobrados do mesmo jeito, porque o valor entregue é o mesmo
+   (mesmo princípio de `mentis_routes._CACHE_PREFIXO`). Mesma reivindicação
+   idempotente por `idempotency_key` do corretor de redação
+   (`redacao_routes.py`) — duplo clique ou retry não cobram duas vezes, e uma
+   queda do processo entre cobrança e reembolso é recuperável (TTL de
+   retomada). As questões entregues ficam em "Minhas questões"
+   (`GET /treino/questoes-geradas`) — nunca são refeitas ao reabrir a tela.
+4. `GET /treino/questoes-geradas` + `POST .../responder` — lista e corrige as
+   questões de IA já entregues a este aluno. Mesmo contrato de behavior e de
+   Sparks por resposta do item 2, só que sobre `treino_questoes_ia` em vez do
+   banco estático.
 """
 from __future__ import annotations
 
 import logging
 import time
+import uuid
 from collections import deque
 from datetime import datetime, timedelta, timezone
 from typing import Any
@@ -55,6 +65,8 @@ def set_db(db):
 
 
 CUSTO_POR_QUESTAO = th.CUSTO_POR_QUESTAO_NOVA
+_TIMEOUT_QUESTOES_IA = 45.0
+_ONTOLOGY_VERSION_QUESTOES_IA = "treino-questoes-ia-1.0"
 
 # Igual a `redacao_routes._RECLAMACAO_TTL_SEGUNDOS`: o pedido termina em
 # milissegundos (não há geração de verdade), este teto só existe para o caso
@@ -72,11 +84,6 @@ def _agora() -> datetime:
 
 def _iso(dt: datetime) -> str:
     return dt.isoformat()
-
-
-class GeracaoIndisponivelError(RuntimeError):
-    """Geração de novas questões ainda não foi implementada — sinalizador
-    deliberado, nunca uma falha real de infraestrutura."""
 
 
 def _classificacao(respondidas: int, acertos: int) -> str:
@@ -451,6 +458,75 @@ async def _liberar(claim_id: str) -> None:
         logger.exception("treino: não foi possível liberar a reivindicação %s", claim_id)
 
 
+_QUESTAO_IA_SYSTEM = """Você é a Mentis, a entidade cognitiva do Sapiens. Gere questões de
+múltipla escolha, estilo ENEM, para PRÁTICA de uma habilidade específica.
+
+Estas questões são REUTILIZÁVEIS: ficam salvas e serão mostradas a qualquer aluno que praticar
+esta habilidade depois — nunca mencione um aluno específico nem um erro que alguém tenha
+cometido.
+
+Cada questão: enunciado claro e autocontido (sem depender de imagem ou tabela), exatamente 5
+alternativas (A a E), com UMA única correta e 4 distratores plausíveis — erros de raciocínio
+reais, nunca alternativas absurdas descartáveis à primeira vista. Escreva também uma elucidação
+(2 a 4 frases) explicando a resolução e por que os distratores enganam.
+
+Responda EXCLUSIVAMENTE com JSON no formato:
+{"questoes": [{"enunciado": "...", "alternativas": [{"letra":"A","texto":"..."}, {"letra":"B","texto":"..."}, {"letra":"C","texto":"..."}, {"letra":"D","texto":"..."}, {"letra":"E","texto":"..."}], "correta": "A", "elucidacao": "..."}]}
+Sem markdown, sem texto fora do JSON."""
+
+
+def _montar_prompt_questao_ia(hab_nome: str, dificuldade: str, quantidade: int) -> str:
+    return (
+        f"Habilidade: {hab_nome}\n"
+        f"Dificuldade: {dificuldade}\n"
+        f"Gere exatamente {quantidade} questão(ões) inédita(s) sobre esta habilidade, nesta dificuldade."
+    )
+
+
+def _validar_questoes_ia(resultado: Any, dificuldade: str) -> list[dict[str, Any]]:
+    """Aceita só questões com as 5 letras completas e gabarito consistente —
+    uma questão malformada é descartada, não derruba o lote inteiro."""
+    if not isinstance(resultado, dict):
+        raise ValueError("Resposta do Gemini não é um objeto JSON.")
+    brutas = resultado.get("questoes")
+    if not isinstance(brutas, list):
+        raise ValueError("Campo 'questoes' ausente ou inválido.")
+
+    validas: list[dict[str, Any]] = []
+    for q in brutas:
+        if not isinstance(q, dict):
+            continue
+        enunciado = q.get("enunciado")
+        alternativas = q.get("alternativas")
+        correta = q.get("correta")
+        elucidacao = q.get("elucidacao")
+        if not isinstance(enunciado, str) or not enunciado.strip():
+            continue
+        if not isinstance(alternativas, list) or len(alternativas) != 5:
+            continue
+        if not all(isinstance(a, dict) and isinstance(a.get("letra"), str) and isinstance(a.get("texto"), str) for a in alternativas):
+            continue
+        letras = {a["letra"].strip().upper() for a in alternativas}
+        if letras != {"A", "B", "C", "D", "E"}:
+            continue
+        if not isinstance(correta, str) or correta.strip().upper() not in letras:
+            continue
+        if not isinstance(elucidacao, str) or not elucidacao.strip():
+            continue
+        validas.append({
+            "enunciado_antes": enunciado.strip(),
+            "tabela": None,
+            "enunciado_depois": "",
+            "alternativas": [
+                {"letra": a["letra"].strip().upper(), "texto": a["texto"].strip()} for a in alternativas
+            ],
+            "gabarito": [correta.strip().upper()],
+            "elucidacao": elucidacao.strip(),
+            "dificuldade": dificuldade,
+        })
+    return validas
+
+
 @router.post("/habilidade/{hab_id}/gerar")
 async def gerar_questoes(hab_id: str, payload: GerarRequest, user: User = Depends(require_user)):
     try:
@@ -487,25 +563,189 @@ async def gerar_questoes(hab_id: str, payload: GerarRequest, user: User = Depend
             raise
         await _marcar_cobrado(claim_id, saldo_apos_cobranca)
 
-    # Geração real ainda não existe — este bloco SEMPRE cai no `except`, de
-    # propósito: o produto decidiu já cobrar/devolver em vez de simplesmente
-    # recusar o pedido, para o fluxo de Sparks já nascer testado.
-    try:
-        raise GeracaoIndisponivelError("geração de questões novas ainda não implementada (beta)")
-    except GeracaoIndisponivelError:
-        saldo = _safe_reembolso(user.user_id, custo_total)
+    # Reaproveitamento primeiro: questões desta habilidade que este aluno
+    # ainda não recebeu. Só chama o Gemini pelo que falta — a mesma questão
+    # nunca é gerada duas vezes, e o segundo aluno a pedir prática nesta
+    # habilidade paga os mesmos Sparks pelo trabalho que o primeiro já pagou.
+    pool = [doc async for doc in _db.treino_questoes_ia.find(
+        {"hab_id": hab_id, "mostrada_para": {"$ne": user.user_id}}
+    ).limit(payload.quantidade)]
+
+    faltam = payload.quantidade - len(pool)
+    novas: list[dict[str, Any]] = []
+    if faltam > 0:
+        hab_nome = _nomes_por_hab().get(hab_id, hab_id)
+        prompt = _montar_prompt_questao_ia(hab_nome, payload.dificuldade, faltam)
+        inicio = time.monotonic()
+        try:
+            resultado = await ai_service.generate_json_resiliente(
+                _QUESTAO_IA_SYSTEM, prompt, thinking_level="MINIMAL", timeout=_TIMEOUT_QUESTOES_IA
+            )
+            # Trunca em `faltam`: o Gemini pode devolver mais questões válidas
+            # do que o pedido (o prompt pede uma quantidade, não é um teto
+            # rígido) — sem isto, `quantidade_entregue` passaria do pedido e
+            # o cálculo de devolução abaixo viraria negativo.
+            validas = _validar_questoes_ia(resultado, payload.dificuldade)[:faltam]
+            await llm_telemetry.persist(
+                _db.mentis_llm_chamadas,
+                contexto=f"hab_id={hab_id}",
+                motivo="geração de questões novas de treino (Mentis)",
+                modelo="gemini (thinking=MINIMAL)",
+                thinking_level="MINIMAL",
+                resultado_estado="ok",
+                duration_ms=(time.monotonic() - inicio) * 1000,
+            )
+            agora_iso = _iso(_agora())
+            novas = [
+                {
+                    "_id": uuid.uuid4().hex,
+                    "hab_id": hab_id,
+                    "origem": "mentis_ia",
+                    "gerada_em": agora_iso,
+                    "gerada_por_uid": user.user_id,
+                    "questao": q,
+                    "mostrada_para": [],
+                    "respostas": {},
+                }
+                for q in validas
+            ]
+            if novas:
+                await _db.treino_questoes_ia.insert_many(novas)
+        except Exception:  # noqa: BLE001
+            # Não interrompe a resposta: o aluno ainda recebe o que já havia
+            # no pool, e o que faltar é devolvido em Sparks abaixo.
+            logger.exception("treino: geração de questões IA falhou para hab_id=%s", hab_id)
+
+    entregues = pool + novas
+    if entregues:
+        await _db.treino_questoes_ia.update_many(
+            {"_id": {"$in": [d["_id"] for d in entregues]}},
+            {"$addToSet": {"mostrada_para": user.user_id}},
+        )
+
+    quantidade_entregue = len(entregues)
+    quantidade_faltante = payload.quantidade - quantidade_entregue
+    if quantidade_faltante > 0:
+        _safe_reembolso(user.user_id, quantidade_faltante * CUSTO_POR_QUESTAO)
+
+    if quantidade_entregue == 0:
         resposta = {
-            "status": "indisponivel",
+            "status": "falhou",
             "hab_id": hab_id,
-            "quantidade": payload.quantidade,
+            "quantidade": 0,
             "dificuldade": payload.dificuldade,
             "sparks_cobrados": 0,
             "sparks_devolvidos": custo_total,
-            "sparks_balance": saldo if saldo is not None else fs.read_sparks_balance(user.user_id),
+            "sparks_balance": fs.read_sparks_balance(user.user_id),
+            "mensagem": "Não foi possível gerar questões agora. Seus Sparks foram devolvidos.",
+        }
+    else:
+        resposta = {
+            "status": "ok",
+            "hab_id": hab_id,
+            "quantidade": quantidade_entregue,
+            "dificuldade": payload.dificuldade,
+            "sparks_cobrados": quantidade_entregue * CUSTO_POR_QUESTAO,
+            "sparks_devolvidos": quantidade_faltante * CUSTO_POR_QUESTAO,
+            "sparks_balance": fs.read_sparks_balance(user.user_id),
             "mensagem": (
-                "A geração de novas questões está em versão beta e ainda não está "
-                "disponível. Seus Sparks foram devolvidos integralmente."
+                f"{quantidade_entregue} questão(ões) nova(s) pronta(s) em Minhas questões."
+                + (
+                    f" {quantidade_faltante} não puderam ser geradas agora e foram devolvidas."
+                    if quantidade_faltante > 0 else ""
+                )
             ),
         }
-        await _marcar_concluida(claim_id, resposta)
-        return resposta
+    await _marcar_concluida(claim_id, resposta)
+    return resposta
+
+
+# ---------- Minhas questões: listar e responder o que a Mentis já gerou ----------
+
+
+def _questao_ia_sem_gabarito(doc: dict[str, Any]) -> dict[str, Any]:
+    q = doc["questao"]
+    return {
+        "questao_id": doc["_id"],
+        "hab_id": doc["hab_id"],
+        "dificuldade": q["dificuldade"],
+        "enunciado_antes": q["enunciado_antes"],
+        "tabela": q["tabela"],
+        "enunciado_depois": q["enunciado_depois"],
+        "alternativas": q["alternativas"],
+        "gerada_em": doc["gerada_em"],
+    }
+
+
+@router.get("/questoes-geradas")
+async def listar_questoes_geradas(hab_id: str | None = None, user: User = Depends(require_user)):
+    """As questões que a Mentis já gerou (ou reaproveitou) para este aluno —
+    nunca refeitas ao reabrir a tela, só lidas daqui."""
+    filtro: dict[str, Any] = {"mostrada_para": user.user_id}
+    if hab_id:
+        filtro["hab_id"] = hab_id
+    nomes = _nomes_por_hab()
+    docs = [
+        doc async for doc in
+        _db.treino_questoes_ia.find(filtro).sort("gerada_em", -1).limit(200)
+    ]
+    itens = []
+    for doc in docs:
+        resposta_aluno = (doc.get("respostas") or {}).get(user.user_id)
+        item = _questao_ia_sem_gabarito(doc)
+        item["habilidade_nome"] = nomes.get(doc["hab_id"], doc["hab_id"])
+        item["respondida"] = resposta_aluno is not None
+        if resposta_aluno:
+            item["minha_resposta"] = resposta_aluno.get("alternativa")
+            item["acertou"] = resposta_aluno.get("acertou")
+        itens.append(item)
+    return {"itens": itens}
+
+
+class ResponderQuestaoIARequest(BaseModel):
+    alternativa: str = Field(..., min_length=1, max_length=1)
+
+
+@router.post("/questoes-geradas/{questao_id}/responder")
+async def responder_questao_ia(questao_id: str, payload: ResponderQuestaoIARequest, user: User = Depends(require_user)):
+    doc = await _db.treino_questoes_ia.find_one({"_id": questao_id})
+    if doc is None or user.user_id not in (doc.get("mostrada_para") or []):
+        raise HTTPException(status_code=404, detail="Questão não encontrada.")
+
+    alternativa = payload.alternativa.upper()
+    letras_validas = {a["letra"] for a in doc["questao"]["alternativas"]}
+    if alternativa not in letras_validas:
+        raise HTTPException(status_code=422, detail=f"Alternativa {alternativa!r} não existe nesta questão.")
+
+    ja_respondida = (doc.get("respostas") or {}).get(user.user_id)
+    if ja_respondida is not None:
+        # Idempotente: reabrir e responder de novo não reescreve behavior nem
+        # concede Sparks duas vezes — devolve o mesmo resultado de antes.
+        acertou = ja_respondida["acertou"]
+    else:
+        acertou = alternativa in doc["questao"]["gabarito"]
+        agora_iso = _iso(_agora())
+        item_id = f"TREINO-IA:{questao_id}"
+        fs.write_behavior_event(
+            user.user_id,
+            item_id=item_id,
+            ontology_version=_ONTOLOGY_VERSION_QUESTOES_IA,
+            alternativa_escolhida=alternativa,
+            acertou=acertou,
+            item_content=_questao_ia_sem_gabarito(doc),
+            contexto_tipo="treino_questao_ia",
+            origem="mentis_ia",
+        )
+        fs.grant_question_sparks(user.user_id, item_id)
+        await _db.treino_questoes_ia.update_one(
+            {"_id": questao_id},
+            {"$set": {f"respostas.{user.user_id}": {"alternativa": alternativa, "acertou": acertou, "em": agora_iso}}},
+        )
+
+    return {
+        "questao_id": questao_id,
+        "acertou": acertou,
+        "gabarito": doc["questao"]["gabarito"],
+        "elucidacao": doc["questao"]["elucidacao"],
+        "sparks_balance": fs.read_sparks_balance(user.user_id),
+    }
