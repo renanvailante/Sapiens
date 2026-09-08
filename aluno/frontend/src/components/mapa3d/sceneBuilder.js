@@ -77,13 +77,20 @@ const XS_ANCORAS = BIOMA_IDS.map((id) => ANCORA_MUNDO[id].x);
 export const CENTRO_X = (Math.min(...XS_ANCORAS) + Math.max(...XS_ANCORAS)) / 2;
 export const MEIA_LARGURA = (Math.max(...XS_ANCORAS) - Math.min(...XS_ANCORAS)) / 2 + 420;
 /** Quanto o maciço das pontas sobe acima da planície. */
-export const ALTURA_MACICO = 430;
+// Baixo de propósito: o CHÃO só faz a rampa, e quem dá altura ao maciço são
+// as lascas de rocha em cima dele. A 430 a rampa subia 55 a cada 100 de X e,
+// com célula de terreno de 19 e topo plano, isso virava uma escadaria — que
+// era exatamente a "transição brusca" que se via.
+export const ALTURA_MACICO = 165;
 /** Onde, ao longo do comprimento, a planície começa a virar rocha. */
-const INICIO_MACICO = 0.32;
+const INICIO_MACICO = 0.16; // rampa longa: a subida ocupa quase toda a meia-largura
 
+// Smootherstep (6t⁵−15t⁴+10t³), não smoothstep: a derivada SEGUNDA também
+// zera nas pontas, e é ela que se enxerga como "quebra" no encontro da
+// planície com a rocha. Com smoothstep a subida começava com um vinco.
 const suave = (a, b, x) => {
   const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
-  return t * t * (3 - 2 * t);
+  return t * t * t * (t * (t * 6 - 15) + 10);
 };
 
 /** 0 na planície central, 1 no alto dos maciços das pontas. */
@@ -102,14 +109,25 @@ export function alturaIlha(biomaId) {
   return BIOMA_ARCHETYPES[biomaId].nivelBase * NIVEL;
 }
 
-/** Posição de um nó: âncora da ilha + deslocamento local espalhado. */
+/** Biomas que ocupam as pontas do continente, onde ficam os maciços. */
+const BIOMAS_DE_PONTA = new Set(["perceber", "investigar"]);
+/** Quanto um nó sorteado é empurrado para fora, morro acima. */
+const PUXADA_MACICO = 330;
+
+/** Posição de um nó: âncora da região + deslocamento local espalhado.
+ *
+ * Parte dos nós das duas pontas é puxada para fora, subindo o maciço: na
+ * referência há missões em cima das rochas, não só na planície. É deslocamento
+ * de APRESENTAÇÃO — `x`/`y` do backend continuam intactos, e o terreno segue
+ * os nós (a meia-largura do continente sai deles), então nada fica boiando. */
 export function posicaoDoNo(srcX, srcY, biomaId) {
   const [ax, ay] = ANCORA_BIOMA_SRC[biomaId];
   const centro = ANCORA_MUNDO[biomaId];
-  return {
-    x: centro.x + (srcX - ax) * SCALE * ESPALHAMENTO * ALONGAMENTO_X,
-    z: centro.z + (srcY - ay) * SCALE * ESPALHAMENTO,
-  };
+  let x = centro.x + (srcX - ax) * SCALE * ESPALHAMENTO * ALONGAMENTO_X;
+  if (BIOMAS_DE_PONTA.has(biomaId) && hash01(`${biomaId}:${srcX}:${srcY}:maciço`) > 0.45) {
+    x += Math.sign(x - CENTRO_X || 1) * PUXADA_MACICO;
+  }
+  return { x, z: centro.z + (srcY - ay) * SCALE * ESPALHAMENTO };
 }
 
 /** Pavimento local do nó dentro da própria ilha (0..variação). */

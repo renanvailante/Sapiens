@@ -33,7 +33,7 @@ export default function CameraRig({ focoPosicao, raioMundo }) {
       const [fx, fy, fz] = focoPosicao;
       // Pula direto no primeiro foco (deep-link `?hab=`, onde o painel já
       // abre junto) — só anima nas trocas seguintes.
-      controles.setLookAt(fx + 205, fy + 200, fz + 250, fx, fy + 18, fz, montouRef.current);
+      controles.setLookAt(fx + 250, fy + 245, fz + 305, fx, fy + 40, fz, montouRef.current);
     } else if (montouRef.current) {
       controles.rotateTo(AZIMUTE_PADRAO, POLAR_PADRAO, true);
       controles.dollyTo(distanciaPadrao, true);
