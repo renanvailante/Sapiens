@@ -16,12 +16,12 @@ export const SOURCE_H = 640;
 export const SCALE = 0.072;
 
 /** Afastamento entre as ilhas (aplicado às âncoras de bioma). */
-export const SEPARACAO_ILHAS = 22;
+export const SEPARACAO_ILHAS = 92;
 /** Espalhamento dos nós DENTRO da própria ilha. */
-export const ESPALHAMENTO = 21;
+export const ESPALHAMENTO = 30;
 
 /** Altura de um pavimento. */
-export const NIVEL = 5.5;
+export const NIVEL = 9;
 /** Espessura da laje que forma o piso de um quarteirão. */
 export const LAJE = 0.5;
 
@@ -91,6 +91,8 @@ export function alturaDoNo(habId, biomaId) {
 /** Resposta de `GET /treino/mapa` + `nodeIndex` -> descrição da cena.
  * `nos` traz TODOS os nós (inclusive `unknown`, que viram massa bruta na
  * ilha); `arestas` só as visíveis, com a mesma regra de sempre. */
+const conhecido = (n) => (n.acesso ? n.acesso === "acessivel" : n.estado !== "unknown");
+
 export function construirCena(mapaData, nodeIndex) {
   const nos = [];
   for (const bioma of mapaData.biomas) {
@@ -119,7 +121,10 @@ export function construirCena(mapaData, nodeIndex) {
   for (const a of mapaData.arestas) {
     const s = porId[a.source];
     const t = porId[a.target];
-    if (!s || !t || s.estado === "unknown" || t.estado === "unknown") continue;
+    // Uma rota só existe entre pontas CONHECIDAS. Vislumbre e oculto não
+    // ancoram linha nenhuma: uma ligação saindo para o escuro entregaria a
+    // existência de algo que o aluno ainda não alcançou.
+    if (!s || !t || !conhecido(s) || !conhecido(t)) continue;
     arestas.push({
       id: `${a.source}-${a.target}`,
       relation: a.relation,
@@ -137,7 +142,7 @@ export function construirCena(mapaData, nodeIndex) {
   // Extensão do mundo, para enquadrar câmera e névoa sem números mágicos.
   let raio = 1;
   for (const n of nos) raio = Math.max(raio, Math.hypot(n.position[0], n.position[2]));
-  const limites = { raio: raio + 150 };
+  const limites = { raio: raio + 420 };
 
   return { nos, nosVisiveis, arestas, limites };
 }

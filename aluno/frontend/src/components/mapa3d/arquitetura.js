@@ -31,11 +31,11 @@ import { hash01, seededNoise2D } from "./noise";
 
 /** Lado da placa de terreno. Cresce junto com o mundo: placa pequena num
  * continente grande vira cascalho e devolve a leitura de maquete. */
-const CELULA = 9;
+const CELULA = 12;
 /** Landmarks e quarteirões são desenhados numa escala de referência e depois
  * ampliados — mexer em 60 números à mão a cada mudança de escala do mundo é
  * como a proporção entre eles se perde. */
-const ESCALA_MARCO = 3.4;
+const ESCALA_MARCO = 4.6;
 const ESCALA_NATUREZA = 2.4;
 
 // ---------------------------------------------------------------- primitivas
@@ -660,6 +660,96 @@ function gerarLandmark(biomaId, pecas) {
   ampliar(pecas, l, x, base, z, ESCALA_MARCO);
 }
 
+
+// ------------------------------------------------------- serra gêmea (borda)
+
+/** O marco natural do continente: duas montanhas colossais na borda do
+ * mundo, separadas por um vale que desce muito abaixo do nível das ilhas,
+ * com um rio correndo no fundo até despencar no abismo.
+ *
+ * Existe para dar limite e medida ao mundo — é a coisa contra a qual todo o
+ * resto parece pequeno, e o que diz "o continente acaba ali". Fica fora de
+ * qualquer bioma: não tem missão, não é clicável, é paisagem. */
+function gerarSerraGemea(pecas) {
+  let minX = Infinity;
+  let somaZ = 0;
+  for (const id of CENA.BIOMA_IDS) {
+    const a = CENA.ANCORA_MUNDO[id];
+    minX = Math.min(minX, a.x);
+    somaZ += a.z;
+  }
+  const bioma = "perceber"; // rocha fria da região vizinha, para não destoar
+  const cx = minX - 1750;
+  const cz = somaZ / CENA.BIOMA_IDS.length;
+
+  const meiaLargura = 720; // metade da distância entre os dois cumes
+  const alturaPico = 1750;
+  const baseMacico = -420;
+  const fundoVale = -980;
+  const comprimentoVale = 2300;
+
+  for (const lado of [-1, 1]) {
+    const mx = cx + lado * meiaLargura;
+
+    // Maciço em estratos: cada camada recua e sobe, como rocha dobrada.
+    const camadas = [
+      [1320, 0.34, "escuro"],
+      [980, 0.62, "escuro"],
+      [700, 0.84, "medio"],
+      [450, 1.0, "medio"],
+    ];
+    for (const [raioCamada, fracao, tom] of camadas) {
+      cone(pecas, bioma, tom, mx, baseMacico, cz, raioCamada * 2, alturaPico * fracao);
+    }
+    // Cume claro: é o que faz o pico ler contra a névoa, de longe.
+    cone(pecas, bioma, "claro", mx, baseMacico + alturaPico * 0.78, cz, 450, alturaPico * 0.3);
+
+    // Contrafortes e lascas de rocha no sopé, dando pé ao maciço.
+    for (let k = 0; k < 9; k++) {
+      const ang = hash01(`serra:${lado}:cf${k}`) * Math.PI * 2;
+      const r = 940 + hash01(`serra:${lado}:cr${k}`) * 460;
+      pedra(pecas, bioma, k % 2 ? "escuro" : "medio",
+        mx + Math.cos(ang) * r, baseMacico + 40 + hash01(`serra:${lado}:ch${k}`) * 120,
+        cz + Math.sin(ang) * r * 0.8,
+        400, 230, 320, ang, hash01(`serra:${lado}:cp${k}`) * 0.4);
+    }
+
+    // Paredão do vale: a face interna, cortada a pique até o fundo.
+    for (let t = -6; t <= 6; t++) {
+      const pz = cz + t * (comprimentoVale / 13);
+      const recuo = Math.abs(t) * 14;
+      caixa(pecas, bioma, "escuro",
+        mx - lado * (170 - recuo), fundoVale, pz,
+        150, Math.abs(fundoVale - baseMacico) + 240, comprimentoVale / 12);
+      caixa(pecas, bioma, "medio",
+        mx - lado * (250 - recuo), fundoVale, pz,
+        110, Math.abs(fundoVale - baseMacico) + 60, comprimentoVale / 12);
+    }
+  }
+
+  // Fundo do vale e o rio que o percorre.
+  for (let t = -7; t <= 7; t++) {
+    const pz = cz + t * (comprimentoVale / 15);
+    caixa(pecas, bioma, "escuro", cx, fundoVale - 90, pz, 620, 90, comprimentoVale / 14);
+    const desvio = Math.sin(t * 0.55) * 70;
+    caixa(pecas, bioma, "agua", cx + desvio, fundoVale - 6, pz, 130, 8, comprimentoVale / 14);
+    for (const lado of [1, -1]) {
+      caixa(pecas, bioma, "escuro", cx + desvio + lado * 95, fundoVale - 22, pz, 62, 26, comprimentoVale / 14);
+    }
+  }
+  // A queda no fim do vale, saindo do mundo.
+  caixa(pecas, bioma, "agua", cx + Math.sin(7 * 0.55) * 70, fundoVale - 470, cz + comprimentoVale / 2, 150, 470, 40);
+
+  // Bruma presa entre as paredes — o que dá profundidade ao vale.
+  for (let k = 0; k < 10; k++) {
+    pedra(pecas, bioma, "nevoa",
+      cx + (hash01(`serra:nev${k}`) - 0.5) * 520,
+      fundoVale + 60 + hash01(`serra:nevh${k}`) * 420,
+      cz + (hash01(`serra:nevz${k}`) - 0.5) * comprimentoVale,
+      460, 190, 380);
+  }
+}
+
 // ---------------------------------------------------------------------- API
 
 /** Monta o continente inteiro a partir da cena. */
@@ -678,6 +768,7 @@ export function construirCidade({ nos, arestas }) {
     gerarIlhotas(id, grade, pecas);
     gerarLandmark(id, pecas);
   }
+  gerarSerraGemea(pecas);
   for (const no of nos) gerarQuarteirao(no, pecas);
   for (const a of arestas) gerarRota(a, pecas);
 

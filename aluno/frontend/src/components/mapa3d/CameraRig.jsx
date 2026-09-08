@@ -15,7 +15,7 @@ const AZIMUTE_PADRAO = 0.62;
 export default function CameraRig({ focoPosicao, raioMundo }) {
   const ref = useRef();
   const montouRef = useRef(false);
-  const distanciaPadrao = Math.max(80, raioMundo * 1.95);
+  const distanciaPadrao = Math.max(80, raioMundo * 1.7);
 
   useEffect(() => {
     const controles = ref.current;

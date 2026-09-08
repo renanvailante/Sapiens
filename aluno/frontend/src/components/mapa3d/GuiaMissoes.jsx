@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Compass, ChevronLeft, ChevronRight, Crosshair } from "lucide-react";
+import { Compass, ChevronLeft, ChevronRight, ChevronDown, Crosshair } from "lucide-react";
 import { BIOMA_ARCHETYPES } from "./biomaArchetypes";
 import IconeMissao from "./IconeMissao";
 import { destravadaPor } from "./progressao";
@@ -97,7 +97,7 @@ function Linha({ no, cor, primeiro, ultimo, selecionado, onFocar, dependencias }
   );
 }
 
-function Regiao({ bioma, arestas, biomas, focoAtual, onFocar }) {
+function Regiao({ bioma, arestas, biomas, focoAtual, onFocar, aberto, onAlternar }) {
   const cor = BIOMA_ARCHETYPES[bioma.bioma_id]?.paleta.brilho ?? "#4FD9FF";
 
   // Ordem da trilha: o que já foi praticado primeiro, depois o que está
@@ -116,38 +116,69 @@ function Regiao({ bioma, arestas, biomas, focoAtual, onFocar }) {
   const abertas = visiveis.filter((n) => n.acesso === "acessivel").length;
 
   return (
-    <section className="mb-5">
-      <header className="flex items-center gap-2 px-2 mb-1.5">
-        <span className="w-1.5 h-1.5 rounded-full" style={{ background: cor, boxShadow: `0 0 8px ${cor}` }} />
+    <section className="mb-3">
+      {/* A região inteira recolhe: com seis trilhas abertas a lista come a
+          tela, e o mapa é que deveria estar ocupando esse espaço. */}
+      <button
+        onClick={() => onAlternar(bioma.bioma_id)}
+        className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/[0.05] transition-colors"
+        aria-expanded={aberto}
+        data-testid={`guia-regiao-${bioma.bioma_id}`}
+      >
+        <ChevronDown
+          className="w-3 h-3 shrink-0 transition-transform"
+          style={{ color: cor, transform: aberto ? "none" : "rotate(-90deg)" }}
+        />
+        <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: cor, boxShadow: `0 0 8px ${cor}` }} />
         <span className="font-mono-alt text-[10px] uppercase tracking-[0.26em]" style={{ color: cor }}>
           {bioma.nome}
         </span>
         <span className="h-px flex-1" style={{ background: `linear-gradient(90deg, ${cor}44, transparent)` }} />
-        <span className="font-mono-alt text-[10px] text-white/30">
+        <span className="font-mono-alt text-[10px] text-white/30 shrink-0">
           {abertas}/{bioma.nodes.length}
         </span>
-      </header>
+      </button>
 
-      <div className="relative">
-        {visiveis.map((no, i) => (
-          <Linha
-            key={no.hab_id}
-            no={no}
-            cor={cor}
-            primeiro={i === 0}
-            ultimo={i === visiveis.length - 1}
-            selecionado={focoAtual === no.hab_id}
-            onFocar={onFocar}
-            dependencias={no.acesso === "entrevisto" ? destravadaPor(no.hab_id, biomas, arestas) : []}
-          />
-        ))}
-      </div>
+      {/* Renderização condicional direta, sem animação de saída: com
+          `AnimatePresence` a saída não completava e a trilha continuava
+          ocupando a tela mesmo recolhida — que é justamente o espaço que
+          este controle existe para devolver ao mapa. */}
+      {aberto && (
+          <motion.div
+            key="trilha"
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.18, ease: "easeOut" }}
+            className="relative"
+          >
+            {visiveis.map((no, i) => (
+              <Linha
+                key={no.hab_id}
+                no={no}
+                cor={cor}
+                primeiro={i === 0}
+                ultimo={i === visiveis.length - 1}
+                selecionado={focoAtual === no.hab_id}
+                onFocar={onFocar}
+                dependencias={no.acesso === "entrevisto" ? destravadaPor(no.hab_id, biomas, arestas) : []}
+              />
+            ))}
+          </motion.div>
+      )}
     </section>
   );
 }
 
 export default function GuiaMissoes({ biomas, arestas, focoAtual, onFocar, onLimparFoco }) {
   const [aberto, setAberto] = useState(() => typeof window === "undefined" || window.innerWidth >= 1024);
+  const [recolhidas, setRecolhidas] = useState(() => new Set());
+  const alternarRegiao = (id) =>
+    setRecolhidas((atual) => {
+      const proximo = new Set(atual);
+      if (proximo.has(id)) proximo.delete(id);
+      else proximo.add(id);
+      return proximo;
+    });
 
   const total = useMemo(() => biomas.reduce((acc, b) => acc + b.nodes.length, 0), [biomas]);
   const abertas = useMemo(
@@ -203,6 +234,8 @@ export default function GuiaMissoes({ biomas, arestas, focoAtual, onFocar, onLim
                   arestas={arestas}
                   focoAtual={focoAtual}
                   onFocar={onFocar}
+                  aberto={!recolhidas.has(bioma.bioma_id)}
+                  onAlternar={alternarRegiao}
                 />
               ))}
             </div>

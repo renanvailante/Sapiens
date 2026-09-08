@@ -4,7 +4,8 @@ import * as THREE from "three";
 import Cidade from "./Cidade";
 import NoHabilidade3D from "./NoHabilidade3D";
 import CameraRig from "./CameraRig";
-import { construirCena } from "./sceneBuilder";
+import { construirCena, ANCORA_MUNDO, BIOMA_IDS, alturaIlha } from "./sceneBuilder";
+import { Nuvens, Aves } from "./Ceu";
 import { construirCidade } from "./arquitetura";
 
 const COR_ABISMO = "#04070f";
@@ -51,7 +52,9 @@ function SolQueSegue({ raio }) {
   const luzRef = useRef();
   const alvoRef = useRef();
   const alvo = useMemo(() => new THREE.Vector3(), []);
-  const extensao = Math.max(150, raio * 0.3);
+  // Teto fixo: proporcional ao raio, um mundo enorme devolveria a sombra
+  // borrada que o sol-que-segue existe justamente para evitar.
+  const extensao = Math.min(340, Math.max(150, raio * 0.12));
 
   useFrame(({ controls }) => {
     const luz = luzRef.current;
@@ -98,6 +101,12 @@ export default function MapaMundo3D({ biomas, nodeIndex, arestas, onClickHab, fo
   const pecas = useMemo(() => construirCidade(cena), [cena]);
   const noFocado = focusHabId ? cena.nos.find((n) => n.hab_id === focusHabId) : null;
   const raio = cena.limites.raio;
+  // As revoadas orbitam sobre as regiões — no vazio entre elas não haveria
+  // nada para dar referência ao movimento.
+  const ancorasDoCeu = useMemo(
+    () => BIOMA_IDS.map((id) => ({ x: ANCORA_MUNDO[id].x, z: ANCORA_MUNDO[id].z, y: alturaIlha(id) })),
+    [],
+  );
 
   return (
     <div className="absolute inset-0" style={{ background: COR_ABISMO }} data-testid="mapa-mundo-3d">
@@ -126,6 +135,9 @@ export default function MapaMundo3D({ biomas, nodeIndex, arestas, onClickHab, fo
         <Suspense fallback={null}>
           <NevoaDoAbismo raio={raio} />
           <Cidade pecas={pecas} />
+
+          <Nuvens raio={raio} />
+          <Aves ancoras={ancorasDoCeu} />
 
           {cena.nosVisiveis.map((n) => (
             <NoHabilidade3D
