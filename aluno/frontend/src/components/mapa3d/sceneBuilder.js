@@ -3,11 +3,12 @@
 // fonte de `x`, `y`, `estado`, `bioma_id` e `relation` — aqui só se decide
 // ONDE, em que ilha e em que altitude cada coisa fica, 100% no cliente.
 //
-// A composição é um ARQUIPÉLAGO: o vetor do nó em relação à âncora do seu
-// bioma é espalhado (`ESPALHAMENTO`) enquanto as próprias âncoras são
-// afastadas uma da outra (`SEPARACAO_ILHAS`). O resultado são 6 massas de
-// terra distintas, com abismo entre elas — e o vazio passa a fazer parte do
-// desenho, em vez de tudo se aglomerar no centro.
+// A composição é um CONTINENTE ÚNICO: as âncoras dos seis biomas ficam perto
+// o bastante para que suas pegadas se encostem, e o terreno é gerado como uma
+// massa só (ver `gerarContinente`). Os biomas continuam distintos por cor e
+// cota, mas são lobos do mesmo corpo de terra — não ilhas com abismo no meio.
+// O vazio ficou para fora, onde ele desenha a silhueta da costa e hospeda as
+// ilhotas satélites.
 import { hash01 } from "./noise";
 import { BIOMA_ARCHETYPES, PESO_ESTADO } from "./biomaArchetypes";
 
@@ -15,10 +16,14 @@ export const SOURCE_W = 1000;
 export const SOURCE_H = 640;
 export const SCALE = 0.072;
 
-/** Afastamento entre as ilhas (aplicado às âncoras de bioma). */
-export const SEPARACAO_ILHAS = 92;
-/** Espalhamento dos nós DENTRO da própria ilha. */
+/** Afastamento entre as regiões (aplicado às âncoras de bioma). Baixo de
+ * propósito: acima disto as pegadas se soltam e voltam a virar arquipélago. */
+export const SEPARACAO_ILHAS = 26;
+/** Espalhamento dos nós DENTRO da própria região. */
 export const ESPALHAMENTO = 30;
+/** O continente é mais comprido que fundo — é o que dá a leitura de terra
+ * larga da referência, em vez de um disco. Aplicado só ao eixo X. */
+export const ALONGAMENTO_X = 1.55;
 
 /** Altura de um pavimento. */
 export const NIVEL = 9;
@@ -54,7 +59,7 @@ export const ANCORA_MUNDO = Object.fromEntries(
     return [
       id,
       {
-        x: (sx - SOURCE_W / 2) * SCALE * SEPARACAO_ILHAS,
+        x: (sx - SOURCE_W / 2) * SCALE * SEPARACAO_ILHAS * ALONGAMENTO_X,
         z: (sy - SOURCE_H / 2) * SCALE * SEPARACAO_ILHAS,
       },
     ];
@@ -72,7 +77,7 @@ export function posicaoDoNo(srcX, srcY, biomaId) {
   const [ax, ay] = ANCORA_BIOMA_SRC[biomaId];
   const centro = ANCORA_MUNDO[biomaId];
   return {
-    x: centro.x + (srcX - ax) * SCALE * ESPALHAMENTO,
+    x: centro.x + (srcX - ax) * SCALE * ESPALHAMENTO * ALONGAMENTO_X,
     z: centro.z + (srcY - ay) * SCALE * ESPALHAMENTO,
   };
 }

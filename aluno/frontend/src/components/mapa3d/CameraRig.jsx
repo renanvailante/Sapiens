@@ -17,7 +17,7 @@ export default function CameraRig({ focoPosicao, raioMundo }) {
   const montouRef = useRef(false);
   // A vista de abertura enquadra o arquipélago, não o vazio em volta dele:
   // a 1.7× as ilhas viravam manchinhas no meio da tela.
-  const distanciaPadrao = Math.max(80, raioMundo * 1.5);
+  const distanciaPadrao = Math.max(80, raioMundo * 1.8);
 
   useEffect(() => {
     const controles = ref.current;
@@ -26,7 +26,7 @@ export default function CameraRig({ focoPosicao, raioMundo }) {
     if (!montouRef.current) {
       controles.rotateTo(AZIMUTE_PADRAO, POLAR_PADRAO, false);
       controles.dollyTo(distanciaPadrao, false);
-      controles.moveTo(0, 30, 0, false);
+      controles.moveTo(0, raioMundo * 0.22, 0, false);
     }
 
     if (focoPosicao) {
@@ -37,7 +37,7 @@ export default function CameraRig({ focoPosicao, raioMundo }) {
     } else if (montouRef.current) {
       controles.rotateTo(AZIMUTE_PADRAO, POLAR_PADRAO, true);
       controles.dollyTo(distanciaPadrao, true);
-      controles.moveTo(0, 30, 0, true);
+      controles.moveTo(0, raioMundo * 0.22, 0, true);
     }
 
     montouRef.current = true;

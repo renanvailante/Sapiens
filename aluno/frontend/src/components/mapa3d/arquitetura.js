@@ -31,7 +31,7 @@ import { hash01, seededNoise2D } from "./noise";
 
 /** Lado da placa de terreno. Cresce junto com o mundo: placa pequena num
  * continente grande vira cascalho e devolve a leitura de maquete. */
-const CELULA = 12;
+const CELULA = 19;
 /** Landmarks e quarteirões são desenhados numa escala de referência e depois
  * ampliados — mexer em 60 números à mão a cada mudança de escala do mundo é
  * como a proporção entre eles se perde. */
@@ -57,6 +57,10 @@ function cilindro(pecas, bioma, tom, x, base, z, diam, h, rotY = 0) {
 function cone(pecas, bioma, tom, x, base, z, diam, h, rotX = 0) {
   const centro = rotX === 0 ? base + h / 2 : base - h / 2;
   pecas.push({ forma: "cone", bioma, tom, pos: [x, centro, z], size: [diam, h, diam], rotY: 0, rotX });
+}
+
+function aro(pecas, bioma, tom, x, y, z, diam, rotX = -Math.PI / 2, rotY = 0) {
+  pecas.push({ bioma, tom, forma: "aro", pos: [x, y, z], size: [diam, diam, diam], rotX, rotY });
 }
 
 function anel(pecas, bioma, tom, x, y, z, diam, rotX = -Math.PI / 2, rotY = 0) {
@@ -99,100 +103,153 @@ function ampliar(destino, locais, ancoraX, ancoraY, ancoraZ, k) {
   }
 }
 
-// --------------------------------------------------------------------- ilha
+// -------------------------------------------------------------- continente
 
-/** A massa de terra: platôs em degraus largos, penhasco estratificado na
- * borda e raiz de rocha mergulhando no vazio. Devolve a grade para que rio,
- * bosque e montanha saibam onde há chão e em que cota. */
-function gerarIlha(biomaId, nosDoBioma, pecas) {
-  const arq = BIOMA_ARCHETYPES[biomaId];
-  const centro = CENA.ANCORA_MUNDO[biomaId];
-  const topo = CENA.alturaIlha(biomaId);
-  const ruido = seededNoise2D(`ilha:${biomaId}`);
+/** Distância de um ponto ao segmento AB — usada para engrossar corredores de
+ * terra entre âncoras vizinhas. */
+function distSegmento(px, pz, ax, az, bx, bz) {
+  const dx = bx - ax;
+  const dz = bz - az;
+  const L = dx * dx + dz * dz;
+  const t = L ? Math.max(0, Math.min(1, ((px - ax) * dx + (pz - az) * dz) / L)) : 0;
+  return Math.hypot(px - (ax + dx * t), pz - (az + dz * t));
+}
 
-  // A pegada segue os nós: com o mundo espalhado, eles saem muito além do
-  // raio nominal, e a ilha precisa ir junto ou eles ficam boiando fora dela.
-  let extensao = arq.raioIlha;
-  for (const no of nosDoBioma) {
-    extensao = Math.max(extensao, Math.hypot(no.position[0] - centro.x, no.position[2] - centro.z) + 34);
+/** UMA massa de terra, contínua. A pegada é a união de três coisas: um disco
+ * em cada âncora de bioma, um corredor entre âncoras vizinhas e um raio de
+ * cada âncora até o centro. Por construção não existe buraco no miolo — a
+ * única coisa que recorta é o ruído da COSTA, e ele só age onde o campo já
+ * está perto de zero.
+ *
+ * Os seis biomas continuam distintos (cor e cota próprias), mas a cota faz
+ * rampa na fronteira em vez de degrau: dentro de um continente, uma parede
+ * vertical entre regiões denunciaria que são ilhas coladas. */
+function gerarContinente(nos, pecas) {
+  const ruido = seededNoise2D("continente");
+  const porBiomaNos = {};
+  for (const no of nos) (porBiomaNos[no.biomaId] ??= []).push(no);
+
+  const ancoras = CENA.BIOMA_IDS.map((id) => {
+    const c = CENA.ANCORA_MUNDO[id];
+    let raio = BIOMA_ARCHETYPES[id].raioIlha;
+    for (const no of porBiomaNos[id] ?? []) {
+      raio = Math.max(raio, Math.hypot(no.position[0] - c.x, no.position[2] - c.z) + 70);
+    }
+    return { id, x: c.x, z: c.z, topo: CENA.alturaIlha(id), raio };
+  });
+
+  const centro = {
+    x: ancoras.reduce((acc, a) => acc + a.x, 0) / ancoras.length,
+    z: ancoras.reduce((acc, a) => acc + a.z, 0) / ancoras.length,
+  };
+  // As âncoras já vêm dispostas em anel no canvas do backend, então ligar
+  // cada uma à seguinte fecha o contorno sem precisar calcular envoltória.
+  const CORREDOR = 165;
+
+  const campo = (x, z) => {
+    let f = -1;
+    for (let k = 0; k < ancoras.length; k++) {
+      const a = ancoras[k];
+      const b = ancoras[(k + 1) % ancoras.length];
+      f = Math.max(f, 1 - Math.hypot(x - a.x, z - a.z) / a.raio);
+      f = Math.max(f, 1 - distSegmento(x, z, a.x, a.z, b.x, b.z) / CORREDOR);
+      f = Math.max(f, 1 - distSegmento(x, z, a.x, a.z, centro.x, centro.z) / (CORREDOR * 0.95));
+    }
+    return f;
+  };
+
+  let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+  for (const a of ancoras) {
+    minX = Math.min(minX, a.x - a.raio); maxX = Math.max(maxX, a.x + a.raio);
+    minZ = Math.min(minZ, a.z - a.raio); maxZ = Math.max(maxZ, a.z + a.raio);
   }
-  const alcance = extensao + CELULA * 2;
-  const cols = Math.ceil((alcance * 2) / CELULA);
-  const origemX = centro.x - alcance;
-  const origemZ = centro.z - alcance;
-  const celulas = new Map();
+  const origemX = minX - CELULA * 3;
+  const origemZ = minZ - CELULA * 3;
+  const cols = Math.ceil((maxX - minX + CELULA * 6) / CELULA);
+  const linhas = Math.ceil((maxZ - minZ + CELULA * 6) / CELULA);
 
+  const celulas = new Map();
   for (let i = 0; i < cols; i++) {
-    for (let j = 0; j < cols; j++) {
+    for (let j = 0; j < linhas; j++) {
       const cx = origemX + (i + 0.5) * CELULA;
       const cz = origemZ + (j + 0.5) * CELULA;
+      const f = campo(cx, cz);
+      if (f <= 0) continue;
+      // Recorte só na COSTA: no miolo (f alto) nada é removido, e é isso que
+      // garante continente sem buraco.
+      if (f < 0.2 && ruido(cx * 0.0045, cz * 0.0045) < -0.15) continue;
 
-      let dentro = Math.hypot(cx - centro.x, cz - centro.z) < arq.raioIlha;
-      if (!dentro) {
-        for (const no of nosDoBioma) {
-          if (Math.hypot(no.position[0] - cx, no.position[2] - cz) < 34) {
-            dentro = true;
-            break;
-          }
-        }
+      // Bioma da célula = âncora mais próxima; a cota mistura as duas mais
+      // próximas para a fronteira virar rampa.
+      let a0 = null, a1 = null, d0 = Infinity, d1 = Infinity;
+      for (const a of ancoras) {
+        const d = Math.hypot(cx - a.x, cz - a.z);
+        if (d < d0) { a1 = a0; d1 = d0; a0 = a; d0 = d; }
+        else if (d < d1) { a1 = a; d1 = d; }
       }
-      // Recorte orgânico: sem isto a ilha vira um disco e denuncia o raio.
-      if (dentro && ruido(cx * 0.0072, cz * 0.0072) < -0.34) dentro = false;
-      if (!dentro) continue;
+      const mistura = a1 ? Math.max(0, Math.min(1, (d1 - d0) / (0.4 * (d0 + d1)))) : 1;
+      const base = a1 ? a1.topo + (a0.topo - a1.topo) * (0.5 + mistura * 0.5) : a0.topo;
+      const degrau = Math.round(ruido(cx * 0.004, cz * 0.004) * 2.4) * 4.2;
 
-      // Vale e platô: poucos degraus, bem marcados.
-      const degrau = Math.round(ruido(cx * 0.0055, cz * 0.0055) * 2.2) * 3.6;
-      celulas.set(`${i}:${j}`, { i, j, cx, cz, topo: topo + degrau });
+      celulas.set(`${i}:${j}`, { i, j, cx, cz, bioma: a0.id, topo: base + degrau });
     }
   }
 
   for (const cel of celulas.values()) {
-    caixa(pecas, biomaId, "medio", cel.cx, cel.topo - 3.2, cel.cz, CELULA, 3.2, CELULA);
+    caixa(pecas, cel.bioma, "medio", cel.cx, cel.topo - 3.6, cel.cz, CELULA, 3.6, CELULA);
 
     let borda = false;
     for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-      if (!celulas.has(`${cel.i + di}:${cel.j + dj}`)) {
-        borda = true;
-        break;
-      }
+      if (!celulas.has(`${cel.i + di}:${cel.j + dj}`)) { borda = true; break; }
     }
 
     if (borda) {
-      // Penhasco em estratos: três camadas recuando, como rocha cortada.
-      const fundura = 42 + hash01(`${biomaId}:${cel.i}:${cel.j}`) * 40;
-      caixa(pecas, biomaId, "escuro", cel.cx, cel.topo - 3.2 - fundura * 0.34, cel.cz, CELULA * 0.99, fundura * 0.34, CELULA * 0.99);
-      caixa(pecas, biomaId, "escuro", cel.cx, cel.topo - 3.2 - fundura * 0.72, cel.cz, CELULA * 0.84, fundura * 0.38, CELULA * 0.84);
-      caixa(pecas, biomaId, "escuro", cel.cx, cel.topo - 3.2 - fundura, cel.cz, CELULA * 0.62, fundura * 0.28, CELULA * 0.62);
-      // Blocos desprendidos na quebra do penhasco.
-      if (hash01(`${biomaId}:solto${cel.i}:${cel.j}`) > 0.65) {
-        pedra(pecas, biomaId, "escuro", cel.cx, cel.topo - 9, cel.cz, 13, 8, 11,
-          hash01(`${biomaId}:sr${cel.i}${cel.j}`) * 3, 0.4);
+      // Penhasco em estratos só na costa REAL do continente.
+      const fundura = 60 + hash01(`cont:${cel.i}:${cel.j}`) * 60;
+      caixa(pecas, cel.bioma, "escuro", cel.cx, cel.topo - 3.6 - fundura * 0.34, cel.cz, CELULA * 0.99, fundura * 0.34, CELULA * 0.99);
+      caixa(pecas, cel.bioma, "escuro", cel.cx, cel.topo - 3.6 - fundura * 0.72, cel.cz, CELULA * 0.84, fundura * 0.38, CELULA * 0.84);
+      caixa(pecas, cel.bioma, "escuro", cel.cx, cel.topo - 3.6 - fundura, cel.cz, CELULA * 0.62, fundura * 0.28, CELULA * 0.62);
+      if (hash01(`cont:solto${cel.i}:${cel.j}`) > 0.7) {
+        pedra(pecas, cel.bioma, "escuro", cel.cx, cel.topo - 11, cel.cz, 15, 9, 13,
+          hash01(`cont:sr${cel.i}${cel.j}`) * 3, 0.4);
       }
     } else {
-      caixa(pecas, biomaId, "escuro", cel.cx, cel.topo - 15.2, cel.cz, CELULA * 0.98, 12, CELULA * 0.98);
+      caixa(pecas, cel.bioma, "escuro", cel.cx, cel.topo - 17, cel.cz, CELULA * 0.98, 14, CELULA * 0.98);
     }
   }
 
-  // Raiz de rocha, em três massas desencontradas: uma peça só vira faceta
-  // chapada e engole o penhasco logo acima dela.
-  const raioReal = extensao * 0.8;
-  for (const [dx, dz, escala, prof] of [
-    [0, 0, 1.05, 1.15],
-    [raioReal * 0.42, raioReal * 0.3, 0.62, 0.75],
-    [-raioReal * 0.36, -raioReal * 0.4, 0.5, 0.6],
-  ]) {
-    cone(pecas, biomaId, "escuro", centro.x + dx, topo - 26, centro.z + dz,
-      raioReal * escala, raioReal * prof, Math.PI);
+  // Quilha: as raízes de rocha que fazem o continente flutuar. Uma por lobo,
+  // mais uma grande no centro — a silhueta facetada por baixo é metade da
+  // leitura de "terra suspensa no vazio".
+  for (const a of ancoras) {
+    cone(pecas, a.id, "escuro", a.x, a.topo - 30, a.z, a.raio * 1.5, a.raio * 1.25, Math.PI);
+    cone(pecas, a.id, "escuro", a.x + a.raio * 0.3, a.topo - 24, a.z - a.raio * 0.26, a.raio * 0.8, a.raio * 0.7, Math.PI);
   }
+  const raioCentral = Math.max(...ancoras.map((a) => Math.hypot(a.x - centro.x, a.z - centro.z))) * 0.55;
+  cone(pecas, "integrar", "escuro", centro.x, centro.z * 0 - 34, centro.z, raioCentral * 1.9, raioCentral * 1.7, Math.PI);
 
-  return { celulas, origemX, origemZ, cols, topo, centro, extensao };
+  // Cada bioma enxerga a sua fatia do continente, mas `todas` continua
+  // disponível: um rio não pode achar que chegou à borda do mundo só porque
+  // cruzou a fronteira do bioma vizinho.
+  const grades = {};
+  for (const a of ancoras) {
+    grades[a.id] = {
+      celulas: new Map(), todas: celulas, origemX, origemZ, cols,
+      topo: a.topo, centro: { x: a.x, z: a.z }, extensao: a.raio,
+    };
+  }
+  for (const cel of celulas.values()) grades[cel.bioma].celulas.set(`${cel.i}:${cel.j}`, cel);
+
+  const extensaoTotal = Math.max(maxX - minX, maxZ - minZ) / 2;
+  return { grades, celulas, origemX, origemZ, cols, centro, extensaoTotal, ancoras };
 }
 
-/** Cota do terreno num ponto qualquer da ilha (null fora dela). */
+/** Cota do terreno num ponto qualquer do continente (null fora dele). Olha
+ * SEMPRE o mapa completo: a fronteira entre biomas não é borda de mundo. */
 function topoEm(grade, x, z) {
   const i = Math.floor((x - grade.origemX) / CELULA);
   const j = Math.floor((z - grade.origemZ) / CELULA);
-  return grade.celulas.get(`${i}:${j}`)?.topo ?? null;
+  return (grade.todas ?? grade.celulas).get(`${i}:${j}`)?.topo ?? null;
 }
 
 function longeDosNos(nos, x, z, raio) {
@@ -414,7 +471,7 @@ function gerarBosqueERochas(biomaId, grade, nos, pecas, perfil) {
 
     // Sub-bosque: o que enche o chão entre uma coisa e outra. Sem isto o
     // terreno grande fica com cara de tabuleiro vazio.
-    if (g("sub") > 0.45) {
+    if (g("sub") > 0.62) {
       const n = 1 + Math.floor(g("subn") * 3);
       for (let k = 0; k < n; k++) {
         const sx = cel.cx + (g(`sx${k}`) - 0.5) * CELULA;
@@ -429,27 +486,41 @@ function gerarBosqueERochas(biomaId, grade, nos, pecas, perfil) {
   }
 }
 
-/** Ilhotas soltas orbitando a ilha: reforçam a leitura de arquipélago e dão
- * o que olhar no meio do vazio. */
-function gerarIlhotas(biomaId, grade, pecas) {
-  const arq = BIOMA_ARCHETYPES[biomaId];
-  const perfil = PERFIL_NATUREZA[arq.vegetacao] ?? PERFIL_NATUREZA.cerrado;
-  for (let k = 0; k < 6; k++) {
-    const ang = hash01(`${biomaId}:ilhota${k}`) * Math.PI * 2;
-    const dist = grade.extensao + 40 + hash01(`${biomaId}:ilhotad${k}`) * 150;
-    const x = grade.centro.x + Math.cos(ang) * dist;
-    const z = grade.centro.z + Math.sin(ang) * dist;
-    const y = grade.topo + (hash01(`${biomaId}:ilhotay${k}`) - 0.35) * 90;
-    const r = 12 + hash01(`${biomaId}:ilhotar${k}`) * 16;
+/** Ilhotas satélites: pedaços de terra soltos orbitando o continente, em
+ * cotas diferentes. São elas que dão profundidade ao vazio em volta e o que
+ * a referência usa para o mundo não terminar numa borda seca. */
+function gerarIlhotasSatelites(continente, pecas) {
+  const { ancoras, centro, extensaoTotal } = continente;
+  for (let k = 0; k < 26; k++) {
+    const ang = (k / 26) * Math.PI * 2 + hash01(`sat:${k}:a`) * 0.5;
+    const dist = extensaoTotal * (1.08 + hash01(`sat:${k}:d`) * 0.55);
+    // Segue o alongamento do continente: satélite em círculo perfeito
+    // entregaria que a costa foi desenhada por raio.
+    const x = centro.x + Math.cos(ang) * dist * 1.35;
+    const z = centro.z + Math.sin(ang) * dist * 0.85;
 
-    cilindro(pecas, biomaId, "medio", x, y - 4, z, r * 2, 4);
-    cone(pecas, biomaId, "escuro", x, y - 4, z, r * 1.8, r * 2.6, Math.PI);
-    const n = 1 + Math.floor(hash01(`${biomaId}:ilhotan${k}`) * 3);
+    let perto = ancoras[0];
+    for (const a of ancoras) {
+      if (Math.hypot(x - a.x, z - a.z) < Math.hypot(x - perto.x, z - perto.z)) perto = a;
+    }
+    const biomaId = perto.id;
+    const perfil = PERFIL_NATUREZA[BIOMA_ARCHETYPES[biomaId].vegetacao] ?? PERFIL_NATUREZA.cerrado;
+    const y = perto.topo + (hash01(`sat:${k}:y`) - 0.3) * 260;
+    const r = 16 + hash01(`sat:${k}:r`) * 34;
+
+    cilindro(pecas, biomaId, "medio", x, y - 5, z, r * 2, 5);
+    cone(pecas, biomaId, "escuro", x, y - 5, z, r * 1.85, r * 2.4, Math.PI);
+    for (let b = 0; b < 3; b++) {
+      const ab = hash01(`sat:${k}:b${b}`) * Math.PI * 2;
+      pedra(pecas, biomaId, "escuro", x + Math.cos(ab) * r * 0.7, y - 12, z + Math.sin(ab) * r * 0.7,
+        r * 0.7, r * 0.5, r * 0.6, ab, 0.3);
+    }
+    const n = 1 + Math.floor(hash01(`sat:${k}:n`) * 4);
     for (let v = 0; v < n; v++) {
-      const av = hash01(`${biomaId}:ilhotaav${k}${v}`) * Math.PI * 2;
-      const rv = hash01(`${biomaId}:ilhotarv${k}${v}`) * r * 0.6;
+      const av = hash01(`sat:${k}:av${v}`) * Math.PI * 2;
+      const rv = hash01(`sat:${k}:rv${v}`) * r * 0.6;
       gerarArvore(pecas, biomaId, perfil.arvore, x + Math.cos(av) * rv, y, z + Math.sin(av) * rv,
-        (kk) => hash01(`${biomaId}:ilhotaa${k}${v}${kk}`));
+        (kk) => hash01(`sat:${k}:${v}${kk}`));
     }
   }
 }
@@ -759,59 +830,69 @@ function gerarSerraGemea(pecas) {
  * e não é clicável: é o que o mundo inteiro está apontando.
  *
  * Desenhado numa escala de referência e ampliado, como os demais marcos. */
-function gerarTemploCentral(pecas, completo) {
+function gerarTemploCentral(pecas, completo, continente) {
   const l = [];
   const b = "templo";
   const y = 0;
-  // Selado: tudo vira pedra morta. Aberto: pedra clara com luz violeta.
+  // Selado: pedra morta. A referência é um santuário claro com luz violeta,
+  // então travado usa DOIS cinzas escuros — um só valor apagaria as facetas e
+  // o santuário viraria um borrão, que foi exatamente o que aconteceu antes.
   const T = completo
     ? { massa: "escuro", corpo: "medio", face: "claro", luz: "brilho", halo: "brilhoFraco" }
-    : { massa: "travado", corpo: "travado", face: "travado", luz: "travado", halo: "travado" };
+    : { massa: "travado", corpo: "travado", face: "travadoClaro", luz: "travadoClaro", halo: "travado" };
 
-  // Rochedo facetado que sustenta o santuário e termina em ponta no vazio.
-  cone(l, b, T.massa, 0, y, 0, 78, 62, Math.PI);
-  for (let k = 0; k < 7; k++) {
-    const ang = (k / 7) * Math.PI * 2;
-    pedra(l, b, T.massa, Math.cos(ang) * 26, y - 10, Math.sin(ang) * 26, 30, 20, 26, ang, 0.3);
+  // Rochedo facetado terminando em ponta no vazio.
+  cone(l, b, T.massa, 0, y, 0, 82, 68, Math.PI);
+  for (let k = 0; k < 9; k++) {
+    const ang = (k / 9) * Math.PI * 2;
+    const r = 24 + (k % 2) * 7;
+    pedra(l, b, T.massa, Math.cos(ang) * r, y - 9 - (k % 3) * 5, Math.sin(ang) * r,
+      28, 22, 24, ang, 0.32);
   }
-  cilindro(l, b, T.corpo, 0, y - 2, 0, 62, 4);
+  cilindro(l, b, T.corpo, 0, y - 2, 0, 64, 4);
+  for (let i = 0; i < 3; i++) cilindro(l, b, T.corpo, 0, y + 2 + i * 2, 0, 36 - i * 5, 2);
 
-  // Templo: plataforma escalonada, colunata, frontão e o símbolo aceso.
-  for (let i = 0; i < 3; i++) cilindro(l, b, T.corpo, 0, y + 2 + i * 2, 0, 34 - i * 5, 2);
+  // Santuário central: colunata, arquitrave, frontão e o símbolo aceso.
   for (let i = 0; i < 6; i++) {
     const px = -10 + i * 4;
-    cilindro(l, b, T.face, px, y + 8, -6, 2.2, 14);
-    cilindro(l, b, T.face, px, y + 8, 6, 2.2, 14);
+    cilindro(l, b, T.face, px, y + 8, -6.5, 2.4, 15);
+    cilindro(l, b, T.face, px, y + 8, 6.5, 2.4, 15);
   }
-  caixa(l, b, T.face, 0, y + 22, 0, 26, 2.4, 18);
-  cone(l, b, T.face, 0, y + 24.4, 0, 26, 9, 0);
-  caixa(l, b, T.luz, 0, y + 9, 0, 7, 9, 1.2);
+  caixa(l, b, T.face, 0, y + 23, 0, 27, 2.6, 19);
+  cone(l, b, T.face, 0, y + 25.6, 0, 27, 10, 0);
+  caixa(l, b, T.corpo, 0, y + 8, 0, 15, 15, 9);
+  caixa(l, b, T.luz, 0, y + 10, -4.8, 7, 10, 1.4);
 
-  // Coroa de agulhas com esfera acesa no alto — a assinatura da referência.
-  for (let k = 0; k < 9; k++) {
-    const ang = (k / 9) * Math.PI * 2 + 0.25;
-    const r = 24 + (k % 3) * 4;
-    const h = 16 + (k % 4) * 7;
+  // Coroa de agulhas: o que faz o santuário ser reconhecível de longe. Alturas
+  // alternadas, cada uma com lanterna e esfera acesa no topo — a assinatura da
+  // referência é o anel de torres, não a torre única.
+  for (let k = 0; k < 13; k++) {
+    const ang = (k / 13) * Math.PI * 2 + 0.2;
+    const r = 25 + (k % 3) * 5;
+    const h = 15 + (k % 4) * 9;
     const px = Math.cos(ang) * r;
     const pz = Math.sin(ang) * r;
-    cilindro(l, b, T.corpo, px, y + 2, pz, 5.5, h);
-    cone(l, b, T.face, px, y + 2 + h, pz, 6.5, 7);
-    pedra(l, b, T.luz, px, y + 2 + h + 10, pz, 4.4, 4.4, 4.4);
+    cilindro(l, b, T.corpo, px, y + 2, pz, 6.5, h);
+    cilindro(l, b, T.face, px, y + 2 + h, pz, 8, 5);
+    cone(l, b, T.face, px, y + 7 + h, pz, 8, 9, 0);
+    pedra(l, b, T.luz, px, y + 2 + h + 17, pz, 5, 5, 5);
   }
 
-  // Anéis de luz orbitando o rochedo.
-  for (const [raioAnel, inclina] of [[46, 0.16], [54, -0.22], [62, 0.08]]) {
-    anel(l, b, T.halo, 0, y - 6, 0, raioAnel * 2, -Math.PI / 2 + inclina);
+  // Anéis de luz orbitando o rochedo, em planos desencontrados.
+  for (const [raioAnel, inclina, giro] of [[50, 0.16, 0], [58, -0.24, 0.7], [66, 0.09, 1.5], [72, -0.13, 2.3]]) {
+    aro(l, b, T.halo, 0, y - 8, 0, raioAnel * 2, -Math.PI / 2 + inclina, giro);
   }
 
-  // Alto o bastante para pairar sobre tudo, no centro exato do arquipélago.
+  // Paira no centro exato do continente, alto o bastante para a ponta do
+  // rochedo nunca encostar no relevo — ele não pode tocar a terra.
+  const centro = continente?.centro ?? { x: 0, z: 0 };
   let alturaMax = 0;
   for (const id of CENA.BIOMA_IDS) alturaMax = Math.max(alturaMax, CENA.alturaIlha(id));
-  ampliar(pecas, l, 0, 0, 0, 6);
-  for (const p of pecas.slice(pecas.length - l.length)) p.pos[1] += alturaMax + 620;
+  const ESCALA_TEMPLO = 7;
+  ampliar(pecas, l, centro.x, 0, centro.z, ESCALA_TEMPLO);
+  const subir = alturaMax + 170 + 68 * ESCALA_TEMPLO;
+  for (const p of pecas.slice(pecas.length - l.length)) p.pos[1] += subir;
 }
-
-// ---------------------------------------------------------------------- API
 
 /** Monta o continente inteiro a partir da cena. */
 export function construirCidade({ nos, arestas, completo }) {
@@ -819,18 +900,21 @@ export function construirCidade({ nos, arestas, completo }) {
   const porBioma = {};
   for (const no of nos) (porBioma[no.biomaId] ??= []).push(no);
 
+  // O terreno é gerado UMA vez, para o continente inteiro; cada bioma recebe
+  // depois a sua fatia para plantar mata, água e relevo próprios.
+  const continente = gerarContinente(nos, pecas);
   for (const id of CENA.BIOMA_IDS) {
     const doBioma = porBioma[id] ?? [];
     const perfil = PERFIL_NATUREZA[BIOMA_ARCHETYPES[id].vegetacao] ?? PERFIL_NATUREZA.cerrado;
-    const grade = gerarIlha(id, doBioma, pecas);
+    const grade = continente.grades[id];
     gerarMontanhas(id, grade, doBioma, pecas, perfil.montanhas, perfil.alturaMontanha);
     gerarAgua(id, grade, doBioma, pecas, perfil);
     gerarBosqueERochas(id, grade, doBioma, pecas, perfil);
-    gerarIlhotas(id, grade, pecas);
     gerarLandmark(id, pecas);
   }
+  gerarIlhotasSatelites(continente, pecas);
   gerarSerraGemea(pecas);
-  gerarTemploCentral(pecas, Boolean(completo));
+  gerarTemploCentral(pecas, Boolean(completo), continente);
   for (const no of nos) gerarQuarteirao(no, pecas);
   for (const a of arestas) gerarRota(a, pecas);
 

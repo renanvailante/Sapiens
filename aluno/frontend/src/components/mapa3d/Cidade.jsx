@@ -20,8 +20,10 @@ const MATERIAL_POR_TOM = {
   // Lâmina d'água do Pantanal: superfície, não volume — reflete a luz da
   // ilha e deixa a estrutura submersa aparecer por baixo.
   agua: { roughness: 0.14, metalness: 0.45, emissiva: 0.55, sombra: false, opacidade: 0.72 },
-  // Santuário ainda selado: pedra morta, sem luz nenhuma.
-  travado: { roughness: 0.95, metalness: 0.02, emissiva: 0, sombra: true, corFixa: "#343A46" },
+  // Santuário ainda selado: pedra morta, sem luz nenhuma. Dois valores, não
+  // um: com cinza único as facetas somem e o santuário vira silhueta chapada.
+  travado: { roughness: 0.95, metalness: 0.02, emissiva: 0, sombra: true, corFixa: "#2E3440" },
+  travadoClaro: { roughness: 0.9, metalness: 0.02, emissiva: 0, sombra: true, corFixa: "#525C6E" },
   // Névoa do que só foi percebido: encobre a silhueta sem apagá-la.
   nevoa: { roughness: 1, metalness: 0, emissiva: 0.12, sombra: false, opacidade: 0.22, corFixa: "#9FC0E8" },
 };
@@ -37,13 +39,20 @@ function corDaPeca(biomaId, tom) {
 function Geometria({ forma }) {
   switch (forma) {
     case "cilindro":
-      return <cylinderGeometry args={[0.5, 0.5, 1, 28]} />;
+      return <cylinderGeometry args={[0.5, 0.5, 1, 12]} />;
     case "cone":
       return <coneGeometry args={[0.5, 1, 6]} />;
     case "anel":
       return <torusGeometry args={[0.5, 0.055, 8, 32]} />;
+    // Aro: o filete dos anéis orbitais do santuário. O toro comum, ampliado
+    // à escala do templo, virava uma rosca maciça em vez de um fio de luz.
+    case "aro":
+      return <torusGeometry args={[0.5, 0.011, 6, 64]} />;
     case "esfera":
-      return <icosahedronGeometry args={[0.5, 1]} />;
+      // Detalhe 0, não 1: são dezenas de milhares de copas e pedras, e a
+      // 80 triângulos cada elas sozinhas custavam mais que o mundo inteiro.
+      // O facetado grosso ainda é a leitura certa para low-poly.
+      return <icosahedronGeometry args={[0.5, 0]} />;
     default:
       return <boxGeometry args={[1, 1, 1]} />;
   }
