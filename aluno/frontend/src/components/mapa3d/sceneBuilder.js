@@ -66,7 +66,37 @@ export const ANCORA_MUNDO = Object.fromEntries(
   }),
 );
 
-/** Cota do terreno da ilha — cada bioma tem a sua altitude. É o que cria
+// Perfil do continente ao longo do comprimento: planície baixa no meio,
+// maciço de rocha subindo nas duas pontas. É a silhueta da referência — terra
+// plana no centro, penhasco gigante de cada lado.
+//
+// Mora AQUI, e não no gerador de arquitetura, porque a cota do NÓ e a cota do
+// TERRENO precisam sair da mesma conta. Se divergirem, os nós das pontas
+// aparecem enterrados dentro da rocha.
+const XS_ANCORAS = BIOMA_IDS.map((id) => ANCORA_MUNDO[id].x);
+export const CENTRO_X = (Math.min(...XS_ANCORAS) + Math.max(...XS_ANCORAS)) / 2;
+export const MEIA_LARGURA = (Math.max(...XS_ANCORAS) - Math.min(...XS_ANCORAS)) / 2 + 420;
+/** Quanto o maciço das pontas sobe acima da planície. */
+export const ALTURA_MACICO = 430;
+/** Onde, ao longo do comprimento, a planície começa a virar rocha. */
+const INICIO_MACICO = 0.32;
+
+const suave = (a, b, x) => {
+  const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
+  return t * t * (3 - 2 * t);
+};
+
+/** 0 na planície central, 1 no alto dos maciços das pontas. */
+export function fatorMacico(x) {
+  return suave(INICIO_MACICO, 1, Math.abs((x - CENTRO_X) / MEIA_LARGURA));
+}
+
+/** Cota que o perfil continental acrescenta num ponto. */
+export function relevoContinental(x) {
+  return fatorMacico(x) * ALTURA_MACICO;
+}
+
+/** Cota do terreno da região — cada bioma tem a sua altitude. É o que cria
  * desnível de verdade entre regiões e obriga as rotas a subirem. */
 export function alturaIlha(biomaId) {
   return BIOMA_ARCHETYPES[biomaId].nivelBase * NIVEL;
@@ -89,8 +119,8 @@ export function nivelDoNo(habId, biomaId) {
 }
 
 /** Cota do piso de um quarteirão: terreno da ilha + pavimento local. */
-export function alturaDoNo(habId, biomaId) {
-  return alturaIlha(biomaId) + nivelDoNo(habId, biomaId) * NIVEL + LAJE;
+export function alturaDoNo(habId, biomaId, x = CENTRO_X) {
+  return alturaIlha(biomaId) + relevoContinental(x) + nivelDoNo(habId, biomaId) * NIVEL + LAJE;
 }
 
 /** Resposta de `GET /treino/mapa` + `nodeIndex` -> descrição da cena.
@@ -113,7 +143,7 @@ export function construirCena(mapaData, nodeIndex) {
         respondidas: n.respondidas,
         biomaId: bioma.bioma_id,
         nivel: nivelDoNo(n.hab_id, bioma.bioma_id),
-        position: [x, alturaDoNo(n.hab_id, bioma.bioma_id), z],
+        position: [x, alturaDoNo(n.hab_id, bioma.bioma_id, x), z],
       });
     }
   }

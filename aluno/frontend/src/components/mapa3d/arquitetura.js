@@ -138,35 +138,33 @@ function gerarContinente(nos, pecas) {
     return { id, x: c.x, z: c.z, topo: CENA.alturaIlha(id), raio };
   });
 
+  // Silhueta de LAJE alongada, não união de discos: a referência é uma massa
+  // comprida de contorno limpo, e a união deixava lóbulos denunciando os seis
+  // centros. A superelipse (expoente 2.8) dá o retângulo de cantos redondos.
   const centro = {
-    x: ancoras.reduce((acc, a) => acc + a.x, 0) / ancoras.length,
+    x: CENA.CENTRO_X,
     z: ancoras.reduce((acc, a) => acc + a.z, 0) / ancoras.length,
   };
-  // As âncoras já vêm dispostas em anel no canvas do backend, então ligar
-  // cada uma à seguinte fecha o contorno sem precisar calcular envoltória.
-  const CORREDOR = 165;
+  let meiaX = 0;
+  let meiaZ = 0;
+  for (const no of nos) {
+    meiaX = Math.max(meiaX, Math.abs(no.position[0] - centro.x));
+    meiaZ = Math.max(meiaZ, Math.abs(no.position[2] - centro.z));
+  }
+  meiaX += 300;
+  meiaZ += 260;
+  const EXPOENTE = 2.8;
 
   const campo = (x, z) => {
-    let f = -1;
-    for (let k = 0; k < ancoras.length; k++) {
-      const a = ancoras[k];
-      const b = ancoras[(k + 1) % ancoras.length];
-      f = Math.max(f, 1 - Math.hypot(x - a.x, z - a.z) / a.raio);
-      f = Math.max(f, 1 - distSegmento(x, z, a.x, a.z, b.x, b.z) / CORREDOR);
-      f = Math.max(f, 1 - distSegmento(x, z, a.x, a.z, centro.x, centro.z) / (CORREDOR * 0.95));
-    }
-    return f;
+    const u = Math.abs((x - centro.x) / meiaX);
+    const v = Math.abs((z - centro.z) / meiaZ);
+    return 1 - Math.pow(Math.pow(u, EXPOENTE) + Math.pow(v, EXPOENTE), 1 / EXPOENTE);
   };
 
-  let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
-  for (const a of ancoras) {
-    minX = Math.min(minX, a.x - a.raio); maxX = Math.max(maxX, a.x + a.raio);
-    minZ = Math.min(minZ, a.z - a.raio); maxZ = Math.max(maxZ, a.z + a.raio);
-  }
-  const origemX = minX - CELULA * 3;
-  const origemZ = minZ - CELULA * 3;
-  const cols = Math.ceil((maxX - minX + CELULA * 6) / CELULA);
-  const linhas = Math.ceil((maxZ - minZ + CELULA * 6) / CELULA);
+  const origemX = centro.x - meiaX - CELULA * 3;
+  const origemZ = centro.z - meiaZ - CELULA * 3;
+  const cols = Math.ceil((meiaX * 2 + CELULA * 6) / CELULA);
+  const linhas = Math.ceil((meiaZ * 2 + CELULA * 6) / CELULA);
 
   const celulas = new Map();
   for (let i = 0; i < cols; i++) {
@@ -177,7 +175,7 @@ function gerarContinente(nos, pecas) {
       if (f <= 0) continue;
       // Recorte só na COSTA: no miolo (f alto) nada é removido, e é isso que
       // garante continente sem buraco.
-      if (f < 0.2 && ruido(cx * 0.0045, cz * 0.0045) < -0.15) continue;
+      if (f < 0.3 && ruido(cx * 0.009, cz * 0.009) < -0.12) continue;
 
       // Bioma da célula = âncora mais próxima; a cota mistura as duas mais
       // próximas para a fronteira virar rampa.
@@ -189,9 +187,23 @@ function gerarContinente(nos, pecas) {
       }
       const mistura = a1 ? Math.max(0, Math.min(1, (d1 - d0) / (0.4 * (d0 + d1)))) : 1;
       const base = a1 ? a1.topo + (a0.topo - a1.topo) * (0.5 + mistura * 0.5) : a0.topo;
-      const degrau = Math.round(ruido(cx * 0.004, cz * 0.004) * 2.4) * 4.2;
+      // Planície lisa no miolo, rocha quebrada nas pontas: o degrau do relevo
+      // cresce com o maciço, senão o meio fica tão acidentado quanto a borda.
+      const macico = CENA.fatorMacico(cx);
+      // Duas oitavas: a lenta desenha a planície, a rápida só age no maciço.
+      // Com uma frequência só, a ponta inteira caía num degrau único e virava
+      // um prato liso do tamanho da região.
+      const lento = ruido(cx * 0.004, cz * 0.004) * 2.4;
+      const rapido = ruido(cx * 0.013, cz * 0.013) * 3.4 * macico;
+      // Terceira oitava, curta: sem ela o maciço inteiro caía em dois ou três
+      // patamares e virava uma mesa de pedra do tamanho da ponta.
+      const miudo = ruido(cx * 0.032, cz * 0.032) * 2.6 * macico;
+      const degrau = Math.round(lento + rapido + miudo) * (2.4 + macico * 9);
 
-      celulas.set(`${i}:${j}`, { i, j, cx, cz, bioma: a0.id, topo: base + degrau });
+      celulas.set(`${i}:${j}`, {
+        i, j, cx, cz, bioma: a0.id, macico,
+        topo: base + CENA.relevoContinental(cx) + degrau,
+      });
     }
   }
 
@@ -218,15 +230,24 @@ function gerarContinente(nos, pecas) {
     }
   }
 
-  // Quilha: as raízes de rocha que fazem o continente flutuar. Uma por lobo,
-  // mais uma grande no centro — a silhueta facetada por baixo é metade da
-  // leitura de "terra suspensa no vazio".
-  for (const a of ancoras) {
-    cone(pecas, a.id, "escuro", a.x, a.topo - 30, a.z, a.raio * 1.5, a.raio * 1.25, Math.PI);
-    cone(pecas, a.id, "escuro", a.x + a.raio * 0.3, a.topo - 24, a.z - a.raio * 0.26, a.raio * 0.8, a.raio * 0.7, Math.PI);
+  // Quilha: a raiz de rocha que faz a laje flutuar. Corre ao longo do
+  // comprimento e mergulha mais fundo sob os maciços das pontas — é o peso
+  // deles que a silhueta de baixo precisa contar.
+  for (let k = 0; k <= 8; k++) {
+    const t = k / 8;
+    const qx = centro.x + (t - 0.5) * 2 * meiaX * 0.86;
+    const macico = CENA.fatorMacico(qx);
+    const base = CENA.alturaIlha("relacionar") + CENA.relevoContinental(qx) - 30;
+    const larg = meiaZ * (0.95 + macico * 0.5);
+    const prof = larg * (0.85 + macico * 0.9);
+    let bioma = ancoras[0].id;
+    for (const a of ancoras) {
+      if (Math.abs(qx - a.x) < Math.abs(qx - ancoras.find((b) => b.id === bioma).x)) bioma = a.id;
+    }
+    cone(pecas, bioma, "escuro", qx, base, centro.z, larg * 1.7, prof, Math.PI);
+    cone(pecas, bioma, "escuro", qx + meiaX * 0.06, base - 18, centro.z - meiaZ * 0.22,
+      larg * 0.85, prof * 0.7, Math.PI);
   }
-  const raioCentral = Math.max(...ancoras.map((a) => Math.hypot(a.x - centro.x, a.z - centro.z))) * 0.55;
-  cone(pecas, "integrar", "escuro", centro.x, centro.z * 0 - 34, centro.z, raioCentral * 1.9, raioCentral * 1.7, Math.PI);
 
   // Cada bioma enxerga a sua fatia do continente, mas `todas` continua
   // disponível: um rio não pode achar que chegou à borda do mundo só porque
@@ -240,8 +261,8 @@ function gerarContinente(nos, pecas) {
   }
   for (const cel of celulas.values()) grades[cel.bioma].celulas.set(`${cel.i}:${cel.j}`, cel);
 
-  const extensaoTotal = Math.max(maxX - minX, maxZ - minZ) / 2;
-  return { grades, celulas, origemX, origemZ, cols, centro, extensaoTotal, ancoras };
+  const extensaoTotal = Math.max(meiaX, meiaZ);
+  return { grades, celulas, origemX, origemZ, cols, centro, extensaoTotal, ancoras, meiaX, meiaZ };
 }
 
 /** Cota do terreno num ponto qualquer do continente (null fora dele). Olha
@@ -272,6 +293,7 @@ function gerarMontanhas(biomaId, grade, nos, pecas, quantidade, alturaBase) {
     const cel = celulas[Math.floor(hash01(`${biomaId}:mont${k}`) * celulas.length)];
     if (!cel) continue;
     if (Math.hypot(cel.cx - grade.centro.x, cel.cz - grade.centro.z) < grade.extensao * 0.42) continue;
+    if ((cel.macico ?? 0) > 0.45) continue; // o maciço já é o relevo dali
     if (!longeDosNos(nos, cel.cx, cel.cz, 52)) continue;
 
     const h = alturaBase * (0.7 + hash01(`${biomaId}:mh${k}`) * 0.95);
@@ -443,15 +465,24 @@ function gerarBosqueERochas(biomaId, grade, nos, pecas, perfil) {
     const g = (k) => hash01(`${semente}:${k}`);
     if (!longeDosNos(nos, cel.cx, cel.cz, 26)) continue;
     if (Math.hypot(cel.cx - grade.centro.x, cel.cz - grade.centro.z) < 48) continue;
+    // Mata é coisa de planície; no maciço o chão é rocha. Mas "rocha" não
+    // pode virar placa lisa: sem entulho, a ponta inteira lê como uma mesa de
+    // pedra. Então lá o sorteio vira só afloramento e lasca solta.
+    const planicie = 1 - (cel.macico ?? 0);
+    const rochoso = planicie < 0.35;
 
     const sorte = hash01(semente);
     const x = cel.cx + (g("jx") - 0.5) * CELULA * 0.8;
     const z = cel.cz + (g("jz") - 0.5) * CELULA * 0.8;
 
-    if (sorte < perfil.arvores) {
+    // Piso de vegetação: cerrado é ralo em ÁRVORE, mas planície pelada lê
+    // como laje de concreto na vista de mapa. Cada bioma mantém a sua espécie
+    // e a sua cor; o que se garante aqui é que exista mata.
+    const densidade = Math.max(perfil.arvores, 0.42) * planicie;
+    if (!rochoso && sorte < densidade) {
       gerarArvore(pecas, biomaId, perfil.arvore, x, cel.topo, z, g);
       // Adensamento: onde tem uma árvore, costuma ter outras ao lado.
-      const vizinhas = perfil.arvores > 0.5 ? 3 : 1;
+      const vizinhas = densidade > 0.5 ? 3 : 2;
       for (let v = 1; v <= vizinhas; v++) {
         if (g(`par${v}`) < 0.45) continue;
         const ang = g(`pa${v}`) * Math.PI * 2;
@@ -459,7 +490,7 @@ function gerarBosqueERochas(biomaId, grade, nos, pecas, perfil) {
         gerarArvore(pecas, biomaId, perfil.arvore, x + Math.cos(ang) * r, cel.topo, z + Math.sin(ang) * r,
           (k) => hash01(`${semente}:${v}${k}`), ESCALA_NATUREZA * (0.7 + g(`pe${v}`) * 0.4));
       }
-    } else if (sorte < perfil.arvores + perfil.rochas) {
+    } else if (rochoso ? sorte < 0.5 : sorte < perfil.arvores + perfil.rochas) {
       // Afloramento rochoso: blocos irregulares empilhados.
       const n = 2 + Math.floor(g("n") * 4);
       for (let k = 0; k < n; k++) {
@@ -470,19 +501,80 @@ function gerarBosqueERochas(biomaId, grade, nos, pecas, perfil) {
     }
 
     // Sub-bosque: o que enche o chão entre uma coisa e outra. Sem isto o
-    // terreno grande fica com cara de tabuleiro vazio.
-    if (g("sub") > 0.62) {
-      const n = 1 + Math.floor(g("subn") * 3);
+    // terreno grande fica com cara de tabuleiro vazio. Com ele em TODA célula
+    // custava 28 mil peças a mais sem diferença visível na vista de mapa —
+    // medido, não estimado.
+    if (rochoso || g("sub") > 0.42) {
+      const n = rochoso ? 1 + Math.floor(g("subn") * 2) : 1 + Math.floor(g("subn") * 3);
+      // No maciço o entulho é MATACÃO, não seixo: a 4 unidades ele some na
+      // vista de mapa e a ponta volta a ler como uma laje lisa.
+      const E = rochoso ? 4.5 + g("se") * 4 : 1;
       for (let k = 0; k < n; k++) {
         const sx = cel.cx + (g(`sx${k}`) - 0.5) * CELULA;
         const sz = cel.cz + (g(`sz${k}`) - 0.5) * CELULA;
         if (g(`st${k}`) > 0.55) {
-          pedra(pecas, biomaId, "escuro", sx, cel.topo + 0.7, sz, 4.4, 1.8, 3.6, g(`sr${k}`) * 3);
+          pedra(pecas, biomaId, "escuro", sx, cel.topo + 0.7 * E, sz,
+            4.4 * E, 1.8 * E, 3.6 * E, g(`sr${k}`) * 3, rochoso ? (g(`sp${k}`) - 0.5) * 0.5 : 0);
         } else {
-          pedra(pecas, biomaId, "medio", sx, cel.topo + 1.1, sz, 3.2, 2.4, 3, g(`sr${k}`) * 3);
+          pedra(pecas, biomaId, "medio", sx, cel.topo + 1.1 * E, sz,
+            3.2 * E, 2.4 * E, 3 * E, g(`sr${k}`) * 3, rochoso ? (g(`sp${k}`) - 0.5) * 0.5 : 0);
         }
       }
     }
+  }
+}
+
+/** Os dois conjuntos de rocha gigante, um em cada ponta da planície.
+ *
+ * Poucas massas GRANDES, não muitas pequenas: a primeira tentativa espalhou
+ * noventa cones do mesmo tamanho e o resultado leu como um acampamento de
+ * barracas. A referência resolve penhasco com blocos angulares volumosos, e é
+ * o poliedro em proporções desiguais — não o cone — que dá essa leitura. */
+function gerarMacicos(continente, nos, pecas) {
+  const celulas = [...continente.celulas.values()].filter((c) => c.macico > 0.5);
+  if (!celulas.length) return;
+  let postas = 0;
+
+  for (let k = 0; k < 900 && postas < 48; k++) {
+    const cel = celulas[Math.floor(hash01(`macico:${k}`) * celulas.length)];
+    if (!cel) continue;
+    if (!longeDosNos(nos, cel.cx, cel.cz, 96)) continue;
+
+    const g = (t) => hash01(`macico:${k}:${t}`);
+    // Estreito e alto: com largura e altura parecidas o icosaedro vira uma
+    // bola facetada, e o conjunto lê como pedregulho em vez de penhasco.
+    const largura = (105 + g("w") * 135) * (0.55 + cel.macico * 0.7);
+    const altura = largura * (1.35 + g("h") * 1.15);
+    const base = cel.topo + altura * 0.32;
+    const giro = g("g") * Math.PI * 2;
+
+    // Massa principal: bloco alto e desaprumado.
+    pedra(pecas, cel.bioma, "medio", cel.cx, base, cel.cz,
+      largura, altura, largura * (0.46 + g("d") * 0.44), giro, (g("t") - 0.5) * 0.22);
+    // Face iluminada no alto — é o que separa o volume do fundo.
+    pedra(pecas, cel.bioma, "claro", cel.cx, base + altura * 0.4, cel.cz,
+      largura * 0.6, altura * 0.5, largura * 0.5, giro + 0.4, (g("t2") - 0.5) * 0.3);
+
+    // Lascas encostadas: um bloco sozinho lê como pedra jogada; o grupo lê
+    // como rocha partida, que é o que a referência mostra.
+    const lascas = 2 + Math.floor(g("n") * 3);
+    for (let n = 0; n < lascas; n++) {
+      const ang = giro + n * (Math.PI * 2 / lascas) + g(`la${n}`) * 0.6;
+      const esc = 0.4 + g(`le${n}`) * 0.4;
+      pedra(pecas, cel.bioma, n % 2 ? "escuro" : "medio",
+        cel.cx + Math.cos(ang) * largura * 0.62,
+        cel.topo + altura * esc * 0.34,
+        cel.cz + Math.sin(ang) * largura * 0.62,
+        largura * esc, altura * esc * 1.1, largura * esc * 0.8,
+        ang, (g(`lt${n}`) - 0.5) * 0.5);
+    }
+
+    // Uma agulha a cada três grupos: dá pico ao conjunto sem virar espinheiro.
+    if (g("agulha") > 0.66) {
+      cone(pecas, cel.bioma, "claro", cel.cx, base + altura * 0.45, cel.cz,
+        largura * 0.55, altura * 1.1, (g("ai") - 0.5) * 0.2);
+    }
+    postas += 1;
   }
 }
 
@@ -529,7 +621,7 @@ function gerarIlhotasSatelites(continente, pecas) {
 
 function gerarQuarteirao(no, pecas) {
   const [x, y, z] = no.position;
-  const solo = CENA.alturaIlha(no.biomaId);
+  const solo = CENA.alturaIlha(no.biomaId) + CENA.relevoContinental(x);
   const rot = Math.round(hash01(`${no.hab_id}:rot`) * 3) * (Math.PI / 2);
   const g = (k) => hash01(`${no.hab_id}:${k}`);
 
@@ -629,7 +721,7 @@ function gerarRota(a, pecas) {
  * referência e ampliada por `ESCALA_MARCO`. */
 function gerarLandmark(biomaId, pecas) {
   const centro = CENA.ANCORA_MUNDO[biomaId];
-  const base = CENA.alturaIlha(biomaId);
+  const base = CENA.alturaIlha(biomaId) + CENA.relevoContinental(centro.x);
   const x = centro.x;
   const z = centro.z;
   const arq = BIOMA_ARCHETYPES[biomaId];
@@ -741,83 +833,87 @@ function gerarLandmark(biomaId, pecas) {
  * Existe para dar limite e medida ao mundo — é a coisa contra a qual todo o
  * resto parece pequeno, e o que diz "o continente acaba ali". Fica fora de
  * qualquer bioma: não tem missão, não é clicável, é paisagem. */
-function gerarSerraGemea(pecas) {
-  let minX = Infinity;
-  let somaZ = 0;
-  for (const id of CENA.BIOMA_IDS) {
-    const a = CENA.ANCORA_MUNDO[id];
-    minX = Math.min(minX, a.x);
-    somaZ += a.z;
-  }
+function gerarSerraGemea(pecas, continente) {
   const bioma = "perceber"; // rocha fria da região vizinha, para não destoar
-  const cx = minX - 1750;
-  const cz = somaZ / CENA.BIOMA_IDS.length;
+  // Dentro do maciço da ESQUERDA, não solta no vazio ao lado dele: na
+  // referência as duas montanhas e o vale do rio fazem parte do conjunto de
+  // rocha daquela ponta. Recuada em Z para não cair em cima dos nós de lá.
+  const cx = continente.centro.x - continente.meiaX * 0.74;
+  const cz = continente.centro.z - continente.meiaZ * 0.52;
+  const solo = CENA.alturaIlha(bioma) + CENA.relevoContinental(cx);
 
-  const meiaLargura = 720; // metade da distância entre os dois cumes
-  const alturaPico = 1750;
-  const baseMacico = -420;
-  const fundoVale = -980;
-  const comprimentoVale = 2300;
+  const meiaLargura = 300; // metade da distância entre os dois cumes
+  const alturaPico = 1080;
+  const baseMacico = solo - 150;
+  const fundoVale = solo - 430;
+  const comprimentoVale = 1000;
+  // As medidas abaixo foram desenhadas para uma serra de 720 de meia-largura,
+  // quando ela ficava solta no vazio. Agora que ela mora dentro do maciço,
+  // tudo escala junto — senão os contrafortes cobrem meia planície.
+  const E = meiaLargura / 720;
 
   for (const lado of [-1, 1]) {
     const mx = cx + lado * meiaLargura;
 
     // Maciço em estratos: cada camada recua e sobe, como rocha dobrada.
     const camadas = [
-      [1320, 0.34, "escuro"],
-      [980, 0.62, "escuro"],
-      [700, 0.84, "medio"],
-      [450, 1.0, "medio"],
+      // Raios bem menores que os originais: lá a serra ficava longe e podia
+      // ser larga; aqui, sobre o continente, cone de base larga com pouca
+      // altura vira platô chapado em vez de pico.
+      [600 * E, 0.34, "escuro"],
+      [470 * E, 0.64, "escuro"],
+      [340 * E, 0.86, "medio"],
+      [215 * E, 1.0, "medio"],
     ];
     for (const [raioCamada, fracao, tom] of camadas) {
       cone(pecas, bioma, tom, mx, baseMacico, cz, raioCamada * 2, alturaPico * fracao);
     }
     // Cume claro: é o que faz o pico ler contra a névoa, de longe.
-    cone(pecas, bioma, "claro", mx, baseMacico + alturaPico * 0.78, cz, 450, alturaPico * 0.3);
+    cone(pecas, bioma, "claro", mx, baseMacico + alturaPico * 0.78, cz, 215 * E, alturaPico * 0.32);
 
     // Contrafortes e lascas de rocha no sopé, dando pé ao maciço.
     for (let k = 0; k < 9; k++) {
       const ang = hash01(`serra:${lado}:cf${k}`) * Math.PI * 2;
-      const r = 940 + hash01(`serra:${lado}:cr${k}`) * 460;
+      const r = (520 + hash01(`serra:${lado}:cr${k}`) * 300) * E;
       pedra(pecas, bioma, k % 2 ? "escuro" : "medio",
         mx + Math.cos(ang) * r, baseMacico + 40 + hash01(`serra:${lado}:ch${k}`) * 120,
         cz + Math.sin(ang) * r * 0.8,
-        400, 230, 320, ang, hash01(`serra:${lado}:cp${k}`) * 0.4);
+        250 * E, 170 * E, 210 * E, ang, hash01(`serra:${lado}:cp${k}`) * 0.4);
     }
 
     // Paredão do vale: a face interna, cortada a pique até o fundo.
     for (let t = -6; t <= 6; t++) {
       const pz = cz + t * (comprimentoVale / 13);
-      const recuo = Math.abs(t) * 14;
+      const recuo = Math.abs(t) * 14 * E;
       caixa(pecas, bioma, "escuro",
-        mx - lado * (170 - recuo), fundoVale, pz,
-        150, Math.abs(fundoVale - baseMacico) + 240, comprimentoVale / 12);
+        mx - lado * (170 * E - recuo), fundoVale, pz,
+        150 * E, Math.abs(fundoVale - baseMacico) + 240, comprimentoVale / 12);
       caixa(pecas, bioma, "medio",
-        mx - lado * (250 - recuo), fundoVale, pz,
-        110, Math.abs(fundoVale - baseMacico) + 60, comprimentoVale / 12);
+        mx - lado * (250 * E - recuo), fundoVale, pz,
+        110 * E, Math.abs(fundoVale - baseMacico) + 60, comprimentoVale / 12);
     }
   }
 
   // Fundo do vale e o rio que o percorre.
   for (let t = -7; t <= 7; t++) {
     const pz = cz + t * (comprimentoVale / 15);
-    caixa(pecas, bioma, "escuro", cx, fundoVale - 90, pz, 620, 90, comprimentoVale / 14);
-    const desvio = Math.sin(t * 0.55) * 70;
-    caixa(pecas, bioma, "agua", cx + desvio, fundoVale - 6, pz, 130, 8, comprimentoVale / 14);
+    caixa(pecas, bioma, "escuro", cx, fundoVale - 90, pz, 620 * E, 90, comprimentoVale / 14);
+    const desvio = Math.sin(t * 0.55) * 70 * E;
+    caixa(pecas, bioma, "agua", cx + desvio, fundoVale - 6, pz, 130 * E, 8, comprimentoVale / 14);
     for (const lado of [1, -1]) {
-      caixa(pecas, bioma, "escuro", cx + desvio + lado * 95, fundoVale - 22, pz, 62, 26, comprimentoVale / 14);
+      caixa(pecas, bioma, "escuro", cx + desvio + lado * 95 * E, fundoVale - 22, pz, 62 * E, 26, comprimentoVale / 14);
     }
   }
   // A queda no fim do vale, saindo do mundo.
-  caixa(pecas, bioma, "agua", cx + Math.sin(7 * 0.55) * 70, fundoVale - 470, cz + comprimentoVale / 2, 150, 470, 40);
+  caixa(pecas, bioma, "agua", cx + Math.sin(7 * 0.55) * 70 * E, fundoVale - 470, cz + comprimentoVale / 2, 150 * E, 470, 40);
 
   // Bruma presa entre as paredes — o que dá profundidade ao vale.
   for (let k = 0; k < 10; k++) {
     pedra(pecas, bioma, "nevoa",
-      cx + (hash01(`serra:nev${k}`) - 0.5) * 520,
+      cx + (hash01(`serra:nev${k}`) - 0.5) * 520 * E,
       fundoVale + 60 + hash01(`serra:nevh${k}`) * 420,
       cz + (hash01(`serra:nevz${k}`) - 0.5) * comprimentoVale,
-      460, 190, 380);
+      460 * E, 190, 380 * E);
   }
 }
 
@@ -912,8 +1008,9 @@ export function construirCidade({ nos, arestas, completo }) {
     gerarBosqueERochas(id, grade, doBioma, pecas, perfil);
     gerarLandmark(id, pecas);
   }
+  gerarMacicos(continente, nos, pecas);
   gerarIlhotasSatelites(continente, pecas);
-  gerarSerraGemea(pecas);
+  gerarSerraGemea(pecas, continente);
   gerarTemploCentral(pecas, Boolean(completo), continente);
   for (const no of nos) gerarQuarteirao(no, pecas);
   for (const a of arestas) gerarRota(a, pecas);
