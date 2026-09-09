@@ -146,11 +146,69 @@ export function alturaDoNo(habId, biomaId, x = CENTRO_X) {
  * ilha); `arestas` só as visíveis, com a mesma regra de sempre. */
 const conhecido = (n) => (n.acesso ? n.acesso === "acessivel" : n.estado !== "unknown");
 
+/** Distância mínima entre dois pontos de missão no mundo. */
+const DISTANCIA_MINIMA = 300;
+
+/** Afasta pontos que caíram perto demais.
+ *
+ * O layout do backend é uma simulação de molas num canvas 1000×640: ele
+ * resolve o GRAFO, não a ocupação do terreno, e depois de esticar para as
+ * dimensões do continente as regiões densas viram aglomerados enquanto o resto
+ * fica vazio. Aqui as posições são relaxadas até respeitarem uma distância
+ * mínima — o mesmo efeito de um Poisson disk, só que partindo de um conjunto
+ * que já existe em vez de sortear pontos novos.
+ *
+ * O empurrão é simétrico e a ordem de varredura é fixa, então o resultado é
+ * determinístico: o mesmo aluno vê sempre o mesmo mapa. */
+function espacar(pontos) {
+  for (let passe = 0; passe < 24; passe++) {
+    let mexeu = false;
+    for (let i = 0; i < pontos.length; i++) {
+      for (let j = i + 1; j < pontos.length; j++) {
+        const a = pontos[i];
+        const b = pontos[j];
+        let dx = b.x - a.x;
+        let dz = b.z - a.z;
+        let d = Math.hypot(dx, dz);
+        if (d >= DISTANCIA_MINIMA) continue;
+        // Coincidentes: separa numa direção estável, derivada dos próprios ids.
+        if (d < 1e-6) {
+          const ang = hash01(`${a.hab_id}:${b.hab_id}:desempate`) * Math.PI * 2;
+          dx = Math.cos(ang);
+          dz = Math.sin(ang);
+          d = 1;
+        }
+        const empurrao = (DISTANCIA_MINIMA - d) / 2;
+        const ux = (dx / d) * empurrao;
+        const uz = (dz / d) * empurrao;
+        a.x -= ux; a.z -= uz;
+        b.x += ux; b.z += uz;
+        mexeu = true;
+      }
+    }
+    if (!mexeu) break;
+  }
+  return pontos;
+}
+
 export function construirCena(mapaData, nodeIndex) {
-  const nos = [];
+  // Posiciona todo mundo primeiro e só depois relaxa: a cota depende de `x`
+  // (perfil continental), então calcular altura antes de mover deixaria o nó
+  // enterrado ou flutuando sobre o terreno novo.
+  const pontos = [];
   for (const bioma of mapaData.biomas) {
     for (const n of bioma.nodes) {
       const { x, z } = posicaoDoNo(n.x, n.y, bioma.bioma_id);
+      pontos.push({ hab_id: n.hab_id, x, z });
+    }
+  }
+  const porHab = {};
+  for (const p of espacar(pontos)) porHab[p.hab_id] = p;
+
+  const nos = [];
+  for (const bioma of mapaData.biomas) {
+    for (const n of bioma.nodes) {
+      const { x, z } = porHab[n.hab_id];
       nos.push({
         hab_id: n.hab_id,
         // `rotulo` é o que a tela mostra; a frase original (`nome`) fica só
