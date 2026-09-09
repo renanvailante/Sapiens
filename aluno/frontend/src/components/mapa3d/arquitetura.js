@@ -261,20 +261,41 @@ function gerarContinente(nos, pecas) {
   // Quilha: a raiz de rocha que faz a laje flutuar. Corre ao longo do
   // comprimento e mergulha mais fundo sob os maciços das pontas — é o peso
   // deles que a silhueta de baixo precisa contar.
+  //
+  // A cota da quilha sai do MENOR TOPO REAL do terreno em volta de cada
+  // estação, não de uma constante. O cone tem 6 lados e é invertido, ou seja é
+  // uma pirâmide hexagonal com a FACE LARGA EM CIMA: se essa face subir acima
+  // de uma célula qualquer, ela aparece como uma placa hexagonal chapada por
+  // cima do chão — foi o que enterrou as árvores. Com a cota derivada do
+  // terreno, isso não volta a divergir quando o relevo mudar de novo.
+  const menorTopoEmFaixa = (qx, meia) => {
+    let menor = Infinity;
+    for (const cel of celulas.values()) {
+      if (Math.abs(cel.cx - qx) > meia) continue;
+      if (cel.topo < menor) menor = cel.topo;
+    }
+    return Number.isFinite(menor) ? menor : 0;
+  };
+
   for (let k = 0; k <= 8; k++) {
     const t = k / 8;
     const qx = centro.x + (t - 0.5) * 2 * meiaX * 0.86;
     const macico = CENA.fatorMacico(qx);
-    const base = CENA.alturaIlha("relacionar") + CENA.relevoContinental(qx) - 30;
-    const larg = meiaZ * (0.95 + macico * 0.5);
+    // A faixa tem que cobrir o RAIO do cone, não só o passo entre estações:
+    // o cone chega a ~0,41·meiaZ em X, e uma faixa mais estreita poderia
+    // ignorar justamente a célula baixa que ele acabaria cobrindo.
+    const base = menorTopoEmFaixa(qx, Math.max(meiaX * 0.16, meiaZ * 0.55)) - 55;
+    // Largura contida dentro da própria laje: a 1.7× o cone tinha 2900 de
+    // diâmetro num continente de 2400 de fundura e transbordava pelos lados.
+    const larg = meiaZ * (0.72 + macico * 0.3);
     const prof = larg * (0.85 + macico * 0.9);
     let bioma = ancoras[0].id;
     for (const a of ancoras) {
       if (Math.abs(qx - a.x) < Math.abs(qx - ancoras.find((b) => b.id === bioma).x)) bioma = a.id;
     }
-    cone(pecas, bioma, "escuro", qx, base, centro.z, larg * 1.7, prof, Math.PI);
-    cone(pecas, bioma, "escuro", qx + meiaX * 0.06, base - 18, centro.z - meiaZ * 0.22,
-      larg * 0.85, prof * 0.7, Math.PI);
+    cone(pecas, bioma, "escuro", qx, base, centro.z, larg * 1.15, prof, Math.PI);
+    cone(pecas, bioma, "escuro", qx + meiaX * 0.06, base - 24, centro.z - meiaZ * 0.22,
+      larg * 0.62, prof * 0.7, Math.PI);
   }
 
   // Cada bioma enxerga a sua fatia do continente, mas `todas` continua
