@@ -415,3 +415,185 @@ class TestMemoriaDoMotor:
         for i in range(motor._HISTORICO_MEMO_MAX + 10):
             motor._ler_historico(f"U{i}")
         assert len(motor._HISTORICO_MEMO) <= motor._HISTORICO_MEMO_MAX
+
+
+# ============================================ revisão espaçada (Fases 1/2/4)
+
+
+class _DocRevisao:
+    """Dublê de `students/{uid}`: conta leituras e escritas separadamente."""
+
+    def __init__(self, contador, dados=None):
+        self._c = contador
+        self._d = dados or {}
+
+    def get(self):
+        self._c["leituras"] += 1
+        ref = self
+
+        class _S:
+            exists = True
+
+            def to_dict(self):
+                return dict(ref._d)
+
+        return _S()
+
+    def set(self, payload, merge=False):
+        self._c["escritas"] += 1
+        for k, v in payload.items():
+            self._d[k] = v
+
+
+class TestCustoDaRevisao:
+    """A Fase 1 acrescenta estado ao aluno; o teto de custo é o que a torna
+    aceitável. O incidente de 2026-09-04 foi exatamente uma feature nova lendo
+    O(eventos) sem que ninguém percebesse até a cota acabar.
+    """
+
+    def _montar(self, monkeypatch, dados=None):
+        import revisao_service
+
+        revisao_service.esquecer()
+        contador = {"leituras": 0, "escritas": 0}
+        ref = _DocRevisao(contador, dados)
+        monkeypatch.setattr(fs, "_student_doc_ref", lambda uid: ref)
+        return revisao_service, contador, ref
+
+    def _item(self):
+        return {
+            "item_id": "I-1",
+            "item_hash": "h-1",
+            "fonte": {"banca": "ENEM", "ano": 2023, "prova": "AMARELO", "numero": 93, "disciplina": "Física"},
+            "estrutura_cognitiva": {
+                "dominios": [{"id": "DOM-01"}],
+                "processos": [{"id": "PROC-SIMB-01"}],
+            },
+            "qualidade": {"apto_para_camada_de_crenca": {"valor": True}, "revisado": True},
+            "distratores": [
+                {
+                    "alternativa": "B",
+                    "erros_esperados": [
+                        {"ordem": 1, "erro": "ERR-03", "processo_afetado": "PROC-SIMB-01", "confianca": 0.7}
+                    ],
+                }
+            ],
+        }
+
+    def _evento(self, n=1, acertou=False):
+        return {
+            "event_id": f"e{n}",
+            "item_id": "I-1",
+            "ontology_version": "1.4.1",
+            "status": "respondida",
+            "timestamp": f"2026-09-0{(n % 9) + 1}T10:00:00+00:00",
+            "resposta": {"alternativa_escolhida": "B", "acertou": acertou},
+        }
+
+    def test_uma_resposta_custa_uma_leitura_e_uma_escrita(self, monkeypatch):
+        svc, contador, _ = self._montar(monkeypatch)
+        svc.registrar_resposta("U1", item=self._item(), evento=self._evento())
+        assert contador["leituras"] == 1
+        assert contador["escritas"] == 1
+
+    def test_sessao_de_prova_inteira_custa_uma_leitura_so(self, monkeypatch):
+        """20 questões seguidas é o caso real. Sem a memória do escritor, seriam
+        20 leituras — e cem alunos fazendo isso é a cota diária inteira."""
+        svc, contador, _ = self._montar(monkeypatch)
+        for i in range(20):
+            svc.registrar_resposta("U1", item=self._item(), evento=self._evento(i))
+        assert contador["leituras"] == 1, "releu o estado a cada resposta"
+        assert contador["escritas"] == 20
+
+    def test_o_gatilho_nao_custa_leitura_adicional(self, monkeypatch):
+        """Critério de aceite da Fase 2: avaliar o gatilho custa 0 leituras
+        adicionais no caminho de `register_answer`. Ele roda sobre o bloco que
+        a atualização acabou de produzir."""
+        svc, com, _ = self._montar(monkeypatch)
+        for i in range(6):
+            svc.registrar_resposta("U1", item=self._item(), evento=self._evento(i), avaliar_gatilho=True)
+        leituras_com = com["leituras"]
+
+        svc, sem, _ = self._montar(monkeypatch)
+        for i in range(6):
+            svc.registrar_resposta("U2", item=self._item(), evento=self._evento(i), avaliar_gatilho=False)
+        assert leituras_com == sem["leituras"]
+
+    def test_custo_nao_cresce_com_o_historico_do_aluno(self, monkeypatch):
+        """O bloco já cheio custa o mesmo que o bloco vazio: é um documento,
+        não uma varredura."""
+        import revisao_espacada as rev
+
+        gordo = None
+        for i in range(60):
+            gordo = rev.registrar(
+                gordo,
+                processos=["PROC-SIMB-01"],
+                acertou=False,
+                dia=f"2026-09-{(i % 28) + 1:02d}",
+                quando=f"2026-09-{(i % 28) + 1:02d}T10:00:00+00:00",
+                raiz={"erro": "ERR-03", "processo": "PROC-SIMB-01", "confianca": 0.7},
+            )
+        svc, contador, _ = self._montar(monkeypatch, {"revisao": gordo})
+        svc.registrar_resposta("U1", item=self._item(), evento=self._evento())
+        assert contador["leituras"] == 1
+
+    def test_fila_diaria_custa_uma_leitura(self, monkeypatch):
+        """O critério de aceite da Fase 1, literal: montar a fila custa 1
+        leitura, independente do número de eventos do aluno."""
+        import annotation_service
+        import revisao_espacada as rev
+
+        bloco = rev.registrar(
+            None,
+            processos=["PROC-SIMB-01"],
+            acertou=False,
+            dia="2026-09-01",
+            quando="2026-09-01T10:00:00+00:00",
+            raiz={"erro": "ERR-03", "processo": "PROC-SIMB-01", "confianca": 0.7},
+            contexto="DOM-01",
+        )
+        svc, contador, _ = self._montar(
+            monkeypatch, {"revisao": bloco, "agregado": {"item_ids_respondidos": ["I-1"]}}
+        )
+        monkeypatch.setattr(annotation_service, "_build_item_index", lambda force=False: {})
+        resultado = svc.fila("U1")
+        assert contador["leituras"] == 1
+        assert contador["escritas"] == 0
+        assert [i["processo_id"] for i in resultado["itens"]] == ["PROC-SIMB-01"]
+
+    def test_trajetoria_custa_uma_leitura(self, monkeypatch):
+        import revisao_espacada as rev
+
+        bloco = rev.registrar(
+            None,
+            processos=["PROC-SIMB-01"],
+            acertou=False,
+            dia="2026-09-01",
+            quando="2026-09-01T10:00:00+00:00",
+            raiz={"erro": "ERR-03", "processo": "PROC-SIMB-01", "confianca": 0.7},
+        )
+        svc, contador, _ = self._montar(monkeypatch, {"revisao": bloco})
+        svc.esquecer()
+        assert svc.trajetoria("U1")["habilidades"]
+        assert contador["leituras"] == 1
+
+    def test_falha_de_leitura_nao_derruba_a_resposta_do_aluno(self, monkeypatch):
+        """O evento de behavior já foi gravado quando chegamos aqui. Um estado
+        de revisão que não pôde ser lido atrasa um reteste; nunca perde uma
+        resposta."""
+        import revisao_service
+
+        revisao_service.esquecer()
+
+        class _Quebrado:
+            def get(self):
+                raise RuntimeError("429 Quota exceeded")
+
+            def set(self, *a, **k):
+                raise RuntimeError("429 Quota exceeded")
+
+        monkeypatch.setattr(fs, "_student_doc_ref", lambda uid: _Quebrado())
+        assert revisao_service.registrar_resposta("U1", item=self._item(), evento=self._evento()) == {
+            "gatilho": None
+        }

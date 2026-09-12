@@ -27,6 +27,7 @@ import NaoEncontrada from "./pages/NaoEncontrada";
 const AnswerInput = lazy(() => import("./pages/AnswerInput"));
 const Diagnostic = lazy(() => import("./pages/Diagnostic"));
 const StudyPlan = lazy(() => import("./pages/StudyPlan"));
+const Revisoes = lazy(() => import("./pages/Revisoes"));
 const LearningMap = lazy(() => import("./pages/LearningMap"));
 const History = lazy(() => import("./pages/History"));
 const Trash = lazy(() => import("./pages/Trash"));
@@ -38,6 +39,7 @@ const SparksStore = lazy(() => import("./pages/SparksStore"));
 const Feed = lazy(() => import("./pages/Feed"));
 const Questoes = lazy(() => import("./pages/Questoes"));
 const Redacao = lazy(() => import("./pages/Redacao"));
+const Sugestoes = lazy(() => import("./pages/Sugestoes"));
 const EsqueciSenha = lazy(() => import("./pages/EsqueciSenha"));
 const RedefinirSenha = lazy(() => import("./pages/RedefinirSenha"));
 const Termos = lazy(() => import("./pages/Termos"));
@@ -50,6 +52,8 @@ const AdminFeed = lazy(() => import("./pages/AdminFeed"));
 const AdminAnnotations = lazy(() => import("./pages/AdminAnnotations"));
 const AdminAulasParticulares = lazy(() => import("./pages/AdminAulasParticulares"));
 const AdminReportesQuestoes = lazy(() => import("./pages/AdminReportesQuestoes"));
+const AdminSugestoes = lazy(() => import("./pages/AdminSugestoes"));
+const AdminCuradoria = lazy(() => import("./pages/AdminCuradoria"));
 const AdminPromoCodes = lazy(() => import("./pages/AdminPromoCodes"));
 const StudentHistory = lazy(() => import("./pages/StudentHistory"));
 
@@ -88,6 +92,11 @@ function AppRouter() {
       <Route path="/exam/:examId" element={<ProtectedRoute><Pagina titulo="Registrar respostas"><AnswerInput /></Pagina></ProtectedRoute>} />
       <Route path="/analysis/:analysisId" element={<ProtectedRoute><Pagina titulo="Diagnóstico"><Diagnostic /></Pagina></ProtectedRoute>} />
       <Route path="/plan/:analysisId" element={<ProtectedRoute><Pagina titulo="Plano de estudos"><StudyPlan /></Pagina></ProtectedRoute>} />
+      {/* A fila viva. `/plan/:analysisId` continua sendo o snapshot de uma
+          análise (histórico não pode quebrar); `/plan` sem id, que nunca
+          existiu como tela, aponta para o que está valendo hoje. */}
+      <Route path="/revisoes" element={<ProtectedRoute><Pagina titulo="Revisões"><Revisoes /></Pagina></ProtectedRoute>} />
+      <Route path="/plan" element={<Navigate to="/revisoes" replace />} />
       <Route path="/map/:analysisId" element={<ProtectedRoute><Pagina titulo="Mapa de aprendizagem"><LearningMap /></Pagina></ProtectedRoute>} />
       <Route path="/history" element={<ProtectedRoute><Pagina titulo="Histórico"><History /></Pagina></ProtectedRoute>} />
       <Route path="/trash" element={<ProtectedRoute><Pagina titulo="Lixeira"><Trash /></Pagina></ProtectedRoute>} />
@@ -103,6 +112,7 @@ function AppRouter() {
       <Route path="/sparks" element={<ProtectedRoute><Pagina titulo="Sparks"><SparksStore /></Pagina></ProtectedRoute>} />
       <Route path="/feed" element={<ProtectedRoute><Pagina titulo="Feed"><Feed /></Pagina></ProtectedRoute>} />
       <Route path="/redacao" element={<ProtectedRoute><Pagina titulo="Redação"><Redacao /></Pagina></ProtectedRoute>} />
+      <Route path="/sugestoes" element={<ProtectedRoute><Pagina titulo="Reclamações e sugestões"><Sugestoes /></Pagina></ProtectedRoute>} />
 
       <Route path="/admin" element={<AdminRoute><Pagina titulo="Admin"><AdminDashboard /></Pagina></AdminRoute>} />
       <Route path="/admin/answer-keys" element={<AdminRoute><Pagina titulo="Admin · Gabaritos"><Admin /></Pagina></AdminRoute>} />
@@ -110,6 +120,8 @@ function AppRouter() {
       <Route path="/admin/annotations" element={<AdminRoute><Pagina titulo="Admin · Anotações"><AdminAnnotations /></Pagina></AdminRoute>} />
       <Route path="/admin/aulas-particulares" element={<AdminRoute><Pagina titulo="Admin · Aulas particulares"><AdminAulasParticulares /></Pagina></AdminRoute>} />
       <Route path="/admin/reportes-questoes" element={<AdminRoute><Pagina titulo="Admin · Sugestões de correção"><AdminReportesQuestoes /></Pagina></AdminRoute>} />
+      <Route path="/admin/sugestoes" element={<AdminRoute><Pagina titulo="Admin · Reclamações e sugestões"><AdminSugestoes /></Pagina></AdminRoute>} />
+      <Route path="/admin/curadoria" element={<AdminRoute><Pagina titulo="Admin · Curadoria"><AdminCuradoria /></Pagina></AdminRoute>} />
       <Route path="/admin/promo-codes" element={<AdminRoute><Pagina titulo="Admin · Códigos de promoção"><AdminPromoCodes /></Pagina></AdminRoute>} />
       <Route path="/admin/users" element={<AdminRoute><Pagina titulo="Admin · Usuários"><AdminUsers /></Pagina></AdminRoute>} />
       <Route path="/admin/history" element={<AdminRoute><Pagina titulo="Admin · Histórico"><StudentHistory /></Pagina></AdminRoute>} />

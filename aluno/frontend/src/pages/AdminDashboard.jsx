@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { api, errMsg} from "../lib/api";
 import Nav from "../components/Nav";
-import { FileText, Zap, Brain, Users, ClipboardList, ArrowRight, ShieldCheck, RefreshCw, Database, GraduationCap, Flag, Ticket, Gift } from "lucide-react";
+import { FileText, Zap, Brain, Users, ClipboardList, ArrowRight, ShieldCheck, RefreshCw, Database, GraduationCap, Flag, Ticket, Gift, MessageSquareWarning } from "lucide-react";
 
 function StatCard({ label, value, hint }) {
   return (
@@ -22,10 +22,14 @@ const SECTIONS = [
     desc: "Criar, editar, publicar e reordenar os cards do feed vertical." },
   { to: "/admin/annotations", icon: Brain, title: "Anotações cognitivas",
     desc: "Ingerir JSONs anotados por IA especializada — versionados, verbatim." },
+  { to: "/admin/curadoria", icon: ShieldCheck, title: "Curadoria",
+    desc: "Oferta de itens por processo, revisão humana do elo raiz e o Sapiens Lab. É o que destrava o portão de crença." },
   { to: "/admin/aulas-particulares", icon: GraduationCap, title: "Aulas particulares",
     desc: "Ver e responder solicitações de aula particular dos alunos." },
   { to: "/admin/reportes-questoes", icon: Flag, title: "Sugestões de correção",
     desc: "Reportes da bandeira em cada questão, agrupados por questão. Aprovar credita 5 Sparks." },
+  { to: "/admin/sugestoes", icon: MessageSquareWarning, title: "Reclamações e sugestões",
+    desc: "O que os alunos dizem sobre o produto. Responder devolve o texto para a tela deles." },
   { to: "/admin/promo-codes", icon: Ticket, title: "Códigos de promoção",
     desc: "Criar e gerenciar códigos que dão Sparks de bônus no cadastro." },
   { to: "/admin/history", icon: ClipboardList, title: "Histórico do Aluno",

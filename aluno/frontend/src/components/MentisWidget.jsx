@@ -248,6 +248,7 @@ export default function MentisWidget() {
         style={{ background: "radial-gradient(circle at 35% 30%, #4FD9FF, #123A78)" }}
         aria-label={aberto ? "Fechar chat da Mentis" : "Conversar com a Mentis"}
         data-testid="mentis-widget-toggle"
+        data-tour="mentis-widget"
       >
         {aberto ? <X className="h-5 w-5 text-white" /> : <Sparkles className="h-5 w-5 text-white" />}
       </button>

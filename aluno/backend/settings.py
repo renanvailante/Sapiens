@@ -76,6 +76,14 @@ MERCADOPAGO_ACCESS_TOKEN = _env("MERCADOPAGO_ACCESS_TOKEN")
 MERCADOPAGO_PUBLIC_KEY = _env("MERCADOPAGO_PUBLIC_KEY")
 MERCADOPAGO_WEBHOOK_SECRET = _env("MERCADOPAGO_WEBHOOK_SECRET")
 
+# URL pública deste backend para onde o Mercado Pago deve notificar. Não é
+# segredo (é o endereço do nosso próprio endpoint) e por isso mora no
+# `fly.toml`, não nos secrets. Vai em `notification_url` de cada pagamento:
+# sem ela, a entrega da notificação depende só do que estiver cadastrado no
+# painel do Mercado Pago — uma configuração que não é versionada, que ninguém
+# aqui consegue inspecionar, e cujo silêncio custa dinheiro real do aluno.
+MERCADOPAGO_NOTIFICATION_URL = _env("MERCADOPAGO_NOTIFICATION_URL")
+
 
 def _motivo_loja_desligada() -> str | None:
     """Por que a loja de Sparks não pode operar — `None` quando pode.

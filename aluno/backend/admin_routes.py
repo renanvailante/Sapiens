@@ -10,7 +10,9 @@ from auth import require_admin
 from models import User
 import firestore_service as fs
 import firestore_http
+import mercadopago_client as mp
 import perfil_cognitivo_service
+import sparks_payments_service as sparks_svc
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -222,3 +224,56 @@ async def update_questao_master(item_id: str, payload: UpdateMasterRequest, admi
         {"master_id": item_id}, {"$set": pub}, upsert=True
     )
     return {"ok": True}
+
+
+# ---------- Reconciliação de pagamentos (Sparks) ----------
+#
+# O crédito de Sparks depende inteiramente do webhook do Mercado Pago
+# chegar (`POST /api/sparks/webhook`). Se ele se perder, atrasar, ou a
+# notificação nunca for entregue por qualquer motivo do lado do Mercado
+# Pago, o pagamento fica preso em `credited: false` para sempre, sem
+# nenhum jeito de destravar — o admin não tinha como ver isso, nem re-
+# disparar o crédito manualmente. Os dois endpoints abaixo cobrem exatamente
+# esse buraco, sem inventar lógica nova: `reprocessar` chama a MESMA função
+# que o webhook chama (`process_payment_webhook`), com a mesma garantia
+# atômica de "credita uma vez só" — rodar isto em um pagamento já creditado
+# é inofensivo (não credita de novo).
+
+@router.get("/sparks/pendentes")
+async def listar_sparks_pendentes(admin: User = Depends(require_admin)):
+    """O que está "preso" agora, mais a prova de o Mercado Pago estar (ou não)
+    notificando.
+
+    As duas metades respondem perguntas diferentes e só juntas dizem onde está
+    o defeito: `items` vazio e `webhooks_recebidos` cheio é operação saudável;
+    `items` cheio e `webhooks_recebidos` vazio significa que a notificação
+    nunca chegou; `webhooks_recebidos` com `assinatura_valida: false` significa
+    que chegou e foi recusada — o segredo do painel não bate com o nosso.
+    """
+    cursor = _db.sparks_payments.find(
+        {"credited": False, "status": {"$nin": ["rejected", "cancelled"]}},
+        {"_id": 0},
+    ).sort("created_at", -1)
+    itens = await cursor.to_list(length=200)
+
+    recebidos = await _db.webhook_recebimentos.find({}, {"_id": 0}).sort(
+        "received_at", -1
+    ).to_list(length=50)
+
+    return {
+        "items": itens,
+        "count": len(itens),
+        "webhooks_recebidos": recebidos,
+        "webhooks_recebidos_count": len(recebidos),
+    }
+
+
+@router.post("/sparks/reprocessar/{mp_payment_id}")
+async def reprocessar_pagamento(mp_payment_id: str, admin: User = Depends(require_admin)):
+    """Rebusca o pagamento no Mercado Pago pelo id e credita se `approved` —
+    a mesma função que `/api/sparks/webhook` chama, chamada manualmente."""
+    try:
+        resultado = await sparks_svc.process_payment_webhook(_db, mp_payment_id)
+    except mp.MercadoPagoError as exc:
+        raise HTTPException(status_code=502, detail=f"Mercado Pago: {exc.message or exc.error}")
+    return resultado

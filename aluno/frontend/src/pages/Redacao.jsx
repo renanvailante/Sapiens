@@ -4,6 +4,8 @@ import Nav from "../components/Nav";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { toast } from "sonner";
 import { useCarregamento } from "../hooks/useCarregamento";
+import { COMPETENCIAS_REDACAO } from "../constants/redacao";
+import CardDeMelhora from "../components/CardDeMelhora";
 import { PenLine, Loader2, AlertTriangle, Sparkles, Zap } from "lucide-react";
 
 const MIN_CARACTERES = 200;
@@ -16,13 +18,7 @@ const CUSTO_FEEDBACK_PADRAO = 90;
 
 // As cinco competências do ENEM, 0–200 cada. Os rótulos são os oficiais,
 // encurtados para caber na tela; o corretor devolve só o `id`.
-const COMPETENCIAS = {
-  "COMP-I": "Domínio da norma culta",
-  "COMP-II": "Compreensão do tema",
-  "COMP-III": "Seleção e organização de argumentos",
-  "COMP-IV": "Mecanismos linguísticos (coesão)",
-  "COMP-V": "Proposta de intervenção",
-};
+const COMPETENCIAS = COMPETENCIAS_REDACAO;
 
 /** Uma chave por TENTATIVA de envio. Enquanto ela não muda, o servidor trata
  *  qualquer reenvio como retry da mesma correção e não cobra de novo — é o que
@@ -132,6 +128,13 @@ function Resultado({ avaliacao, feedback, custoFeedback, saldo, gerandoFeedback,
   const anulada = avaliacao.estado_geral === "ANULADA";
   const estimados = avaliacao.nota_pontos_estimados || 0;
   const semSaldo = saldo != null && saldo < custoFeedback;
+  // As duas competências de menor nota, e só quando sobrou ponto de verdade
+  // para ganhar (< 160 de 200). Acima disso o card viraria cobrança de quem
+  // já foi bem.
+  const competenciasFracas = [...(avaliacao.competencias || [])]
+    .filter((c) => (c.nivel_pontos ?? 0) < 160)
+    .sort((a, b) => (a.nivel_pontos ?? 0) - (b.nivel_pontos ?? 0))
+    .slice(0, 2);
 
   return (
     <div className="space-y-4" data-testid="redacao-resultado">
@@ -173,6 +176,30 @@ function Resultado({ avaliacao, feedback, custoFeedback, saldo, gerandoFeedback,
             Competências
           </div>
           {avaliacao.competencias.map((c) => <BarraCompetencia key={c.id} comp={c} />)}
+        </div>
+      )}
+
+      {/* Competências que mais custaram pontos — cada uma com saída, como
+          qualquer card de erro do produto: aqui, um pedido pronto à Mentis
+          sobre AQUELA competência (ver `CardDeMelhora`). */}
+      {competenciasFracas.length > 0 && (
+        <div className="space-y-3" data-testid="redacao-competencias-fracas">
+          <div className="font-mono-alt text-[10px] uppercase tracking-[0.3em] text-white/40">
+            O que mais custou pontos
+          </div>
+          {competenciasFracas.map((c) => (
+            <CardDeMelhora
+              key={c.id}
+              rotuloTopo="Competência a desenvolver"
+              titulo={COMPETENCIAS[c.id] || c.id}
+              descricao="Peça à Mentis o que fazer para subir esta competência na próxima redação."
+              medida={`${c.nivel_pontos ?? 0}`}
+              medidaLabel="de 200"
+              assunto={`Redação · ${COMPETENCIAS[c.id] || c.id}`}
+              evidencia={`${c.nivel_pontos ?? 0} de 200 pontos nessa competência na minha última redação`}
+              testid={`redacao-fraca-${c.id}`}
+            />
+          ))}
         </div>
       )}
 

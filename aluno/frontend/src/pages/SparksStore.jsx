@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Nav from "../components/Nav";
 import { api, errMsg } from "../lib/api";
 import { toast } from "sonner";
-import { Zap, Check, Loader2, History, ShoppingBag, Network, RefreshCw, XCircle, AlertTriangle } from "lucide-react";
+import { Zap, Check, Loader2, History, ShoppingBag, Network, RefreshCw, XCircle, AlertTriangle, Infinity as InfinityIcon, Copy, QrCode } from "lucide-react";
 
 const MP_SDK_URL = "https://sdk.mercadopago.com/js/v2";
 
@@ -35,12 +35,26 @@ function formatBRL(cents) {
 function PaymentBrick({ publicKey, pkg, onSuccess, onCancel }) {
   const containerId = useRef(`mp-brick-${pkg.package_id}`).current;
   const brickRef = useRef(null);
-  const [status, setStatus] = useState("loading"); // 'loading' | 'ready' | 'submitting' | 'error'
+  const [status, setStatus] = useState("loading"); // 'loading' | 'ready' | 'submitting' | 'error' | 'pix'
   const [error, setError] = useState(null);
+  const [pix, setPix] = useState(null); // { qr_code, qr_code_base64, ticket_url } quando o método é Pix
 
   useEffect(() => {
     let cancelado = false;
     setStatus("loading");
+    setError(null);
+
+    // O Brick do Mercado Pago às vezes falha por dentro (chave pública
+    // inválida, bloqueador de anúncios, instabilidade da rede) sem NUNCA
+    // chamar `onReady` nem `onError` — sem este teto, a tela ficava presa em
+    // "Carregando pagamento..." para sempre, sem nenhum jeito de tentar de
+    // novo. 12s é folga de sobra: o Brick normalmente fica pronto em <2s.
+    const tempoLimite = setTimeout(() => {
+      if (cancelado) return;
+      setStatus("error");
+      setError("O formulário de pagamento demorou demais para carregar. Verifique sua conexão (ou um bloqueador de anúncios) e tente de novo.");
+    }, 12000);
+
     loadMercadoPagoSdk()
       .then((MercadoPago) => {
         if (cancelado) return;
@@ -48,12 +62,17 @@ function PaymentBrick({ publicKey, pkg, onSuccess, onCancel }) {
         return mp.bricks().create("payment", containerId, {
           initialization: { amount: pkg.price_cents / 100 },
           customization: {
-            paymentMethods: { creditCard: "all", debitCard: "all" },
+            // Pix entra na categoria "bankTransfer" na taxonomia do Brick —
+            // não existe uma chave dedicada "pix". Cartão continua
+            // exatamente como estava, só acrescentei a categoria nova.
+            paymentMethods: { creditCard: "all", debitCard: "all", bankTransfer: "all" },
           },
           callbacks: {
-            onReady: () => { if (!cancelado) setStatus("ready"); },
+            onReady: () => { if (!cancelado) { clearTimeout(tempoLimite); setStatus("ready"); } },
             onError: (err) => {
               if (cancelado) return;
+              clearTimeout(tempoLimite);
+              console.error("Mercado Pago Brick onError:", err);
               setStatus("error");
               setError(err?.message || "O Mercado Pago não conseguiu carregar o pagamento.");
             },
@@ -68,7 +87,18 @@ function PaymentBrick({ publicKey, pkg, onSuccess, onCancel }) {
                   issuer_id: formData.issuer_id,
                   payer: formData.payer,
                 })
-                .then(({ data }) => onSuccess(data))
+                .then(({ data }) => {
+                  // Pix não aprova na hora: fica "pending" até o aluno pagar.
+                  // O QR Code/copia-e-cola vêm nesta MESMA resposta — nada de
+                  // segunda chamada — e ficam na tela enquanto o pagamento é
+                  // aguardado em segundo plano (`acompanharPagamento`, no
+                  // componente pai, credita os Sparks quando o webhook confirmar).
+                  if (data.pix?.qr_code) {
+                    setPix(data.pix);
+                    setStatus("pix");
+                  }
+                  onSuccess(data);
+                })
                 .catch((e) => {
                   setStatus("ready");
                   setError(errMsg(e, "O Mercado Pago recusou o pagamento."));
@@ -78,12 +108,20 @@ function PaymentBrick({ publicKey, pkg, onSuccess, onCancel }) {
         });
       })
       .then((brick) => { if (!cancelado) brickRef.current = brick; })
-      .catch((e) => { if (!cancelado) { setStatus("error"); setError(e.message); } });
+      .catch((e) => {
+        if (cancelado) return;
+        clearTimeout(tempoLimite);
+        console.error("Mercado Pago Brick falhou ao inicializar:", e);
+        setStatus("error");
+        setError(e.message || "Não foi possível carregar o Mercado Pago.");
+      });
     return () => {
       cancelado = true;
+      clearTimeout(tempoLimite);
       brickRef.current?.unmount?.();
     };
   }, [publicKey, pkg, containerId, onSuccess]);
+
 
   return (
     <div className="card-sapiens rounded-2xl p-6" data-testid="sparks-payment-brick">
@@ -99,11 +137,65 @@ function PaymentBrick({ publicKey, pkg, onSuccess, onCancel }) {
           <Loader2 className="w-4 h-4 animate-spin" /> Carregando pagamento...
         </div>
       )}
-      {error && <div className="mb-3 text-sm text-rose-600" data-testid="sparks-payment-error">{error}</div>}
-      <div id={containerId} />
+      {error && (
+        <div className="mb-3" data-testid="sparks-payment-error">
+          <div className="text-sm text-rose-600">{error}</div>
+          {status === "error" && (
+            <button
+              onClick={onCancel}
+              className="pill mt-2 px-4 py-2 rounded-full text-xs font-medium border border-zinc-200 text-zinc-600 hover:border-zinc-400"
+              data-testid="sparks-payment-tentar-de-novo"
+            >
+              Fechar e tentar de novo
+            </button>
+          )}
+        </div>
+      )}
+      <div id={containerId} className={status === "pix" ? "hidden" : ""} />
       {status === "submitting" && (
         <div className="flex items-center gap-2 text-sm text-zinc-500 mt-3 justify-center">
           <Loader2 className="w-4 h-4 animate-spin" /> Confirmando com o Mercado Pago...
+        </div>
+      )}
+      {status === "pix" && pix && (
+        <div className="text-center" data-testid="sparks-pix-panel">
+          <div className="flex items-center justify-center gap-2 text-sm font-semibold text-zinc-800 mb-3">
+            <QrCode className="w-4 h-4" /> Escaneie o QR Code ou copie o código Pix
+          </div>
+          {pix.qr_code_base64 && (
+            <img
+              src={`data:image/png;base64,${pix.qr_code_base64}`}
+              alt="QR Code Pix"
+              className="mx-auto w-48 h-48 rounded-xl border border-zinc-200"
+              data-testid="sparks-pix-qr-image"
+            />
+          )}
+          {pix.qr_code && (
+            <div className="mt-4">
+              <textarea
+                readOnly
+                value={pix.qr_code}
+                rows={3}
+                onClick={(e) => e.target.select()}
+                className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-xs text-zinc-600 font-mono-alt resize-none"
+                data-testid="sparks-pix-copia-cola"
+              />
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(pix.qr_code);
+                  toast.success("Código Pix copiado.");
+                }}
+                className="pill btn-sapiens mt-2 inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full text-xs font-medium"
+                data-testid="sparks-pix-copiar"
+              >
+                <Copy className="w-3.5 h-3.5" /> Copiar código
+              </button>
+            </div>
+          )}
+          <p className="mt-4 text-xs text-zinc-500">
+            Os Sparks entram automaticamente assim que o Mercado Pago confirmar o pagamento — pode fechar esta tela
+            quando quiser, isso não cancela o Pix.
+          </p>
         </div>
       )}
     </div>
@@ -124,6 +216,17 @@ function AutoRechargeBrick({ publicKey, pkg, frequencyDays, baseline, onSuccess,
   useEffect(() => {
     let cancelado = false;
     setStatus("loading");
+    setError(null);
+
+    // Mesmo teto de `PaymentBrick`: o Brick às vezes nunca chama `onReady`
+    // nem `onError` (chave inválida, bloqueador de anúncios, rede) e a tela
+    // ficava presa em "Carregando..." para sempre.
+    const tempoLimite = setTimeout(() => {
+      if (cancelado) return;
+      setStatus("error");
+      setError("O formulário demorou demais para carregar. Verifique sua conexão (ou um bloqueador de anúncios) e tente de novo.");
+    }, 12000);
+
     loadMercadoPagoSdk()
       .then((MercadoPago) => {
         if (cancelado) return;
@@ -131,9 +234,11 @@ function AutoRechargeBrick({ publicKey, pkg, frequencyDays, baseline, onSuccess,
         return mp.bricks().create("cardPayment", containerId, {
           initialization: { amount: pkg.price_cents / 100 },
           callbacks: {
-            onReady: () => { if (!cancelado) setStatus("ready"); },
+            onReady: () => { if (!cancelado) { clearTimeout(tempoLimite); setStatus("ready"); } },
             onError: (err) => {
               if (cancelado) return;
+              clearTimeout(tempoLimite);
+              console.error("Mercado Pago Brick (recarga) onError:", err);
               setStatus("error");
               setError(err?.message || "O Mercado Pago não conseguiu carregar o formulário.");
             },
@@ -156,9 +261,16 @@ function AutoRechargeBrick({ publicKey, pkg, frequencyDays, baseline, onSuccess,
         });
       })
       .then((brick) => { if (!cancelado) brickRef.current = brick; })
-      .catch((e) => { if (!cancelado) { setStatus("error"); setError(e.message); } });
+      .catch((e) => {
+        if (cancelado) return;
+        clearTimeout(tempoLimite);
+        console.error("Mercado Pago Brick (recarga) falhou ao inicializar:", e);
+        setStatus("error");
+        setError(e.message || "Não foi possível carregar o Mercado Pago.");
+      });
     return () => {
       cancelado = true;
+      clearTimeout(tempoLimite);
       brickRef.current?.unmount?.();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -180,7 +292,20 @@ function AutoRechargeBrick({ publicKey, pkg, frequencyDays, baseline, onSuccess,
           <Loader2 className="w-4 h-4 animate-spin" /> Carregando formulário...
         </div>
       )}
-      {error && <div className="mb-3 text-sm text-rose-600" data-testid="sparks-auto-recharge-error">{error}</div>}
+      {error && (
+        <div className="mb-3" data-testid="sparks-auto-recharge-error">
+          <div className="text-sm text-rose-600">{error}</div>
+          {status === "error" && (
+            <button
+              onClick={onCancel}
+              className="pill mt-2 px-4 py-2 rounded-full text-xs font-medium border border-zinc-200 text-zinc-600 hover:border-zinc-400"
+              data-testid="sparks-auto-recharge-tentar-de-novo"
+            >
+              Fechar e tentar de novo
+            </button>
+          )}
+        </div>
+      )}
       <div id={containerId} />
       {status === "submitting" && (
         <div className="flex items-center gap-2 text-sm text-zinc-500 mt-3 justify-center">
@@ -268,10 +393,18 @@ export default function SparksStore() {
   // demorar mais que dois segundos, então o aluno via o saldo antigo e nada
   // mais acontecia na tela. Quem acabou de passar o cartão e não vê o produto
   // chegar abre chamado ou contesta a compra.
-  const acompanharPagamento = useCallback(async (purchaseId) => {
+  //
+  // Cada volta deste laço é também o que dispara a reconsulta ao Mercado Pago
+  // no servidor: `GET /sparks/purchases/{id}` repergunta o status enquanto o
+  // pagamento estiver em aberto. Por isso o Pix precisa de uma janela longa —
+  // não é "esperar o webhook", é a própria tela confirmando o pagamento.
+  const acompanharPagamento = useCallback(async (purchaseId, ehPix = false) => {
     setAguardandoPagamento(true);
-    const ATE = 60_000;
-    const INTERVALO = 3_000;
+    // Cartão responde em segundos. Pix leva o tempo de o aluno sair para o app
+    // do banco, pagar e voltar — um minuto não cobre isso, e desistir cedo era
+    // deixar quem já tinha pago olhando uma tela parada.
+    const ATE = ehPix ? 15 * 60_000 : 60_000;
+    const INTERVALO = ehPix ? 5_000 : 3_000;
     const inicio = Date.now();
 
     while (Date.now() - inicio < ATE) {
@@ -280,13 +413,25 @@ export default function SparksStore() {
         const { data } = await api.get(`/sparks/purchases/${purchaseId}`);
         if (data.credited) {
           setAguardandoPagamento(false);
+          // Pix fica com o QR Code aberto até confirmar — fecha só agora,
+          // que o pagamento realmente foi creditado. Cartão já tinha fechado
+          // na hora (`onPurchaseSuccess`), então isto é um no-op pra ele.
+          setSelectedPkg(null);
           toast.success(`+${data.sparks_amount} Sparks creditados!`);
           carregar();
           return;
         }
-        if (data.status === "rejected") {
+        // `cancelled` é como o Mercado Pago encerra um Pix que expirou sem
+        // pagamento — continuar perguntando por 15 minutos depois disso é só
+        // deixar o aluno olhando um QR Code que não vale mais nada.
+        if (data.status === "rejected" || data.status === "cancelled") {
           setAguardandoPagamento(false);
-          toast.error("Pagamento recusado — tente outro cartão.");
+          setSelectedPkg(null);
+          toast.error(
+            ehPix
+              ? "O prazo deste Pix expirou. Gere um novo para pagar."
+              : "Pagamento recusado — tente outro cartão.",
+          );
           carregar();
           return;
         }
@@ -296,8 +441,10 @@ export default function SparksStore() {
       }
     }
 
-    // Passou de um minuto: o pagamento pode ter caído em análise manual do
-    // Mercado Pago, o que é normal e não significa erro.
+    // Esgotou a janela sem resposta definitiva: pode ser análise manual do
+    // Mercado Pago, o que é normal e não significa erro. A promessa abaixo não
+    // depende mais de o webhook chegar — o servidor varre os pagamentos em
+    // aberto sozinho (`_sparks_reconciliacao_loop`) e credita quando aprovar.
     setAguardandoPagamento(false);
     toast.message(
       "O Mercado Pago ainda está confirmando. Os Sparks entram sozinhos assim que ele responder.",
@@ -306,14 +453,20 @@ export default function SparksStore() {
   }, []);
 
   const onPurchaseSuccess = (data) => {
-    setSelectedPkg(null);
     if (data?.status === "rejected") {
+      setSelectedPkg(null);
       toast.error("Pagamento recusado — tente outro cartão.");
       return;
     }
+    // Pix mostra QR Code + copia-e-cola dentro do próprio `PaymentBrick` — a
+    // tela só fecha quando `acompanharPagamento` detectar o crédito (acima).
+    // Cartão continua fechando na hora, como sempre fez.
+    if (!data?.pix) {
+      setSelectedPkg(null);
+    }
     if (data?.purchase_id) {
-      acompanharPagamento(data.purchase_id);
-    } else {
+      acompanharPagamento(data.purchase_id, !!data?.pix);
+    } else if (!data?.pix) {
       setTimeout(carregar, 3000);
     }
   };
@@ -351,7 +504,7 @@ export default function SparksStore() {
         <h1 className="font-display text-4xl md:text-5xl font-extrabold tracking-tighter text-white" data-testid="sparks-title">
           Quanto custa usar a inteligência do Sapiens.
         </h1>
-        <p className="mt-3 text-white/60 max-w-lg">Sparks alimentam os recursos que usam IA. Ganhe praticando, ou compre quando precisar de mais. Sparks não expiram.</p>
+        <p className="mt-3 text-white/60 max-w-lg">Sparks alimentam os recursos que usam IA. Ganhe praticando, ou compre quando precisar de mais.</p>
 
         <div className="mt-8 card-sapiens rounded-2xl p-6 flex items-center justify-between gap-4">
           <div>
@@ -380,8 +533,16 @@ export default function SparksStore() {
           </div>
         )}
 
-        <div className="mt-10 flex items-center gap-2 text-white/80 font-display font-bold text-lg">
-          <ShoppingBag className="w-4 h-4" /> Pacotes de Sparks
+        <div className="mt-10 flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2 text-white/80 font-display font-bold text-lg">
+            <ShoppingBag className="w-4 h-4" /> Pacotes de Sparks
+          </div>
+          <span
+            className="inline-flex items-center gap-1.5 rounded-full bg-sapiens-accentSoft text-sapiens-navy text-xs font-bold px-3 py-1.5"
+            data-testid="sparks-nao-expiram"
+          >
+            <InfinityIcon className="w-3.5 h-3.5" /> Sparks não expiram
+          </span>
         </div>
 
         {!mpDisponivel && (
@@ -390,36 +551,57 @@ export default function SparksStore() {
           </div>
         )}
 
-        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {packages.map((p) => (
-            <div
-              key={p.package_id}
-              className={`lift card-sapiens rounded-2xl p-6 flex flex-col relative ${p.highlight ? "ring-2 ring-sapiens-accent" : ""}`}
-              data-testid={`sparks-package-${p.package_id}`}
-            >
-              {p.highlight && (
-                <span
-                  className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-sapiens-accent text-white text-[10px] font-bold uppercase tracking-wide px-3 py-1 whitespace-nowrap"
-                  data-testid={`sparks-package-highlight-${p.package_id}`}
+        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 lg:items-end">
+          {packages.filter((p) => !p.oculto).map((p) => {
+            // Ordem crescente de destaque visual (200 < 600 < 4000), com UMA
+            // exceção pedida: o pacote de R$54,90 (1.500 Sparks) é o maior de
+            // todos, maior até que o de 4.000 — por isso o nível dele (3) não
+            // segue a ordem natural dos outros três (0, 1, 2).
+            const nivel = p.destaque_tamanho || 0;
+            const NIVEL = {
+              0: { pad: "p-5", amount: "text-xl", price: "text-base", btn: "py-2 text-xs", scale: "" },
+              1: { pad: "p-6", amount: "text-2xl", price: "text-lg", btn: "py-2.5 text-sm", scale: "" },
+              2: { pad: "p-7", amount: "text-3xl", price: "text-xl", btn: "py-2.5 text-sm", scale: "lg:scale-105" },
+              3: { pad: "p-8 lg:p-9", amount: "text-4xl md:text-5xl", price: "text-2xl md:text-3xl", btn: "py-3.5 text-base", scale: "lg:scale-110 lg:z-10" },
+            }[nivel];
+            const anel = nivel >= 2 ? `ring-4 ring-sapiens-accent shadow-2xl shadow-sapiens-accent/30 ${NIVEL.scale}` : nivel === 1 ? "ring-2 ring-sapiens-accent/60" : "";
+            return (
+              // `.card-sapiens` tem `overflow:hidden` (recorta o brilho de borda
+              // no canto arredondado) — um selo posicionado a -top-3 DENTRO dela
+              // era cortado ao meio. O selo agora vive num wrapper por fora, que
+              // não recorta nada, com o card em si por dentro.
+              <div key={p.package_id} className={`relative pt-4 ${nivel >= 2 ? "lg:pt-5" : ""}`}>
+                {p.highlight && (
+                  <span
+                    className={`absolute top-0 left-1/2 -translate-x-1/2 z-20 rounded-full bg-sapiens-navyDeep text-sapiens-accent border border-sapiens-accent/50 font-bold uppercase tracking-wide whitespace-nowrap shadow-md ${
+                      nivel >= 2 ? "text-xs px-4 py-1.5" : "text-[10px] px-3 py-1"
+                    }`}
+                    data-testid={`sparks-package-highlight-${p.package_id}`}
+                  >
+                    {p.highlight}
+                  </span>
+                )}
+                <div
+                  className={`lift card-sapiens rounded-2xl flex flex-col ${NIVEL.pad} ${anel}`}
+                  data-testid={`sparks-package-${p.package_id}`}
                 >
-                  {p.highlight}
-                </span>
-              )}
-              <div className="flex items-center gap-2 font-display font-extrabold text-2xl text-zinc-950">
-                <Zap className="w-5 h-5 text-amber-500" fill="currentColor" /> {p.sparks_amount}
+                  <div className={`flex items-center gap-2 font-display font-extrabold text-zinc-950 ${NIVEL.amount}`}>
+                    <Zap className={nivel >= 2 ? "w-7 h-7 text-amber-500" : "w-5 h-5 text-amber-500"} fill="currentColor" /> {p.sparks_amount}
+                  </div>
+                  <div className="mt-1 text-sm text-zinc-500">{p.label}</div>
+                  <div className={`mt-4 font-mono-alt font-bold text-sapiens-navy ${NIVEL.price}`}>{formatBRL(p.price_cents)}</div>
+                  <button
+                    onClick={() => setSelectedPkg(p)}
+                    disabled={!mpDisponivel || !publicKey}
+                    className={`pill btn-sapiens mt-5 inline-flex items-center justify-center gap-2 px-4 rounded-full font-medium disabled:opacity-40 disabled:cursor-not-allowed ${NIVEL.btn}`}
+                    data-testid={`sparks-buy-${p.package_id}`}
+                  >
+                    Comprar
+                  </button>
+                </div>
               </div>
-              <div className="mt-1 text-sm text-zinc-500">{p.label}</div>
-              <div className="mt-4 font-mono-alt text-xl font-bold text-sapiens-navy">{formatBRL(p.price_cents)}</div>
-              <button
-                onClick={() => setSelectedPkg(p)}
-                disabled={!mpDisponivel || !publicKey}
-                className="pill btn-sapiens mt-5 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed"
-                data-testid={`sparks-buy-${p.package_id}`}
-              >
-                Comprar
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {selectedPkg && publicKey && (
@@ -466,7 +648,7 @@ export default function SparksStore() {
                 exato em que o saldo cai.
               </p>
               <div className="flex flex-wrap gap-2">
-                {packages.map((p) => (
+                {packages.filter((p) => !p.oculto).map((p) => (
                   <button
                     key={p.package_id}
                     onClick={() => setActivatePkg(p.package_id)}
@@ -551,6 +733,25 @@ export default function SparksStore() {
             </div>
           )}
         </div>
+
+        {/* TEMPORÁRIO — só para validar um pagamento real (não-TEST) de ponta
+            a ponta em produção. Remover este bloco e o pacote "spark_test_15"
+            em sparks_store.py depois do teste. De propósito isolado, longe da
+            grade principal, sem estilo de destaque. */}
+        {mpDisponivel && publicKey && (() => {
+          const pacoteTeste = packages.find((p) => p.package_id === "spark_test_15");
+          return pacoteTeste ? (
+            <div className="mt-16 pt-6 border-t border-white/10 text-center">
+              <button
+                onClick={() => setSelectedPkg(pacoteTeste)}
+                className="text-[11px] text-white/30 hover:text-white/60 underline"
+                data-testid="sparks-buy-spark_test_15"
+              >
+                [teste interno] R$ 1,00 → 15 Sparks
+              </button>
+            </div>
+          ) : null;
+        })()}
       </div>
     </div>
   );

@@ -20,6 +20,8 @@ from models import User
 import ai_service
 import annotation_service
 import firestore_service as fs
+import microdiagnostico
+import revisao_service
 from feedback_templates import build_feedback, causa_raiz
 
 logger = logging.getLogger("sapiens.firestore.routes")
@@ -202,7 +204,7 @@ async def register_answer(payload: AnswerPayload, user: User = Depends(require_u
     feedback = build_feedback(master, payload.alternativa_escolhida, acertou)
 
     _safe_call(fs.ensure_student_profile, user.user_id, user.name, user.email)
-    _safe_call(
+    evento = _safe_call(
         fs.write_behavior_event,
         user.user_id,
         item_id=payload.item_id,
@@ -220,16 +222,52 @@ async def register_answer(payload: AnswerPayload, user: User = Depends(require_u
         dispositivo=payload.dispositivo,
         versao_aplicacao=payload.versao_aplicacao,
     )
+
+    # Estado de revisão espaçada (Fase 1) + gatilho do Professor Invisível
+    # (Fase 2), no MESMO ciclo da resposta.
+    #
+    # O item anotado sai de `master`, que já está carregado para o feedback —
+    # nenhuma ida ao banco a mais. O custo somado das duas fases aqui é 1
+    # leitura (memorizada por sessão) e 1 escrita, ambas no documento
+    # `students/{uid}` que o agregado já usa; o gatilho é avaliado sobre o
+    # bloco que a atualização acabou de produzir e por isso não custa leitura
+    # nenhuma. Nada disto pode derrubar o registro da resposta: o evento já
+    # está gravado quando chegamos aqui.
+    revisao = {"gatilho": None}
+    item_anotado = (master or {}).get("item") or (master or {}).get("pipeline") or master
+    if evento:
+        try:
+            revisao = await asyncio.to_thread(
+                revisao_service.registrar_resposta,
+                user.user_id,
+                item=item_anotado,
+                evento=evento,
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("revisão espaçada não atualizada para %s: %s", user.user_id, exc)
+
     # A causa raiz sai de graça: `master` já está carregado para o feedback, e
     # `causa_raiz` é a mesma leitura de cadeia, sem nenhuma ida ao banco. É ela
     # que habilita a Intervenção da Mentis logo depois do erro — sem isso, a
     # tela teria de perguntar ao servidor "esta resposta tem causa?" numa
     # segunda chamada, pagando de novo o que já estava na mão.
+    raiz = None if acertou else causa_raiz(master, payload.alternativa_escolhida)
     return {
         "acertou": acertou,
         "correta": correta_letra,
         "feedback": feedback,
-        "causa_raiz": None if acertou else causa_raiz(master, payload.alternativa_escolhida),
+        "causa_raiz": raiz,
+        "event_id": (evento or {}).get("event_id"),
+        # O Professor Invisível: `None` quase sempre, de propósito. Uma
+        # intervenção ativa por vez, cooldown por par, e só com evidência que
+        # atinge o MESMO limiar que o motor já usa (`MIN_TRACOS_RAIZ`).
+        "professor_invisivel": revisao.get("gatilho"),
+        # Fase 3: a micropergunta, quando o distrator marcado tem cadeia
+        # anotada e o par ainda tem poucas confirmações. Pular é indistinguível
+        # de não ter recebido.
+        "microdiagnostico": await microdiagnostico.perguntar_por(
+            causa_raiz=raiz, acertou=acertou, event_id=(evento or {}).get("event_id") or ""
+        ),
     }
 
 

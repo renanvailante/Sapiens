@@ -72,6 +72,8 @@ async def list_packages(_: User = Depends(require_user)):
                 "price_cents": p.price_cents,
                 "currency": p.currency,
                 "highlight": p.highlight,
+                "destaque_tamanho": p.destaque_tamanho,
+                "oculto": p.oculto,
             }
             for p in sparks_store.list_packages()
         ],
@@ -95,8 +97,12 @@ class PayerPayload(BaseModel):
 
 class PurchaseRequest(BaseModel):
     package_id: str
-    token: str
     payment_method_id: str
+    # Obrigatório para cartão (`payment_method_id` != "pix"); Pix não gera
+    # token — o Brick devolve só o método + dados do pagador. Validado em
+    # `sparks_payments_service.create_purchase`, não aqui, porque a regra
+    # depende do valor de `payment_method_id`.
+    token: str | None = None
     installments: int = 1
     issuer_id: str | None = None
     payer: PayerPayload | None = None
@@ -109,6 +115,8 @@ async def create_purchase(payload: PurchaseRequest, user: User = Depends(require
         return await svc.create_purchase(_db, user, payload.package_id, payload.model_dump(exclude={"package_id"}))
     except svc.UnknownPackageError:
         raise HTTPException(status_code=400, detail="Pacote de Sparks desconhecido.")
+    except svc.MissingCardTokenError:
+        raise HTTPException(status_code=400, detail="Token do cartão ausente.")
     except mp.MercadoPagoError as exc:
         raise HTTPException(status_code=502, detail=f"Mercado Pago recusou o pagamento: {exc.message or exc.error}")
 
@@ -229,7 +237,25 @@ async def webhook(request: Request):
         data_id=data_id,
         secret=settings.MERCADOPAGO_WEBHOOK_SECRET,
     )
+
+    # Registra TODA notificação recebida, inclusive a que falha na assinatura.
+    # Sem isto, "o webhook não chegou" e "o webhook chegou e foi rejeitado por
+    # assinatura inválida" são indistinguíveis depois do fato — os dois deixam
+    # o pagamento parado e o banco idêntico —, e o log do Fly não guarda
+    # histórico suficiente para separar os dois. Nenhum segredo é gravado:
+    # só se a assinatura conferiu, nunca a assinatura em si.
+    await svc.registrar_recebimento_webhook(
+        _db, tipo=notif_type, data_id=data_id, assinatura_valida=ok,
+        tinha_assinatura=bool(request.headers.get("x-signature")),
+    )
+
     if not ok:
+        logger.warning(
+            "Webhook do Mercado Pago REJEITADO por assinatura inválida (tipo=%s, data_id=%s). "
+            "Se isto se repetir, o MERCADOPAGO_WEBHOOK_SECRET não corresponde ao "
+            "cadastrado no painel — nenhum pagamento será creditado pelo webhook.",
+            notif_type, data_id,
+        )
         raise HTTPException(status_code=401, detail="Assinatura inválida.")
 
     if not data_id or not notif_type:

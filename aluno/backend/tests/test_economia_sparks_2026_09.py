@@ -75,20 +75,33 @@ def test_saldo_inicial_e_100():
 
 
 class TestCatalogoLoja:
-    def test_quatro_pacotes_com_precos_aprovados(self):
-        catalogo = {p.package_id: p for p in sparks_store.list_packages()}
+    def test_quatro_pacotes_visiveis_com_precos_aprovados(self):
+        catalogo = {p.package_id: p for p in sparks_store.list_packages() if not p.oculto}
         assert len(catalogo) == 4
         assert (catalogo["spark_200"].sparks_amount, catalogo["spark_200"].price_cents) == (200, 990)
         assert (catalogo["spark_600"].sparks_amount, catalogo["spark_600"].price_cents) == (600, 2490)
         assert (catalogo["spark_1500"].sparks_amount, catalogo["spark_1500"].price_cents) == (1500, 5490)
         assert (catalogo["spark_4000"].sparks_amount, catalogo["spark_4000"].price_cents) == (4000, 11990)
 
+    def test_pacote_de_teste_existe_mas_fica_oculto_da_grade(self):
+        catalogo = {p.package_id: p for p in sparks_store.list_packages()}
+        teste = catalogo["spark_test_15"]
+        assert (teste.sparks_amount, teste.price_cents, teste.oculto) == (15, 100, True)
+
     def test_destaques_nos_pacotes_certos(self):
         catalogo = {p.package_id: p for p in sparks_store.list_packages()}
-        assert catalogo["spark_1500"].highlight == "Mais escolhido"
+        assert catalogo["spark_1500"].highlight == "Mais vendido"
         assert catalogo["spark_4000"].highlight == "Melhor valor"
-        assert catalogo["spark_200"].highlight is None
+        assert catalogo["spark_200"].highlight == "Menor custo"
         assert catalogo["spark_600"].highlight is None
+
+    def test_tamanhos_crescem_200_600_4000_com_1500_de_excecao(self):
+        catalogo = {p.package_id: p for p in sparks_store.list_packages()}
+        assert catalogo["spark_200"].destaque_tamanho == 0  # o menor
+        assert catalogo["spark_600"].destaque_tamanho == 1
+        assert catalogo["spark_4000"].destaque_tamanho == 2
+        assert catalogo["spark_1500"].destaque_tamanho == 3  # exceção: o maior de todos
+        assert catalogo["spark_1500"].destaque_tamanho > catalogo["spark_4000"].destaque_tamanho
 
 
 def test_feedback_geral_da_trilha_custa_20_flat():

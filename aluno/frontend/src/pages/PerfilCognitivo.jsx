@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, errMsg } from "../lib/api";
 import Nav from "../components/Nav";
+import CardDeMelhora from "../components/CardDeMelhora";
 import { useDeclararContextoMentis } from "../lib/mentisContexto";
 import { Brain, ThumbsUp, Target, Loader2 } from "lucide-react";
 
@@ -21,6 +22,22 @@ function Cartao({ item, tom }) {
       <div className={`font-display font-bold ${tituloCls}`}>{item.rotulo}</div>
       <p className="mt-1.5 text-sm text-zinc-700 leading-relaxed">{item.explicacao}</p>
     </div>
+  );
+}
+
+/** Ponto a desenvolver: mesma regra do Painel — não existe card de
+ *  dificuldade sem saída. Aqui a rota é o mapa do Treino (esta tela não
+ *  recebe id de habilidade: `/perfil` não devolve nada da ontologia) ou o
+ *  pedido pronto à Mentis sobre este rótulo. */
+function CartaoADesenvolver({ item, indice }) {
+  return (
+    <CardDeMelhora
+      titulo={item.rotulo}
+      descricao={item.explicacao}
+      treino={{ href: "/treino", rotulo: "Ir para o Treino" }}
+      assunto={item.rotulo}
+      testid={`perfil-cartao-fraco-${indice}`}
+    />
   );
 }
 
@@ -99,7 +116,7 @@ export default function PerfilCognitivo() {
               </h2>
               <div className="mt-4 space-y-3">
                 {dados.pontos_a_desenvolver.map((item, i) => (
-                  <Cartao key={i} item={item} tom="fraco" />
+                  <CartaoADesenvolver key={i} item={item} indice={i} />
                 ))}
               </div>
             </div>

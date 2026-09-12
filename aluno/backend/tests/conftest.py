@@ -106,9 +106,24 @@ class FakeCollection:
             alvo = alvo.setdefault(p, {})
         alvo[partes[-1]] = valor
 
+    @staticmethod
+    def _get_dotted(doc: dict, caminho: str):
+        alvo = doc
+        for p in caminho.split("."):
+            if not isinstance(alvo, dict):
+                return None
+            alvo = alvo.get(p)
+        return alvo
+
     def _aplicar_update(self, doc: dict, update: dict) -> None:
         for campo, valor in (update.get("$set") or {}).items():
             self._set_dotted(doc, campo, valor)
+        # `$inc` cria o campo com o incremento quando ele não existe, igual ao
+        # Mongo real — é disso que dependem os contadores por par do
+        # microdiagnóstico, que nunca são pré-criados.
+        for campo, valor in (update.get("$inc") or {}).items():
+            atual = self._get_dotted(doc, campo) or 0
+            self._set_dotted(doc, campo, atual + valor)
         for campo, valor in (update.get("$push") or {}).items():
             lista = doc.setdefault(campo, [])
             lista.extend(valor["$each"] if isinstance(valor, dict) and "$each" in valor else [valor])
@@ -188,3 +203,59 @@ class FakeDB:
 @pytest.fixture
 def fake_db() -> FakeDB:
     return FakeDB()
+
+
+# ---------------------------------------------------------------------------
+# Isolamento dos caches de processo entre testes
+# ---------------------------------------------------------------------------
+#
+# Vários módulos do backend guardam cache em variável de PROCESSO, de propósito:
+# é o que impede uma requisição custar O(eventos) no Firestore (ver
+# `project_aluno_disciplina_leitura_firestore`). Em produção isso é a feature;
+# entre testes, é estado de um teste vazando para o seguinte — e o sintoma
+# nunca aponta para o culpado, porque a vítima está noutro arquivo.
+#
+# O ciclo adaptativo acrescentou três caches desse tipo (`revisao_service._MEMO`,
+# `curadoria._DOCS`, `microdiagnostico._MEMO`), e esta fixture existe para que
+# eles nasçam isolados em vez de virarem a próxima falha de ordem. Os caches
+# que já existiam entram na mesma limpeza.
+#
+# NÃO resolve a falha de ordem conhecida de
+# `test_diagnostico_real.py::test_padrao_associado_so_aparece_para_processo_fraco_e_inequivoco`,
+# que é anterior a este trabalho (reproduz em HEAD limpo, sem nenhum módulo
+# novo) e vem do dublê de Mongo que sobra em `annotation_service._db` depois de
+# outros arquivos — `_agregado_com_cache` passa então pelo caminho de cache em
+# vez do atalho de `_db is None`. Corrigir exige decidir quem é dono de `_db`
+# nos testes, o que é mudança nos testes alheios e merece ser feita de
+# propósito, não de raspão.
+
+
+@pytest.fixture(autouse=True)
+def _caches_de_processo_limpos():
+    """Zera os caches de processo antes e depois de CADA teste."""
+
+    def _limpar():
+        import annotation_service
+
+        annotation_service._ITEM_INDEX = None
+        for modulo, atributo, vazio in (
+            ("motor_cognitivo", "_CACHE", {}),
+            ("motor_cognitivo", "_HISTORICO_MEMO", {}),
+            ("portao_crenca", "_cache", None),
+            ("curadoria", "_DOCS", None),
+            ("microdiagnostico", "_MEMO", {}),
+            ("revisao_service", "_MEMO", {}),
+        ):
+            try:
+                mod = __import__(modulo)
+            except Exception:  # noqa: BLE001
+                continue
+            atual = getattr(mod, atributo, None)
+            if isinstance(atual, dict) and isinstance(vazio, dict):
+                atual.clear()
+            else:
+                setattr(mod, atributo, vazio)
+
+    _limpar()
+    yield
+    _limpar()

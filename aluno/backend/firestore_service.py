@@ -493,6 +493,89 @@ def ler_treino_stats(uid: str) -> dict[str, dict[str, int]]:
     }
 
 
+# ---------------------------------------------------------------------------
+# Estado de revisão espaçada (Fases 1/2/4) — mesmo documento, mesma disciplina
+#
+# O bloco `revisao` mora em `students/{uid}` junto de `agregado` e
+# `treino_agregado`, pelo motivo de sempre: uma leitura, um documento. O que
+# ele guarda é LIMITADO por construção (ver os tetos `_MAX_*` de
+# `revisao_espacada`) — o risco declarado desta feature é justamente o
+# documento inflar até o limite de 1 MB, e um documento estourado não degrada:
+# para de aceitar escrita.
+# ---------------------------------------------------------------------------
+
+
+def ler_revisao(uid: str) -> dict[str, Any]:
+    """O bloco de revisão em UMA leitura. `{}` quando o aluno ainda não tem."""
+    snap = _student_doc_ref(uid).get()
+    dados = (snap.to_dict() or {}) if snap.exists else {}
+    return dados.get("revisao") or {}
+
+
+def ler_estado_do_aluno(uid: str) -> dict[str, Any]:
+    """`agregado` + `revisao` do aluno numa leitura SÓ.
+
+    As duas coisas moram no mesmo documento, e a fila diária precisa das duas:
+    o estado de revisão para saber o que está pendente, e
+    `agregado.item_ids_respondidos` para não sugerir como transferência uma
+    questão que o aluno já respondeu. Ler o documento duas vezes seria pagar
+    Firestore em dobro pelo mesmo dado — o defeito que `_ler_historico`
+    documenta e este módulo inteiro existe para evitar.
+    """
+    snap = _student_doc_ref(uid).get()
+    dados = (snap.to_dict() or {}) if snap.exists else {}
+    return {"agregado": dados.get("agregado") or {}, "revisao": dados.get("revisao") or {}}
+
+
+def escrever_revisao(uid: str, bloco: dict[str, Any]) -> None:
+    """Grava o bloco inteiro, já calculado.
+
+    `set(merge=True)` no documento inteiro em vez de `Increment` campo a campo
+    porque o bloco é o resultado de uma função pura sobre o bloco anterior:
+    rotação de janela, colapso de intervalo e poda de lista não são somas, e
+    tentar exprimi-las como operações atômicas espalharia a regra de
+    agendamento pelo Firestore em vez de a deixar testável em um módulo só.
+    """
+    try:
+        _student_doc_ref(uid).set({"revisao": bloco}, merge=True)
+    except Exception as exc:  # noqa: BLE001
+        # O evento de behavior já foi gravado — que é o dado que importa. Um
+        # estado de revisão desatualizado atrasa um reteste; perder a resposta
+        # do aluno, não.
+        logger.warning("Estado de revisão de %s não pôde ser atualizado: %s", uid, exc)
+
+
+def marcar_autorrelato(uid: str, event_id: str, autorrelato: dict[str, Any]) -> None:
+    """Anexa o microdiagnóstico (Fase 3) ao evento de behavior que ele explica.
+
+    Campo PRÓPRIO dentro do evento, nunca dentro de `resposta`: o autorrelato
+    tem outro produtor (`proposta: autorrelato`) e outra epistemologia — o
+    aluno pós-racionaliza, e frequentemente não sabe por que errou. Fundi-lo
+    ao traço seria inventar vínculo Erro→Processo fora do catálogo (R-1) e
+    determinizar causa (R-3) de uma vez só.
+    """
+    _behavior_collection_ref(uid).document(event_id).set({"autorrelato": autorrelato}, merge=True)
+
+
+def varrer_revisoes(limite: int = 500) -> list[dict[str, Any]]:
+    """`revisao` de todos os alunos — 1 leitura por ALUNO, nunca por evento.
+
+    O bloco mora no documento `students/{uid}`, então a mesma varredura que
+    `list_students_with_behavior` já faz para listar alunos traz o estado de
+    revisão junto. É o que alimenta o Sapiens Lab (instrumento interno): a
+    unidade de análise ali é o par (erro, processo) agregado sobre TODOS os
+    alunos, e derivar isso por aluno, um `perfil()` de cada vez, custaria a
+    cota diária inteira num clique — o incidente de 2026-09-04.
+    """
+    saida: list[dict[str, Any]] = []
+    for snap in get_firestore().collection("students").limit(limite).stream():
+        dados = snap.to_dict() or {}
+        bloco = dados.get("revisao")
+        if bloco:
+            saida.append({"uid": snap.id, "revisao": bloco})
+    return saida
+
+
 def get_student_behavior_history(uid: str, limit: int = 1000) -> list[dict[str, Any]]:
     """Lê o histórico de eventos de behavior (schema canônico) de um aluno,
     do mais recente para o mais antigo."""

@@ -5,19 +5,93 @@ import { ArrowRight, X } from "lucide-react";
 
 // Tour guiado do primeiro login: uma sequência de balões que aponta pras
 // peças reais da UI (via `data-tour="..."` nos elementos-alvo, espalhados
-// por Dashboard.jsx e Nav.jsx). Nunca bloqueia a página por baixo — é
-// dispensável a qualquer momento, e não repete depois que `flags.onboarded`
-// vira `true` no perfil do aluno (Firestore).
+// por Dashboard.jsx, Nav.jsx e MentisWidget.jsx). Nunca bloqueia a página
+// por baixo — é dispensável a qualquer momento, e não repete depois que
+// `flags.onboarded` vira `true` no perfil do aluno (Firestore). O botão
+// "Rever o guia", no topo do Painel, reabre esta mesma sequência.
+//
+// A régua do que entra aqui (2026-09-09): o guia tem de cobrir TUDO o que o
+// aluno precisa saber para usar o produto sozinho — as quatro abas da barra,
+// de onde saem as questões, o que custa Sparks e por quê, e o fato de que
+// todo card de dificuldade é clicável. Um passo por ideia; alvo que pode não
+// existir na tela (uma seção que só aparece com dado) simplesmente centraliza
+// o balão, sem quebrar a sequência.
 const STEPS = [
-  { target: null, title: "Bem-vindo(a) ao Sapiens", text: "Sou seu guia rápido. Em poucos passos te mostro onde tudo fica — vamos lá?" },
-  { target: "dash-continue", title: "Continue de onde parou", text: "Aqui você sempre retoma exatamente a atividade anterior — nunca perde o fio." },
-  { target: "dash-stats", title: "Sequência e semana", text: "Sua sequência de dias estudando e o progresso da semana. Consistência importa mais que maratona." },
-  { target: "dash-mastery", title: "Domínio estimado", text: "Não é só taxa de acerto — é o que o Sapiens entende sobre como você pensa em cada frente." },
-  { target: "dash-recommendation", title: "Próxima ação", text: "Sempre que encontramos uma lacuna no seu domínio, avisamos aqui — com um atalho direto pra treinar." },
-  { target: "dash-achievements", title: "Conquistas", text: "Poucas, e só as que realmente importam. Nada de coleção de medalhas." },
-  { target: "nav-sparks", title: "Sparks", text: "O combustível dos recursos com IA. Você ganha praticando, e pode comprar mais quando quiser." },
-  { target: "nav-cognitive", title: "Mapa Cognitivo", text: "Uma visão clara de como você está evoluindo, frente por frente." },
-  { target: null, title: "Pronto!", text: "Isso é tudo por agora. Bora estudar?" },
+  {
+    target: null,
+    title: "Bem-vindo(a) ao Sapiens",
+    text: "Um minuto e você sabe usar tudo por aqui. Pode pular quando quiser — o guia volta pelo botão \u201cRever o guia\u201d.",
+  },
+  {
+    target: "nav-primarios",
+    title: "Suas quatro abas",
+    text: "Painel, Treino, Redação e Mentis. Nesta ordem: onde você se orienta, onde treina, onde escreve e com quem conversa.",
+  },
+  {
+    target: "dash-hero",
+    title: "Tudo começa nas provas",
+    text: "O botão principal abre todas as provas do ENEM. Você responde questão a questão, e a cada dez o Sapiens fecha uma rodada com o seu padrão de erro.",
+  },
+  {
+    target: "dash-stats",
+    title: "Seus números do dia",
+    text: "Sequência de dias, a semana, quantas questões você já respondeu e o seu saldo de Sparks. Consistência vale mais que maratona.",
+  },
+  {
+    target: "nav-sparks",
+    title: "Sparks",
+    text: "A moeda dos recursos com IA. Você ganha respondendo questões e pode comprar mais. Nada com IA acontece sem o preço aparecer antes.",
+  },
+  {
+    target: "dash-foco",
+    title: "Todo card de erro é clicável",
+    text: "Cada dificuldade aqui leva a algum lugar: a missão do Treino que trata aquilo, ou um pedido pronto à Mentis sobre aquele ponto.",
+  },
+  {
+    target: "dash-foco",
+    title: "E nada é enviado sozinho",
+    text: "Ao pedir à Mentis, a mensagem já vem escrita, mas parada. Você escolhe abrir o chat, ou enviar se ele já estiver aberto — vendo o custo antes.",
+  },
+  {
+    target: "dash-treino",
+    title: "Treino",
+    text: "Um mapa de missões curtas. Dominar um ponto revela o território ao redor — e é para cá que os cards de dificuldade te mandam.",
+  },
+  {
+    target: "dash-redacao",
+    title: "Redação",
+    text: "Escreva no padrão ENEM e receba a nota nas cinco competências. Se quiser entender a nota, a Mentis lê a sua redação e explica.",
+  },
+  {
+    target: "dash-mentis",
+    title: "Mentis",
+    text: "Ela lê o seu histórico inteiro antes da primeira palavra: onde você erra, com que amostra, e qual padrão está por trás. Depois é conversa.",
+  },
+  {
+    target: "mentis-widget",
+    title: "Ela vai com você",
+    text: "Este ícone abre a mesma conversa em qualquer tela — e ela sabe em qual você está quando você pergunta.",
+  },
+  {
+    target: "nav-more",
+    title: "O resto fica aqui",
+    text: "Provas por área, seu perfil cognitivo, as questões que você gerou, histórico, feed e o canal de reclamações e sugestões: tudo neste menu.",
+  },
+  {
+    target: "dash-aulas",
+    title: "Aula com gente de verdade",
+    text: "Quando o problema é maior que uma questão, dá para pedir aula particular com a nossa equipe por aqui.",
+  },
+  {
+    target: "dash-achievements",
+    title: "Conquistas",
+    text: "Poucas, e só as que realmente importam. Todas contadas do que você fez de fato — nada de medalha de participação.",
+  },
+  {
+    target: null,
+    title: "Pronto!",
+    text: "É isso. Comece pelas provas do ENEM no botão principal do Painel — o resto aparece a partir do que você responder.",
+  },
 ];
 
 const TYPE_MS = 14; // ms por caractere — digitação rápida, de propósito.
@@ -145,10 +219,21 @@ export default function OnboardingTour({ onDone }) {
             </p>
           </div>
 
-          <div className="mt-4 flex items-center justify-between">
-            <button onClick={finish} className="text-xs text-zinc-400 hover:text-zinc-600" data-testid="onboarding-skip">
-              Pular tour
-            </button>
+          <div className="mt-4 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-3">
+              <button onClick={finish} className="text-xs text-zinc-400 hover:text-zinc-600" data-testid="onboarding-skip">
+                Pular tour
+              </button>
+              {stepIndex > 0 && (
+                <button
+                  onClick={() => setStepIndex((i) => Math.max(0, i - 1))}
+                  className="text-xs text-zinc-400 hover:text-zinc-600"
+                  data-testid="onboarding-back"
+                >
+                  Voltar
+                </button>
+              )}
+            </div>
             <button onClick={next} className="pill btn-sapiens inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-medium" data-testid="onboarding-next">
               {stepIndex === STEPS.length - 1 ? "Começar" : "Próximo"} <ArrowRight className="w-3.5 h-3.5" />
             </button>

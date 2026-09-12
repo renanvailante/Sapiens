@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { api } from "../lib/api";
-import { LogOut, Compass, History, Zap, Brain, ShieldCheck, MoreHorizontal, Trash2, LayoutGrid, GraduationCap, PenLine, MessageCircle, BookOpen, ListChecks } from "lucide-react";
+import { LogOut, Compass, History, Zap, Brain, ShieldCheck, MoreHorizontal, Trash2, LayoutGrid, GraduationCap, PenLine, MessageCircle, BookOpen, ListChecks, MessageSquareWarning, CalendarClock } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTitle, SheetDescription } from "./ui/sheet";
 import BrandMark from "./BrandMark";
@@ -11,18 +11,25 @@ import AulasParticularesModal from "./AulasParticularesModal";
 
 // Única fonte da lista de navegação — usada tanto nos links visíveis em
 // desktop (+ dropdown "mais") quanto no menu mobile, pra nunca divergir.
+// A ordem dos quatro primários é decisão de produto (2026-09-09), não
+// arbitrária: Painel (para onde tudo volta), Treino, Redação e Mentis — as
+// quatro coisas que o aluno FAZ. "Provas" saiu da barra porque o Painel abre
+// nelas com o botão principal, e "Cognitivo" porque é leitura de resultado,
+// não atividade; as duas continuam a um clique, no menu "mais".
 const PRIMARY_LINKS = [
-  { to: "/dashboard", icon: LayoutGrid, label: "Painel", testid: "nav-dashboard" },
-  { to: "/exams", icon: Compass, label: "Provas", testid: "nav-exams" },
-  { to: "/cognitive-profile", icon: Brain, label: "Cognitivo", testid: "nav-cognitive", tour: "nav-cognitive" },
-  { to: "/mentis", icon: MessageCircle, label: "Mentis", testid: "nav-mentis", mascote: true },
+  { to: "/dashboard", icon: LayoutGrid, label: "Painel", testid: "nav-dashboard", tour: "nav-dashboard" },
+  { to: "/treino", icon: BookOpen, label: "Treino", testid: "nav-treino", tour: "nav-treino" },
+  { to: "/redacao", icon: PenLine, label: "Redação", testid: "nav-redacao", tour: "nav-redacao" },
+  { to: "/mentis", icon: MessageCircle, label: "Mentis", testid: "nav-mentis", tour: "nav-mentis", mascote: true },
 ];
 const SECONDARY_LINKS = [
-  { to: "/treino", icon: BookOpen, label: "Treino", testid: "nav-treino" },
+  { to: "/exams", icon: Compass, label: "Provas do ENEM", testid: "nav-exams" },
+  { to: "/revisoes", icon: CalendarClock, label: "Revisões", testid: "nav-revisoes" },
+  { to: "/cognitive-profile", icon: Brain, label: "Cognitivo", testid: "nav-cognitive" },
   { to: "/minhas-questoes", icon: ListChecks, label: "Minhas questões", testid: "nav-minhas-questoes" },
-  { to: "/redacao", icon: PenLine, label: "Redação", testid: "nav-redacao" },
   { to: "/history", icon: History, label: "Histórico", testid: "nav-history" },
   { to: "/feed", icon: Zap, label: "Feed", testid: "nav-feed" },
+  { to: "/sugestoes", icon: MessageSquareWarning, label: "Reclamações e sugestões", testid: "nav-sugestoes" },
   { to: "/trash", icon: Trash2, label: "Lixeira", testid: "nav-trash" },
 ];
 
@@ -48,13 +55,17 @@ function SparksChip() {
   );
 }
 
-// Menu mobile: mesmas ferramentas do desktop (Painel/Provas/Cognitivo +
-// Histórico/Feed/Lixeira + Admin/Sair), num painel deslizante — no desktop a
+// Menu mobile: mesmas ferramentas do desktop (Painel/Treino/Redação/Mentis +
+// o que está no menu "mais" + Admin/Sair), num painel deslizante — no desktop a
 // largura sobra pra links soltos na barra, no mobile não, então isto é a
 // única forma de alcançar as mesmas telas ali.
 function MobileMenu({ user, onLogout, open, setOpen, onOpenAulas }) {
   const nav = useNavigate();
-  const go = (to) => { setOpen(false); nav(to); };
+  const { pathname } = useLocation();
+  // `de` é a tela de onde a pessoa saiu — só a página de reclamações e
+  // sugestões usa isso hoje, para o texto chegar à equipe já dizendo de qual
+  // tela veio a queixa.
+  const go = (to) => { setOpen(false); nav(to, { state: { de: pathname } }); };
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -121,6 +132,7 @@ function MobileMenu({ user, onLogout, open, setOpen, onOpenAulas }) {
 export default function Nav() {
   const { user, logout } = useAuth();
   const nav = useNavigate();
+  const { pathname } = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [showAulasModal, setShowAulasModal] = useState(false);
   const doLogout = async () => { await logout(); nav("/"); };
@@ -140,33 +152,37 @@ export default function Nav() {
         ) : (
           <span className="md:hidden" />
         )}
-        <Link to={user ? "/dashboard" : "/"} className="hidden md:flex items-center gap-2.5 font-display text-3xl font-extrabold tracking-tighter text-white" data-testid="nav-brand">
-          <BrandMark className="w-8 h-8" />
+        <Link to={user ? "/dashboard" : "/"} className="hidden md:flex items-center gap-2 lg:gap-2.5 font-display text-2xl lg:text-3xl font-extrabold tracking-tighter text-white" data-testid="nav-brand">
+          <BrandMark className="w-7 h-7 lg:w-8 lg:h-8" />
           Sapiens
         </Link>
         {user && (
-          <div className="flex items-center gap-1 md:gap-3">
-            {PRIMARY_LINKS.map((l) => (
-              <Link
-                key={l.to}
-                to={l.to}
-                className="hidden md:flex items-center gap-2 text-sm text-white/60 hover:text-white px-3 py-2 rounded-full transition-colors"
-                data-testid={l.testid}
-                data-tour={l.tour}
-              >
-                {l.mascote ? <Mentis className="w-5 h-5" variante="icone" /> : <l.icon className="w-4 h-4" />} {l.label}
-              </Link>
-            ))}
+          <div className="flex items-center gap-1 md:gap-2 lg:gap-3">
+            {/* Envelope próprio (e não os links soltos) porque o guia de
+                primeira sessão aponta para a BARRA inteira num passo só. */}
+            <div className="hidden md:flex items-center gap-0.5 lg:gap-2" data-tour="nav-primarios">
+              {PRIMARY_LINKS.map((l) => (
+                <Link
+                  key={l.to}
+                  to={l.to}
+                  className="flex items-center gap-1.5 lg:gap-2 text-sm text-white/60 hover:text-white px-2 lg:px-3 py-2 rounded-full transition-colors"
+                  data-testid={l.testid}
+                  data-tour={l.tour}
+                >
+                  {l.mascote ? <Mentis className="w-5 h-5" variante="icone" /> : <l.icon className="w-4 h-4" />} {l.label}
+                </Link>
+              ))}
+            </div>
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="hidden md:flex items-center justify-center text-white/60 hover:text-white w-9 h-9 rounded-full transition-colors" data-testid="nav-more">
+                <button className="hidden md:flex items-center justify-center text-white/60 hover:text-white w-9 h-9 rounded-full transition-colors" data-testid="nav-more" data-tour="nav-more">
                   <MoreHorizontal className="w-4 h-4" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="rounded-xl">
                 {SECONDARY_LINKS.map((l) => (
-                  <DropdownMenuItem key={l.to} onClick={() => nav(l.to)} data-testid={l.testid}>
+                  <DropdownMenuItem key={l.to} onClick={() => nav(l.to, { state: { de: pathname } })} data-testid={l.testid}>
                     <l.icon className="w-4 h-4 mr-2" /> {l.label}
                   </DropdownMenuItem>
                 ))}
@@ -175,10 +191,16 @@ export default function Nav() {
 
             <button
               onClick={() => setShowAulasModal(true)}
-              className="btn-calor pill hidden md:inline-flex items-center gap-2 text-xs md:text-sm px-3.5 py-2 rounded-full"
+              className="btn-calor pill hidden md:inline-flex shrink-0 items-center gap-2 whitespace-nowrap text-xs md:text-sm px-3.5 py-2 rounded-full"
               data-testid="nav-aulas-particulares"
+              data-tour="nav-aulas"
             >
-              <GraduationCap className="w-4 h-4" /> Tenha aulas conosco
+              <GraduationCap className="w-4 h-4" />
+              {/* Rótulo inteiro só a partir de `xl`: entre 768 e 1280 a barra
+                  já leva quatro links fixos, o saldo e — para admin — mais uma
+                  pílula, e o texto longo era o que empurrava tudo para fora. */}
+              <span className="hidden xl:inline">Tenha aulas conosco</span>
+              <span className="xl:hidden">Aulas</span>
             </button>
 
             <SparksChip />
@@ -193,7 +215,7 @@ export default function Nav() {
               className="hidden md:flex pill btn-sapiens items-center gap-2 text-sm font-medium px-4 py-2 rounded-full"
               data-testid="nav-logout"
             >
-              <LogOut className="w-4 h-4" /> <span className="hidden sm:inline">Sair</span>
+              <LogOut className="w-4 h-4" /> <span className="hidden lg:inline">Sair</span>
             </button>
 
             <MobileMenu

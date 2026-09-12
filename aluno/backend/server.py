@@ -45,12 +45,17 @@ import motor_routes as motor_module
 import perfil_cognitivo_service
 import mentis_routes as mentis_module
 import aulas_particulares_routes as aulas_particulares_module
+import sparks_payments_service
 import sparks_routes as sparks_module
 import redacao_routes as redacao_module
 import treino_routes as treino_module
 import perfil_publico_routes as perfil_publico_module
 import client_errors_routes as client_errors_module
 import question_reports_routes as question_reports_module
+import sugestoes_routes as sugestoes_module
+import revisao_routes as revisao_module
+import curadoria_routes as curadoria_module
+import microdiagnostico
 import db_indexes
 from enem_seed import migrate_and_seed
 from feed_seed import seed_feed
@@ -74,6 +79,10 @@ redacao_module.set_db(db)
 treino_module.set_db(db)
 client_errors_module.set_db(db)
 question_reports_module.set_db(db)
+sugestoes_module.set_db(db)
+# O microdiagnóstico (Fase 3) guarda no Mongo apenas CONTADORES por par
+# (erro, processo) — o relato em si mora no evento de behavior, no Firestore.
+microdiagnostico.set_db(db)
 
 app = FastAPI(
     title="Sapiens",
@@ -305,6 +314,9 @@ api_router.include_router(treino_module.router)
 api_router.include_router(perfil_publico_module.router)
 api_router.include_router(client_errors_module.router)
 api_router.include_router(question_reports_module.router)
+api_router.include_router(sugestoes_module.router)
+api_router.include_router(revisao_module.router)
+api_router.include_router(curadoria_module.router)
 app.include_router(api_router)
 
 
@@ -479,6 +491,47 @@ async def _perfil_cognitivo_loop():
             )
 
 
+# De quanto em quanto tempo varrer pagamentos em aberto. 60s: o aluno que
+# ficou na tela já é atendido em segundos pela própria consulta de status
+# (`get_purchase_status` repergunta ao Mercado Pago); este laço é para quem
+# fechou o navegador antes de o pagamento cair. Custo por ciclo sem nada
+# pendente = uma consulta indexada no Mongo. `<= 0` desliga.
+SPARKS_RECONCILIACAO_SECONDS = int(os.environ.get("SPARKS_RECONCILIACAO_SECONDS", "60") or 60)
+
+
+async def _sparks_reconciliacao_loop():
+    """Rede de segurança do crédito de Sparks. Mesmo contrato de robustez dos
+    outros laços: nunca derruba o processo, sempre tenta de novo."""
+    if SPARKS_RECONCILIACAO_SECONDS <= 0:
+        logger.warning(
+            "Reconciliação de pagamentos DESLIGADA (SPARKS_RECONCILIACAO_SECONDS=%d) — "
+            "um webhook perdido deixa aluno pagante sem Sparks.",
+            SPARKS_RECONCILIACAO_SECONDS,
+        )
+        return
+    while True:
+        await asyncio.sleep(SPARKS_RECONCILIACAO_SECONDS)
+        try:
+            resultado = await sparks_payments_service.reconciliar_pendentes(db)
+            if resultado["verificados"]:
+                # Log em todo ciclo que encontrar algo em aberto, não só quando
+                # credita: "0 creditados de 4 verificados" é a informação que
+                # distingue "o Mercado Pago ainda não recebeu esse dinheiro" de
+                # "recebeu e nós não creditamos" — sem ela, os dois casos são o
+                # mesmo silêncio, que foi o que tornou o incidente de
+                # 2026-09-07 impossível de diagnosticar por fora.
+                logger.info(
+                    "Reconciliação: %d pagamento(s) em aberto, %d creditado(s) agora. "
+                    "O que o Mercado Pago respondeu sobre cada um: %s",
+                    resultado["verificados"], resultado["creditados"], resultado["situacao"],
+                )
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(
+                "Reconciliação de pagamentos falhou (tentando de novo em %ds): %s",
+                SPARKS_RECONCILIACAO_SECONDS, exc,
+            )
+
+
 @app.on_event("startup")
 async def _startup():
     # Antes de qualquer outra coisa: sem os índices, toda requisição
@@ -510,6 +563,7 @@ async def _startup():
     asyncio.create_task(_safe_firestore_seed())
     asyncio.create_task(_auto_sync_loop())
     asyncio.create_task(_perfil_cognitivo_loop())
+    asyncio.create_task(_sparks_reconciliacao_loop())
     if not settings.MERCADOPAGO_HABILITADO:
         # Alto e claro: a loja fechada é uma condição operacional silenciosa —
         # o site funciona, ninguém reclama, e a receita é zero. Tem que estar

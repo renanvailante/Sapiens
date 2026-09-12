@@ -36,6 +36,10 @@ def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+class MissingCardTokenError(Exception):
+    """Método de pagamento não-Pix sem `token` de cartão."""
+
+
 class UnknownPackageError(Exception):
     def __init__(self, package_id: str):
         self.package_id = package_id
@@ -63,6 +67,15 @@ def _frontend_url(path: str) -> str:
     return f"{base}{path}"
 
 
+def _notification_url() -> str | None:
+    """URL de notificação enviada em cada pagamento. `None` em
+    desenvolvimento (a variável não é obrigatória) — o campo é então removido
+    do payload, e o Mercado Pago cai no que estiver cadastrado no painel."""
+    import settings
+
+    return settings.MERCADOPAGO_NOTIFICATION_URL or None
+
+
 # ---------------------------------------------------------------- compra avulsa
 
 async def create_purchase(db, user: User, package_id: str, brick_payload: dict) -> dict:
@@ -70,19 +83,20 @@ async def create_purchase(db, user: User, package_id: str, brick_payload: dict) 
     if pkg is None:
         raise UnknownPackageError(package_id)
 
+    payment_method_id = brick_payload.get("payment_method_id")
+    is_pix = payment_method_id == "pix"
+
     purchase_id = uuid.uuid4().hex
     payload = {
         "transaction_amount": round(pkg.price_cents / 100, 2),
         "description": f"Sapiens — {pkg.label}",
-        "installments": int(brick_payload.get("installments") or 1),
-        "token": brick_payload.get("token"),
-        "payment_method_id": brick_payload.get("payment_method_id"),
-        "issuer_id": brick_payload.get("issuer_id"),
+        "payment_method_id": payment_method_id,
         "payer": {
             "email": (brick_payload.get("payer") or {}).get("email") or user.email,
             "identification": (brick_payload.get("payer") or {}).get("identification"),
         },
         "external_reference": purchase_id,
+        "notification_url": _notification_url(),
         "metadata": {
             "purchase_id": purchase_id,
             "user_id": user.user_id,
@@ -90,9 +104,34 @@ async def create_purchase(db, user: User, package_id: str, brick_payload: dict) 
             "source": "manual",
         },
     }
+    if is_pix:
+        # Pix não usa token nem parcelamento — só método + valor + pagador.
+        # Enviar `installments`/`token` aqui não é o formato documentado
+        # para Pix e não faz sentido (não há cartão nenhum envolvido).
+        pass
+    else:
+        if not brick_payload.get("token"):
+            raise MissingCardTokenError()
+        payload["token"] = brick_payload["token"]
+        payload["installments"] = int(brick_payload.get("installments") or 1)
+        payload["issuer_id"] = brick_payload.get("issuer_id")
+
     payload = {k: v for k, v in payload.items() if v is not None}
 
     response = mp.create_payment(payload)
+
+    pix = None
+    if is_pix:
+        # Formato oficial da Checkout API clássica (`POST /v1/payments`,
+        # mesmo endpoint que o cartão já usa) para o retorno do Pix: o QR
+        # Code em si (`qr_code_base64`, PNG sem o prefixo `data:image/...`,
+        # acrescentado pelo frontend) e o código copia-e-cola (`qr_code`).
+        transacao = (response.get("point_of_interaction") or {}).get("transaction_data") or {}
+        pix = {
+            "qr_code": transacao.get("qr_code"),
+            "qr_code_base64": transacao.get("qr_code_base64"),
+            "ticket_url": transacao.get("ticket_url"),
+        }
 
     doc = {
         "purchase_id": purchase_id,
@@ -102,24 +141,128 @@ async def create_purchase(db, user: User, package_id: str, brick_payload: dict) 
         "price_cents": pkg.price_cents,
         "currency": pkg.currency,
         "source": "manual",
+        "payment_method_id": payment_method_id,
         "mp_payment_id": str(response.get("id")),
         "status": response.get("status"),
         "status_detail": response.get("status_detail"),
+        "pix": pix,
         "credited": False,
         "created_at": _now_iso(),
         "updated_at": _now_iso(),
     }
     await db.sparks_payments.insert_one(doc)
-    return {"purchase_id": purchase_id, "status": doc["status"], "status_detail": doc["status_detail"]}
+    return {
+        "purchase_id": purchase_id,
+        "status": doc["status"],
+        "status_detail": doc["status_detail"],
+        "pix": pix,
+    }
+
+
+# Status em que o Mercado Pago já decidiu o destino do dinheiro. Qualquer
+# outro (`pending`, `in_process`, `authorized`) ainda pode virar `approved` —
+# e enquanto puder, temos que continuar perguntando.
+_STATUS_FINAIS = {"rejected", "cancelled", "refunded", "charged_back"}
+
+
+def _aguardando_confirmacao(doc: dict) -> bool:
+    """O pagamento ainda pode virar Sparks e ainda não virou.
+
+    `approved` sem `credited` entra aqui de propósito: significa que o
+    dinheiro entrou e o crédito não completou — exatamente o estado que
+    precisa ser reparado, não ignorado.
+    """
+    return (
+        not doc.get("credited")
+        and doc.get("status") not in _STATUS_FINAIS
+        and bool(doc.get("mp_payment_id"))
+    )
+
+
+async def _reconciliar(db, mp_payment_id: str) -> None:
+    """Repergunta o status ao Mercado Pago e credita se já foi pago.
+
+    Uma falha aqui nunca pode derrubar quem chamou: o pior caso é devolver o
+    estado local desatualizado, que é o que já acontecia antes.
+    """
+    try:
+        await process_payment_webhook(db, mp_payment_id)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Falha ao reconciliar pagamento %s: %s", mp_payment_id, exc)
 
 
 async def get_purchase_status(db, purchase_id: str, user_id: str) -> dict:
+    """Estado da compra — reperguntando ao Mercado Pago enquanto o pagamento
+    ainda estiver em aberto.
+
+    Antes isto lia só o Mongo, então a tela de "aguardando pagamento" só
+    mudava se o webhook tivesse chegado. Com Pix isso é o caminho comum e não
+    a exceção: o aluno sai para o app do banco, paga, volta — e se a
+    notificação se perdeu, ele fica olhando uma tela que nunca ia mudar,
+    tendo pago de verdade. Agora a própria consulta que a tela já fazia é o
+    que credita, em segundos, sem depender de o webhook chegar.
+    """
     doc = await db.sparks_payments.find_one(
         {"purchase_id": purchase_id, "user_id": user_id}, {"_id": 0}
     )
     if doc is None:
         raise PurchaseNotFoundError(purchase_id)
+    if _aguardando_confirmacao(doc):
+        await _reconciliar(db, doc["mp_payment_id"])
+        doc = await db.sparks_payments.find_one(
+            {"purchase_id": purchase_id, "user_id": user_id}, {"_id": 0}
+        )
     return doc
+
+
+async def reconciliar_pendentes(db, limite: int = 100) -> dict:
+    """Varre as compras em aberto e credita as que o Mercado Pago já aprovou.
+
+    É a garantia de última instância do crédito: o webhook é o caminho
+    rápido, este laço é o que torna o crédito inevitável. Sem ele, uma única
+    notificação perdida deixa um aluno que pagou sem Sparks para sempre e sem
+    ninguém saber — foi exatamente o que aconteceu em 2026-09-07.
+
+    Não há janela de tempo, e isso é deliberado: um pagamento pendente sempre
+    termina em algum estado final no Mercado Pago — um Pix não pago expira em
+    24h (o padrão da Checkout API, que não alteramos) e vira `cancelled` —, e
+    ao receber esse estado ele sai desta consulta sozinho. O conjunto se
+    esvazia por si; o que uma janela faria era abandonar em silêncio
+    justamente o caso raro que este laço existe para salvar. Ordena do mais
+    antigo para o mais novo para que nada fique preso atrás do teto de
+    `limite`.
+
+    O custo é limitado por essas 24h: um QR Code gerado e abandonado é
+    reperguntado a cada ciclo até expirar, e some. Se o volume de checkouts
+    abandonados crescer a ponto de isso pesar, o caminho é encurtar o prazo do
+    Pix (`date_of_expiration` na criação), não afrouxar esta varredura.
+    """
+    cursor = db.sparks_payments.find(
+        {"credited": False, "status": {"$nin": list(_STATUS_FINAIS)},
+         "mp_payment_id": {"$exists": True}},
+        {"_id": 0, "mp_payment_id": 1},
+    ).sort("created_at", 1).limit(limite)
+    pendentes = await cursor.to_list(length=limite)
+
+    creditados = 0
+    situacao: dict[str, str] = {}
+    for doc in pendentes:
+        try:
+            resultado = await process_payment_webhook(db, doc["mp_payment_id"])
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Reconciliação falhou para %s: %s", doc["mp_payment_id"], exc)
+            situacao[doc["mp_payment_id"]] = f"erro: {exc}"
+            continue
+        if resultado.get("credited"):
+            creditados += 1
+            situacao[doc["mp_payment_id"]] = "creditado agora"
+            logger.info(
+                "Reconciliação creditou o pagamento %s — o webhook não tinha chegado.",
+                doc["mp_payment_id"],
+            )
+        else:
+            situacao[doc["mp_payment_id"]] = str(resultado.get("status"))
+    return {"verificados": len(pendentes), "creditados": creditados, "situacao": situacao}
 
 
 async def list_purchases(db, user_id: str, limit: int = 100) -> list[dict]:
@@ -237,6 +380,27 @@ async def cancel_auto_recharge(db, user: User) -> None:
 
 
 # --------------------------------------------------------------------- webhook
+
+async def registrar_recebimento_webhook(
+    db, *, tipo: str | None, data_id: str | None, assinatura_valida: bool, tinha_assinatura: bool
+) -> None:
+    """Prova de que o Mercado Pago chamou (ou nunca chamou) este endpoint.
+
+    Gravado antes de qualquer decisão, para que uma notificação recusada
+    apareça igual a uma aceita. Nunca falha para quem chamou: perder a
+    auditoria não pode impedir o processamento de um pagamento real.
+    """
+    try:
+        await db.webhook_recebimentos.insert_one({
+            "tipo": tipo,
+            "data_id": data_id,
+            "assinatura_valida": assinatura_valida,
+            "tinha_assinatura": tinha_assinatura,
+            "received_at": _now_iso(),
+        })
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Falha ao registrar recebimento de webhook: %s", exc)
+
 
 async def dedupe_or_skip(db, dedupe_key: str, raw_type: str) -> bool:
     """`True` na primeira vez que essa notificação é vista; `False` numa

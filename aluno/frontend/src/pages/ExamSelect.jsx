@@ -7,6 +7,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import FormulaMath from "../components/FormulaMath";
 import Mentis from "../components/Mentis";
 import IntervencaoMentis from "../components/IntervencaoMentis";
+import ProfessorInvisivel from "../components/ProfessorInvisivel";
+import Microdiagnostico from "../components/Microdiagnostico";
 import ReportarQuestao from "../components/ReportarQuestao";
 
 const APP_VERSION = "sapiens-web-1.0";
@@ -597,6 +599,18 @@ function QuestionRunner({ filtro, onExit }) {
                 />
               </div>
             )}
+
+            {/* Fase 3: a micropergunta vem junto da resposta, quando o
+                distrator marcado tem cadeia anotada e o par ainda tem poucas
+                confirmações. `null` na maioria das questões, de propósito. */}
+            <Microdiagnostico pergunta={result.microdiagnostico} />
+
+            {/* Fase 2: o Professor Invisível. Também veio na mesma resposta, e
+                também é `null` quase sempre — uma intervenção ativa por vez,
+                com cooldown por par, decidido no servidor. Inline, nunca modal:
+                interromper quem está no meio de uma prova com uma janela seria
+                a diferença entre um professor e um pop-up. */}
+            <ProfessorInvisivel gatilho={result.professor_invisivel} />
 
             {explicacao?.paragrafos && (
               <div className="mt-4 rounded-xl border border-zinc-200 bg-white/80 p-4" data-testid="mentis-explicacao">

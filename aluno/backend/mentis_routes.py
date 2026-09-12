@@ -723,9 +723,10 @@ def _validar_acao(valor: Any) -> Optional[dict[str, Any]]:
 
 class MensagemPayload(BaseModel):
     texto: str = Field(min_length=1, max_length=_MENSAGEM_MAX_CHARS)
-    # De onde veio a mensagem: um balão de sugestão clicado ou o campo de
-    # texto. Só serve para reconstruir a trajetória do aluno na sessão —
-    # não muda cobrança nem comportamento do modelo.
+    # De onde veio a mensagem: um balão de sugestão clicado, um card de
+    # dificuldade ("card") ou o campo de texto. Só serve para reconstruir a
+    # trajetória do aluno na sessão — não muda cobrança nem comportamento do
+    # modelo.
     origem: Optional[str] = None
     # O que a tela do aluno mostra agora (widget flutuante global). Lido uma
     # vez por mensagem, nunca acumulado no histórico — ver `_montar_prompt_chat`.
@@ -904,7 +905,11 @@ async def enviar_mensagem(
         ) from exc
 
     agora_iso = _agora().isoformat()
-    origem = "balao" if payload.origem == "balao" else "digitado"
+    # "card": veio de um card de dificuldade (Painel, perfil, redação) pela
+    # janela de pedido — a mensagem foi escrita pelo produto e confirmada pelo
+    # aluno. Guardar isso separado de "digitado" é o que permite saber, depois,
+    # quanto do uso do chat nasce de um card clicado.
+    origem = payload.origem if payload.origem in {"balao", "card"} else "digitado"
     aluno_msg = {"papel": "aluno", "texto": pergunta, "em": agora_iso, "origem": origem}
     if contexto_tela:
         aluno_msg["contexto_tela"] = contexto_tela

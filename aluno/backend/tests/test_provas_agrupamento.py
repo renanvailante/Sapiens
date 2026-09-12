@@ -19,6 +19,8 @@ BACKEND = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BACKEND))
 
 import server  # noqa: E402
+import settings  # noqa: E402
+from motor.motor_asyncio import AsyncIOMotorClient  # noqa: E402
 from server import _area_enem, _bloco_enem  # noqa: E402
 
 
@@ -26,17 +28,27 @@ _loop = None
 
 
 def _run(coro):
-    """Reusa UM loop para todos os testes deste arquivo.
+    """Reusa UM loop para todos os testes deste arquivo — e um cliente Motor
+    criado DENTRO dele.
 
     O cliente Motor (`server.client`) é um singleton de módulo, preso ao
-    primeiro event loop que o usa. Criar um `asyncio.new_event_loop()` novo a
-    cada teste faz o driver colidir ("Future attached to a different loop")
-    a partir da 3ª chamada ao banco no mesmo processo — reusar o loop dentro
-    deste arquivo evita isso sem tocar a inicialização de `server.py`.
+    primeiro event loop que o usa. Reusar o loop aqui resolvia o caso de um
+    arquivo só, mas não o de vários: qualquer outro teste da suíte que rode
+    uma rota do `server` com `asyncio.run` prende o singleton ao loop dele —
+    que já foi fechado quando este arquivo roda — e toda consulta daqui morre
+    com "Future attached to a different loop". Como quem roda antes depende
+    da distribuição do xdist, a falha aparecia e sumia conforme a suíte
+    crescia, sem nada a ver com o código sob teste.
+
+    Um cliente próprio, construído no mesmo loop que executa as corrotinas,
+    torna este arquivo imune ao que rodou antes dele.
     """
     global _loop
     if _loop is None or _loop.is_closed():
         _loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(_loop)
+        server.client = AsyncIOMotorClient(settings.MONGO_URL, serverSelectionTimeoutMS=5000)
+        server.db = server.client[settings.DB_NAME]
     return _loop.run_until_complete(coro)
 
 

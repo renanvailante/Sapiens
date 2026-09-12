@@ -1,12 +1,21 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import IntervencaoMentis from "../components/IntervencaoMentis";
+import CardDeMelhora from "../components/CardDeMelhora";
+import { ResumoDaFila } from "../components/FilaDeRevisao";
 import Nav from "../components/Nav";
 import OnboardingTour from "../components/OnboardingTour";
 import AulasParticularesModal from "../components/AulasParticularesModal";
 import Mentis from "../components/Mentis";
-import { ArrowRight, Sparkles, Flame, Zap, Target, Network, Trophy, ListChecks, Medal, Award, CheckCircle2, GraduationCap, CloudOff, RotateCw, Star, Rocket, Crown, Gem, Layers, CalendarDays, TrendingUp, BookOpen, Compass, Flag } from "lucide-react";
+import { COMPETENCIAS_REDACAO } from "../constants/redacao";
+import { useDeclararContextoMentis } from "../lib/mentisContexto";
+import {
+  ArrowRight, Sparkles, Flame, Zap, Target, Network, Trophy, ListChecks, Medal, Award,
+  CheckCircle2, GraduationCap, CloudOff, RotateCw, Star, Rocket, Crown, Gem, Layers,
+  CalendarDays, TrendingUp, BookOpen, Compass, Flag, PenLine, HelpCircle, PlayCircle,
+  MessageSquareWarning,
+} from "lucide-react";
 import { useAuth } from "../lib/auth";
 
 // ---------------- Streak / progresso semanal ----------------
@@ -85,6 +94,8 @@ const ACHIEVEMENTS = [
   { id: "exam10", icon: GraduationCap, label: "10 simulados completos", check: (ctx) => ctx.analyses.length >= 10 },
   { id: "rounds10", icon: Target, label: "10 rodadas de treino", check: (ctx) => ctx.rounds.length >= 10 },
   { id: "rounds50", icon: Network, label: "50 rodadas de treino", check: (ctx) => ctx.rounds.length >= 50 },
+  { id: "primeiraRedacao", icon: PenLine, label: "1ª redação corrigida", check: (ctx) => ctx.redacoesCorrigidas >= 1 },
+  { id: "redacao800", icon: Star, label: "800+ na redação", check: (ctx) => ctx.melhorRedacao >= 800 },
 ];
 
 // `by_area` (do fluxo de gabarito/Analysis) usa códigos ENEM curtos; o filtro
@@ -121,6 +132,22 @@ function weakestRoundBloco(rounds) {
   return pior;
 }
 
+// ---------------- Peças do painel ----------------
+
+function Estatistica({ icone: Icone, rotulo, valor, sufixo, testid, tint = "text-amber-500" }) {
+  return (
+    <div className="card-sapiens rounded-2xl p-5" data-testid={testid}>
+      <div className="flex items-center gap-2 font-mono-alt text-[10px] uppercase tracking-[0.3em] text-zinc-400">
+        {Icone && <Icone className={`w-3.5 h-3.5 ${tint}`} />} {rotulo}
+      </div>
+      <div className="mt-2 font-display text-3xl font-bold tracking-tight text-zinc-950">
+        {valor}
+        {sufixo && <span className="ml-1 text-sm font-medium text-zinc-400">{sufixo}</span>}
+      </div>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const { user } = useAuth();
   const [analyses, setAnalyses] = useState([]);
@@ -130,6 +157,9 @@ export default function Dashboard() {
   const [totalRespondidas, setTotalRespondidas] = useState(0);
   const [rounds, setRounds] = useState([]);
   const [fracos, setFracos] = useState([]);
+  const [habilidades, setHabilidades] = useState([]);
+  const [redacoes, setRedacoes] = useState([]);
+  const [revisoes, setRevisoes] = useState(null);
   const [loaded, setLoaded] = useState(false);
   const [falhou, setFalhou] = useState(false);
   const [showTour, setShowTour] = useState(false);
@@ -145,6 +175,10 @@ export default function Dashboard() {
   // `allSettled` mantém a página utilizável quando UMA das chamadas falha, mas
   // agora registra que houve falha, para a tela dizer isso em vez de mostrar um
   // zero convincente.
+  //
+  // Todas as nove são O(1): documento único do aluno no Firestore ou consulta
+  // indexada no Mongo. Nenhuma varre eventos — ver
+  // `project_aluno_disciplina_leitura_firestore`.
   const carregar = useCallback(() => {
     setFalhou(false);
     Promise.allSettled([
@@ -160,8 +194,16 @@ export default function Dashboard() {
       api.get("/motor/perfil").then(({ data }) =>
         (data.habilidades_prioritarias || []).filter((l) => l.origem === "error_trace" && l.erro_dominante),
       ),
+      // Agregado do banco de treino (uma leitura do mesmo documento) — é daqui
+      // que saem as missões sugeridas e o deep-link `/treino?hab=`.
+      api.get("/treino/habilidades").then(({ data }) => data.habilidades || []),
+      api.get("/redacao", { params: { limit: 3 } }).then(({ data }) => data.items || []),
+      // A fila de revisões de hoje. Uma leitura do MESMO documento do aluno —
+      // o estado de revisão mora em `students/{uid}` junto do agregado —, e
+      // não uma varredura do histórico.
+      api.get("/revisao/fila").then(({ data }) => data),
     ]).then((resultados) => {
-      const [a, s, dates, h, respondidas, r, f] = resultados;
+      const [a, s, dates, h, respondidas, r, f, habs, reds, fila] = resultados;
       const valor = (res, vazio) => (res.status === "fulfilled" ? res.value : vazio);
 
       setAnalyses(valor(a, []));
@@ -171,6 +213,9 @@ export default function Dashboard() {
       setTotalRespondidas(valor(respondidas, 0));
       setRounds(valor(r, []));
       setFracos(valor(f, []));
+      setHabilidades(valor(habs, []));
+      setRedacoes(valor(reds, []));
+      setRevisoes(valor(fila, null));
       setFalhou(resultados.some((res) => res.status === "rejected"));
       setLoaded(true);
     });
@@ -201,8 +246,101 @@ export default function Dashboard() {
   const rankedHubs = [...hubs].sort((a, b) => (b.mastery || 0) - (a.mastery || 0));
   const hasMasteryData = hubs.some((h) => (h.mastery || 0) > 0);
 
-  const achievementCtx = { totalRespondidas, streak, hubs, analyses, rounds, weekActiveDays };
+  // Redação: a última corrigida manda no card, e a competência de menor nota
+  // vira um dos focos clicáveis.
+  const ultimaRedacao = redacoes.find((r) => r.avaliacao) || null;
+  const competenciaFraca = useMemo(() => {
+    const comps = ultimaRedacao?.avaliacao?.competencias || [];
+    if (!comps.length) return null;
+    return [...comps].sort((a, b) => (a.nivel_pontos ?? 0) - (b.nivel_pontos ?? 0))[0];
+  }, [ultimaRedacao]);
+  const melhorRedacao = redacoes.reduce((m, r) => Math.max(m, r.avaliacao?.nota_total ?? 0), 0);
+
+  // Missões sugeridas: primeiro o que o aluno já praticou e não domina, depois
+  // o que ele ainda nem tocou. Nunca inventa ordem — `classificacao` e
+  // `percentual` vêm do agregado real de treino.
+  const missoes = useMemo(() => {
+    const fracas = habilidades
+      .filter((h) => h.respondidas > 0 && h.classificacao !== "forte")
+      .sort((a, b) => (a.percentual ?? 100) - (b.percentual ?? 100));
+    const intocadas = habilidades.filter((h) => !h.respondidas);
+    return [...fracas, ...intocadas].slice(0, 4);
+  }, [habilidades]);
+
+  // "Onde focar agora": no máximo quatro cards, cada um com destino próprio.
+  const focos = useMemo(() => {
+    const lista = [];
+    if (weakestArea) {
+      const rotulo = AREA_CODE_TO_LABEL[weakestArea.area] || weakestArea.area;
+      lista.push({
+        key: `area-${weakestArea.area}`,
+        titulo: rotulo,
+        descricao: "A área com mais espaço para crescer no seu último gabarito.",
+        medida: `${weakestArea.pct}%`,
+        medidaLabel: "de acerto",
+        evidencia: `${weakestArea.pct}% de acerto em ${weakestArea.total} questões dessa área`,
+        treino: AREA_CODE_TO_LABEL[weakestArea.area]
+          ? { href: `/exams?area=${encodeURIComponent(rotulo)}`, rotulo: "Praticar a área" }
+          : null,
+      });
+    }
+    habilidades
+      .filter((h) => h.respondidas > 0 && h.classificacao === "fraco")
+      .sort((a, b) => (a.percentual ?? 100) - (b.percentual ?? 100))
+      .slice(0, 2)
+      .forEach((h) => {
+        lista.push({
+          key: `hab-${h.hab_id}`,
+          titulo: h.nome,
+          descricao: "Existe uma missão curta do Treino exatamente sobre isto.",
+          medida: `${Math.round(h.percentual ?? 0)}%`,
+          medidaLabel: "no treino",
+          evidencia: `${h.acertos} de ${h.respondidas} questões certas nessa habilidade`,
+          treino: { href: `/treino?hab=${h.hab_id}`, rotulo: "Abrir a missão" },
+        });
+      });
+    if (competenciaFraca) {
+      const rotulo = COMPETENCIAS_REDACAO[competenciaFraca.id] || competenciaFraca.id;
+      lista.push({
+        key: `red-${competenciaFraca.id}`,
+        titulo: `Redação · ${rotulo}`,
+        descricao: "Foi a competência que menos pontuou na sua última redação corrigida.",
+        medida: `${competenciaFraca.nivel_pontos ?? 0}`,
+        medidaLabel: "de 200",
+        evidencia: `${competenciaFraca.nivel_pontos ?? 0} de 200 pontos nessa competência da redação`,
+        treino: { href: "/redacao", rotulo: "Escrever de novo" },
+      });
+    }
+    const hubFraco = [...hubs].filter((h) => (h.mastery || 0) > 0).sort((a, b) => a.mastery - b.mastery)[0];
+    if (hubFraco && lista.length < 4) {
+      lista.push({
+        key: `hub-${hubFraco.hub}`,
+        titulo: hubFraco.label,
+        descricao: "Sua frente com o domínio estimado mais baixo até agora.",
+        medida: `${hubFraco.mastery}%`,
+        medidaLabel: "de domínio",
+        evidencia: `${hubFraco.mastery}% de domínio estimado nessa frente`,
+        treino: null,
+      });
+    }
+    return lista.slice(0, 4);
+  }, [weakestArea, habilidades, competenciaFraca, hubs]);
+
+  // O que a Mentis recebe se o aluno perguntar algo daqui pelo ícone
+  // flutuante — sem isso ela responde sem saber de que tela veio a pergunta.
+  useDeclararContextoMentis(
+    focos.length
+      ? `No Painel. Ponto de atenção em destaque: "${focos[0].titulo}".`
+      : "No Painel do Sapiens.",
+  );
+
+  const achievementCtx = {
+    totalRespondidas, streak, hubs, analyses, rounds, weekActiveDays,
+    redacoesCorrigidas: redacoes.filter((r) => r.avaliacao).length,
+    melhorRedacao,
+  };
   const achievements = ACHIEVEMENTS.map((a) => ({ ...a, unlocked: a.check(achievementCtx) }));
+  const conquistadas = achievements.filter((a) => a.unlocked).length;
 
   if (!loaded) {
     return (
@@ -217,11 +355,20 @@ export default function Dashboard() {
     <div className="min-h-screen">
       <Nav />
       <div className="max-w-5xl mx-auto px-6 md:px-10 py-10">
-        <div className="mb-8">
-          <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-white/50 mb-2">Painel</div>
-          <h1 className="font-display text-4xl md:text-5xl font-extrabold tracking-tighter text-white" data-testid="dash-title">
-            Olá, {user?.name?.split(" ")[0] || "aluno"}.
-          </h1>
+        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-white/50 mb-2">Painel</div>
+            <h1 className="font-display text-4xl md:text-5xl font-extrabold tracking-tighter text-white" data-testid="dash-title">
+              Olá, {user?.name?.split(" ")[0] || "aluno"}.
+            </h1>
+          </div>
+          <button
+            onClick={() => setShowTour(true)}
+            className="pill inline-flex items-center gap-1.5 text-xs text-white/55 hover:text-white bg-white/8 hover:bg-white/15 border border-white/10 px-3.5 py-2 rounded-full"
+            data-testid="dash-rever-tour"
+          >
+            <HelpCircle className="w-3.5 h-3.5" /> Rever o guia
+          </button>
         </div>
 
         {falhou && (
@@ -244,88 +391,88 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Hero: continuar de onde parou */}
-        {!latest ? (
-          <div className="card-sapiens rounded-2xl p-10 text-center" data-tour="dash-continue">
-            <div className="font-display text-2xl font-bold tracking-tight text-zinc-950">Sua primeira análise está a um clique.</div>
-            <p className="mt-2 text-zinc-500 max-w-md mx-auto">Escolha uma prova, envie suas respostas e revelaremos os padrões cognitivos por trás delas.</p>
-            <button onClick={() => nav("/exams")} className="pill btn-sapiens mt-6 inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-medium" data-testid="dash-cta-first">
-              Começar <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-        ) : (
-          <div className="card-sapiens rounded-2xl p-8" data-testid="dash-continue" data-tour="dash-continue">
-            <div className="font-mono-alt text-[10px] uppercase tracking-[0.3em] text-sapiens-accentDeep">Continue de onde parou · {latest.exam_label}</div>
-            <div className="mt-4 font-display text-2xl md:text-3xl tracking-tight leading-tight text-zinc-950" data-testid="dash-headline">
-              {latest.diagnostic_headline}
+        {/* HERO — a porta de entrada do produto. O botão principal abre a aba
+            com todas as provas do ENEM; retomar o que estava em curso fica ao
+            lado, nunca no lugar dele. */}
+        <section className="card-sapiens rounded-3xl p-7 md:p-9" data-testid="dash-hero" data-tour="dash-hero">
+          <div className="grid gap-7 md:grid-cols-[1.4fr_1fr] md:items-center">
+            <div>
+              <div className="font-mono-alt text-[10px] uppercase tracking-[0.3em] text-sapiens-accentDeep">
+                Comece por aqui
+              </div>
+              <h2 className="mt-3 font-display text-3xl md:text-4xl font-extrabold tracking-tighter leading-[1.05] text-zinc-950">
+                Todas as provas do ENEM, questão por questão.
+              </h2>
+              <p className="mt-3 text-sm md:text-base leading-relaxed text-zinc-600 max-w-lg">
+                Escolha um caderno e responda. A cada dez questões o Sapiens fecha uma rodada e te
+                devolve o que os seus erros têm em comum — e é disso que sai tudo o mais nesta tela.
+              </p>
+              <div className="mt-6 flex flex-wrap items-center gap-3">
+                <button
+                  onClick={() => nav("/exams")}
+                  className="pill btn-sapiens inline-flex items-center gap-2 px-6 py-3.5 rounded-full text-sm font-medium"
+                  data-testid="dash-cta-provas"
+                >
+                  <PlayCircle className="w-4 h-4" /> Praticar provas do ENEM
+                </button>
+                {latest ? (
+                  <Link
+                    to={`/analysis/${latest.analysis_id}`}
+                    className="pill inline-flex items-center gap-2 border border-zinc-200 text-sapiens-navy hover:border-sapiens-accent px-5 py-3 rounded-full text-sm font-medium"
+                    data-testid="dash-open-analysis"
+                  >
+                    Continuar {latest.exam_label} <ArrowRight className="w-4 h-4" />
+                  </Link>
+                ) : (
+                  <Link
+                    to="/treino"
+                    className="pill inline-flex items-center gap-2 border border-zinc-200 text-sapiens-navy hover:border-sapiens-accent px-5 py-3 rounded-full text-sm font-medium"
+                    data-testid="dash-cta-treino"
+                  >
+                    <Compass className="w-4 h-4" /> Explorar o Treino
+                  </Link>
+                )}
+              </div>
             </div>
-            <div className="mt-6 flex flex-wrap items-center gap-3">
-              <Link to={`/analysis/${latest.analysis_id}`} className="pill btn-sapiens inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium" data-testid="dash-open-analysis">
-                Continuar <ArrowRight className="w-4 h-4" />
-              </Link>
-              <button onClick={() => nav("/exams")} className="pill inline-flex items-center gap-2 border border-zinc-200 text-sapiens-navy hover:border-sapiens-accent px-5 py-2.5 rounded-full text-sm font-medium" data-testid="dash-practice">
-                Praticar questões
-              </button>
-            </div>
-          </div>
-        )}
 
-        {/* Mentis — porta de entrada do chat. Fica acima do CTA de aulas de
-            propósito: é a única superfície do produto que responde ao aluno
-            sobre o histórico dele, e antes só existia no menu de navegação. */}
-        <Link
-          to="/mentis"
-          className="lift card-sapiens mt-4 rounded-2xl p-6 md:p-7 flex flex-col md:flex-row md:items-center gap-4 group"
-          data-testid="dash-mentis"
-        >
-          <Mentis className="w-14 h-14 shrink-0" estado="neutra" />
-          <div className="flex-1 min-w-0">
-            <div className="font-display font-bold text-lg tracking-tight text-white">
-              Pergunte à Mentis por que você erra.
-            </div>
-            <div className="mt-1 text-sm text-white/60">
-              Ela lê o seu histórico inteiro antes da primeira palavra — processos fracos,
-              amostra de cada um, padrão de erro por trás. Depois é conversa.
+            <div className="rounded-2xl border border-zinc-200 bg-white/70 p-5">
+              {latest ? (
+                <>
+                  <div className="font-mono-alt text-[10px] uppercase tracking-[0.25em] text-zinc-400">
+                    Sua última leitura
+                  </div>
+                  <p className="mt-2 font-display text-lg leading-snug tracking-tight text-zinc-950" data-testid="dash-headline">
+                    {latest.diagnostic_headline}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <div className="font-mono-alt text-[10px] uppercase tracking-[0.25em] text-zinc-400">
+                    Sua primeira análise
+                  </div>
+                  <p className="mt-2 text-sm leading-relaxed text-zinc-600">
+                    Responda as primeiras dez questões e o Sapiens já consegue dizer o que está por
+                    trás dos seus erros — não só quantos foram.
+                  </p>
+                </>
+              )}
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <div>
+                  <div className="font-display text-2xl font-extrabold tracking-tight text-zinc-950">{totalRespondidas}</div>
+                  <div className="text-[10px] uppercase tracking-wide text-zinc-400">questões</div>
+                </div>
+                <div>
+                  <div className="font-display text-2xl font-extrabold tracking-tight text-zinc-950">{conquistadas}</div>
+                  <div className="text-[10px] uppercase tracking-wide text-zinc-400">conquistas</div>
+                </div>
+              </div>
             </div>
           </div>
-          <span className="pill btn-sapiens shrink-0 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full text-sm">
-            Conversar <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
-          </span>
-        </Link>
+        </section>
 
-        {/* Aulas particulares — CTA de alta visibilidade */}
-        <div
-          className="cta-calor mt-4 rounded-2xl p-6 md:p-7 flex flex-col md:flex-row md:items-center gap-4"
-          data-testid="dash-aulas-particulares-banner"
-        >
-          <div className="w-12 h-12 rounded-xl bg-amber-300/15 border border-amber-300/25 text-amber-200 flex items-center justify-center shrink-0">
-            <GraduationCap className="w-6 h-6" strokeWidth={1.8} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="font-display font-bold text-lg tracking-tight text-amber-100">Tenha aulas conosco</div>
-            <div className="mt-1 text-sm text-amber-100/70">
-              Precisa de reforço em alguma área? Solicite uma aula particular e fale direto com nossa equipe pelo WhatsApp.
-            </div>
-          </div>
-          <button
-            onClick={() => setShowAulasModal(true)}
-            className="btn-calor pill shrink-0 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full text-sm"
-            data-testid="dash-aulas-particulares-cta"
-          >
-            Solicitar aula <ArrowRight className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Sequência · Semana · Sparks */}
-        <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4" data-tour="dash-stats">
-          <div className="card-sapiens rounded-2xl p-5" data-testid="dash-streak">
-            <div className="flex items-center gap-2 font-mono-alt text-[10px] uppercase tracking-[0.3em] text-zinc-400">
-              <Flame className="w-3.5 h-3.5 text-amber-500" /> Sequência
-            </div>
-            <div className="mt-2 font-display text-3xl font-bold tracking-tight text-zinc-950">
-              {streak} {streak === 1 ? "dia" : "dias"}
-            </div>
-          </div>
+        {/* Sequência · Semana · Questões · Sparks */}
+        <div className="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-4" data-tour="dash-stats">
+          <Estatistica icone={Flame} rotulo="Sequência" valor={streak} sufixo={streak === 1 ? "dia" : "dias"} testid="dash-streak" />
 
           <div className="card-sapiens rounded-2xl p-5" data-testid="dash-week">
             <div className="font-mono-alt text-[10px] uppercase tracking-[0.3em] text-zinc-400">Esta semana</div>
@@ -342,16 +489,214 @@ export default function Dashboard() {
             <div className="mt-2 text-xs text-zinc-500">{weekActiveDays}/7 dias com estudo</div>
           </div>
 
-          <div className="card-sapiens rounded-2xl p-5" data-testid="dash-sparks">
-            <div className="flex items-center gap-2 font-mono-alt text-[10px] uppercase tracking-[0.3em] text-zinc-400">
-              <Zap className="w-3.5 h-3.5 text-amber-500" /> Sparks
+          <Estatistica icone={ListChecks} rotulo="Respondidas" valor={totalRespondidas} tint="text-sapiens-accentDeep" testid="dash-respondidas" />
+
+          <Link to="/sparks" className="lift block" data-testid="dash-sparks-link">
+            <Estatistica icone={Zap} rotulo="Sparks" valor={sparks ?? "—"} testid="dash-sparks" />
+          </Link>
+        </div>
+
+        {/* REVISÕES DE HOJE — a fila viva. Vem antes de "Onde focar agora"
+            porque tem data: focar é uma escolha, revisar é um compromisso que
+            já foi marcado. Some quando não há nada marcado, em vez de virar um
+            convite para uma tela vazia. */}
+        {revisoes?.resumo?.questoes > 0 && (
+          <section className="mt-8" data-testid="dash-revisoes">
+            <div className="mb-1 flex items-baseline justify-between gap-3">
+              <h2 className="font-display text-2xl font-bold tracking-tight text-white">Revisões de hoje</h2>
+              <Link to="/revisoes" className="inline-flex items-center gap-1 text-xs text-[#7FD8FF] hover:underline">
+                Ver todas <ArrowRight className="w-3 h-3" />
+              </Link>
             </div>
-            <div className="mt-2 font-display text-3xl font-bold tracking-tight text-zinc-950">{sparks ?? "—"}</div>
+            <p className="mb-4 text-sm text-white/55">
+              Cada uma nasceu de um erro que o Sapiens conseguiu explicar — e a data de voltar a
+              cobrar saiu daí.
+            </p>
+            <Link to="/revisoes" className="block" data-testid="dash-revisoes-link">
+              <ResumoDaFila resumo={revisoes.resumo} />
+            </Link>
+          </section>
+        )}
+
+        {/* ONDE FOCAR AGORA — cada card leva a um lugar: a missão do Treino que
+            trata aquilo, ou um pedido pronto à Mentis sobre aquilo. Nenhum
+            card de erro morre em si mesmo. */}
+        {focos.length > 0 && (
+          <section className="mt-8" data-testid="dash-focos" data-tour="dash-foco">
+            <div className="flex items-baseline justify-between gap-3 mb-1">
+              <h2 className="font-display text-2xl font-bold tracking-tight text-white">Onde focar agora</h2>
+              <Link to="/cognitive-profile" className="text-xs text-[#7FD8FF] hover:underline inline-flex items-center gap-1">
+                Ver perfil completo <ArrowRight className="w-3 h-3" />
+              </Link>
+            </div>
+            <p className="text-sm text-white/55 mb-4">
+              Clique em qualquer card: ele abre a missão de treino daquele ponto, ou leva o assunto
+              pronto para a Mentis.
+            </p>
+            <div className="grid gap-4 md:grid-cols-2">
+              {focos.map((f) => (
+                <CardDeMelhora
+                  key={f.key}
+                  titulo={f.titulo}
+                  descricao={f.descricao}
+                  medida={f.medida}
+                  medidaLabel={f.medidaLabel}
+                  treino={f.treino}
+                  assunto={f.titulo}
+                  evidencia={f.evidencia}
+                  onSaldo={setSparks}
+                  testid={`dash-foco-${f.key}`}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* O que travou você — dificuldades com CAUSA identificada. Diferente
+            de "Onde focar agora": ali a unidade é a matéria ou a habilidade;
+            aqui é o modo de errar, e existe uma intervenção catalogada. */}
+        {fracos.length > 0 && (
+          <section className="mt-8" data-testid="dash-fracos">
+            <div className="flex items-baseline justify-between gap-3 mb-1">
+              <h2 className="font-display text-2xl font-bold tracking-tight text-white">O que travou você</h2>
+              <Link to="/cognitive-profile" className="text-xs text-[#7FD8FF] hover:underline inline-flex items-center gap-1">
+                Ver todas <ArrowRight className="w-3 h-3" />
+              </Link>
+            </div>
+            <p className="text-sm text-white/55 mb-4">
+              Não é a matéria — é o jeito de errar que se repete.
+            </p>
+            <div className="grid gap-4">
+              {fracos.slice(0, 3).map((f) => {
+                const hab = (f.habilidades || [])[0];
+                return (
+                  <CardDeMelhora
+                    key={f.processo_id}
+                    rotuloTopo="Causa identificada"
+                    titulo={f.erro_dominante.nome}
+                    descricao={f.processo_nome}
+                    medida={f.percentual_acerto != null ? `${Math.round(f.percentual_acerto)}%` : null}
+                    medidaLabel="de acerto"
+                    treino={hab ? { href: `/treino?hab=${hab.id}`, rotulo: "Treinar isto" } : null}
+                    assunto={f.processo_nome}
+                    evidencia={`padrão de erro "${f.erro_dominante.nome}" identificado nas minhas respostas`}
+                    onSaldo={setSparks}
+                    testid={`dash-intervencao-${f.processo_id}`}
+                  >
+                    <IntervencaoMentis
+                      erroId={f.erro_dominante.id}
+                      processoId={f.processo_id}
+                      causaNome={f.erro_dominante.nome}
+                      processoNome={f.processo_nome}
+                      sparks={sparks}
+                      onSparks={setSparks}
+                      testid={`dash-intervencao-${f.processo_id}-tratamento`}
+                    />
+                  </CardDeMelhora>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* Treino · Redação — as duas atividades da barra que não são a prova */}
+        <div className="mt-8 grid gap-4 md:grid-cols-2">
+          <div className="card-sapiens rounded-2xl p-6 flex flex-col" data-testid="dash-treino" data-tour="dash-treino">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2 font-mono-alt text-[10px] uppercase tracking-[0.3em] text-zinc-400">
+                <Compass className="w-3.5 h-3.5" /> Treino
+              </div>
+              <Link to="/treino" className="text-xs text-sapiens-accentDeep hover:underline inline-flex items-center gap-1">
+                Abrir o mapa <ArrowRight className="w-3 h-3" />
+              </Link>
+            </div>
+            <div className="font-display font-bold text-lg text-zinc-950 leading-snug">
+              {missoes.length ? "Suas próximas missões" : "O mapa está esperando você"}
+            </div>
+            {missoes.length ? (
+              <div className="mt-3 space-y-2">
+                {missoes.map((m) => (
+                  <Link
+                    key={m.hab_id}
+                    to={`/treino?hab=${m.hab_id}`}
+                    className="flex items-center justify-between gap-3 rounded-xl border border-zinc-200 bg-white/70 px-3.5 py-2.5 hover:border-sapiens-accent transition-colors"
+                    data-testid={`dash-missao-${m.hab_id}`}
+                  >
+                    <span className="min-w-0 truncate text-sm text-zinc-700">{m.nome}</span>
+                    <span className="shrink-0 font-mono-alt text-xs text-zinc-400">
+                      {m.respondidas ? `${Math.round(m.percentual ?? 0)}%` : "nova"}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-2 text-sm text-zinc-600 leading-relaxed flex-1">
+                Cada ponto de luz do mapa é uma missão curta. Domine um e o território ao redor se revela.
+              </p>
+            )}
+          </div>
+
+          <div className="card-sapiens rounded-2xl p-6 flex flex-col" data-testid="dash-redacao" data-tour="dash-redacao">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2 font-mono-alt text-[10px] uppercase tracking-[0.3em] text-zinc-400">
+                <PenLine className="w-3.5 h-3.5" /> Redação
+              </div>
+              <Link to="/redacao" className="text-xs text-sapiens-accentDeep hover:underline inline-flex items-center gap-1">
+                Escrever <ArrowRight className="w-3 h-3" />
+              </Link>
+            </div>
+            {ultimaRedacao ? (
+              <>
+                <div className="flex items-end gap-2">
+                  <span className="font-display text-4xl font-extrabold tracking-tighter text-zinc-950" data-testid="dash-redacao-nota">
+                    {ultimaRedacao.avaliacao.nota_total}
+                  </span>
+                  <span className="mb-1.5 text-sm text-zinc-400">/1000</span>
+                </div>
+                <div className="mt-1 text-sm text-zinc-500 truncate">{ultimaRedacao.redacao?.tema || "Sua última redação"}</div>
+                <div className="mt-4 space-y-2">
+                  {(ultimaRedacao.avaliacao.competencias || []).map((c) => (
+                    <div key={c.id}>
+                      <div className="flex items-center justify-between text-xs mb-1">
+                        <span className="text-zinc-600 truncate">{COMPETENCIAS_REDACAO[c.id] || c.id}</span>
+                        <span className="font-mono-alt font-bold text-zinc-900 shrink-0">{c.nivel_pontos ?? 0}</span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-zinc-100 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-sapiens-accentSoft to-sapiens-accent"
+                          style={{ width: `${Math.round(((c.nivel_pontos ?? 0) / 200) * 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="font-display font-bold text-lg text-zinc-950 leading-snug">
+                  Sua redação, corrigida nas cinco competências.
+                </div>
+                <p className="mt-2 text-sm text-zinc-600 leading-relaxed flex-1">
+                  Escreva sobre um tema no padrão ENEM e receba a nota competência por competência —
+                  e, se quiser, a leitura da Mentis sobre o que derrubou os pontos.
+                </p>
+                <Link
+                  to="/redacao"
+                  className="pill btn-sapiens mt-4 self-start inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium"
+                  data-testid="dash-redacao-cta"
+                >
+                  Escrever uma redação <ArrowRight className="w-4 h-4" />
+                </Link>
+              </>
+            )}
           </div>
         </div>
 
-        {/* Domínio estimado por área + próxima ação */}
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Domínio estimado + próxima ação. A "próxima ação" só aparece quando
+            NÃO há cards em "Onde focar agora": ali cada card já é a próxima
+            ação, e clicável — repetir o mesmo conselho num segundo lugar só
+            faria o aluno duvidar de qual dos dois seguir. */}
+        <div className={`mt-4 grid grid-cols-1 gap-4 ${focos.length === 0 ? "md:grid-cols-2" : ""}`}>
           <div className="card-sapiens rounded-2xl p-6" data-testid="dash-mastery" data-tour="dash-mastery">
             <div className="flex items-center justify-between mb-4">
               <div className="font-mono-alt text-[10px] uppercase tracking-[0.3em] text-zinc-400">Domínio estimado</div>
@@ -378,27 +723,12 @@ export default function Dashboard() {
             )}
           </div>
 
+          {focos.length === 0 && (
           <div className="card-sapiens rounded-2xl p-6 flex flex-col" data-testid="dash-recommendation" data-tour="dash-recommendation">
             <div className="flex items-center gap-2 font-mono-alt text-[10px] uppercase tracking-[0.3em] text-zinc-400 mb-3">
               <Target className="w-3.5 h-3.5" /> Próxima ação
             </div>
-            {weakestArea ? (
-              <>
-                <div className="font-display font-bold text-lg text-zinc-950 leading-snug">
-                  O Sapiens encontrou uma lacuna.
-                </div>
-                <p className="mt-2 text-sm text-zinc-600 leading-relaxed flex-1">
-                  Você está acertando {weakestArea.pct}% em <strong>{weakestArea.area}</strong> — a área com maior espaço para evoluir agora.
-                </p>
-                <Link
-                  to={AREA_CODE_TO_LABEL[weakestArea.area] ? `/exams?area=${encodeURIComponent(AREA_CODE_TO_LABEL[weakestArea.area])}` : `/plan/${latest.analysis_id}`}
-                  className="pill btn-sapiens mt-4 self-start inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium"
-                  data-testid="dash-recommendation-cta"
-                >
-                  Treinar agora <ArrowRight className="w-4 h-4" />
-                </Link>
-              </>
-            ) : weakestRound ? (
+            {weakestRound ? (
               <>
                 <div className="font-display font-bold text-lg text-zinc-950 leading-snug">
                   O Sapiens encontrou uma lacuna.
@@ -421,45 +751,63 @@ export default function Dashboard() {
               </>
             )}
           </div>
+          )}
         </div>
 
-        {/* O que travou você — dificuldades com CAUSA identificada, cada uma
-            clicável para a intervenção que a trata. Diferente de "Domínio
-            estimado" ao lado, que mostra percentual por frente: aqui a
-            unidade não é a matéria, é o modo de errar. */}
-        {fracos.length > 0 && (
-          <div className="mt-4 card-sapiens rounded-2xl p-6" data-testid="dash-fracos">
-            <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-2 font-mono-alt text-[10px] uppercase tracking-[0.3em] text-zinc-400">
-                <Target className="w-3.5 h-3.5" /> O que travou você
-              </div>
-              <Link to="/motor" className="text-xs text-sapiens-accentDeep hover:underline inline-flex items-center gap-1">
-                Ver todas <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
+        {/* Mentis — porta de entrada do chat. Fica acima do CTA de aulas de
+            propósito: é a única superfície do produto que responde ao aluno
+            sobre o histórico dele. */}
+        <Link
+          to="/mentis"
+          className="lift card-sapiens mt-4 rounded-2xl p-6 md:p-7 flex flex-col md:flex-row md:items-center gap-4 group"
+          data-testid="dash-mentis"
+          data-tour="dash-mentis"
+        >
+          <Mentis className="w-14 h-14 shrink-0" estado="neutra" />
+          <div className="flex-1 min-w-0">
+            <div className="font-display font-bold text-lg tracking-tight text-white">
+              Pergunte à Mentis por que você erra.
             </div>
-            <p className="text-sm text-zinc-500 mb-4">
-              Não é a matéria — é o jeito de errar que se repete. Abra uma para a Mentis tratar a causa.
-            </p>
-            <div className="space-y-3">
-              {fracos.slice(0, 3).map((f) => (
-                <IntervencaoMentis
-                  key={f.processo_id}
-                  erroId={f.erro_dominante.id}
-                  processoId={f.processo_id}
-                  causaNome={f.erro_dominante.nome}
-                  processoNome={f.processo_nome}
-                  sparks={sparks}
-                  onSparks={setSparks}
-                  testid={`dash-intervencao-${f.processo_id}`}
-                />
-              ))}
+            <div className="mt-1 text-sm text-white/60">
+              Ela lê o seu histórico inteiro antes da primeira palavra — processos fracos,
+              amostra de cada um, padrão de erro por trás. Depois é conversa.
             </div>
           </div>
-        )}
+          <span className="pill btn-sapiens shrink-0 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full text-sm">
+            Conversar <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+          </span>
+        </Link>
+
+        {/* Aulas particulares — CTA de alta visibilidade */}
+        <div
+          className="cta-calor mt-4 rounded-2xl p-6 md:p-7 flex flex-col md:flex-row md:items-center gap-4"
+          data-testid="dash-aulas-particulares-banner"
+          data-tour="dash-aulas"
+        >
+          <div className="w-12 h-12 rounded-xl bg-amber-300/15 border border-amber-300/25 text-amber-200 flex items-center justify-center shrink-0">
+            <GraduationCap className="w-6 h-6" strokeWidth={1.8} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="font-display font-bold text-lg tracking-tight text-amber-100">Tenha aulas conosco</div>
+            <div className="mt-1 text-sm text-amber-100/70">
+              Precisa de reforço em alguma área? Solicite uma aula particular e fale direto com nossa equipe pelo WhatsApp.
+            </div>
+          </div>
+          <button
+            onClick={() => setShowAulasModal(true)}
+            className="btn-calor pill shrink-0 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full text-sm"
+            data-testid="dash-aulas-particulares-cta"
+          >
+            Solicitar aula <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
 
         {/* Conquistas — cada uma computada de dados que já existem */}
         <div className="mt-4 card-sapiens rounded-2xl p-5" data-testid="dash-achievements" data-tour="dash-achievements">
-          <div className="font-mono-alt text-[10px] uppercase tracking-[0.3em] text-zinc-400 mb-3">Conquistas</div>
+          <div className="flex items-center justify-between mb-3">
+            <div className="font-mono-alt text-[10px] uppercase tracking-[0.3em] text-zinc-400">Conquistas</div>
+            <div className="font-mono-alt text-[10px] text-zinc-400">{conquistadas}/{achievements.length}</div>
+          </div>
           <div className="flex flex-wrap gap-3">
             {achievements.map((a) => (
               <div
@@ -476,6 +824,20 @@ export default function Dashboard() {
             ))}
           </div>
         </div>
+        {/* Canal de reclamações e sugestões. Vive no menu "mais", mas um
+            produto que só aceita reclamação de quem sabe procurar recebe
+            reclamação de quase ninguém — daí esta linha no fim do Painel. */}
+        <Link
+          to="/sugestoes"
+          state={{ de: "/dashboard" }}
+          className="mt-4 flex flex-wrap items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-sm text-white/60 hover:text-white hover:border-white/20 transition-colors"
+          data-testid="dash-sugestoes"
+        >
+          <MessageSquareWarning className="w-4 h-4" />
+          Achou algo errado, ou tem uma ideia para o Sapiens?
+          <span className="text-[#7FD8FF]">Fale com a equipe</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </Link>
       </div>
 
       {loaded && showTour && <OnboardingTour onDone={() => setShowTour(false)} />}

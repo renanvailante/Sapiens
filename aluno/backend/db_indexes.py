@@ -147,6 +147,16 @@ INDICES: list[tuple[str, list[tuple[str, int]], dict]] = [
      {"name": "reportes_por_questao"}),
     ("question_reports", [("status", pymongo.ASCENDING)], {"name": "reportes_por_status"}),
 
+    # --- reclamações e sugestões sobre o produto ---
+    ("sugestoes", [("sugestao_id", pymongo.ASCENDING)],
+     {"name": "sugestao_id_unico", "unique": True}),
+    # A lista do aluno é sempre "as minhas, da mais recente para a mais
+    # antiga" — sem este índice ela vira varredura da coleção inteira.
+    ("sugestoes", [("student_id", pymongo.ASCENDING), ("created_at", pymongo.DESCENDING)],
+     {"name": "sugestoes_por_aluno"}),
+    ("sugestoes", [("status", pymongo.ASCENDING), ("created_at", pymongo.DESCENDING)],
+     {"name": "sugestoes_por_status"}),
+
     # --- códigos de promoção ---
     # `validar_e_registrar_uso` faz `find_one_and_update` por `code`; a
     # unicidade é o que impede o admin de criar dois códigos iguais numa

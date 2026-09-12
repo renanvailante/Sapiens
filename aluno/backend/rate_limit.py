@@ -49,6 +49,9 @@ LIMITES: dict[str, tuple[int, int]] = {
     # Relato de erro de frontend: generoso (uma tela quebrada gera vários),
     # mas o suficiente para a rota não virar depósito de lixo.
     "client_error": (30, 300),
+    # Reclamações e sugestões: dez por hora é mais do que qualquer aluno
+    # honesto escreve, e impede que o canal vire depósito de spam.
+    "sugestoes": (10, 3600),
 }
 
 _eventos: dict[str, deque[float]] = defaultdict(deque)

@@ -18,17 +18,35 @@ class SparksPackage:
     sparks_amount: int
     price_cents: int
     currency: str = "BRL"
-    highlight: str | None = None  # selo de destaque, ex.: "Mais escolhido"
+    highlight: str | None = None  # selo de destaque, ex.: "Mais vendido"
+    # Tamanho do card na loja: 0 (menor) a 3 (maior). Ordem crescente pelos
+    # pacotes normais (200 < 600 < 4000), com UMA exceção pedida pelo produto:
+    # o pacote de R$54,90 (1.500 Sparks) é o maior de todos, nível 3, maior
+    # até que o de 4.000 Sparks. É produto (o que puxa mais atenção visual),
+    # não preço — por isso mora aqui no catálogo do servidor, não no frontend.
+    destaque_tamanho: int = 0
+    # Fica de fora da grade principal da loja — usado só para o pacote de
+    # teste de pagamento real (ver comentário abaixo). Nunca aparece como
+    # card normal, mas continua um pacote válido para `/sparks/purchases`.
+    oculto: bool = False
 
 
 # Catálogo aprovado 2026-09.
 PACKAGES: dict[str, SparksPackage] = {
     p.package_id: p
     for p in [
-        SparksPackage("spark_200", "200 Sparks", 200, 990),
-        SparksPackage("spark_600", "600 Sparks", 600, 2490),
-        SparksPackage("spark_1500", "1.500 Sparks", 1500, 5490, highlight="Mais escolhido"),
-        SparksPackage("spark_4000", "4.000 Sparks", 4000, 11990, highlight="Melhor valor"),
+        # Ordem da lista = ordem visual na loja (esquerda->direita), sempre
+        # crescente por preço. `destaque_tamanho` é independente da posição:
+        # cresce 200(0) < 600(1) < 4000(2), com a EXCEÇÃO pedida — 1.500
+        # Sparks (R$54,90) é o maior de todos (3), maior até que o de 4.000.
+        SparksPackage("spark_200", "200 Sparks", 200, 990, highlight="Menor custo", destaque_tamanho=0),
+        SparksPackage("spark_600", "600 Sparks", 600, 2490, destaque_tamanho=1),
+        SparksPackage("spark_1500", "1.500 Sparks", 1500, 5490, highlight="Mais vendido", destaque_tamanho=3),
+        SparksPackage("spark_4000", "4.000 Sparks", 4000, 11990, highlight="Melhor valor", destaque_tamanho=2),
+        # TEMPORÁRIO — só para confirmar o fim-a-fim de um pagamento real em
+        # produção (cartão real, não TEST). Remover este pacote (e o botão
+        # correspondente em SparksStore.jsx) depois do teste.
+        SparksPackage("spark_test_15", "15 Sparks (teste)", 15, 100, oculto=True),
     ]
 }
 

@@ -22,6 +22,10 @@ primary_region = "gru"          # São Paulo: menor latência para o piloto
   SESSION_TTL_DAYS = "7"
   # Nunca semear dado fictício num banco que recebe aluno real.
   SEED_DEMO_DATA = "false"
+  # Para onde o Mercado Pago notifica o pagamento. Não é segredo — é o
+  # endereço público do nosso próprio endpoint. Fica aqui, versionado, em vez
+  # de depender só do cadastro no painel do Mercado Pago.
+  MERCADOPAGO_NOTIFICATION_URL = "https://sapiens-aluno.fly.dev/api/sparks/webhook"
   GEMINI_MODEL = "gemini-3-flash-preview"
   # Sincronização Firestore -> questoes_public. Explícito de propósito: a
   # máquina de desenvolvimento roda com 0 (congelamento do saneamento do
