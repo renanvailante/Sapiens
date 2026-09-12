@@ -40,8 +40,14 @@ class FakeCursor:
 
 
 class FakeUpdateResult:
+    """`UpdateResult` do PyMongo expõe `matched_count` E `modified_count`; o
+    dublê só tinha o primeiro. A distinção importa para quem conta o que de
+    fato mudou (a exclusão de conta reporta quantos pagamentos anonimizou).
+    Aqui os dois são iguais porque o dublê sempre aplica o update que casou."""
+
     def __init__(self, matched_count: int):
         self.matched_count = matched_count
+        self.modified_count = matched_count
 
 
 class FakeDeleteResult:
@@ -71,6 +77,11 @@ class FakeCollection:
         "$lt": lambda atual, alvo: atual is not None and atual < alvo,
         "$lte": lambda atual, alvo: atual is not None and atual <= alvo,
         "$ne": _ne,
+        # Usado pela exclusão de conta para alcançar documentos cujo `_id` é
+        # composto (`"{uid}|{chave}"`), em `mentis_intervencoes_abertas`.
+        "$regex": lambda atual, alvo: bool(
+            isinstance(atual, str) and __import__("re").search(alvo, atual)
+        ),
     }
 
     def _bate(self, doc: dict, query: dict) -> bool:
@@ -127,6 +138,13 @@ class FakeCollection:
         for campo, valor in (update.get("$push") or {}).items():
             lista = doc.setdefault(campo, [])
             lista.extend(valor["$each"] if isinstance(valor, dict) and "$each" in valor else [valor])
+        # `$pull` com valor escalar remove TODAS as ocorrências dele da lista.
+        # A exclusão de conta usa isto para desvincular o aluno de uma questão
+        # gerada por IA sem apagar a questão, que é conteúdo e não dado pessoal.
+        for campo, valor in (update.get("$pull") or {}).items():
+            lista = doc.get(campo)
+            if isinstance(lista, list):
+                doc[campo] = [x for x in lista if x != valor]
         for campo, valor in (update.get("$addToSet") or {}).items():
             lista = doc.setdefault(campo, [])
             itens = valor["$each"] if isinstance(valor, dict) and "$each" in valor else [valor]
@@ -195,6 +213,12 @@ class FakeCollection:
 class FakeDB:
     def __init__(self):
         self._colecoes: dict[str, FakeCollection] = {}
+
+    def __getitem__(self, nome: str) -> FakeCollection:
+        # Motor real aceita `db["colecao"]` além de `db.colecao`. Quem monta o
+        # nome da coleção a partir de uma lista (a exclusão de conta percorre
+        # um inventário) precisa desta forma.
+        return getattr(self, nome)
 
     def __getattr__(self, nome: str) -> FakeCollection:
         return self._colecoes.setdefault(nome, FakeCollection())

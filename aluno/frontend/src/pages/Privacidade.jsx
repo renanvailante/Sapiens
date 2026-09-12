@@ -1,4 +1,5 @@
 import PaginaLegal from "../components/PaginaLegal";
+import MeusDadosLGPD from "../components/MeusDadosLGPD";
 import { OPERADOR } from "../lib/operador";
 
 export default function Privacidade() {
@@ -92,6 +93,10 @@ export default function Privacidade() {
         <p className="mt-3">
           Escreva para o nosso contato de privacidade. Respondemos em até <strong>15 dias</strong>.
         </p>
+        <p className="mt-3">
+          Dois desses direitos você exerce agora, sem esperar resposta:
+        </p>
+        <MeusDadosLGPD />
       </section>
 
       <section>

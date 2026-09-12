@@ -49,6 +49,11 @@ LIMITES: dict[str, tuple[int, int]] = {
     # Relato de erro de frontend: generoso (uma tela quebrada gera vários),
     # mas o suficiente para a rota não virar depósito de lixo.
     "client_error": (30, 300),
+    # Direitos do titular (LGPD art. 18). A exportação varre o histórico
+    # inteiro do aluno no Firestore — é a única rota que lê O(eventos) de
+    # propósito. Cinco por hora atende qualquer pedido legítimo (normalmente
+    # um) e impede que a rota vire uma alavanca de custo.
+    "dados_pessoais": (5, 3600),
     # Reclamações e sugestões: dez por hora é mais do que qualquer aluno
     # honesto escreve, e impede que o canal vire depósito de spam.
     "sugestoes": (10, 3600),
