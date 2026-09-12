@@ -132,6 +132,94 @@ function weakestRoundBloco(rounds) {
   return pior;
 }
 
+/** O dia de HOJE no cronograma, no painel.
+ *
+ *  Só o dia, não a semana: o Painel responde "o que eu faço agora", e sete
+ *  colunas aqui competiriam com a tela que já faz isso melhor. Quem quiser a
+ *  semana clica no cabeçalho. */
+function HojeNoCronograma({ semana }) {
+  if (!semana) return null;
+  const hoje = semana.dias?.find((d) => d.data === diaLocal());
+  const temPlano = semana.plano?.desta_semana && semana.total_blocos > 0;
+  const blocos = hoje?.blocos || [];
+  const compromissos = hoje?.compromissos || [];
+
+  // Sem cronograma montado E sem nenhum compromisso: o convite. Com plano mas
+  // sem nada HOJE (dia de folga, por exemplo), a seção some em vez de anunciar
+  // um vazio que está certo.
+  if (!temPlano) {
+    return (
+      <section className="mt-8" data-testid="dash-cronograma-convite">
+        <Link to="/cronograma" className="lift card-sapiens block rounded-2xl p-6 md:p-7">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <div className="flex items-center gap-2 font-mono-alt text-[10px] uppercase tracking-[0.3em] text-zinc-400">
+                <CalendarDays className="h-3.5 w-3.5" /> Cronograma
+              </div>
+              <p className="mt-2 font-display text-lg leading-snug tracking-tight text-zinc-950">
+                Sua semana ainda não está montada.
+              </p>
+              <p className="mt-1 max-w-xl text-sm text-zinc-500">
+                Diga (ou dite) seus compromissos e o Sapiens encaixa o estudo no que sobra —
+                priorizando onde você ganha mais ponto no ENEM.
+              </p>
+            </div>
+            <span className="pill btn-sapiens inline-flex shrink-0 items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium">
+              Montar minha semana <ArrowRight className="h-4 w-4" />
+            </span>
+          </div>
+        </Link>
+      </section>
+    );
+  }
+
+  if (!blocos.length && !compromissos.length) return null;
+
+  return (
+    <section className="mt-8" data-testid="dash-cronograma">
+      <div className="mb-1 flex items-baseline justify-between gap-3">
+        <h2 className="font-display text-2xl font-bold tracking-tight text-white">Hoje no seu cronograma</h2>
+        <Link to="/cronograma" className="inline-flex items-center gap-1 text-xs text-[#7FD8FF] hover:underline">
+          Ver a semana <ArrowRight className="h-3 w-3" />
+        </Link>
+      </div>
+      <p className="mb-4 text-sm text-white/55">
+        {semana.total_concluidos}/{semana.total_blocos} blocos feitos nesta semana.
+      </p>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {compromissos.map((c) => (
+          <div
+            key={c.id}
+            className="card-sapiens rounded-2xl p-4 opacity-80"
+            data-testid={`dash-cronograma-compromisso-${c.id}`}
+          >
+            <span className="font-mono-alt text-[10px] uppercase tracking-[0.22em] text-zinc-400">
+              {c.dia_inteiro ? "dia todo" : `${c.inicio}–${c.fim}`} · seu compromisso
+            </span>
+            <p className="mt-1 text-sm font-medium text-zinc-950">{c.titulo}</p>
+          </div>
+        ))}
+        {blocos.map((b) => (
+          <Link
+            key={b.id}
+            to={b.rota || "/cronograma"}
+            className={`lift card-sapiens block rounded-2xl p-4 ${b.concluido ? "opacity-55" : ""}`}
+            data-testid={`dash-cronograma-bloco-${b.id}`}
+          >
+            <span className="font-mono-alt text-[10px] uppercase tracking-[0.22em] text-zinc-400">
+              {b.inicio}–{b.fim} · {b.frente_nome || b.tipo}
+            </span>
+            <p className={`mt-1 text-sm font-medium text-zinc-950 ${b.concluido ? "line-through" : ""}`}>
+              {b.titulo}
+            </p>
+            {b.detalhe && <p className="mt-1 line-clamp-2 text-xs text-zinc-500">{b.detalhe}</p>}
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 // ---------------- Peças do painel ----------------
 
 function Estatistica({ icone: Icone, rotulo, valor, sufixo, testid, tint = "text-amber-500" }) {
@@ -160,6 +248,7 @@ export default function Dashboard() {
   const [habilidades, setHabilidades] = useState([]);
   const [redacoes, setRedacoes] = useState([]);
   const [revisoes, setRevisoes] = useState(null);
+  const [cronograma, setCronograma] = useState(null);
   const [loaded, setLoaded] = useState(false);
   const [falhou, setFalhou] = useState(false);
   const [showTour, setShowTour] = useState(false);
@@ -176,7 +265,7 @@ export default function Dashboard() {
   // agora registra que houve falha, para a tela dizer isso em vez de mostrar um
   // zero convincente.
   //
-  // Todas as nove são O(1): documento único do aluno no Firestore ou consulta
+  // Todas são O(1): documento único do aluno no Firestore ou consulta
   // indexada no Mongo. Nenhuma varre eventos — ver
   // `project_aluno_disciplina_leitura_firestore`.
   const carregar = useCallback(() => {
@@ -202,8 +291,12 @@ export default function Dashboard() {
       // o estado de revisão mora em `students/{uid}` junto do agregado —, e
       // não uma varredura do histórico.
       api.get("/revisao/fila").then(({ data }) => data),
+      // A semana do aluno. `find_one` por chave primária no Mongo — o
+      // cronograma é 1 documento por aluno, e a resposta já vem montada por
+      // dia (ver `cronograma_routes._montar_semana`).
+      api.get("/cronograma").then(({ data }) => data),
     ]).then((resultados) => {
-      const [a, s, dates, h, respondidas, r, f, habs, reds, fila] = resultados;
+      const [a, s, dates, h, respondidas, r, f, habs, reds, fila, semana] = resultados;
       const valor = (res, vazio) => (res.status === "fulfilled" ? res.value : vazio);
 
       setAnalyses(valor(a, []));
@@ -216,6 +309,7 @@ export default function Dashboard() {
       setHabilidades(valor(habs, []));
       setRedacoes(valor(reds, []));
       setRevisoes(valor(fila, null));
+      setCronograma(valor(semana, null));
       setFalhou(resultados.some((res) => res.status === "rejected"));
       setLoaded(true);
     });
@@ -495,6 +589,11 @@ export default function Dashboard() {
             <Estatistica icone={Zap} rotulo="Sparks" valor={sparks ?? "—"} testid="dash-sparks" />
           </Link>
         </div>
+
+        {/* HOJE NO CRONOGRAMA — vem antes das revisões e dos focos porque é a
+            única seção com HORA: o resto do painel diz o que fazer, esta diz
+            quando. Some sozinha quando o dia não tem nada marcado. */}
+        <HojeNoCronograma semana={cronograma} />
 
         {/* REVISÕES DE HOJE — a fila viva. Vem antes de "Onde focar agora"
             porque tem data: focar é uma escolha, revisar é um compromisso que

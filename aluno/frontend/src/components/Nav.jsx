@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { api } from "../lib/api";
-import { LogOut, Compass, History, Zap, Brain, ShieldCheck, MoreHorizontal, Trash2, LayoutGrid, GraduationCap, PenLine, MessageCircle, BookOpen, ListChecks, MessageSquareWarning, CalendarClock } from "lucide-react";
+import { LogOut, Compass, History, Zap, Brain, ShieldCheck, MoreHorizontal, Trash2, LayoutGrid, GraduationCap, PenLine, MessageCircle, BookOpen, ListChecks, MessageSquareWarning, CalendarClock, CalendarDays } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTitle, SheetDescription } from "./ui/sheet";
 import BrandMark from "./BrandMark";
@@ -11,13 +11,25 @@ import AulasParticularesModal from "./AulasParticularesModal";
 
 // Única fonte da lista de navegação — usada tanto nos links visíveis em
 // desktop (+ dropdown "mais") quanto no menu mobile, pra nunca divergir.
-// A ordem dos quatro primários é decisão de produto (2026-09-09), não
-// arbitrária: Painel (para onde tudo volta), Treino, Redação e Mentis — as
-// quatro coisas que o aluno FAZ. "Provas" saiu da barra porque o Painel abre
-// nelas com o botão principal, e "Cognitivo" porque é leitura de resultado,
-// não atividade; as duas continuam a um clique, no menu "mais".
+// A ordem dos primários é decisão de produto (2026-09-09, revista em
+// 2026-09-12), não arbitrária: Painel (para onde tudo volta), Cronograma
+// (onde o aluno decide o que fazer hoje), Treino, Redação e Mentis — as
+// coisas que o aluno FAZ. "Provas" saiu da barra porque o Painel abre nelas
+// com o botão principal, e "Cognitivo" porque é leitura de resultado, não
+// atividade; as duas continuam a um clique, no menu "mais".
+//
+// `curto` existe por causa da largura: entre 768 e 1280px a barra já levava
+// quatro links, o saldo, a pílula de aulas e — para admin — mais uma. Abaixo
+// de `xl`, "Cronograma" vira "Semana": um ícone de calendário sozinho não diz
+// a um aluno novo que ali mora a agenda dele, e esconder o rótulo da aba
+// recém-lançada é esconder justamente a que precisa ser descoberta.
 const PRIMARY_LINKS = [
   { to: "/dashboard", icon: LayoutGrid, label: "Painel", testid: "nav-dashboard", tour: "nav-dashboard" },
+  // Cronograma entra logo depois do Painel (2026-09-12): é a tela que responde
+  // "o que eu faço hoje", e ela vem antes das telas onde se faz. Passamos de
+  // quatro para cinco links primários, então o rótulo encolhe mais cedo — ver
+  // a nota de largura no fim deste arquivo.
+  { to: "/cronograma", icon: CalendarDays, label: "Cronograma", curto: "Semana", testid: "nav-cronograma" },
   { to: "/treino", icon: BookOpen, label: "Treino", testid: "nav-treino", tour: "nav-treino" },
   { to: "/redacao", icon: PenLine, label: "Redação", testid: "nav-redacao", tour: "nav-redacao" },
   { to: "/mentis", icon: MessageCircle, label: "Mentis", testid: "nav-mentis", tour: "nav-mentis", mascote: true },
@@ -55,10 +67,17 @@ function SparksChip() {
   );
 }
 
-// Menu mobile: mesmas ferramentas do desktop (Painel/Treino/Redação/Mentis +
-// o que está no menu "mais" + Admin/Sair), num painel deslizante — no desktop a
-// largura sobra pra links soltos na barra, no mobile não, então isto é a
-// única forma de alcançar as mesmas telas ali.
+// Menu mobile: mesmas ferramentas do desktop (os links primários + o que está
+// no menu "mais" + Admin/Sair), num painel deslizante — no desktop a largura
+// sobra pra links soltos na barra, aqui não, então isto é a única forma de
+// alcançar as mesmas telas.
+//
+// **Ele vale até 1024px (`lg`), não mais até 768px (`md`).** Medição de
+// 2026-09-12, com a pílula de Admin visível: a 820px a barra desktop já
+// transbordava 67px ANTES do Cronograma existir — "Sair" ficava cortado fora
+// da tela e não havia como sair da conta num tablet em retrato. Entre 768 e
+// 1024 o painel deslizante mostra as mesmas telas com o rótulo inteiro, que é
+// melhor do que uma barra que não cabe.
 function MobileMenu({ user, onLogout, open, setOpen, onOpenAulas }) {
   const nav = useNavigate();
   const { pathname } = useLocation();
@@ -143,40 +162,50 @@ export default function Nav() {
         {user ? (
           <button
             onClick={() => setMenuOpen(true)}
-            className="md:hidden flex items-center justify-center w-10 h-10 rounded-xl bg-sapiens-accent/20 border border-sapiens-accent/50 text-white active:scale-95 transition-transform"
+            className="lg:hidden flex items-center justify-center w-10 h-10 rounded-xl bg-sapiens-accent/20 border border-sapiens-accent/50 text-white active:scale-95 transition-transform"
             data-testid="nav-mobile-trigger"
             aria-label="Abrir menu"
           >
             <BrandMark className="w-5 h-5" />
           </button>
         ) : (
-          <span className="md:hidden" />
+          <span className="lg:hidden" />
         )}
-        <Link to={user ? "/dashboard" : "/"} className="hidden md:flex items-center gap-2 lg:gap-2.5 font-display text-2xl lg:text-3xl font-extrabold tracking-tighter text-white" data-testid="nav-brand">
+        <Link to={user ? "/dashboard" : "/"} className="hidden lg:flex items-center gap-2 2xl:gap-2.5 font-display text-2xl font-extrabold tracking-tighter text-white" data-testid="nav-brand">
           <BrandMark className="w-7 h-7 lg:w-8 lg:h-8" />
           Sapiens
         </Link>
         {user && (
-          <div className="flex items-center gap-1 md:gap-2 lg:gap-3">
+          <div className="flex items-center gap-1 lg:gap-2 2xl:gap-3">
             {/* Envelope próprio (e não os links soltos) porque o guia de
                 primeira sessão aponta para a BARRA inteira num passo só. */}
-            <div className="hidden md:flex items-center gap-0.5 lg:gap-2" data-tour="nav-primarios">
+            <div className="hidden lg:flex items-center gap-0.5 2xl:gap-1" data-tour="nav-primarios">
               {PRIMARY_LINKS.map((l) => (
                 <Link
                   key={l.to}
                   to={l.to}
-                  className="flex items-center gap-1.5 lg:gap-2 text-sm text-white/60 hover:text-white px-2 lg:px-3 py-2 rounded-full transition-colors"
+                  className="flex items-center gap-1.5 2xl:gap-2 text-sm text-white/60 hover:text-white px-2 2xl:px-2.5 py-2 rounded-full transition-colors"
                   data-testid={l.testid}
                   data-tour={l.tour}
+                  aria-label={l.label}
+                  title={l.label}
                 >
-                  {l.mascote ? <Mentis className="w-5 h-5" variante="icone" /> : <l.icon className="w-4 h-4" />} {l.label}
+                  {l.mascote ? <Mentis className="w-5 h-5" variante="icone" /> : <l.icon className="w-4 h-4" />}
+                  {l.curto ? (
+                    <>
+                      <span className="hidden 2xl:inline">{l.label}</span>
+                      <span className="2xl:hidden">{l.curto}</span>
+                    </>
+                  ) : (
+                    <span>{l.label}</span>
+                  )}
                 </Link>
               ))}
             </div>
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="hidden md:flex items-center justify-center text-white/60 hover:text-white w-9 h-9 rounded-full transition-colors" data-testid="nav-more" data-tour="nav-more">
+                <button className="hidden lg:flex items-center justify-center text-white/60 hover:text-white w-9 h-9 rounded-full transition-colors" data-testid="nav-more" data-tour="nav-more">
                   <MoreHorizontal className="w-4 h-4" />
                 </button>
               </DropdownMenuTrigger>
@@ -191,7 +220,7 @@ export default function Nav() {
 
             <button
               onClick={() => setShowAulasModal(true)}
-              className="btn-calor pill hidden md:inline-flex shrink-0 items-center gap-2 whitespace-nowrap text-xs md:text-sm px-3.5 py-2 rounded-full"
+              className="btn-calor pill hidden lg:inline-flex shrink-0 items-center gap-2 whitespace-nowrap text-xs 2xl:text-sm px-3.5 py-2 rounded-full"
               data-testid="nav-aulas-particulares"
               data-tour="nav-aulas"
             >
@@ -199,23 +228,29 @@ export default function Nav() {
               {/* Rótulo inteiro só a partir de `xl`: entre 768 e 1280 a barra
                   já leva quatro links fixos, o saldo e — para admin — mais uma
                   pílula, e o texto longo era o que empurrava tudo para fora. */}
-              <span className="hidden xl:inline">Tenha aulas conosco</span>
-              <span className="xl:hidden">Aulas</span>
+              Aulas
             </button>
 
             <SparksChip />
 
             {user.is_admin && (
-              <Link to="/admin" className="hidden md:inline-flex pill items-center gap-2 text-xs md:text-sm font-medium bg-emerald-500/15 text-emerald-300 border border-emerald-400/30 hover:bg-emerald-500/25 px-3 py-2 rounded-full" data-testid="nav-admin">
-                <ShieldCheck className="w-4 h-4" /> Admin
+              <Link to="/admin" className="hidden lg:inline-flex pill items-center gap-2 text-xs 2xl:text-sm font-medium bg-emerald-500/15 text-emerald-300 border border-emerald-400/30 hover:bg-emerald-500/25 px-3 py-2 rounded-full" data-testid="nav-admin" aria-label="Admin" title="Admin">
+                <ShieldCheck className="w-4 h-4" /> <span className="hidden 2xl:inline">Admin</span>
               </Link>
             )}
             <button
               onClick={doLogout}
-              className="hidden md:flex pill btn-sapiens items-center gap-2 text-sm font-medium px-4 py-2 rounded-full"
+              className="hidden lg:flex pill btn-sapiens items-center justify-center text-sm font-medium w-10 h-10 rounded-full"
               data-testid="nav-logout"
+              aria-label="Sair"
+              title="Sair"
             >
-              <LogOut className="w-4 h-4" /> <span className="hidden lg:inline">Sair</span>
+              {/* Só o ícone, em toda largura de desktop. A barra vive num
+                  container de 1152px que nenhum monitor largo aumenta, e a
+                  medição de 2026-09-12 mostrou 6px de folga com o rótulo
+                  "Sair" escrito — folga que qualquer fonte de fallback come.
+                  A porta de sair é a última coisa que pode ficar cortada. */}
+              <LogOut className="w-4 h-4" />
             </button>
 
             <MobileMenu

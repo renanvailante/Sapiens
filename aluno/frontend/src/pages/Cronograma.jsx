@@ -1,0 +1,451 @@
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import {
+  CalendarDays, ChevronLeft, ChevronRight, Sparkles, Loader2, Check, ArrowRight,
+  TrendingUp, Info,
+} from "lucide-react";
+import { api, errMsg } from "../lib/api";
+import Nav from "../components/Nav";
+import Mentis from "../components/Mentis";
+import CronogramaCompromissos from "../components/CronogramaCompromissos";
+import EstadoDeErro from "../components/EstadoDeErro";
+import { useDeclararContextoMentis } from "../lib/mentisContexto";
+
+/**
+ * Cronograma — a semana do aluno, de segunda a domingo.
+ *
+ * A tela mostra as duas metades juntas e as distingue no olho: o que o aluno
+ * JÁ TEM (aula, trabalho, prova) em chip sólido, e o que o Sapiens propõe em
+ * card clicável. Um cronograma que só mostrasse estudo seria mais um plano
+ * bonito que ignora a vida de quem vai cumpri-lo.
+ *
+ * Nenhum bloco morre em si mesmo — é o mesmo contrato de `CardDeMelhora`: todo
+ * bloco leva à tela onde aquilo é feito (`/exams`, `/treino`, `/redacao`,
+ * `/revisoes`). Um cronograma que só informa é uma lista de tarefas; um que
+ * abre a tarefa é uma rotina.
+ *
+ * A ordem das áreas não é escolha da tela nem do modelo: vem de
+ * `/api/prioridades` (peso da frente na nota do ENEM x lacuna medida). A tela
+ * só a explica — a faixa "o que mais rende pontos" existe para o aluno poder
+ * discordar da ordem, e não só obedecê-la.
+ */
+
+const DIAS_CURTOS = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
+
+const CORES_TIPO = {
+  aula: "border-sky-400/30 bg-sky-400/10 text-sky-100",
+  trabalho: "border-violet-400/30 bg-violet-400/10 text-violet-100",
+  prova: "border-rose-400/35 bg-rose-400/12 text-rose-100",
+  pessoal: "border-white/15 bg-white/8 text-white/75",
+};
+
+const CORES_BLOCO = {
+  revisao: "border-amber-400/35 hover:border-amber-400/60",
+  treino: "border-[#8B7BFF]/35 hover:border-[#8B7BFF]/60",
+  redacao: "border-emerald-400/35 hover:border-emerald-400/60",
+  questoes: "border-white/12 hover:border-[#4FD9FF]/50",
+};
+
+const ROTULO_TIPO = {
+  revisao: "Revisão", treino: "Treino", redacao: "Redação", questoes: "Questões", estudo: "Estudo",
+};
+
+function diaLocalISO(data = new Date()) {
+  const d = new Date(data.getTime() - data.getTimezoneOffset() * 60000);
+  return d.toISOString().slice(0, 10);
+}
+
+function deslocarSemana(semanaISO, dias) {
+  const base = new Date(`${semanaISO}T12:00:00`);
+  base.setDate(base.getDate() + dias);
+  return diaLocalISO(base);
+}
+
+function rotuloDaSemana(semanaISO) {
+  try {
+    const inicio = new Date(`${semanaISO}T12:00:00`);
+    const fim = new Date(inicio);
+    fim.setDate(fim.getDate() + 6);
+    const f = (d) => d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+    return `${f(inicio)} – ${f(fim)}`;
+  } catch {
+    return semanaISO;
+  }
+}
+
+/** A faixa que explica a ordem. Sem ela, o cronograma é uma ordem sem motivo. */
+function FaixaDePrioridade({ prioridades }) {
+  const topo = (prioridades || []).slice(0, 4);
+  if (!topo.length) return null;
+  return (
+    <section className="card-sapiens mt-6 rounded-3xl p-6 md:p-7" data-testid="cronograma-prioridades">
+      <div className="flex items-center gap-2">
+        <TrendingUp className="h-4 w-4 text-[#7FD8FF]" />
+        <h2 className="font-display text-lg font-bold tracking-tight text-zinc-950">
+          O que mais rende pontos para você agora
+        </h2>
+      </div>
+      <p className="mt-1 text-sm text-zinc-500">
+        Peso da frente na nota do ENEM cruzado com o que os seus erros já mostraram. É esta ordem
+        que decide quantos blocos cada área ganha na semana.
+      </p>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        {topo.map((p, i) => (
+          <Link
+            key={p.chave}
+            to={p.rota}
+            className="lift rounded-2xl border border-white/10 bg-white/5 p-4"
+            data-testid={`cronograma-prioridade-${p.chave}`}
+          >
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="font-display text-base font-bold tracking-tight text-zinc-950">
+                {i + 1}. {p.nome}
+              </span>
+              <span className="font-mono-alt text-[10px] uppercase tracking-[0.22em] text-zinc-400">
+                {p.estado === "sem_medida"
+                  ? "sem medida"
+                  : p.chave === "redacao"
+                    ? `${p.nota ?? "—"}/1000`
+                    : `${p.taxa_acerto}%`}
+              </span>
+            </div>
+            <p className="mt-1.5 text-xs leading-relaxed text-zinc-500">{p.porque}</p>
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function Bloco({ bloco, onConcluir, salvando }) {
+  const nav = useNavigate();
+  return (
+    <div
+      className={`rounded-xl border bg-white/5 p-2.5 transition ${CORES_BLOCO[bloco.tipo] || CORES_BLOCO.questoes} ${
+        bloco.concluido ? "opacity-55" : ""
+      }`}
+      data-testid={`cronograma-bloco-${bloco.id}`}
+    >
+      <div className="flex items-start justify-between gap-1.5">
+        <span className="font-mono-alt text-[9px] uppercase tracking-[0.2em] text-zinc-400">
+          {bloco.inicio}–{bloco.fim} · {ROTULO_TIPO[bloco.tipo] || bloco.tipo}
+        </span>
+        <button
+          type="button"
+          onClick={() => onConcluir(bloco)}
+          disabled={salvando}
+          aria-label={bloco.concluido ? "Desmarcar como feito" : "Marcar como feito"}
+          className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition ${
+            bloco.concluido
+              ? "border-emerald-400/60 bg-emerald-400/25 text-emerald-200"
+              : "border-white/25 text-transparent hover:border-white/50"
+          }`}
+          data-testid={`cronograma-check-${bloco.id}`}
+        >
+          <Check className="h-2.5 w-2.5" />
+        </button>
+      </div>
+      <button
+        type="button"
+        onClick={() => nav(bloco.rota)}
+        className="mt-1 w-full text-left"
+      >
+        <p className={`text-[13px] font-medium leading-snug text-zinc-950 ${bloco.concluido ? "line-through" : ""}`}>
+          {bloco.titulo}
+        </p>
+        {bloco.detalhe && (
+          <p className="mt-1 line-clamp-3 text-[11px] leading-relaxed text-zinc-500">{bloco.detalhe}</p>
+        )}
+        <span className="mt-1.5 inline-flex items-center gap-1 text-[10px] text-[#7FD8FF]">
+          Fazer agora <ArrowRight className="h-2.5 w-2.5" />
+        </span>
+      </button>
+    </div>
+  );
+}
+
+export default function Cronograma() {
+  const [semanaISO, setSemanaISO] = useState(() => diaLocalISO());
+  const [dados, setDados] = useState(null);
+  const [prioridades, setPrioridades] = useState([]);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState(null);
+  const [gerando, setGerando] = useState(null);
+  const [salvandoBloco, setSalvandoBloco] = useState(false);
+  const [, setSaldo] = useState(null);
+
+  useDeclararContextoMentis("Montando o cronograma da semana.");
+
+  const carregar = useCallback(async (semana) => {
+    setCarregando(true);
+    setErro(null);
+    try {
+      const [semanaResp, prioridadesResp] = await Promise.allSettled([
+        api.get("/cronograma", { params: { semana } }),
+        api.get("/prioridades"),
+      ]);
+      if (semanaResp.status === "rejected") throw semanaResp.reason;
+      setDados(semanaResp.value.data);
+      setSemanaISO(semanaResp.value.data.semana);
+      // As prioridades são contexto, não a tela: se elas falharem, o
+      // cronograma ainda é a coisa que o aluno veio ver.
+      if (prioridadesResp.status === "fulfilled") {
+        setPrioridades(prioridadesResp.value.data.prioridades || []);
+      }
+    } catch (e) {
+      setErro(errMsg(e, "Não consegui abrir o seu cronograma agora."));
+    } finally {
+      setCarregando(false);
+    }
+  }, []);
+
+  useEffect(() => { carregar(undefined); }, [carregar]);
+
+  const gerar = async (comMentis) => {
+    setGerando(comMentis ? "mentis" : "gratis");
+    try {
+      const { data } = await api.post("/cronograma/gerar", { semana: semanaISO, com_mentis: comMentis });
+      setDados(data.semana);
+      if (data.prioridades) setPrioridades(data.prioridades);
+      if (typeof data.sparks_balance === "number") setSaldo(data.sparks_balance);
+      if (data.aviso) toast.warning(data.aviso);
+      else if (data.sem_horario_livre) toast.info("Não sobrou horário livre. Ajuste a janela de estudo.");
+      else toast.success("Semana montada.");
+    } catch (e) {
+      toast.error(errMsg(e, "Não consegui montar a sua semana agora."));
+    } finally {
+      setGerando(null);
+    }
+  };
+
+  const concluir = async (bloco) => {
+    setSalvandoBloco(true);
+    // Otimista: marcar um bloco feito precisa responder no dedo, e o pior caso
+    // de errar é um check que volta sozinho — nada é perdido.
+    setDados((d) => ({
+      ...d,
+      dias: d.dias.map((dia) => ({
+        ...dia,
+        blocos: dia.blocos.map((b) => (b.id === bloco.id ? { ...b, concluido: !b.concluido } : b)),
+      })),
+    }));
+    try {
+      await api.post(`/cronograma/bloco/${bloco.id}/concluir`, {
+        concluido: !bloco.concluido, semana: semanaISO,
+      });
+    } catch (e) {
+      toast.error(errMsg(e, "Não consegui salvar."));
+      carregar(semanaISO);
+    } finally {
+      setSalvandoBloco(false);
+    }
+  };
+
+  const irPara = (dias) => {
+    const alvo = deslocarSemana(semanaISO, dias);
+    setSemanaISO(alvo);
+    carregar(alvo);
+  };
+
+  const compromissos = useMemo(
+    () => (dados?.dias || []).flatMap((d) => d.compromissos),
+    [dados]
+  );
+  const hojeISO = diaLocalISO();
+  const plano = dados?.plano;
+  const temPlano = Boolean(plano?.desta_semana && dados?.total_blocos > 0);
+
+  return (
+    <div className="min-h-screen">
+      <Nav />
+      <div className="max-w-6xl mx-auto px-6 md:px-10 py-10 md:py-14">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="font-mono-alt text-[10px] uppercase tracking-[0.3em] text-zinc-400">
+              Cronograma
+            </p>
+            <h1 className="mt-1 font-display text-4xl md:text-5xl font-extrabold tracking-tighter text-white">
+              A sua semana
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm text-white/55">
+              De segunda a domingo, com os seus compromissos e o estudo montado no que sobra —
+              priorizado pelo que mais rende ponto na sua prova.
+            </p>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button" onClick={() => irPara(-7)}
+              className="pill flex h-9 w-9 items-center justify-center rounded-full border border-white/12 bg-white/5 text-white/70 hover:text-white"
+              aria-label="Semana anterior" data-testid="cronograma-semana-anterior"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <span className="min-w-[9.5rem] text-center text-xs text-white/70" data-testid="cronograma-rotulo-semana">
+              {rotuloDaSemana(semanaISO)}
+            </span>
+            <button
+              type="button" onClick={() => irPara(7)}
+              className="pill flex h-9 w-9 items-center justify-center rounded-full border border-white/12 bg-white/5 text-white/70 hover:text-white"
+              aria-label="Próxima semana" data-testid="cronograma-semana-proxima"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+
+        {erro && (
+          <div className="mt-8">
+            <EstadoDeErro mensagem={erro} aoTentarNovamente={() => carregar(semanaISO)} />
+          </div>
+        )}
+
+        {carregando && !dados ? (
+          <div className="mt-10 flex items-center gap-2 text-sm text-white/50">
+            <Loader2 className="h-4 w-4 animate-spin" /> Abrindo a sua semana…
+          </div>
+        ) : dados ? (
+          <>
+            {/* O que a semana prioriza — e o botão que a monta. */}
+            <section className="card-sapiens mt-8 rounded-3xl p-6 md:p-8" data-testid="cronograma-hero">
+              <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+                <div className="flex items-start gap-3">
+                  <Mentis className="mt-0.5 h-9 w-9 shrink-0" estado={gerando ? "analise" : "neutra"} />
+                  <div>
+                    <p className="text-sm leading-relaxed text-zinc-950" data-testid="cronograma-resumo">
+                      {temPlano
+                        ? plano.resumo
+                        : "Esta semana ainda não tem cronograma. Eu monto em cima dos seus compromissos, " +
+                          "priorizando onde você ganha mais ponto — Matemática e Redação primeiro, e o " +
+                          "que os seus erros mostrarem depois."}
+                    </p>
+                    {temPlano && plano.recado && (
+                      <p className="mt-2 text-xs leading-relaxed text-zinc-500">{plano.recado}</p>
+                    )}
+                    {temPlano && (
+                      <p className="mt-2 font-mono-alt text-[10px] uppercase tracking-[0.22em] text-zinc-400">
+                        {dados.total_concluidos}/{dados.total_blocos} blocos feitos
+                        {plano.com_mentis ? " · comentada pela Mentis" : ""}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex shrink-0 flex-col gap-2 sm:flex-row md:flex-col lg:flex-row">
+                  <button
+                    type="button"
+                    onClick={() => gerar(false)}
+                    disabled={Boolean(gerando)}
+                    className="pill btn-sapiens inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full px-5 py-2.5 text-sm font-medium disabled:opacity-50"
+                    data-testid="cronograma-gerar"
+                  >
+                    {gerando === "gratis" ? <Loader2 className="h-4 w-4 animate-spin" /> : <CalendarDays className="h-4 w-4" />}
+                    {temPlano ? "Remontar" : "Montar minha semana"} · grátis
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => gerar(true)}
+                    disabled={Boolean(gerando)}
+                    className="pill btn-vidro inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full px-5 py-2.5 text-sm font-medium disabled:opacity-50"
+                    data-testid="cronograma-gerar-mentis"
+                  >
+                    {gerando === "mentis" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                    Com a Mentis · {dados.custo_mentis} Sparks
+                  </button>
+                </div>
+              </div>
+              {plano && !plano.desta_semana && (
+                <p className="mt-4 flex items-start gap-2 rounded-2xl border border-amber-400/25 bg-amber-400/8 px-3.5 py-2.5 text-xs text-amber-100">
+                  <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  O seu último cronograma é de outra semana. Monte de novo para esta — as revisões
+                  marcadas e os seus pontos fracos mudaram desde lá.
+                </p>
+              )}
+            </section>
+
+            <FaixaDePrioridade prioridades={prioridades} />
+
+            {/* A semana. Sete colunas no desktop, empilhada no celular. */}
+            <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-7" data-testid="cronograma-grade">
+              {dados.dias.map((dia) => {
+                const eHoje = dia.data === hojeISO;
+                const folga = (dados.preferencias.dias_de_folga || []).includes(dia.indice);
+                return (
+                  <div
+                    key={dia.data}
+                    className={`card-sapiens rounded-2xl p-3 ${eHoje ? "ring-1 ring-[#4FD9FF]/45" : ""}`}
+                    data-testid={`cronograma-dia-${dia.indice}`}
+                  >
+                    <div className="mb-2.5 flex items-baseline justify-between gap-1">
+                      <span className="font-display text-sm font-bold tracking-tight text-zinc-950">
+                        {DIAS_CURTOS[dia.indice]}
+                      </span>
+                      <span className="font-mono-alt text-[9px] uppercase tracking-[0.18em] text-zinc-400">
+                        {eHoje ? "hoje" : dia.data.slice(8, 10)}
+                      </span>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      {dia.compromissos.map((c) => (
+                        <div
+                          key={c.id}
+                          className={`rounded-lg border px-2 py-1.5 text-[11px] leading-tight ${CORES_TIPO[c.tipo] || CORES_TIPO.pessoal}`}
+                          data-testid={`cronograma-compromisso-${c.id}`}
+                        >
+                          <span className="block font-mono-alt text-[9px] opacity-70">
+                            {c.dia_inteiro ? "dia todo" : `${c.inicio}–${c.fim}`}
+                          </span>
+                          {c.titulo}
+                        </div>
+                      ))}
+
+                      {dia.blocos.map((b) => (
+                        <Bloco key={b.id} bloco={b} onConcluir={concluir} salvando={salvandoBloco} />
+                      ))}
+
+                      {!dia.compromissos.length && !dia.blocos.length && (
+                        <p className="py-3 text-center text-[10px] text-zinc-400">
+                          {folga ? "folga" : "livre"}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {temPlano && plano.distribuicao?.length > 0 && (
+              <section className="card-sapiens mt-6 rounded-3xl p-6" data-testid="cronograma-distribuicao">
+                <h2 className="font-display text-lg font-bold tracking-tight text-zinc-950">
+                  Por que a semana ficou assim
+                </h2>
+                <div className="mt-3 space-y-2.5">
+                  {plano.distribuicao.map((d) => (
+                    <div key={d.chave} className="flex items-start gap-3">
+                      <span className="mt-0.5 shrink-0 rounded-full border border-white/12 bg-white/5 px-2.5 py-1 font-mono-alt text-[10px] text-white/70">
+                        {d.blocos}×
+                      </span>
+                      <p className="text-xs leading-relaxed text-zinc-500">
+                        <span className="font-medium text-zinc-950">{d.nome}</span> — {d.porque}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            <div className="mt-6">
+              <CronogramaCompromissos
+                semana={semanaISO}
+                compromissos={compromissos}
+                preferencias={dados.preferencias}
+                custoTexto={dados.custo_texto}
+                onSemana={(nova) => { setDados(nova); setSemanaISO(nova.semana); }}
+                onSaldo={setSaldo}
+              />
+            </div>
+          </>
+        ) : null}
+      </div>
+    </div>
+  );
+}

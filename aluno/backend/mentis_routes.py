@@ -50,6 +50,7 @@ import firestore_service as fs
 import llm_cache
 import llm_telemetry
 import motor_cognitivo
+import prioridade_enem
 import rate_limit
 import treino_habilidades as th
 from auth import require_user
@@ -488,7 +489,9 @@ def _pct(linha: dict) -> str:
     return f"{linha.get('nome')} {linha.get('percentual_acerto')}% ({linha.get('acertos')}/{linha.get('respondidas')})"
 
 
-def _montar_dossie(nome: str, diagnostico: dict, agregado: dict) -> dict[str, Any]:
+def _montar_dossie(
+    nome: str, diagnostico: dict, agregado: dict, prioridades: Optional[list[dict]] = None
+) -> dict[str, Any]:
     """Compacta o diagnóstico real num bloco de texto de tamanho previsível +
     um resumo estruturado para a interface mostrar sem chamar o modelo.
 
@@ -537,6 +540,22 @@ def _montar_dossie(nome: str, diagnostico: dict, agregado: dict) -> dict[str, An
             "para que nenhum ponto forte ou fraco possa ser afirmado. Diga isso com "
             "franqueza e ajude-o a estudar mesmo assim, sem inventar diagnóstico."
         )
+    # A ordem de rendimento entra no contexto FIXO da sessão — é o que faz a
+    # Mentis responder "estude X" com o mesmo critério que o Painel e o
+    # cronograma usam, em vez de cada superfície ter a sua opinião. Ver o
+    # cabeçalho de `prioridade_enem`.
+    if prioridades:
+        linhas.append(
+            "ONDE A PRÓXIMA HORA DE ESTUDO RENDE MAIS PONTO (peso da frente na nota do ENEM "
+            "cruzado com a lacuna medida deste aluno, da que mais rende para a que menos rende): "
+            + prioridade_enem.texto_para_modelo(prioridades)
+        )
+        linhas.append(
+            "Escala de peso, que você trata como fato: Matemática e Redação movem mais a nota; "
+            "depois Biologia, Química e Física; por último Ciências Humanas e Linguagens. "
+            "Uma frente 'ainda sem medida' está na lista pelo peso na prova, não por diagnóstico — "
+            "diga isso quando citá-la."
+        )
     linhas.append(
         "Catálogo de habilidades de treino disponíveis (use o hab_id exato ao propor "
         f"prática): {_catalogo_habilidades_texto()}"
@@ -553,6 +572,7 @@ def _montar_dossie(nome: str, diagnostico: dict, agregado: dict) -> dict[str, An
             "fortes": fortes_proc,
             "dominios_fracos": fracos_dom,
             "padroes": padroes,
+            "prioridades": (prioridades or [])[:5],
         },
     }
 
@@ -669,12 +689,19 @@ Responda EXCLUSIVAMENTE com JSON no formato:
   frase termina incompleta de propósito, com "..." no fim, para o aluno
   completar antes de mandar (ex.: "Me explica mais sobre..."). Nunca proponha
   ação que você não pode cumprir de fato (você não recebe arquivo).
-- "acao": normalmente `null`. Só preencha
+- "acao": normalmente `null`. Duas formas possíveis:
   {"tipo": "gerar_questoes", "hab_id": "HAB-NN", "quantidade": 5} quando você
   decidir que praticar uma habilidade específica é o próximo passo — use
   SEMPRE um `hab_id` exato do catálogo do dossiê, nunca um nome livre.
-  `quantidade` entre 1 e 5. Isto NÃO gera as questões nem cobra Sparks
-  sozinho: só aparece como um botão que o aluno decide clicar ou não.
+  `quantidade` entre 1 e 5;
+  {"tipo": "montar_cronograma"} quando o aluno pedir cronograma, agenda,
+  rotina, plano da semana ou "por onde começo", ou quando o problema dele for
+  claramente de organização do tempo e não de conteúdo. NÃO escreva a agenda
+  hora a hora na resposta: o Sapiens monta a semana em cima dos compromissos
+  reais dele e das prioridades acima, e essa montagem é de graça. Diga em uma
+  frase o que a semana vai priorizar e deixe o botão fazer o resto.
+  Nenhuma das duas gera nada nem cobra Sparks sozinha: viram um botão que o
+  aluno decide clicar ou não.
 Sem markdown, sem texto fora do JSON."""
 
 _SUGESTOES_MAX = 3
@@ -704,7 +731,15 @@ def _validar_acao(valor: Any) -> Optional[dict[str, Any]]:
     """Nunca confia no modelo às cegas: um `hab_id` que não existe no
     catálogo vigente vira `None` (a resposta em si continua válida — só a
     ação, que teria virado um botão quebrado, é descartada)."""
-    if not isinstance(valor, dict) or valor.get("tipo") != "gerar_questoes":
+    if not isinstance(valor, dict):
+        return None
+    if valor.get("tipo") == "montar_cronograma":
+        # Sem parâmetro nenhum para validar: a semana é montada pelo
+        # `/cronograma/gerar`, que lê os compromissos e as prioridades reais do
+        # aluno. A Mentis aqui só decide que ESTE é o próximo passo — ela não
+        # dita o cronograma, e por isso não há nada que ela possa errar.
+        return {"tipo": "montar_cronograma"}
+    if valor.get("tipo") != "gerar_questoes":
         return None
     hab_id = valor.get("hab_id")
     if not isinstance(hab_id, str) or hab_id not in {h["hab_id"] for h in th.listar_habilidades()}:
@@ -791,7 +826,10 @@ async def abrir_sessao(
     try:
         diagnostico = await annotation_service.compute_diagnostico_real(user.user_id)
         agregado = fs.ler_agregado(user.user_id)
-        dossie = _montar_dossie(user.name or user.email, diagnostico, agregado)
+        # `compute_diagnostico_real` já traz a contagem por disciplina, então
+        # o ranking de rendimento não custa nenhuma leitura a mais aqui.
+        prioridades = prioridade_enem.ranking(diagnostico.get("por_disciplina") or {})
+        dossie = _montar_dossie(user.name or user.email, diagnostico, agregado, prioridades)
     except Exception as exc:  # noqa: BLE001
         saldo_restituido = _safe_reembolso(user.user_id, SESSAO_COST)
         logger.exception(

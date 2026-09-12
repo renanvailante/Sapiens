@@ -28,6 +28,7 @@ const AnswerInput = lazy(() => import("./pages/AnswerInput"));
 const Diagnostic = lazy(() => import("./pages/Diagnostic"));
 const StudyPlan = lazy(() => import("./pages/StudyPlan"));
 const Revisoes = lazy(() => import("./pages/Revisoes"));
+const Cronograma = lazy(() => import("./pages/Cronograma"));
 const LearningMap = lazy(() => import("./pages/LearningMap"));
 const History = lazy(() => import("./pages/History"));
 const Trash = lazy(() => import("./pages/Trash"));
@@ -96,6 +97,10 @@ function AppRouter() {
           análise (histórico não pode quebrar); `/plan` sem id, que nunca
           existiu como tela, aponta para o que está valendo hoje. */}
       <Route path="/revisoes" element={<ProtectedRoute><Pagina titulo="Revisões"><Revisoes /></Pagina></ProtectedRoute>} />
+      <Route path="/cronograma" element={<ProtectedRoute><Pagina titulo="Cronograma"><Cronograma /></Pagina></ProtectedRoute>} />
+      {/* "agenda" é como metade dos alunos chama a tela; o redirect evita que
+          o palpite caia na página de "não encontrada". */}
+      <Route path="/agenda" element={<Navigate to="/cronograma" replace />} />
       <Route path="/plan" element={<Navigate to="/revisoes" replace />} />
       <Route path="/map/:analysisId" element={<ProtectedRoute><Pagina titulo="Mapa de aprendizagem"><LearningMap /></Pagina></ProtectedRoute>} />
       <Route path="/history" element={<ProtectedRoute><Pagina titulo="Histórico"><History /></Pagina></ProtectedRoute>} />

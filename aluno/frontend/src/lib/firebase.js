@@ -55,6 +55,30 @@ export async function entrarComGoogle() {
   return cred.user.getIdToken();
 }
 
+/**
+ * Pede autorização de LEITURA do Google Agenda e devolve o access token OAuth.
+ *
+ * O token fica só aqui, na memória desta aba: quem lê os eventos é o próprio
+ * navegador do aluno, e o que sobe para o backend são os eventos já lidos, não
+ * a credencial. O servidor do Sapiens nunca guarda acesso ao calendário de
+ * ninguém — e por isso não há o que vazar nem o que revogar do nosso lado.
+ *
+ * Escopo `calendar.readonly` e nada além: o app não cria, não move e não apaga
+ * evento nenhum na agenda do aluno, e o consentimento que o Google mostra diz
+ * exatamente isso.
+ */
+export async function autorizarGoogleAgenda() {
+  const provider = new GoogleAuthProvider();
+  provider.addScope("https://www.googleapis.com/auth/calendar.readonly");
+  provider.setCustomParameters({ prompt: "consent" });
+  const cred = await signInWithPopup(auth(), provider, browserPopupRedirectResolver);
+  const token = GoogleAuthProvider.credentialFromResult(cred)?.accessToken;
+  if (!token) {
+    throw new Error("O Google não devolveu autorização para ler a sua agenda.");
+  }
+  return token;
+}
+
 /** Traduz os códigos do Firebase para algo que o aluno entenda. */
 export function mensagemDeErroGoogle(e) {
   const code = e?.code || "";

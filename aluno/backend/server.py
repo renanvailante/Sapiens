@@ -56,6 +56,7 @@ import sugestoes_routes as sugestoes_module
 import revisao_routes as revisao_module
 import curadoria_routes as curadoria_module
 import dados_pessoais_routes as dados_pessoais_module
+import cronograma_routes as cronograma_module
 import microdiagnostico
 import db_indexes
 from enem_seed import migrate_and_seed
@@ -82,6 +83,7 @@ client_errors_module.set_db(db)
 question_reports_module.set_db(db)
 sugestoes_module.set_db(db)
 dados_pessoais_module.set_db(db)
+cronograma_module.set_db(db)
 # O microdiagnóstico (Fase 3) guarda no Mongo apenas CONTADORES por par
 # (erro, processo) — o relato em si mora no evento de behavior, no Firestore.
 microdiagnostico.set_db(db)
@@ -320,6 +322,7 @@ api_router.include_router(sugestoes_module.router)
 api_router.include_router(revisao_module.router)
 api_router.include_router(curadoria_module.router)
 api_router.include_router(dados_pessoais_module.router)
+api_router.include_router(cronograma_module.router)
 app.include_router(api_router)
 
 

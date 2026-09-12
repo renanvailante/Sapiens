@@ -67,6 +67,10 @@ COLECOES_POR_USUARIO: tuple[tuple[str, str], ...] = (
     ("treino_geracoes", "user_id"),
     ("perfil_derivado_cache", "user_id"),
     ("client_errors", "user_id"),
+    # A agenda do aluno é o dado mais íntimo que o produto guarda: diz onde
+    # ele está, em que horário, todos os dias da semana. Sai inteira com a
+    # conta, pelo `student_id` que `cronograma_routes._gravar` sempre grava.
+    ("cronogramas", "student_id"),
 )
 
 # Coleções que guardam dado de aluno mas NÃO cabem no padrão acima — cada uma
@@ -88,7 +92,7 @@ COLECOES_SEM_DADO_PESSOAL: tuple[str, ...] = (
     # Caches de LLM: chaveados por hash do conteúdo, compartilhados entre alunos
     "mentis_explicacoes", "mentis_intervencoes", "treino_conceitos",
     # Telemetria de custo: sem campo de usuário
-    "mentis_llm_chamadas", "redacao_llm_chamadas",
+    "mentis_llm_chamadas", "redacao_llm_chamadas", "cronograma_llm_chamadas",
     # Contador anônimo por par (erro, processo). O relato do aluno mora no
     # evento de behavior, que é apagado; isto é agregado, fora da LGPD (art. 12)
     "autorrelato_pares",

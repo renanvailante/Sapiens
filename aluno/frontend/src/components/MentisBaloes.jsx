@@ -8,6 +8,9 @@
 // abre. Fixos de propósito — não dependem do modelo, então não custam Sparks
 // nem tokens extras só para existir.
 export const BALOES_INICIAIS = [
+  // Primeiro da lista de propósito: organizar a semana é o pedido que mais
+  // aparece e o único que termina numa tela pronta em vez de numa resposta.
+  { texto: "🗓️ Crie um cronograma de estudos pra mim", tipo: "enviar" },
   { texto: "📈 Quero descobrir o que mais pode aumentar minha nota", tipo: "enviar" },
   { texto: "💡 Tenho uma dúvida, mas não sei nem por onde começar", tipo: "enviar" },
   { texto: "🧩 Crie 5 questões para eu descobrir onde estou errando", tipo: "enviar" },

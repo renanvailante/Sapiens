@@ -4,7 +4,7 @@ import { api, errMsg } from "../lib/api";
 import Nav from "../components/Nav";
 import Mentis, { MentisPensando } from "../components/Mentis";
 import Baloes, { BALOES_INICIAIS } from "../components/MentisBaloes";
-import MentisAcaoQuestoes from "../components/MentisAcaoQuestoes";
+import MentisAcao from "../components/MentisAcao";
 import { useContextoMentisAtual } from "../lib/mentisContexto";
 import { Send, Zap, Clock, Target, TrendingUp, AlertCircle } from "lucide-react";
 
@@ -374,7 +374,7 @@ export default function MentisChat() {
                       {m.texto}
                     </div>
                     {m.papel === "mentis" && i === mensagens.length - 1 && (
-                      <MentisAcaoQuestoes acao={m.acao} />
+                      <MentisAcao acao={m.acao} />
                     )}
                   </div>
                 </div>

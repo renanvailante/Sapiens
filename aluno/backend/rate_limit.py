@@ -57,6 +57,12 @@ LIMITES: dict[str, tuple[int, int]] = {
     # Reclamações e sugestões: dez por hora é mais do que qualquer aluno
     # honesto escreve, e impede que o canal vire depósito de spam.
     "sugestoes": (10, 3600),
+    # Cronograma. Montar a semana é grátis e barato, mas duas rotas aqui saem
+    # da máquina: a extração de compromissos chama o Gemini e a importação de
+    # .ics faz o servidor buscar uma URL. Trinta por hora cobre remontar a
+    # semana várias vezes enquanto se ajustam os horários, e fecha a porta
+    # para a rota de .ics virar um repetidor de requisições.
+    "cronograma": (30, 3600),
 }
 
 _eventos: dict[str, deque[float]] = defaultdict(deque)

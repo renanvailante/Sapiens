@@ -209,6 +209,9 @@ class FakeCollection:
         query = query or {}
         return FakeCursor([d for d in self.docs if self._bate(d, query)])
 
+    async def count_documents(self, query: dict | None = None):
+        return len([d for d in self.docs if self._bate(d, query or {})])
+
 
 class FakeDB:
     def __init__(self):

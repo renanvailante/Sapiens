@@ -6,7 +6,7 @@ import { useAuth } from "../lib/auth";
 import { useContextoMentisAtual } from "../lib/mentisContexto";
 import Mentis, { MentisPensando } from "./Mentis";
 import Baloes, { BALOES_INICIAIS } from "./MentisBaloes";
-import MentisAcaoQuestoes from "./MentisAcaoQuestoes";
+import MentisAcao from "./MentisAcao";
 
 const CUSTO_MENSAGEM_PADRAO = 10;
 const MAX_CHARS = 600;
@@ -192,7 +192,7 @@ export default function MentisWidget() {
                         {m.texto}
                       </div>
                       {m.papel === "mentis" && i === mensagens.length - 1 && (
-                        <MentisAcaoQuestoes acao={m.acao} />
+                        <MentisAcao acao={m.acao} />
                       )}
                     </div>
                   </div>

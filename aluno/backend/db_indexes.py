@@ -163,6 +163,19 @@ INDICES: list[tuple[str, list[tuple[str, int]], dict]] = [
     # corrida entre duas abas do painel.
     ("promo_codes", [("code", pymongo.ASCENDING)], {"name": "promo_code_unico", "unique": True}),
 
+    # --- cronograma ---
+    # O documento do cronograma tem `_id = user_id`, então a leitura da tela
+    # já é busca por chave primária e não precisa de índice nenhum. Este aqui
+    # é só para a auditoria por data ("quantos alunos remontaram a semana
+    # depois da mudança X") não virar varredura da coleção.
+    ("cronogramas", [("atualizado_em", pymongo.DESCENDING)],
+     {"name": "cronogramas_por_atualizacao"}),
+    # `cronograma_llm_chamadas` NÃO ganha índice, pelo mesmo motivo de
+    # `mentis_llm_chamadas` e `redacao_llm_chamadas`: `llm_telemetry.persist`
+    # grava `criado_em` como string ISO, e TTL sobre string não roda (é a
+    # armadilha descrita no topo deste arquivo). Um índice TTL ali seria uma
+    # limpeza que nunca acontece com cara de limpeza configurada.
+
     # --- recuperação de senha ---
     ("password_resets", [("token_hash", pymongo.ASCENDING)],
      {"name": "reset_token_unico", "unique": True}),

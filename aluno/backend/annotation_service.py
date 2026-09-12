@@ -12,6 +12,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import firestore_service as fs
+import prioridade_enem
 from cognitive_ontology import build_ontology_tree, ontology_version
 
 logger = logging.getLogger("sapiens.cognitive")
@@ -122,7 +123,12 @@ def _build_item_index(force: bool = False) -> dict[str, dict]:
 # de leitura para estourar.
 
 _CACHE_DERIVADO_TTL_SEGUNDOS = 6 * 3600
-_CACHE_DERIVADO_VERSAO = "v1"
+# v2 (2026-09-12): o agregado detalhado passou a contar também por DISCIPLINA
+# (`disciplina_stats`, insumo de `prioridade_enem`). Um documento gravado pela
+# v1 não tem esse campo, e servi-lo daria a todo aluno com cache quente um
+# cronograma montado como se ele nunca tivesse respondido nada. A versão na
+# chave é o que garante que cache velho simplesmente não é encontrado.
+_CACHE_DERIVADO_VERSAO = "v2"
 
 
 async def _agregado_com_cache(escopo: str, user_id: str, ler_do_firestore) -> dict[str, Any]:
@@ -485,6 +491,12 @@ def _read_firestore_desempenho_detalhado(user_id: str) -> dict[str, Any]:
     dominio_stats: dict[str, dict[str, int]] = defaultdict(_zero)
     competencia_stats: dict[str, dict[str, int]] = defaultdict(_zero)
     processo_stats: dict[str, dict[str, int]] = defaultdict(_zero)
+    # Por DISCIPLINA (Matemática, Biologia, ...), no mesmo laço e sem nenhuma
+    # leitura a mais. É o insumo de `prioridade_enem`: a ontologia é cognitiva
+    # (processo, domínio, competência) e nunca soube dizer "este aluno vai mal
+    # em Química" — que é justamente a unidade em que a prova é dividida e em
+    # que o ganho de ponto se decide.
+    disciplina_stats: dict[str, dict[str, int]] = defaultdict(_zero)
     total_events = 0
     matched_events = 0
     unmatched_events = 0
@@ -507,6 +519,12 @@ def _read_firestore_desempenho_detalhado(user_id: str) -> dict[str, Any]:
         matched_events += 1
         acertou = bool((ev.get("resposta") or {}).get("acertou"))
 
+        frente = prioridade_enem.classificar_disciplina(((item or {}).get("fonte") or {}).get("disciplina"))
+        if frente:
+            disciplina_stats[frente]["respondidas"] += 1
+            if acertou:
+                disciplina_stats[frente]["acertos"] += 1
+
         for chave_ec, alvo in (
             ("dominios", dominio_stats),
             ("competencias", competencia_stats),
@@ -525,6 +543,7 @@ def _read_firestore_desempenho_detalhado(user_id: str) -> dict[str, Any]:
         "dominio_stats": dict(dominio_stats),
         "competencia_stats": dict(competencia_stats),
         "processo_stats": dict(processo_stats),
+        "disciplina_stats": dict(disciplina_stats),
         "total_events": total_events,
         "matched_events": matched_events,
         "unmatched_events": unmatched_events,
@@ -575,6 +594,7 @@ async def compute_diagnostico_real(user_id: str) -> dict[str, Any]:
         vazio = {"fortes": [], "fracos": []}
         return {
             "por_dominio": vazio, "por_competencia": vazio, "por_processo": vazio,
+            "por_disciplina": {},
             "padroes_associados": [],
             "total_events": 0, "matched_events": 0, "unmatched_events": 0,
             "coverage": 0.0, "amostra_minima": _DIAGNOSTICO_MIN_AMOSTRA,
@@ -582,6 +602,7 @@ async def compute_diagnostico_real(user_id: str) -> dict[str, Any]:
         }
 
     catalogo = _catalogo_nomes()
+    disciplina_stats = agg.get("disciplina_stats") or {}
     por_dominio = _fortes_fracos(agg["dominio_stats"], catalogo)
     por_competencia = _fortes_fracos(agg["competencia_stats"], catalogo)
     por_processo = _fortes_fracos(agg["processo_stats"], catalogo)
@@ -614,6 +635,7 @@ async def compute_diagnostico_real(user_id: str) -> dict[str, Any]:
         "por_dominio": por_dominio,
         "por_competencia": por_competencia,
         "por_processo": por_processo,
+        "por_disciplina": disciplina_stats,
         "padroes_associados": padroes_associados[:8],
         "total_events": total,
         "matched_events": agg["matched_events"],
