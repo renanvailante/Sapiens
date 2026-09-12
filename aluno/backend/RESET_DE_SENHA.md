@@ -29,8 +29,10 @@ as duas variáveis estão configuradas, e cai no log quando não estão:
 Confira o estado em produção sem abrir o painel do Fly:
 
 ```bash
-curl -s https://sapiens-aluno.fly.dev/ready | grep -o '"email_configurado":[a-z]*'
+curl -s https://sapiens-aluno.fly.dev/ready | python3 -m json.tool | grep -A 2 '"email"'
 ```
+
+`"configurado": false` significa que o link está indo só para o log.
 
 ### Para ligar o envio
 

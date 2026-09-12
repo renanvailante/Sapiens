@@ -380,6 +380,15 @@ async def ready() -> JSONResponse:
         "loja_habilitada": resumo["loja_habilitada"],
         "loja_motivo": resumo["loja_motivo"],
     }
+    # Mesma ideia do bloco acima: booleano, nunca a chave. `configurado: false`
+    # significa que a redefinição de senha NÃO chega ao aluno — o link fica só
+    # no log do servidor, e destravar alguém vira trabalho manual. Não derruba
+    # a prontidão: o produto inteiro funciona sem enviar e-mail, e o login com
+    # Google não tem senha para esquecer.
+    checks["email"] = {
+        "configurado": resumo["email_configurado"],
+        "frontend_base": resumo["frontend_base"],
+    }
 
     return JSONResponse(
         status_code=200 if ok else 503,
