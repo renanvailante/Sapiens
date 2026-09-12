@@ -408,9 +408,16 @@ async def ready() -> JSONResponse:
     # precisa ser visível, não um detalhe enterrado num secret.
     import portao_crenca
 
+    # `confianca_minima` anda junto de `portao_crenca`: com o portão
+    # `desligado` e o piso em 0.0, TODO traço alimenta o perfil cognitivo do
+    # aluno — inclusive os elos raiz que o próprio anotador marcou com
+    # confiança 0.15. Os dois valores separados não dizem nada; juntos dizem
+    # exatamente quanta crença sobre o estudante está sendo formada sem
+    # revisão humana. Por isso saem no mesmo bloco.
     checks["operacao"] = {
         "auto_sync_segundos": FIRESTORE_AUTO_SYNC_SECONDS,
         "portao_crenca": portao_crenca.modo(),
+        "confianca_minima": portao_crenca.confianca_minima(),
     }
 
     return JSONResponse(
