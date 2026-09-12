@@ -38,12 +38,13 @@ def _run(coro):
 CADEIA = [{"ordem": 1, "erro": "ERR-03", "processo_afetado": "PROC-SIMB-01", "confianca": 0.7}]
 
 
-def _item(item_id="I-1", *, apto=False, revisado=False, dominio="DOM-01", com_cadeia=True, com_intervencao=True):
+def _item(item_id="I-1", *, apto=False, revisado=False, dominio="DOM-01", disciplina="Física",
+          com_cadeia=True, com_intervencao=True):
     return {
         "item_id": item_id,
         "item_hash": f"h-{item_id}",
         "ontology_version": "1.4.1",
-        "fonte": {"banca": "ENEM", "ano": 2023, "prova": "AMARELO", "numero": 93, "disciplina": "Física"},
+        "fonte": {"banca": "ENEM", "ano": 2023, "prova": "AMARELO", "numero": 93, "disciplina": disciplina},
         "questao": {"enunciado": "Enunciado."},
         "estrutura_cognitiva": {"dominios": [{"id": dominio}], "processos": [{"id": "PROC-SIMB-01"}]},
         "qualidade": {"apto_para_camada_de_crenca": {"valor": apto}, "revisado": revisado},
@@ -145,14 +146,14 @@ class TestRelatorioDeOferta:
         assert any("item(ns) no acervo" in m for m in linha["motivos"])
 
     def test_um_contexto_so_nao_sustenta_transferencia(self, monkeypatch):
-        itens = [_item(f"I-{i}", dominio="DOM-01") for i in range(1, 6)]
+        itens = [_item(f"I-{i}", disciplina="Física") for i in range(1, 6)]
         _instalar(monkeypatch, itens)
         linha = self._linha(curadoria.relatorio_de_oferta())
         assert linha["apto_para_fase_1"] is False
         assert any("contexto" in m for m in linha["motivos"])
 
     def test_acervo_suficiente_em_dois_contextos_e_aprovado(self, monkeypatch):
-        itens = [_item(f"I-{i}", dominio="DOM-01" if i < 3 else "DOM-07") for i in range(1, 6)]
+        itens = [_item(f"I-{i}", disciplina="Física" if i < 3 else "Biologia") for i in range(1, 6)]
         _instalar(monkeypatch, itens)
         relatorio = curadoria.relatorio_de_oferta()
         linha = self._linha(relatorio)
@@ -161,7 +162,7 @@ class TestRelatorioDeOferta:
         assert "PROC-SIMB-01" in relatorio["aprovados"]
 
     def test_item_sem_cadeia_anotada_conta_como_acervo_mas_nao_como_evidencia(self, monkeypatch):
-        itens = [_item(f"I-{i}", dominio="DOM-01" if i < 3 else "DOM-07", com_cadeia=False) for i in range(1, 6)]
+        itens = [_item(f"I-{i}", disciplina="Física" if i < 3 else "Biologia", com_cadeia=False) for i in range(1, 6)]
         _instalar(monkeypatch, itens)
         linha = self._linha(curadoria.relatorio_de_oferta())
         assert linha["itens"] == 5
@@ -367,3 +368,52 @@ class TestSapiensLab:
         }
         for proibida in ("set", "update", "update_one", "revisar_item", "escrever_revisao", "write"):
             assert proibida not in chamadas, f"sapiens_lab chama {proibida}()"
+
+
+# ============================================ a chave de contexto
+
+
+class TestChaveDeContexto:
+    """O relatório de oferta só significa alguma coisa se "outro contexto"
+    discriminar de verdade. A primeira versão usava o DOMÍNIO, que a
+    Constituição §4.4 define como DERIVADO do processo — logo, quase constante
+    dentro de um processo. Medido no acervo real, sete processos apareciam como
+    "sem transferência possível" cobrindo meia dúzia de disciplinas cada."""
+
+    def test_dominio_igual_mas_disciplina_diferente_conta_como_outro_contexto(self, monkeypatch):
+        itens = [
+            _item(f"I-{i}", dominio="DOM-01", disciplina="Física" if i < 3 else "Biologia")
+            for i in range(1, 6)
+        ]
+        _instalar(monkeypatch, itens)
+        linha = next(
+            l for l in curadoria.relatorio_de_oferta()["processos"] if l["processo_id"] == "PROC-SIMB-01"
+        )
+        assert linha["contextos_distintos"] == 2, "o domínio comum apagou a variedade de disciplina"
+        assert linha["apto_para_fase_1"] is True
+
+    def test_disciplina_igual_nao_vira_contexto_novo_por_causa_do_dominio(self, monkeypatch):
+        """O inverso também tem de valer: variar só o domínio, com a mesma
+        disciplina, NÃO é transferência."""
+        itens = [
+            _item(f"I-{i}", dominio="DOM-01" if i < 3 else "DOM-07", disciplina="Física")
+            for i in range(1, 6)
+        ]
+        _instalar(monkeypatch, itens)
+        linha = next(
+            l for l in curadoria.relatorio_de_oferta()["processos"] if l["processo_id"] == "PROC-SIMB-01"
+        )
+        assert linha["contextos_distintos"] == 1
+        assert linha["apto_para_fase_1"] is False
+
+    def test_tema_nao_e_chave_primaria(self, monkeypatch):
+        """Com dezenas de temas por processo, tema como chave faria quase toda
+        questão contar como transferência — e o sinal deixaria de significar
+        alguma coisa."""
+        import revisao_service
+
+        item = _item("I-1", disciplina="Física")
+        item["fonte"]["tema"] = "Ondulatória"
+        outro = _item("I-2", disciplina="Física")
+        outro["fonte"]["tema"] = "Termodinâmica"
+        assert revisao_service.contexto_do_item(item) == revisao_service.contexto_do_item(outro)

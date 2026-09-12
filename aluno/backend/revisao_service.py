@@ -105,24 +105,48 @@ def _guardar(uid: str, bloco: dict[str, Any]) -> None:
 def contexto_do_item(item: dict | None) -> str | None:
     """Chave curta do contexto em que o processo foi exercitado.
 
-    Transferência é o mesmo processo cobrado noutro lugar. "Noutro lugar" tem
-    de ser algo que o acervo realmente declare, senão a linha vira enfeite: o
-    domínio anotado é a primeira escolha (é derivado dos processos, Constituição
-    §4.4), a disciplina da fonte é a segunda, o tema é a última.
+    Transferência é o mesmo processo cobrado noutro lugar. A escolha de o que
+    conta como "outro lugar" decide se o §12 é mensurável, e a primeira versão
+    disto errou: usava o DOMÍNIO anotado como chave primária.
+
+    Por que domínio não serve. A Constituição §4.4 é explícita: domínios e
+    competências são **derivados dos processos**. O domínio é, portanto, quase
+    uma função do processo — e usá-lo como contexto do processo é tautológico.
+    Medido no acervo real em 2026-09-12, o efeito era grosseiro:
+
+        PROC-CAUSAL-01    1 domínio    6 disciplinas   31 temas
+        PROC-CLASSIF-01   1 domínio    6 disciplinas   11 temas
+        PROC-ESPACO-03    1 domínio    4 disciplinas   16 temas
+
+    Sete processos — entre eles o segundo maior do acervo, com 45 itens —
+    apareciam como "sem transferência possível" quando o acervo os cobra em
+    meia dúzia de áreas diferentes. O relatório de oferta reprovava todos, e a
+    hipótese central da proposta ficava não-mensurável justamente onde havia
+    mais dado.
+
+    `fonte.disciplina` é o que discrimina: é declarado pela prova, não derivado
+    do processo, e tem granularidade de área do conhecimento — que é o
+    significado pretendido de "outro contexto". `tema` NÃO serve como chave
+    primária pelo motivo oposto: com 39 temas para um processo, quase toda
+    questão seria "transferência" e o sinal não significaria mais nada.
+
+    O domínio fica como segunda opção (item sem `fonte` ainda tem ancoragem) e
+    o tema como última. O prefixo mantém as três formas distinguíveis entre si
+    num `contextos_da_raiz` que atravesse uma mudança destas.
     """
     if not item:
         return None
+    fonte = item.get("fonte") or {}
+    disciplina = fonte.get("disciplina")
+    if disciplina:
+        return f"disciplina:{disciplina}"
     dominios = (item.get("estrutura_cognitiva") or {}).get("dominios") or []
     for d in dominios:
         did = d.get("id") if isinstance(d, dict) else d
         if did:
             return str(did)
-    fonte = item.get("fonte") or {}
-    for chave in ("disciplina", "tema"):
-        valor = fonte.get(chave)
-        if valor:
-            return f"{chave}:{valor}"
-    return None
+    tema = fonte.get("tema")
+    return f"tema:{tema}" if tema else None
 
 
 def _processos_do_item(item: dict | None) -> list[str]:

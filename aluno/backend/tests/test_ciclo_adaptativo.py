@@ -278,11 +278,14 @@ class TestFilaDepoisDoCiclo:
     def test_transferencia_aparece_quando_ha_item_de_outro_contexto(self, ambiente, monkeypatch):
         import annotation_service
 
+        # Mesmo processo, OUTRA disciplina — que é o que caracteriza
+        # transferência. Variar o domínio não bastaria: ele é derivado do
+        # processo (Constituição §4.4) e por isso quase não varia dentro dele.
         outro = {
             **ITEM_ANOTADO,
             "item_id": "I-9",
             "item_hash": "h-9",
-            "estrutura_cognitiva": {"dominios": [{"id": "DOM-07"}], "processos": [{"id": PROC}]},
+            "fonte": {**ITEM_ANOTADO["fonte"], "disciplina": "Biologia"},
         }
         monkeypatch.setattr(
             annotation_service, "_build_item_index", lambda force=False: {"I-1": ITEM_ANOTADO, "I-9": outro}
@@ -291,7 +294,7 @@ class TestFilaDepoisDoCiclo:
         revisao_service.esquecer()
         fila = revisao_service.fila("U1")
         assert fila["itens"][0]["transferencia"]["item_id"] == "I-9"
-        assert fila["itens"][0]["transferencia"]["contexto"] == "DOM-07"
+        assert fila["itens"][0]["transferencia"]["contexto"] == "disciplina:Biologia"
 
 
 class TestTrajetoriaNaoAlega:
