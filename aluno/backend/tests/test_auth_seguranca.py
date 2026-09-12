@@ -35,8 +35,10 @@ def _sem_limites_residuais():
 class _Req:
     """Requisição mínima: só o que `rate_limit` e `require_user` consultam."""
 
-    def __init__(self, ip="10.0.0.1", token=None):
+    def __init__(self, ip="10.0.0.1", token=None, fly=None):
         self.headers = {"x-forwarded-for": ip}
+        if fly:
+            self.headers["fly-client-ip"] = fly
         self.cookies = {"session_token": token} if token else {}
         self.client = None
 
@@ -203,7 +205,133 @@ def test_janela_desliza(monkeypatch):
     rate_limit.checar("login", "9.9.9.9")  # janela passou: libera
 
 
-def test_ip_real_vem_do_x_forwarded_for():
-    """Atrás do proxy do Fly, `request.client.host` é o IP do proxy — usá-lo
-    barraria todos os alunos juntos no mesmo contador."""
-    assert rate_limit._cliente(_Req(ip="203.0.113.7, 10.0.0.1")) == "203.0.113.7"
+def test_ip_real_vem_do_fim_do_x_forwarded_for():
+    """`X-Forwarded-For` é uma LISTA à qual cada proxy ACRESCENTA. O último
+    item é o que o proxy mais próximo escreveu; o primeiro é o que o cliente
+    mandou — e um cliente pode mandar o que quiser."""
+    assert rate_limit._cliente(_Req(ip="203.0.113.7, 10.0.0.1")) == "10.0.0.1"
+
+
+def test_fly_client_ip_vence_o_x_forwarded_for():
+    """O proxy do Fly sobrescreve `Fly-Client-IP` a cada requisição, então ele
+    é a única fonte que o cliente não alcança."""
+    req = _Req(ip="203.0.113.7, 10.0.0.1", fly="198.51.100.9")
+    assert rate_limit._cliente(req) == "198.51.100.9"
+
+
+def test_xff_forjado_nao_abre_contador_novo():
+    """Regressão da falha real: `_cliente` lia o PRIMEIRO item do XFF, então
+    girar um IP inventado por requisição zerava o contador a cada tentativa e
+    o limite de 10 senhas/min simplesmente não existia.
+
+    Aqui o atacante troca o IP forjado a cada tentativa, mas o IP que o proxy
+    acrescenta é sempre o mesmo — e é esse que tem de contar."""
+    maximo, _ = rate_limit.LIMITES["login"]
+    for i in range(maximo):
+        req = _Req(ip=f"1.2.3.{i}, 10.0.0.7")
+        rate_limit.checar("login", rate_limit._cliente(req))
+
+    with pytest.raises(HTTPException):
+        req = _Req(ip="9.9.9.9, 10.0.0.7")
+        rate_limit.checar("login", rate_limit._cliente(req))
+
+
+# ==================================================== entrega do link de reset
+
+class _RespostaFalsa:
+    def __init__(self, status=200):
+        self.status_code = status
+
+    def raise_for_status(self):
+        if self.status_code >= 400:
+            import httpx
+
+            raise httpx.HTTPStatusError("falhou", request=None, response=None)
+
+
+class _ClienteHttpFalso:
+    """Dublê de `httpx.AsyncClient` usado como context manager assíncrono."""
+
+    def __init__(self, chamadas, status=200, explode=False):
+        self._chamadas = chamadas
+        self._status = status
+        self._explode = explode
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *_):
+        return False
+
+    async def post(self, url, headers=None, json=None):
+        if self._explode:
+            raise RuntimeError("rede caiu")
+        self._chamadas.append({"url": url, "headers": headers, "json": json})
+        return _RespostaFalsa(self._status)
+
+
+class TestEntregaDoLinkDeReset:
+    """O provedor de e-mail é opcional, mas a rota NUNCA pode mudar de
+    comportamento por causa dele — ver `auth._entregar_link_de_reset`."""
+
+    def test_sem_provedor_o_link_vai_para_o_log_e_nao_ha_rede(self, monkeypatch, caplog):
+        monkeypatch.setattr(auth.settings, "EMAIL_HABILITADO", False)
+
+        def _proibido(*_a, **_k):
+            raise AssertionError("não deveria tocar a rede sem provedor configurado")
+
+        monkeypatch.setattr(auth.httpx, "AsyncClient", _proibido)
+
+        with caplog.at_level("WARNING"):
+            asyncio.run(auth._entregar_link_de_reset("aluno@x.com", "tok-123"))
+
+        assert "RESET DE SENHA" in caplog.text
+        assert "tok-123" in caplog.text
+
+    def test_com_provedor_envia_o_link_montado(self, monkeypatch):
+        chamadas = []
+        monkeypatch.setattr(auth.settings, "EMAIL_HABILITADO", True)
+        monkeypatch.setattr(auth.settings, "RESEND_API_KEY", "chave-secreta")
+        monkeypatch.setattr(auth.settings, "RESEND_FROM", "Sapiens <nao-responda@x.com>")
+        monkeypatch.setattr(auth.settings, "frontend_base", lambda: "https://aluno.x.com")
+        monkeypatch.setattr(
+            auth.httpx, "AsyncClient", lambda **_k: _ClienteHttpFalso(chamadas)
+        )
+
+        asyncio.run(auth._entregar_link_de_reset("aluno@x.com", "tok-abc"))
+
+        assert len(chamadas) == 1
+        enviado = chamadas[0]
+        assert enviado["headers"]["Authorization"] == "Bearer chave-secreta"
+        assert enviado["json"]["to"] == ["aluno@x.com"]
+        assert "https://aluno.x.com/redefinir-senha?token=tok-abc" in enviado["json"]["html"]
+
+    def test_falha_do_provedor_nao_propaga_e_registra_o_link(self, monkeypatch, caplog):
+        """Se o erro escapasse, `/password/forgot` devolveria 500 só para
+        e-mails CADASTRADOS — o oráculo que o resto do fluxo existe para
+        evitar."""
+        monkeypatch.setattr(auth.settings, "EMAIL_HABILITADO", True)
+        monkeypatch.setattr(auth.settings, "RESEND_API_KEY", "chave")
+        monkeypatch.setattr(auth.settings, "RESEND_FROM", "x@x.com")
+        monkeypatch.setattr(
+            auth.httpx, "AsyncClient", lambda **_k: _ClienteHttpFalso([], explode=True)
+        )
+
+        with caplog.at_level("ERROR"):
+            asyncio.run(auth._entregar_link_de_reset("aluno@x.com", "tok-xyz"))
+
+        assert "ENVIO FALHOU" in caplog.text
+        assert "tok-xyz" in caplog.text
+
+    def test_status_de_erro_do_provedor_tambem_e_absorvido(self, monkeypatch, caplog):
+        monkeypatch.setattr(auth.settings, "EMAIL_HABILITADO", True)
+        monkeypatch.setattr(auth.settings, "RESEND_API_KEY", "chave")
+        monkeypatch.setattr(auth.settings, "RESEND_FROM", "x@x.com")
+        monkeypatch.setattr(
+            auth.httpx, "AsyncClient", lambda **_k: _ClienteHttpFalso([], status=422)
+        )
+
+        with caplog.at_level("ERROR"):
+            asyncio.run(auth._entregar_link_de_reset("aluno@x.com", "tok-422"))
+
+        assert "ENVIO FALHOU" in caplog.text

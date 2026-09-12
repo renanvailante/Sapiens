@@ -15,47 +15,44 @@ O fluxo inteiro está implementado e testado (`tests/test_auth_seguranca.py`):
    conta estava tomada, é aí que o acesso do invasor termina.
 4. As telas são `/esqueci-senha` e `/redefinir-senha`.
 
-## O que falta: entrega do e-mail
+## Entrega do e-mail
 
-Não há provedor de e-mail configurado neste backend, e inventar um seria
-inventar infraestrutura. Enquanto isso, `auth._entregar_link_de_reset` registra
-o link no log em nível WARNING:
+`auth._entregar_link_de_reset` envia pelo [Resend](https://resend.com) quando
+as duas variáveis estão configuradas, e cai no log quando não estão:
 
-```
-fly logs -a sapiens-aluno | grep "RESET DE SENHA"
-```
+| `RESEND_API_KEY` | `RESEND_FROM` | O que acontece |
+| --- | --- | --- |
+| ausente | qualquer | link em `WARNING` no log — ninguém recebe e-mail |
+| presente | ausente | idem (as duas são exigidas juntas) |
+| presente | presente | e-mail enviado; se o envio falhar, o link vai para o log em `ERROR` |
 
-Isso mantém o fluxo completo e auditável, e permite destravar um aluno
-manualmente, mas **não é aceitável como estado permanente de um beta público**:
-depende de alguém ler o log e enviar o link à mão.
+Confira o estado em produção sem abrir o painel do Fly:
 
-### Para ligar o envio de verdade
-
-Só o corpo de `_entregar_link_de_reset` muda — nada mais no fluxo. Com Resend,
-por exemplo:
-
-```python
-async def _entregar_link_de_reset(email: str, token: str) -> None:
-    base = (settings.CORS_ORIGINS or ["http://localhost:3000"])[0].rstrip("/")
-    link = f"{base}/redefinir-senha?token={token}"
-    async with httpx.AsyncClient(timeout=10) as cliente:
-        await cliente.post(
-            "https://api.resend.com/emails",
-            headers={"Authorization": f"Bearer {settings.RESEND_API_KEY}"},
-            json={
-                "from": "Sapiens <nao-responda@seudominio.com.br>",
-                "to": [email],
-                "subject": "Redefinir sua senha do Sapiens",
-                "html": f'<p>Para criar uma senha nova, <a href="{link}">clique aqui</a>. '
-                        f'O link vale por {PASSWORD_RESET_TTL_MINUTOS} minutos.</p>'
-                        f'<p>Se não foi você que pediu, ignore este e-mail.</p>',
-            },
-        )
+```bash
+curl -s https://sapiens-aluno.fly.dev/ready | grep -o '"email_configurado":[a-z]*'
 ```
 
-Depois: declarar `RESEND_API_KEY` em `settings.py` (mesmo padrão das outras) e
-publicar com `fly secrets set`. O domínio remetente precisa estar verificado no
-provedor, senão o e-mail cai em spam.
+### Para ligar o envio
+
+```bash
+flyctl secrets set RESEND_API_KEY=re_xxx "RESEND_FROM=Sapiens <nao-responda@seudominio.com.br>" -a sapiens-aluno
+```
+
+O domínio do remetente precisa estar **verificado no Resend** (registros SPF e
+DKIM no DNS), senão o provedor recusa o envio ou o e-mail cai em spam. Enquanto
+não estiver, o comportamento é o mesmo de antes: link só no log.
+
+`FRONTEND_URL` é opcional e só muda o endereço que vai dentro do link. Sem ela,
+o link usa a primeira origem de `CORS_ORIGINS` — defina-a se essa lista tiver
+mais de uma origem e a primeira não for a canônica.
+
+### Por que a falha de envio não vira erro na resposta
+
+`/password/forgot` devolve a mesma coisa exista ou não a conta, de propósito
+(ver item 2 acima). Se uma exceção de envio escapasse, a rota passaria a
+responder 500 **só para e-mails cadastrados** — reconstruindo exatamente o
+oráculo que o resto do fluxo evita. Por isso `_entregar_link_de_reset` absorve
+qualquer falha e registra no log.
 
 ## Alternativa para abrir o beta antes disso
 

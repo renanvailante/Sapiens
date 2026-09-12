@@ -736,10 +736,14 @@ def _particionar_pelo_portao(tracos: list[dict]) -> tuple[list[dict], list[dict]
     """Error Trace §6: traço de produtor `regra` só alimenta crença com o elo
     raiz confirmado por humano. Traços barrados continuam existindo (podem ser
     armazenados) — apenas não movem o perfil."""
-    if portao_crenca.modo() == portao_crenca.MODO_DESLIGADO:
-        return tracos, []
-    aptos = [t for t in tracos if t["apto_para_camada_de_crenca"]]
-    barrados = [t for t in tracos if not t["apto_para_camada_de_crenca"]]
+    aptos, barrados = [], []
+    for t in tracos:
+        if portao_crenca.pode_mover_o_perfil(
+            revisado=t["apto_para_camada_de_crenca"], confianca_da_raiz=t["confianca_global"]
+        ):
+            aptos.append(t)
+        else:
+            barrados.append(t)
     return aptos, barrados
 
 
@@ -791,6 +795,7 @@ def perfil(uid: str) -> dict[str, Any]:
         "indisponivel": bool(hist.get("falha_de_leitura")),
         "portao": {
             "modo": portao_crenca.modo(),
+            "confianca_minima": portao_crenca.confianca_minima(),
             "tracos_produzidos": len(hist["tracos"]),
             "tracos_no_perfil": len(aptos),
             "tracos_barrados": len(barrados),

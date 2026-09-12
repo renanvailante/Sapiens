@@ -84,6 +84,32 @@ MERCADOPAGO_WEBHOOK_SECRET = _env("MERCADOPAGO_WEBHOOK_SECRET")
 # aqui consegue inspecionar, e cujo silêncio custa dinheiro real do aluno.
 MERCADOPAGO_NOTIFICATION_URL = _env("MERCADOPAGO_NOTIFICATION_URL")
 
+# --- E-mail transacional ---------------------------------------------------
+# Existe UM e-mail no produto: o link de redefinição de senha. Sem provedor,
+# `auth._entregar_link_de_reset` só escreve o link no log — o fluxo continua
+# completo e auditável, mas destravar um aluno vira trabalho manual de alguém
+# que leia `fly logs`. Ver RESET_DE_SENHA.md.
+#
+# As duas variáveis são exigidas JUNTAS: a chave sem remetente verificado faz
+# o provedor recusar o envio, e o remetente sem chave não envia nada. Meia
+# configuração entregaria o pior dos dois mundos — o log deixaria de registrar
+# o link (porque o código acharia que enviou) e o e-mail não chegaria.
+RESEND_API_KEY = _env("RESEND_API_KEY")
+RESEND_FROM = _env("RESEND_FROM")
+EMAIL_HABILITADO = bool(RESEND_API_KEY and RESEND_FROM)
+
+# Origem pública do frontend. Serve para montar links que saem do servidor
+# (hoje, o de redefinição de senha) sem depender da ordem de `CORS_ORIGINS`:
+# essa lista pode ter mais de uma origem, e a primeira não é necessariamente o
+# endereço que queremos colocar dentro de um e-mail.
+FRONTEND_URL = _env("FRONTEND_URL")
+
+
+def frontend_base() -> str:
+    """Origem do frontend, sem barra no fim, para compor links."""
+    bruto = FRONTEND_URL or (CORS_ORIGINS[0] if CORS_ORIGINS else "http://localhost:3000")
+    return bruto.rstrip("/")
+
 
 def _motivo_loja_desligada() -> str | None:
     """Por que a loja de Sparks não pode operar — `None` quando pode.
@@ -252,4 +278,8 @@ def resumo() -> dict:
         # Nomes de variáveis, nunca valores — é o que permite diagnosticar a
         # loja desligada olhando /ready, sem abrir o painel do Fly.
         "loja_motivo": MERCADOPAGO_MOTIVO_DESLIGADA,
+        # Booleano, nunca a chave. `false` aqui significa que a redefinição de
+        # senha NÃO chega ao aluno: o link fica só no log do servidor.
+        "email_configurado": EMAIL_HABILITADO,
+        "frontend_base": frontend_base(),
     }

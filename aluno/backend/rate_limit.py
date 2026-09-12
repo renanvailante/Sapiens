@@ -57,17 +57,43 @@ LIMITES: dict[str, tuple[int, int]] = {
 _eventos: dict[str, deque[float]] = defaultdict(deque)
 
 
+# Header que o proxy do Fly escreve com o IP real de quem conectou. Ao
+# contrário de `X-Forwarded-For`, ele é SOBRESCRITO pelo proxy a cada
+# requisição, então o cliente não consegue forjá-lo.
+_HEADER_FLY = "fly-client-ip"
+
+
 def _cliente(request: Request) -> str:
     """Identidade do chamador para fins de limite.
 
-    Atrás do proxy do Fly, `request.client.host` é o IP do proxy e barraria
-    todo mundo junto; o primeiro valor de `X-Forwarded-For` é o IP real do
-    cliente. Uvicorn roda com `--proxy-headers`, então este header é confiável
-    aqui (só o proxy consegue defini-lo).
+    **O primeiro elemento de `X-Forwarded-For` não serve — é do atacante.**
+    Esta função lia justamente esse elemento, com o comentário de que "só o
+    proxy consegue definir" o header. Não é o caso: `X-Forwarded-For` é uma
+    LISTA, e cada proxy ACRESCENTA ao que já veio. Quem manda
+    `X-Forwarded-For: 1.2.3.4` recebe de volta `1.2.3.4, <ip real>` — o valor
+    forjado na frente, o verdadeiro no fim. Girando um IP falso por requisição,
+    cada tentativa de senha caía num contador novo e o limite de 10/min do
+    `login` deixava de existir. O mesmo valia para `signup`, `password_reset` e
+    `client_error`, todos limitados por IP.
+
+    `request.client.host` não era saída: o Dockerfile roda uvicorn com
+    `--forwarded-allow-ips='*'`, e nesse modo o próprio uvicorn reescreve
+    `client.host` com o PRIMEIRO item da lista
+    (`uvicorn/middleware/proxy_headers.py`) — isto é, com o valor forjado.
+
+    A ordem abaixo é a única confiável:
+
+    1. `Fly-Client-IP`, que o proxy sobrescreve e o cliente não alcança;
+    2. o ÚLTIMO item de `X-Forwarded-For` — o que o proxy mais próximo
+       acrescentou, atrás de tudo que o cliente possa ter inventado;
+    3. `request.client.host`, para desenvolvimento sem proxy nenhum na frente.
     """
-    encaminhado = request.headers.get("x-forwarded-for", "")
-    if encaminhado:
-        return encaminhado.split(",")[0].strip()
+    do_fly = request.headers.get(_HEADER_FLY, "").strip()
+    if do_fly:
+        return do_fly
+    partes = [p.strip() for p in request.headers.get("x-forwarded-for", "").split(",") if p.strip()]
+    if partes:
+        return partes[-1]
     return request.client.host if request.client else "desconhecido"
 
 

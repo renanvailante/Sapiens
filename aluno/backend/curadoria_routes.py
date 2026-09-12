@@ -97,8 +97,15 @@ async def estado_do_portao(_: User = Depends(require_admin)):
     """O modo vigente e o que ele significa — para a decisão de religar não
     acontecer por acidente."""
     modo = portao_crenca.modo()
+    piso = portao_crenca.confianca_minima()
     return {
         "modo": modo,
+        "confianca_minima": piso,
+        "piso": (
+            "sem piso — todo traço entra, inclusive os de confiança 0.15"
+            if piso <= 0
+            else f"só entra sem revisão humana o traço com raiz de confiança >= {piso}"
+        ),
         "significado": {
             portao_crenca.MODO_CRENCA: "Item não revisado continua na prova, mas seus erros não movem o perfil.",
             portao_crenca.MODO_CIRCULACAO: "Item não revisado também sai da prova. A leitura mais estrita.",

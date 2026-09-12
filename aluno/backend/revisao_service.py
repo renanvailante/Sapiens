@@ -173,8 +173,12 @@ def raiz_do_evento(uid: str, evento: dict, item: dict) -> Optional[dict[str, Any
     # Portão de crença §6: com o portão ligado, anotação não revisada não move
     # o estado do aluno — e agendar um reteste É mover o estado dele. Com o
     # portão desligado (o modo do piloto desde 2026-09-04), a raiz entra
-    # marcada como provisória e a fila é obrigada a dizer isso.
-    if not apto and portao_crenca.modo() != portao_crenca.MODO_DESLIGADO:
+    # marcada como provisória e a fila é obrigada a dizer isso. O piso de
+    # confiança, quando ligado, filtra o que entra nesse segundo caso — a mesma
+    # regra que `_particionar_pelo_portao` aplica ao perfil, num lugar só.
+    if not portao_crenca.pode_mover_o_perfil(
+        revisado=apto, confianca_da_raiz=traco.get("confianca_global")
+    ):
         return None
     raiz = traco["cadeia"][0]
     return {

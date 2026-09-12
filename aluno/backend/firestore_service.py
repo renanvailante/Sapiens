@@ -742,6 +742,49 @@ def list_sparks_rounds(uid: str, limit: int = 200) -> list[dict[str, Any]]:
     return [d.to_dict() for d in docs]
 
 
+def _conceder_sparks_atomico(ref, doc: dict[str, Any], uid: str, amount: int) -> bool:
+    """Cria `doc` em `ref` E soma `amount` ao saldo — as duas coisas, ou nenhuma.
+
+    Devolve `True` quando foi ESTA chamada que concedeu, `False` quando o
+    documento já existia (concessão anterior, retry do Mercado Pago, refresh
+    do aluno, corrida de requisições).
+
+    **Por que uma transação e não `create()` seguido de `update()`.** Eram duas
+    operações independentes, nesta ordem: cria o documento que prova a
+    concessão, depois incrementa o saldo. O processo morrendo entre as duas
+    (deploy, OOM na VM de 512 MB, suspensão da máquina) deixava um estado que
+    ninguém conseguia mais consertar: o documento existia, o saldo não subira,
+    e a retentativa caía em `AlreadyExists` — lida como "já creditado" — sem
+    nunca incrementar. Em `grant_purchase_sparks` isso era dinheiro recebido e
+    Spark nunca entregue, e o laço de reconciliação marcava o pagamento como
+    resolvido logo em seguida, fechando a porta para qualquer reparo.
+
+    A janela era de milissegundos; a consequência, permanente e silenciosa. Com
+    a transação, o commit é um só: ou o documento e o saldo entram juntos, ou
+    não entra nada e a próxima tentativa refaz tudo do zero.
+
+    A garantia de não duplicar continua vindo do mesmo lugar de antes —
+    `create()` só vence uma vez num caminho que ainda não existe —, agora
+    dentro do commit transacional. `AlreadyExists` não é erro retentável, então
+    o SDK não repete a transação: ela aborta inteira, sem escrever o saldo.
+    """
+    transaction = get_firestore().transaction()
+
+    @firestore.transactional
+    def _run(transaction) -> bool:
+        transaction.create(ref, doc)
+        if amount:
+            transaction.update(
+                _student_doc_ref(uid), {"sparks_balance": firestore.Increment(amount)}
+            )
+        return True
+
+    try:
+        return _run(transaction)
+    except gcloud_exceptions.AlreadyExists:
+        return False
+
+
 def grant_round_sparks(
     uid: str,
     *,
@@ -757,12 +800,14 @@ def grant_round_sparks(
 ) -> dict[str, Any]:
     """Credita +1 Spark por acerto da rodada, UMA única vez, de forma atômica.
 
-    A garantia de "nunca duplicar" não vem de uma checagem prévia no cliente
-    nem de uma transação — vem de `DocumentReference.create()`: o Firestore só
-    deixa UMA chamada concorrente criar com sucesso um documento num caminho
-    que ainda não existe; todas as outras recebem `AlreadyExists` e não
-    escrevem nada. Isso cobre retomada, refresh e corrida de requisições
-    repetidas com a mesma garantia (create é atômico no servidor).
+    A garantia de "nunca duplicar" não vem de uma checagem prévia no cliente:
+    vem do `create()` sobre `sparks_rounds/{round_key}`, que o Firestore só
+    deixa UMA chamada concorrente vencer; as demais recebem `AlreadyExists` e
+    não escrevem nada. Isso cobre retomada, refresh e corrida de requisições.
+
+    O `create` e o incremento do saldo vão no MESMO commit transacional (ver
+    `_conceder_sparks_atomico`), então não existe estado intermediário em que a
+    rodada conste como paga e o saldo não tenha subido.
     """
     ref = _sparks_round_ref(uid, round_key)
     round_doc = {
@@ -779,14 +824,9 @@ def grant_round_sparks(
         "sparks_ganhos": acertos,
         "created_at": _now_iso(),
     }
-    try:
-        ref.create(round_doc)
-    except gcloud_exceptions.AlreadyExists:
+    if not _conceder_sparks_atomico(ref, round_doc, uid, acertos):
         existente = ref.get().to_dict() or {}
         return {"ja_concedido": True, **existente}
-
-    if acertos:
-        _student_doc_ref(uid).update({"sparks_balance": firestore.Increment(acertos)})
     return {"ja_concedido": False, **round_doc}
 
 
@@ -799,9 +839,10 @@ def grant_question_sparks(uid: str, item_id: str, amount: int = 1) -> dict[str, 
     nunca de novo se o aluno responder a mesma questão outra vez.
 
     Mesmo padrão atômico de `grant_round_sparks`/`grant_purchase_sparks`:
-    `DocumentReference.create()` em `students/{uid}/sparks_questoes/{item_id}`
-    só tem sucesso na primeira vez; retomada, refresh ou corrida de
-    requisições repetidas caem em `AlreadyExists` e não creditam de novo.
+    `create()` em `students/{uid}/sparks_questoes/{item_id}` só tem sucesso na
+    primeira vez; retomada, refresh ou corrida de requisições repetidas caem em
+    `AlreadyExists` e não creditam de novo. Documento e saldo entram no mesmo
+    commit (ver `_conceder_sparks_atomico`).
     """
     ref = _question_spark_ref(uid, item_id)
     doc = {
@@ -810,13 +851,9 @@ def grant_question_sparks(uid: str, item_id: str, amount: int = 1) -> dict[str, 
         "sparks_ganhos": amount,
         "created_at": _now_iso(),
     }
-    try:
-        ref.create(doc)
-    except gcloud_exceptions.AlreadyExists:
+    if not _conceder_sparks_atomico(ref, doc, uid, amount):
         existente = ref.get().to_dict() or {}
         return {"ja_concedido": True, "sparks_ganhos": 0, **existente}
-
-    _student_doc_ref(uid).update({"sparks_balance": firestore.Increment(amount)})
     return {"ja_concedido": False, **doc}
 
 
@@ -836,13 +873,9 @@ def grant_report_sparks(uid: str, report_id: str, amount: int = 5) -> dict[str, 
         "sparks_ganhos": amount,
         "created_at": _now_iso(),
     }
-    try:
-        ref.create(doc)
-    except gcloud_exceptions.AlreadyExists:
+    if not _conceder_sparks_atomico(ref, doc, uid, amount):
         existente = ref.get().to_dict() or {}
         return {"ja_concedido": True, "sparks_ganhos": 0, **existente}
-
-    _student_doc_ref(uid).update({"sparks_balance": firestore.Increment(amount)})
     return {"ja_concedido": False, **doc}
 
 
@@ -912,6 +945,11 @@ def grant_purchase_sparks(
     `mp_payment_id` como caminho, então `create()` só pode vencer uma vez —
     quem chegar depois recebe `AlreadyExists` e não incrementa saldo nenhum.
 
+    O crédito é transacional (`_conceder_sparks_atomico`): o comprovante da
+    compra e o incremento do saldo entram juntos ou não entram. Isto NÃO é
+    detalhe — era aqui que uma morte de processo entre as duas escritas
+    deixava o aluno tendo pago sem receber, de forma irreparável.
+
     Chamado SÓ pelo webhook, nunca na resposta síncrona do checkout: até o
     Mercado Pago confirmar, não existe dinheiro e não deve existir Spark.
     """
@@ -926,14 +964,9 @@ def grant_purchase_sparks(
         "source": source,
         "created_at": _now_iso(),
     }
-    try:
-        ref.create(doc)
-    except gcloud_exceptions.AlreadyExists:
+    if not _conceder_sparks_atomico(ref, doc, uid, sparks_amount):
         existente = ref.get().to_dict() or {}
         return {"ja_creditado": True, **existente}
-
-    if sparks_amount:
-        _student_doc_ref(uid).update({"sparks_balance": firestore.Increment(sparks_amount)})
     return {"ja_creditado": False, **doc}
 
 

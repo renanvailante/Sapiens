@@ -26,6 +26,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 import bcrypt
+import httpx
 from fastapi import APIRouter, Body, Cookie, Depends, HTTPException, Request, Response
 
 import rate_limit
@@ -333,11 +334,10 @@ async def me(request: Request):
 # ninguém), e resposta idêntica para e-mail existente ou não — senão a rota
 # vira um oráculo que diz quem tem conta aqui.
 #
-# ENTREGA DO E-MAIL: este backend não tem provedor de e-mail configurado, e
-# inventar um seria inventar infraestrutura. `_entregar_link_de_reset` é o
-# ponto único de integração: hoje registra o link no log do servidor (o admin
-# consegue destravar um aluno), e passa a enviar de verdade assim que houver
-# provedor. Ver RESET_DE_SENHA.md.
+# ENTREGA DO E-MAIL: `_entregar_link_de_reset` é o ponto único de integração.
+# Com `RESEND_API_KEY` + `RESEND_FROM` configurados, envia de verdade; sem
+# eles, registra o link no log (o admin ainda consegue destravar um aluno à
+# mão). Ver RESET_DE_SENHA.md.
 # ---------------------------------------------------------------------------
 
 PASSWORD_RESET_TTL_MINUTOS = 30
@@ -352,21 +352,66 @@ def _hash_token(token: str) -> str:
     return hashlib.sha256(token.encode()).hexdigest()
 
 
+_RESEND_URL = "https://api.resend.com/emails"
+_TIMEOUT_EMAIL_SEGUNDOS = 10.0
+
+
+def _corpo_do_email(link: str) -> str:
+    """HTML do e-mail. Nada aqui vem do usuário: o único valor interpolado é um
+    link que nós mesmos montamos, com um token hexadecimal."""
+    return (
+        f'<p>Recebemos um pedido para criar uma senha nova no Sapiens.</p>'
+        f'<p><a href="{link}">Clique aqui para redefinir sua senha</a>. '
+        f'O link vale por {PASSWORD_RESET_TTL_MINUTOS} minutos e só pode ser usado uma vez.</p>'
+        f'<p>Se não foi você que pediu, ignore este e-mail — sua senha atual continua valendo.</p>'
+    )
+
+
 async def _entregar_link_de_reset(email: str, token: str) -> None:
     """Ponto ÚNICO de entrega do link de redefinição.
 
-    Enquanto não há provedor de e-mail, o link vai para o log em nível WARNING
-    (visível em `fly logs`), o que mantém o fluxo completo e auditável sem
-    fingir um envio que não acontece. Trocar por SendGrid/SES/Resend é
-    substituir o corpo desta função — nada mais no fluxo muda.
+    **Nunca propaga erro.** Quem chama é `/password/forgot`, cuja resposta tem
+    de ser idêntica exista ou não a conta — senão a rota vira um verificador de
+    quem estuda aqui, isto é, uma lista de menores de idade para quem quisesse
+    coletá-la. Uma exceção escapando daqui viraria um 500 só para e-mails
+    cadastrados, que é exatamente o oráculo que o resto do fluxo evita. Por
+    isso o `except` largo: o aluno vê a mesma resposta, e a falha fica no log.
+
+    Sem provedor configurado, o link vai para o log em nível WARNING (visível
+    em `fly logs`), o que mantém o fluxo completo e auditável sem fingir um
+    envio que não acontece.
     """
-    base = (settings.CORS_ORIGINS or ["http://localhost:3000"])[0].rstrip("/")
-    link = f"{base}/redefinir-senha?token={token}"
-    logger.warning(
-        "[RESET DE SENHA] Nenhum provedor de e-mail configurado. "
-        "Link para %s (válido por %d min): %s",
-        email, PASSWORD_RESET_TTL_MINUTOS, link,
-    )
+    link = f"{settings.frontend_base()}/redefinir-senha?token={token}"
+
+    if not settings.EMAIL_HABILITADO:
+        logger.warning(
+            "[RESET DE SENHA] Nenhum provedor de e-mail configurado "
+            "(RESEND_API_KEY + RESEND_FROM). Link para %s (válido por %d min): %s",
+            email, PASSWORD_RESET_TTL_MINUTOS, link,
+        )
+        return
+
+    try:
+        async with httpx.AsyncClient(timeout=_TIMEOUT_EMAIL_SEGUNDOS) as cliente:
+            resposta = await cliente.post(
+                _RESEND_URL,
+                headers={"Authorization": f"Bearer {settings.RESEND_API_KEY}"},
+                json={
+                    "from": settings.RESEND_FROM,
+                    "to": [email],
+                    "subject": "Redefinir sua senha do Sapiens",
+                    "html": _corpo_do_email(link),
+                },
+            )
+        resposta.raise_for_status()
+        logger.info("[RESET DE SENHA] Link enviado para %s.", email)
+    except Exception:  # noqa: BLE001
+        # O link vai para o log para que o aluno ainda possa ser destravado à
+        # mão — o mesmo caminho de quando não há provedor nenhum.
+        logger.exception(
+            "[RESET DE SENHA] ENVIO FALHOU para %s. Link (válido por %d min): %s",
+            email, PASSWORD_RESET_TTL_MINUTOS, link,
+        )
 
 
 @router.post("/password/forgot")

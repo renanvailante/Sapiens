@@ -259,3 +259,99 @@ def _caches_de_processo_limpos():
     _limpar()
     yield
     _limpar()
+
+
+@pytest.fixture(autouse=True)
+def _sem_firestore_real(monkeypatch):
+    """Nenhum teste alcança o Firestore de VERDADE.
+
+    Não era assim. `tests/test_resumo_sessao.py` faz `import server` dentro de
+    um teste, e `server` chama `set_db` em vários módulos — entre eles
+    `annotation_service`. Esse `_db` é global de módulo e fica ligado pelo
+    resto do processo, então TODOS os testes seguintes deixavam de usar o
+    caminho offline e passavam a falar com a infraestrutura real: o Mongo da
+    máquina e o projeto Firestore de PRODUÇÃO (`sapiens-dataset`, o mesmo que
+    atende aluno). Consequências medidas:
+
+    * `test_diagnostico_real.py::test_padrao_associado_...` passava sozinho e
+      falhava na suíte, porque `_agregado_com_cache` servia um documento de
+      cache que sobrara no Mongo local em vez de chamar o leitor dublado;
+    * rodar `pytest` queimava cota de leitura do projeto que já saiu do ar por
+      estouro de cota em 04/09.
+
+    Bloquear aqui resolve os dois de uma vez e torna a falha BARULHENTA: quem
+    escrever um teste que dependa do Firestore real vê esta mensagem em vez de
+    um resultado que muda conforme a máquina de quem roda.
+
+    Quem precisa de Firestore no teste substitui `get_firestore` pelo próprio
+    dublê — `monkeypatch` do teste roda depois desta fixture e vence.
+    """
+    import firestore_service
+
+    monkeypatch.setattr(firestore_service, "get_firestore", lambda *a, **k: _ClienteSemRede())
+
+
+class _TransacaoFalsa:
+    """Transação do Firestore com a única propriedade que importa aqui: as
+    escritas só valem no commit, e na ORDEM em que foram enfileiradas.
+
+    É o que deixa os testes de idempotência de Sparks exercitarem o commit
+    atômico de verdade — se o `create` do comprovante falhar com
+    `AlreadyExists`, o `update` do saldo nunca chega a rodar, exatamente como
+    no servidor. Um dublê que aplicasse as escritas na hora esconderia
+    justamente a falha que a transação existe para impedir.
+
+    Os membros abaixo são o contrato que `firestore.transactional` consome
+    (ver `firestore_v1/transaction.py`): `_read_only`, `_max_attempts`, `_id`,
+    `_clean_up`, `_begin`, `_commit` e `_rollback`.
+    """
+
+    _read_only = False
+    _max_attempts = 1
+    _id = b"transacao-falsa"
+
+    def __init__(self):
+        self._pendentes: list[tuple[str, object, dict]] = []
+
+    def _clean_up(self):
+        self._pendentes = []
+
+    def _begin(self, retry_id=None):
+        self._pendentes = []
+
+    def _rollback(self):
+        self._pendentes = []
+
+    def create(self, reference, document_data):
+        self._pendentes.append(("create", reference, document_data))
+
+    def update(self, reference, field_updates, option=None):
+        self._pendentes.append(("update", reference, field_updates))
+
+    def _commit(self):
+        for operacao, ref, dados in self._pendentes:
+            getattr(ref, operacao)(dados)
+        self._pendentes = []
+        return []
+
+
+class _ClienteSemRede:
+    """Cliente de Firestore que só sabe abrir transação.
+
+    `transaction()` funciona porque o código de concessão de Sparks precisa
+    dela e os testes substituem as referências de documento por dublês.
+    Qualquer OUTRO uso — `collection()`, `document()` — estoura com a mensagem
+    abaixo, que é o ponto: nenhum teste pode falar com o projeto de produção.
+    """
+
+    def transaction(self, **_kwargs):
+        return _TransacaoFalsa()
+
+    def __getattr__(self, nome):
+        raise RuntimeError(
+            f"Teste tentou usar o Firestore REAL (`get_firestore().{nome}`). "
+            "Nenhum teste pode depender da infraestrutura de produção: o "
+            "resultado passa a variar com a máquina de quem roda, e a execução "
+            "gasta cota de leitura do projeto que atende aluno. Substitua o "
+            "que você precisa por um dublê no próprio teste."
+        )

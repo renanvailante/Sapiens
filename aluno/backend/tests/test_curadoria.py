@@ -443,3 +443,81 @@ class TestFilaNaoTruncaEmSilencio:
         """O contador do topo é o tamanho do TRABALHO, não o da tela."""
         _instalar(monkeypatch, [_item(f"I-{i}") for i in range(1, 8)])
         assert curadoria.fila_de_revisao(limite=2)["itens_pendentes"] == 7
+
+
+# ============================================ piso de confiança
+
+
+class TestPisoDeConfianca:
+    """O piso é o substituto PROVISÓRIO da revisão humana, para um corpus que
+    ninguém tem tempo de revisar item a item.
+
+    A linha que ele não cruza: nunca grava `revisado` nem
+    `apto_para_camada_de_crenca`. Transformar a confiança que a IA declarou em
+    "revisado por humano" seria falsificar exatamente o dado que EXT-WP1-1.0
+    L13b existe para proteger — e o perfil continuaria, com razão, provisório.
+    """
+
+    def _traco(self, confianca, revisado=False):
+        return {"apto_para_camada_de_crenca": revisado, "confianca_global": confianca}
+
+    def _com_piso(self, monkeypatch, piso, modo=portao_crenca.MODO_DESLIGADO):
+        monkeypatch.setattr(portao_crenca, "_cache", modo, raising=False)
+        monkeypatch.setattr(portao_crenca, "_cache_piso", piso, raising=False)
+
+    def test_sem_piso_o_comportamento_e_o_de_antes(self, monkeypatch):
+        self._com_piso(monkeypatch, 0.0)
+        tracos = [self._traco(0.15), self._traco(0.4), self._traco(0.7)]
+        aptos, barrados = motor._particionar_pelo_portao(tracos)
+        assert len(aptos) == 3 and barrados == []
+
+    def test_piso_barra_a_raiz_fraca_mesmo_com_o_portao_desligado(self, monkeypatch):
+        self._com_piso(monkeypatch, 0.4)
+        aptos, barrados = motor._particionar_pelo_portao(
+            [self._traco(0.15), self._traco(0.4), self._traco(0.7)]
+        )
+        assert [t["confianca_global"] for t in aptos] == [0.4, 0.7]
+        assert [t["confianca_global"] for t in barrados] == [0.15]
+
+    def test_revisao_humana_supersede_o_piso(self, monkeypatch):
+        """O piso substitui a revisão; não é um requisito somado a ela."""
+        self._com_piso(monkeypatch, 0.7)
+        aptos, barrados = motor._particionar_pelo_portao([self._traco(0.15, revisado=True)])
+        assert len(aptos) == 1 and barrados == []
+
+    def test_com_o_portao_em_crenca_o_piso_nao_abre_excecao(self, monkeypatch):
+        """`crenca` exige revisão humana. Confiança alta não é revisão."""
+        self._com_piso(monkeypatch, 0.4, modo=portao_crenca.MODO_CRENCA)
+        aptos, barrados = motor._particionar_pelo_portao([self._traco(0.7)])
+        assert aptos == [] and len(barrados) == 1
+
+    def test_o_piso_nunca_marca_o_item_como_revisado(self, monkeypatch):
+        """A garantia central. Se um dia alguém fizer o piso gravar no item,
+        este teste cai — e é para cair."""
+        self._com_piso(monkeypatch, 0.4)
+        traco = self._traco(0.7)
+        motor._particionar_pelo_portao([traco])
+        assert traco["apto_para_camada_de_crenca"] is False
+
+    def test_valor_invalido_degrada_para_sem_piso(self, monkeypatch):
+        for bruto in ("abacaxi", "-1", "2.5"):
+            monkeypatch.setenv("PORTAO_CONFIANCA_MINIMA", bruto)
+            monkeypatch.setattr(portao_crenca, "_cache_piso", None, raising=False)
+            assert portao_crenca.confianca_minima() == 0.0
+
+    def test_o_piso_vale_tambem_para_agendar_reteste(self, monkeypatch):
+        """Agendar um reteste É mover o estado do aluno — a mesma regra do
+        perfil tem de valer aqui, senão o piso teria um buraco."""
+        import revisao_service
+
+        self._com_piso(monkeypatch, 0.7)
+        item = _item("I-1")
+        evento = {
+            "event_id": "e1", "item_id": "I-1", "ontology_version": "1.4.1",
+            "status": "respondida", "timestamp": "2026-09-01T10:00:00+00:00",
+            "resposta": {"alternativa_escolhida": "B", "acertou": False},
+        }
+        # A cadeia do dublê tem raiz com confiança 0.7 — passa no piso de 0.7.
+        assert revisao_service.raiz_do_evento("U1", evento, item) is not None
+        self._com_piso(monkeypatch, 0.71)
+        assert revisao_service.raiz_do_evento("U1", evento, item) is None
