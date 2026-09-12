@@ -417,3 +417,29 @@ class TestChaveDeContexto:
         outro = _item("I-2", disciplina="Física")
         outro["fonte"]["tema"] = "Termodinâmica"
         assert revisao_service.contexto_do_item(item) == revisao_service.contexto_do_item(outro)
+
+
+class TestFilaNaoTruncaEmSilencio:
+    """Uma fila de revisão que corta sem avisar é pior que uma fila vazia: o
+    revisor termina a tela achando que acabou, e o que sobrou não volta a
+    aparecer para ninguém. Medido no acervo real, o par maior tem 89 linhas
+    contra um limite de tela de 50."""
+
+    def test_o_par_declara_quantas_linhas_tem_de_verdade(self, monkeypatch):
+        _instalar(monkeypatch, [_item(f"I-{i}") for i in range(1, 8)])
+        fila = curadoria.fila_de_revisao(limite=3)
+        g = fila["pares"][0]
+        assert len(g["itens"]) == 3
+        assert g["total_no_par"] == 7
+        assert g["par"] in fila["pares_truncados"]
+
+    def test_sem_truncamento_a_lista_de_avisos_fica_vazia(self, monkeypatch):
+        _instalar(monkeypatch, [_item(f"I-{i}") for i in range(1, 4)])
+        fila = curadoria.fila_de_revisao(limite=50)
+        assert fila["pares_truncados"] == []
+        assert fila["pares"][0]["total_no_par"] == 3
+
+    def test_pendentes_conta_o_que_ficou_de_fora(self, monkeypatch):
+        """O contador do topo é o tamanho do TRABALHO, não o da tela."""
+        _instalar(monkeypatch, [_item(f"I-{i}") for i in range(1, 8)])
+        assert curadoria.fila_de_revisao(limite=2)["itens_pendentes"] == 7

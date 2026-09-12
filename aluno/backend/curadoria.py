@@ -290,11 +290,17 @@ def fila_de_revisao(
                     "processo_id": raiz["processo_afetado"],
                     "processo_nome": motor_cognitivo._nome_processo(raiz["processo_afetado"]),
                     "itens": [],
+                    # Quantas linhas o par TEM, não quantas couberam. Uma fila
+                    # de revisão que trunca em silêncio é pior que uma fila
+                    # vazia: o revisor termina a tela achando que acabou, e os
+                    # itens que sobraram nunca mais aparecem para ninguém.
+                    "total_no_par": 0,
                 },
             )
+            g["total_no_par"] += 1
+            pendentes += 0 if revisado else 1
             if len(g["itens"]) >= limite:
                 continue
-            pendentes += 0 if revisado else 1
             g["itens"].append(
                 {
                     "item_id": item.get("item_id"),
@@ -327,13 +333,17 @@ def fila_de_revisao(
                 }
             )
 
-    lista = sorted(grupos.values(), key=lambda g: -len(g["itens"]))
+    lista = sorted(grupos.values(), key=lambda g: -g["total_no_par"])
+    truncados = [g["par"] for g in lista if g["total_no_par"] > len(g["itens"])]
     return {
         "gerado_em": _now_iso(),
         "portao": portao_crenca.modo(),
         "pares": lista,
         "itens_pendentes": pendentes,
         "total_no_acervo": len(itens),
+        "limite_por_par": limite,
+        # Declarado para a tela poder avisar. `[]` é o estado normal.
+        "pares_truncados": truncados,
     }
 
 

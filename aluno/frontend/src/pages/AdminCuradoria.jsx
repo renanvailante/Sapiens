@@ -114,7 +114,9 @@ function Revisao() {
 
   const carregar = () =>
     api
-      .get("/admin/curadoria/fila")
+      // 200 é o teto da rota. O par maior do acervo tem ~90 linhas, e pedir o
+      // padrão (50) truncaria a fila sem que ninguém percebesse.
+      .get("/admin/curadoria/fila", { params: { limite: 200 } })
       .then(({ data }) => setDados(data))
       .catch((e) => toast.error(errMsg(e, "Falha ao carregar a fila de revisão.")));
 
@@ -149,6 +151,13 @@ function Revisao() {
           {dados.itens_pendentes} pendente(s) de {dados.total_no_acervo} no acervo · portão:{" "}
           <strong className="text-zinc-700">{dados.portao}</strong>
         </div>
+        {dados.pares_truncados?.length > 0 && (
+          <p className="mt-2 text-xs text-amber-700" data-testid="curadoria-truncado">
+            {dados.pares_truncados.length} par(es) têm mais linhas do que cabe nesta tela
+            (limite {dados.limite_por_par} por par). Revise os que aparecem e recarregue — os
+            revisados saem da fila e os seguintes entram.
+          </p>
+        )}
       </div>
 
       {dados.pares.map((g) => (
@@ -157,6 +166,11 @@ function Revisao() {
             <span className="font-display text-lg font-bold tracking-tight text-white">{g.erro_nome}</span>
             <span className="text-sm text-white/50">em {g.processo_nome}</span>
             <span className="font-mono-alt text-[10px] uppercase tracking-wide text-white/30">{g.par}</span>
+            <span className="text-xs text-white/40">
+              {g.total_no_par > g.itens.length
+                ? `mostrando ${g.itens.length} de ${g.total_no_par}`
+                : `${g.total_no_par} linha(s)`}
+            </span>
           </div>
           <div className="space-y-3">
             {g.itens.map((it) => (
