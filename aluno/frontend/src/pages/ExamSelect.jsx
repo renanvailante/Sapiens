@@ -652,7 +652,7 @@ function QuestionRunner({ filtro, onExit }) {
       </article>
 
       <Dialog open={!!rodadaResumo} onOpenChange={(v) => { if (!v) continuarAposRodada(); }}>
-        <DialogContent className="rounded-2xl max-w-md max-h-[85vh] overflow-y-auto" data-testid="rodada-devolutiva">
+        <DialogContent className="rounded-2xl max-w-md max-h-[85dvh] overflow-y-auto" data-testid="rodada-devolutiva">
           {rodadaResumo && (
             <>
               <DialogHeader>
@@ -878,7 +878,13 @@ function ProvasGrid({ onSelect, onExit }) {
                     onClick={(e) => { e.stopPropagation(); setResetAlvo(p); }}
                     title="Reiniciar prova"
                     data-testid={`prova-reset-${p.banca}-${p.ano}-${p.prova}-${p.numero_min}`}
-                    className="absolute top-4 right-4 z-10 text-zinc-300 hover:text-rose-500 transition-colors"
+                    aria-label={`Reiniciar ${p.banca} ${p.ano} caderno ${p.prova}`}
+                    // `-m-2 p-2`: o ícone de 16px era um alvo de 16px para uma
+                    // ação destrutiva, encostado na borda de um card inteiro
+                    // clicável — pequeno demais para acertar de propósito e
+                    // fácil demais de acertar sem querer. A margem negativa
+                    // mantém o ícone exatamente onde estava.
+                    className="absolute top-4 right-4 z-10 -m-2 p-2 text-zinc-300 hover:text-rose-500 transition-colors"
                   >
                     <RotateCw className="w-4 h-4" />
                   </button>

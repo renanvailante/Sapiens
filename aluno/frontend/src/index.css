@@ -651,3 +651,49 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
         transform: none !important;
     }
 }
+
+/* ---------------- Celular ----------------
+   Este é o único bloco do produto que reage à LARGURA da tela por CSS — o
+   resto da responsividade vive nas classes do Tailwind. São três coisas que
+   nenhuma classe utilitária resolve bem, e que só se manifestam no aparelho
+   real: o zoom automático do iOS, fórmula larga demais para o vão, e o ícone
+   flutuante da Mentis cobrindo o que está no fim da página. */
+@media (max-width: 1023px) {
+    /* 1. ZOOM AUTOMÁTICO DO iOS. O Safari amplia a página inteira ao focar
+       qualquer campo com fonte menor que 16px — e não desfaz o zoom quando o
+       aluno sai do campo, então ele fica preso numa tela ampliada e torta no
+       meio de um cadastro ou de uma redação. A especificidade (0,3,1) daqui
+       precisa vencer o `.text-sm` (0,1,0) que quase todo campo do produto
+       usa; é por isso que o seletor repete a forma do bloco de campos acima
+       em vez de ser só `input`. */
+    :root input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+    :root textarea,
+    :root select {
+        font-size: 16px;
+    }
+
+    /* 3. ZONA MORTA DO ÍCONE DA MENTIS. Ele é `fixed` no canto inferior
+       direito: passar por cima do conteúdo enquanto se rola é comportamento
+       normal de botão flutuante, mas no FIM da página não há para onde rolar
+       e o que estiver ali fica coberto para sempre. Medição de 12/09 em
+       375px: ele cobria o card de Sparks e dois cards de erro no Painel, o
+       "Marcar como feito" do Cronograma, o "Comprar" da loja e a área de
+       escrita da Redação. Esta faixa garante que o último controle de
+       qualquer página role até acima dele. */
+    body {
+        padding-bottom: 5.5rem;
+    }
+}
+
+/* 2. FÓRMULA MAIS LARGA QUE A TELA. O KaTeX em `displayMode` monta a fórmula
+   como `inline-block` com largura própria: `max-w-full` no contêiner não
+   corta nem rola nada, e a página INTEIRA passa a deslizar de lado. Medido em
+   12/09 num vão de 327px: `scrollWidth` do documento saltou de 375 para
+   594px. A régua de rolagem fica na fórmula, onde ela pertence — e não vale
+   só no celular, porque o mesmo estouro acontece em qualquer vão estreito. */
+.katex-display {
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-top: 2px;
+    padding-bottom: 2px;
+}

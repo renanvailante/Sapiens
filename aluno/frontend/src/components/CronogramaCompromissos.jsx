@@ -488,7 +488,10 @@ export default function CronogramaCompromissos({
                 <button
                   type="button"
                   onClick={() => apagar(c.id)}
-                  className="opacity-40 transition hover:opacity-100"
+                  // 12px para apagar um compromisso era alvo de mira, não de
+                  // dedo — e apagar não tem desfazer. `-m-2.5 p-2.5` leva a
+                  // área para ~32px sem mover o X um pixel.
+                  className="-m-2.5 p-2.5 opacity-40 transition hover:opacity-100"
                   aria-label={`Apagar ${c.titulo}`}
                   data-testid={`cronograma-apagar-${c.id}`}
                 >

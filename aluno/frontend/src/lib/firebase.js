@@ -83,8 +83,13 @@ export async function autorizarGoogleAgenda() {
 export function mensagemDeErroGoogle(e) {
   const code = e?.code || "";
   if (code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") return null;
-  if (code === "auth/popup-blocked")
-    return "Seu navegador bloqueou a janela do Google. Libere os pop-ups para este site e tente de novo.";
+  // O caso mais comum disto no celular não é "bloqueei pop-ups": é o link ter
+  // sido aberto dentro do WhatsApp ou do Instagram, cujo navegador embutido
+  // não abre janela nenhuma — e às vezes nem chega a reportar `popup-blocked`.
+  // Por isso a mensagem aponta a saída (abrir no navegador do telefone) em vez
+  // de mandar mexer numa configuração que pode não existir ali.
+  if (code === "auth/popup-blocked" || code === "auth/operation-not-supported-in-this-environment")
+    return "A janela do Google não abriu. Se você chegou por um link do WhatsApp ou do Instagram, toque nos três pontinhos e escolha \u201cAbrir no navegador\u201d — ou use e-mail e senha aqui mesmo.";
   if (code === "auth/unauthorized-domain")
     return "Este domínio não está autorizado no Firebase. Avise o suporte.";
   if (code === "auth/network-request-failed")

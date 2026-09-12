@@ -152,7 +152,7 @@ export default function MentisPedido({
 
   return (
     <Dialog open={!!aberto} onOpenChange={(v) => { if (!v) onFechar?.(); }}>
-      <DialogContent className="rounded-2xl max-w-lg max-h-[88vh] overflow-y-auto" data-testid={testid}>
+      <DialogContent className="rounded-2xl max-w-lg max-h-[88dvh] overflow-y-auto" data-testid={testid}>
         <div className="flex items-start gap-3">
           <Mentis className="w-11 h-11 shrink-0" estado={ocupado ? "analise" : "neutra"} />
           <div className="min-w-0">

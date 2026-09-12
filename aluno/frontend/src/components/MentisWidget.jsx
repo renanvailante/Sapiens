@@ -58,6 +58,10 @@ export default function MentisWidget() {
 
   if (loading || !user) return null;
   if (location.pathname === "/mentis") return null;
+  // `/feed` é a única tela em sangria total, sem barra e com controles
+  // próprios no rodapé: um ícone flutuante por cima dela cobre o conteúdo e
+  // não tem o que oferecer que a tela já não ofereça.
+  if (location.pathname === "/feed") return null;
 
   const abrirSessao = async () => {
     setAbrindo(true);
@@ -131,7 +135,13 @@ export default function MentisWidget() {
     <div className="fixed bottom-5 right-5 z-50" data-testid="mentis-widget">
       {aberto && (
         <div
-          className="mb-3 flex h-[32rem] w-[22rem] max-w-[calc(100vw-2.5rem)] flex-col overflow-hidden rounded-3xl border border-white/10 bg-[#060c18] shadow-2xl"
+          className="mb-3 flex w-[22rem] max-w-[calc(100vw-2.5rem)] flex-col overflow-hidden rounded-3xl border border-white/10 bg-[#060c18] shadow-2xl"
+          // Altura fixa de 32rem (512px) mais o ícone e as folgas dava ~590px:
+          // num iPhone SE/8 com as barras do Safari isso empurrava o cabeçalho
+          // — e o X de fechar junto — para fora do topo da tela, e o painel é
+          // `fixed`, então não havia como rolar até ele. `dvh` e não `vh`
+          // porque no Safari `vh` ignora a barra de endereço.
+          style={{ height: "min(32rem, calc(100dvh - 8.5rem))" }}
           data-testid="mentis-widget-painel"
         >
           <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">

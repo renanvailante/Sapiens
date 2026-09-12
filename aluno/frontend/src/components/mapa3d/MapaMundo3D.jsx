@@ -1,4 +1,4 @@
-import { Suspense, useMemo, useRef } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import Cidade from "./Cidade";
@@ -93,7 +93,28 @@ function SolQueSegue({ raio }) {
  * Mesmas props de sempre (`biomas, nodeIndex, arestas, onClickHab`) +
  * `focusHabId`/`onFecharFoco`, derivadas do MESMO estado que já controla o
  * painel na página. */
+/** O mapa é uma aba primária, e num celular ele roda no mesmo aparelho que
+ *  mal aguenta uma prova em PDF. Dois botões aqui, os dois sem custo para a
+ *  identidade visual: menos pixels por ponto (a tela do telefone já é densa
+ *  demais para a diferença aparecer) e sem antialiasing por multiamostragem —
+ *  a densidade alta faz o mesmo trabalho, e o MSAA é dos itens mais caros do
+ *  quadro. As sombras ficam: são elas que dão volume às ilhas, e desligá-las
+ *  seria trocar o mapa por outro mapa. */
+function useTelaPequena() {
+  const [pequena, setPequena] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches,
+  );
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 1023px)");
+    const ouvir = (e) => setPequena(e.matches);
+    mq.addEventListener("change", ouvir);
+    return () => mq.removeEventListener("change", ouvir);
+  }, []);
+  return pequena;
+}
+
 export default function MapaMundo3D({ biomas, nodeIndex, arestas, onClickHab, focusHabId, onFecharFoco }) {
+  const telaPequena = useTelaPequena();
   const cena = useMemo(
     () => construirCena({ biomas, arestas }, nodeIndex),
     [biomas, arestas, nodeIndex],
@@ -113,10 +134,10 @@ export default function MapaMundo3D({ biomas, nodeIndex, arestas, onClickHab, fo
       <Canvas
         shadows
         camera={{ fov: 42, near: 0.5, far: raio * 8 }}
-        dpr={[1, 1.75]}
+        dpr={telaPequena ? [1, 1.25] : [1, 1.75]}
         // Sem tone mapping filmico: a estética é de cor chapada, e o ACES
         // dessatura justamente os neons que dão identidade a cada ilha.
-        gl={{ toneMapping: THREE.NoToneMapping, antialias: true }}
+        gl={{ toneMapping: THREE.NoToneMapping, antialias: !telaPequena }}
         onPointerMissed={() => {
           if (focusHabId) onFecharFoco?.();
         }}

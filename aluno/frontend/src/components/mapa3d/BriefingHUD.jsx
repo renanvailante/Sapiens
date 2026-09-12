@@ -13,7 +13,12 @@ export default function BriefingHUD({ hab, onFechar, onIniciar }) {
   const bioma = hab.bioma;
   return (
     <motion.div
-      className="fixed z-30 inset-x-0 bottom-0 sm:inset-x-auto sm:right-0 sm:top-16 sm:bottom-0 w-full sm:w-[400px] flex items-end sm:items-stretch px-3 pb-3 sm:p-4 pointer-events-none"
+      // `pb-24` no celular, não `pb-3`: o mapa é `fixed inset-0` (a página não
+      // rola), então o ícone da Mentis no canto inferior direito ficava
+      // exatamente sobre o "Iniciar missão" — o botão que faz a tela existir.
+      // A partir de `sm` o painel sai do rodapé e vai para a coluna da
+      // direita, e a folga volta a ser a de sempre.
+      className="fixed z-30 inset-x-0 bottom-0 sm:inset-x-auto sm:right-0 sm:top-16 sm:bottom-0 w-full sm:w-[400px] flex items-end sm:items-stretch px-3 pb-24 sm:p-4 pointer-events-none"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -23,7 +28,7 @@ export default function BriefingHUD({ hab, onFechar, onIniciar }) {
         style={{ background: "linear-gradient(to left, rgba(3,6,13,0.55), transparent)" }}
       />
       <motion.div
-        className="card-sapiens rounded-2xl p-6 md:p-7 w-full max-h-[70vh] sm:max-h-full overflow-y-auto pointer-events-auto"
+        className="card-sapiens rounded-2xl p-6 md:p-7 w-full max-h-[70dvh] sm:max-h-full overflow-y-auto pointer-events-auto"
         initial={{ x: 0, y: 24, opacity: 0, scale: 0.97 }}
         animate={{ x: 0, y: 0, opacity: 1, scale: 1 }}
         exit={{ y: 12, opacity: 0 }}

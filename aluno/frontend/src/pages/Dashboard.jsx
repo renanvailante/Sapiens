@@ -179,7 +179,7 @@ function HojeNoCronograma({ semana }) {
     <section className="mt-8" data-testid="dash-cronograma">
       <div className="mb-1 flex items-baseline justify-between gap-3">
         <h2 className="font-display text-2xl font-bold tracking-tight text-white">Hoje no seu cronograma</h2>
-        <Link to="/cronograma" className="inline-flex items-center gap-1 text-xs text-[#7FD8FF] hover:underline">
+        <Link to="/cronograma" className="inline-flex items-center gap-1 py-2 -my-2 text-xs text-[#7FD8FF] hover:underline">
           Ver a semana <ArrowRight className="h-3 w-3" />
         </Link>
       </div>
@@ -603,7 +603,7 @@ export default function Dashboard() {
           <section className="mt-8" data-testid="dash-revisoes">
             <div className="mb-1 flex items-baseline justify-between gap-3">
               <h2 className="font-display text-2xl font-bold tracking-tight text-white">Revisões de hoje</h2>
-              <Link to="/revisoes" className="inline-flex items-center gap-1 text-xs text-[#7FD8FF] hover:underline">
+              <Link to="/revisoes" className="inline-flex items-center gap-1 py-2 -my-2 text-xs text-[#7FD8FF] hover:underline">
                 Ver todas <ArrowRight className="w-3 h-3" />
               </Link>
             </div>
@@ -624,7 +624,7 @@ export default function Dashboard() {
           <section className="mt-8" data-testid="dash-focos" data-tour="dash-foco">
             <div className="flex items-baseline justify-between gap-3 mb-1">
               <h2 className="font-display text-2xl font-bold tracking-tight text-white">Onde focar agora</h2>
-              <Link to="/cognitive-profile" className="text-xs text-[#7FD8FF] hover:underline inline-flex items-center gap-1">
+              <Link to="/cognitive-profile" className="text-xs text-[#7FD8FF] hover:underline inline-flex items-center gap-1 py-2 -my-2">
                 Ver perfil completo <ArrowRight className="w-3 h-3" />
               </Link>
             </div>
@@ -658,7 +658,7 @@ export default function Dashboard() {
           <section className="mt-8" data-testid="dash-fracos">
             <div className="flex items-baseline justify-between gap-3 mb-1">
               <h2 className="font-display text-2xl font-bold tracking-tight text-white">O que travou você</h2>
-              <Link to="/cognitive-profile" className="text-xs text-[#7FD8FF] hover:underline inline-flex items-center gap-1">
+              <Link to="/cognitive-profile" className="text-xs text-[#7FD8FF] hover:underline inline-flex items-center gap-1 py-2 -my-2">
                 Ver todas <ArrowRight className="w-3 h-3" />
               </Link>
             </div>
@@ -705,7 +705,7 @@ export default function Dashboard() {
               <div className="flex items-center gap-2 font-mono-alt text-[10px] uppercase tracking-[0.3em] text-zinc-400">
                 <Compass className="w-3.5 h-3.5" /> Treino
               </div>
-              <Link to="/treino" className="text-xs text-sapiens-accentDeep hover:underline inline-flex items-center gap-1">
+              <Link to="/treino" className="text-xs text-sapiens-accentDeep hover:underline inline-flex items-center gap-1 py-2 -my-2">
                 Abrir o mapa <ArrowRight className="w-3 h-3" />
               </Link>
             </div>
@@ -740,7 +740,7 @@ export default function Dashboard() {
               <div className="flex items-center gap-2 font-mono-alt text-[10px] uppercase tracking-[0.3em] text-zinc-400">
                 <PenLine className="w-3.5 h-3.5" /> Redação
               </div>
-              <Link to="/redacao" className="text-xs text-sapiens-accentDeep hover:underline inline-flex items-center gap-1">
+              <Link to="/redacao" className="text-xs text-sapiens-accentDeep hover:underline inline-flex items-center gap-1 py-2 -my-2">
                 Escrever <ArrowRight className="w-3 h-3" />
               </Link>
             </div>
@@ -799,7 +799,7 @@ export default function Dashboard() {
           <div className="card-sapiens rounded-2xl p-6" data-testid="dash-mastery" data-tour="dash-mastery">
             <div className="flex items-center justify-between mb-4">
               <div className="font-mono-alt text-[10px] uppercase tracking-[0.3em] text-zinc-400">Domínio estimado</div>
-              <Link to="/cognitive-profile" className="text-xs text-sapiens-accentDeep hover:underline inline-flex items-center gap-1">
+              <Link to="/cognitive-profile" className="text-xs text-sapiens-accentDeep hover:underline inline-flex items-center gap-1 py-2 -my-2">
                 <Network className="w-3.5 h-3.5" /> Mapa completo
               </Link>
             </div>

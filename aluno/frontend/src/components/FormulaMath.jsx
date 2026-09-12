@@ -20,10 +20,20 @@ export default function FormulaMath({ asset, imgSrc, imgAlt, className, testId, 
   }, [asset?.latex]);
 
   if (html) {
+    // `onClick` também aqui, e não só no `<img>` de fallback: a fórmula
+    // renderizada carregava `cursor-zoom-in` da classe e não abria nada. No
+    // celular, que é onde uma fórmula densa fica pequena demais para ler, era
+    // justamente a versão que não dava para ampliar. O lightbox abre o PNG de
+    // procedência — que existe mesmo quando o LaTeX renderiza.
     return (
       <div
         className={className}
         data-testid={testId}
+        onClick={onClick}
+        role={onClick ? "button" : undefined}
+        tabIndex={onClick ? 0 : undefined}
+        aria-label={onClick ? imgAlt : undefined}
+        onKeyDown={onClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(e); } } : undefined}
         dangerouslySetInnerHTML={{ __html: html }}
       />
     );

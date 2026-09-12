@@ -79,13 +79,34 @@ export default function Login() {
             {mode === "login" ? "Bem-vindo de volta." : "Sua primeira análise é gratuita."}
           </p>
 
+          {/* O cupom fica ACIMA do botão do Google, e não no meio do formulário
+              de e-mail: ele vale para os DOIS caminhos de cadastro (o backend
+              aceita `promo_code` no signup por e-mail e no primeiro login pelo
+              Google), mas embaixo do botão ninguém que entra pelo Google
+              chegava a vê-lo — e o código trocaria o bônus padrão de 100
+              Sparks pelo valor programado. */}
+          {mode === "signup" && (
+            <div className="mt-8">
+              <label className="text-xs font-medium text-zinc-500 mb-1.5 block" htmlFor="login-promo-code">
+                Tem um código de promoção?
+              </label>
+              <input
+                id="login-promo-code"
+                value={promoCode} onChange={(e) => setPromoCode(e.target.value)}
+                placeholder="Opcional — vale para os dois jeitos de entrar"
+                className="w-full border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:border-sapiens-accent outline-none"
+                data-testid="login-promo-code"
+              />
+            </div>
+          )}
+
           {googleDisponivel && (
             <>
               <button
                 type="button"
                 onClick={comGoogle}
                 disabled={busyGoogle || busy}
-                className="pill mt-8 w-full border border-zinc-200 hover:bg-zinc-50 disabled:opacity-50 rounded-full px-4 py-3 flex items-center justify-center gap-3 font-medium text-zinc-900"
+                className={`pill w-full border border-zinc-200 hover:bg-zinc-50 disabled:opacity-50 rounded-full px-4 py-3 flex items-center justify-center gap-3 font-medium text-zinc-900 ${mode === "signup" ? "mt-4" : "mt-8"}`}
                 data-testid="login-google"
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="#EA4335" d="M12 10.2v3.9h5.5c-.25 1.5-1.7 4.4-5.5 4.4-3.3 0-6-2.7-6-6.1s2.7-6.1 6-6.1c1.9 0 3.2.8 3.9 1.5l2.7-2.6C16.9 3.6 14.7 2.6 12 2.6 6.9 2.6 2.8 6.7 2.8 11.8S6.9 21 12 21c6.9 0 9.4-4.8 9.4-8.6 0-.6-.1-1-.2-1.5H12z"/></svg>
@@ -122,21 +143,13 @@ export default function Login() {
               data-testid="login-password"
             />
             {mode === "signup" && (
-              <input
-                value={promoCode} onChange={(e) => setPromoCode(e.target.value)}
-                placeholder="Código de promoção (opcional)"
-                className="w-full border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:border-sapiens-accent outline-none"
-                data-testid="login-promo-code"
-              />
-            )}
-            {mode === "signup" && (
               <label className="flex items-start gap-2.5 pt-1 text-xs text-zinc-500 leading-relaxed cursor-pointer">
                 <input
                   type="checkbox"
                   required
                   checked={aceitouTermos}
                   onChange={(e) => setAceitouTermos(e.target.checked)}
-                  className="mt-0.5 w-4 h-4 rounded border-zinc-300 accent-sapiens-accent shrink-0"
+                  className="mt-0.5 w-5 h-5 rounded border-zinc-300 accent-sapiens-accent shrink-0"
                   data-testid="login-aceite-termos"
                 />
                 <span>
@@ -157,7 +170,7 @@ export default function Login() {
 
           {mode === "login" && (
             <div className="mt-3 text-center">
-              <Link to="/esqueci-senha" className="text-sm text-zinc-500 hover:text-zinc-900 hover:underline" data-testid="login-esqueci-senha">
+              <Link to="/esqueci-senha" className="inline-block py-2.5 text-sm text-zinc-500 hover:text-zinc-900 hover:underline" data-testid="login-esqueci-senha">
                 Esqueci minha senha
               </Link>
             </div>
@@ -165,16 +178,16 @@ export default function Login() {
 
           <div className="mt-6 text-sm text-zinc-500 text-center">
             {mode === "login" ? (
-              <>Ainda não tem conta? <button className="text-zinc-900 font-medium hover:underline" onClick={() => setMode("signup")} data-testid="login-switch-signup">Criar conta</button></>
+              <>Ainda não tem conta? <button className="inline-block px-2 py-2.5 text-zinc-900 font-medium hover:underline" onClick={() => setMode("signup")} data-testid="login-switch-signup">Criar conta</button></>
             ) : (
-              <>Já tem conta? <button className="text-zinc-900 font-medium hover:underline" onClick={() => setMode("login")} data-testid="login-switch-login">Entrar</button></>
+              <>Já tem conta? <button className="inline-block px-2 py-2.5 text-zinc-900 font-medium hover:underline" onClick={() => setMode("login")} data-testid="login-switch-login">Entrar</button></>
             )}
           </div>
 
           <div className="mt-8 pt-6 border-t border-zinc-100 text-center text-xs text-zinc-400">
-            <Link to="/termos" className="hover:text-zinc-600 hover:underline">Termos de Uso</Link>
+            <Link to="/termos" className="inline-block py-2.5 hover:text-zinc-600 hover:underline">Termos de Uso</Link>
             <span className="mx-2">·</span>
-            <Link to="/privacidade" className="hover:text-zinc-600 hover:underline">Privacidade</Link>
+            <Link to="/privacidade" className="inline-block py-2.5 hover:text-zinc-600 hover:underline">Privacidade</Link>
           </div>
         </div>
       </div>

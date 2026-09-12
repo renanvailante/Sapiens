@@ -136,7 +136,14 @@ function Bloco({ bloco, onConcluir, salvando }) {
           onClick={() => onConcluir(bloco)}
           disabled={salvando}
           aria-label={bloco.concluido ? "Desmarcar como feito" : "Marcar como feito"}
-          className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition ${
+          // A caixinha continua com 16px DESENHADOS (`before:` é só área de
+          // toque, invisível): ela é o marcador de um bloco pequeno, e crescer
+          // o quadrado mudaria a densidade da semana inteira. Mas 16px é
+          // metade do mínimo para um dedo, e este é o gesto que o aluno repete
+          // mais vezes nesta tela. A área invisível leva o alvo a 36px — o
+          // bastante para o dedo, e contido o suficiente para não roubar do
+          // card clicável logo abaixo mais que uma borda.
+          className={`relative flex h-4 w-4 shrink-0 items-center justify-center rounded border transition before:absolute before:-inset-2.5 before:content-[''] ${
             bloco.concluido
               ? "border-emerald-400/60 bg-emerald-400/25 text-emerald-200"
               : "border-white/25 text-transparent hover:border-white/50"

@@ -354,7 +354,7 @@ export default function MentisChat() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_18rem] gap-5">
-          <div className="card-sapiens rounded-2xl flex flex-col min-h-[60vh]">
+          <div className="card-sapiens rounded-2xl flex flex-col min-h-[60dvh]">
             <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4" data-testid="mentis-conversa">
               {mensagens.map((m, i) => (
                 <div

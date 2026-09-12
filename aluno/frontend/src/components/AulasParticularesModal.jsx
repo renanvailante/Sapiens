@@ -84,7 +84,7 @@ export default function AulasParticularesModal({ open, onClose }) {
       data-testid="aulas-particulares-modal"
     >
       <div
-        className="card-sapiens rounded-2xl p-6 md:p-8 w-full max-w-lg max-h-[90vh] overflow-y-auto relative"
+        className="card-sapiens rounded-2xl p-6 md:p-8 w-full max-w-lg max-h-[90dvh] overflow-y-auto relative"
         onClick={(e) => e.stopPropagation()}
       >
         <button

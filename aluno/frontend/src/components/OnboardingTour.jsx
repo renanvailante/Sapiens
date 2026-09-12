@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { api } from "../lib/api";
 import BrandMark from "./BrandMark";
 import { ArrowRight, X } from "lucide-react";
@@ -11,7 +11,7 @@ import { ArrowRight, X } from "lucide-react";
 // "Rever o guia", no topo do Painel, reabre esta mesma sequência.
 //
 // A régua do que entra aqui (2026-09-09): o guia tem de cobrir TUDO o que o
-// aluno precisa saber para usar o produto sozinho — as quatro abas da barra,
+// aluno precisa saber para usar o produto sozinho — as abas da barra,
 // de onde saem as questões, o que custa Sparks e por quê, e o fato de que
 // todo card de dificuldade é clicável. Um passo por ideia; alvo que pode não
 // existir na tela (uma seção que só aparece com dado) simplesmente centraliza
@@ -24,8 +24,16 @@ const STEPS = [
   },
   {
     target: "nav-primarios",
-    title: "Suas quatro abas",
-    text: "Painel, Treino, Redação e Mentis. Nesta ordem: onde você se orienta, onde treina, onde escreve e com quem conversa.",
+    title: "Suas cinco abas",
+    text: "Painel, Cronograma, Treino, Redação e Mentis. Nesta ordem: onde você se orienta, onde decide o que fazer hoje, onde treina, onde escreve e com quem conversa.",
+    // No celular a barra de links não existe — ela vira o painel deslizante
+    // atrás deste botão. Apontar para `nav-primarios` ali centralizava um
+    // balão falando de abas que não estavam em lugar nenhum da tela.
+    mobile: {
+      target: "nav-mobile-trigger",
+      title: "Tudo começa neste botão",
+      text: "Painel, Cronograma, Treino, Redação e Mentis — as telas onde você estuda — moram neste menu, junto com todo o resto do produto.",
+    },
   },
   {
     target: "dash-hero",
@@ -76,6 +84,10 @@ const STEPS = [
     target: "nav-more",
     title: "O resto fica aqui",
     text: "Provas por área, seu perfil cognitivo, as questões que você gerou, histórico, feed e o canal de reclamações e sugestões: tudo neste menu.",
+    // No celular isto não é um segundo menu: é o mesmo painel deslizante que
+    // o passo das abas já apresentou. Repetir seria mostrar duas vezes a
+    // mesma porta.
+    mobile: null,
   },
   {
     target: "dash-aulas",
@@ -95,18 +107,55 @@ const STEPS = [
 ];
 
 const TYPE_MS = 14; // ms por caractere — digitação rápida, de propósito.
-const BUBBLE_WIDTH = 340;
+const BUBBLE_MAX = 340;
 const MARGIN = 14;
-const ESTIMATED_HEIGHT = 220;
+const ESTIMATED_HEIGHT = 220; // só o palpite inicial; ver `bubbleH` abaixo.
+
+/** Largura que cabe de verdade nesta tela. Era 340 cravado, e o clamp de
+ *  posição usava `innerWidth - 340 - MARGIN` como TETO: abaixo de 354px de
+ *  largura esse teto fica negativo e vence o piso, então num aparelho de
+ *  320px o balão nascia em `left: -34` — com o selo e o começo do texto
+ *  cortados fora da tela. */
+const larguraBalao = () => Math.min(BUBBLE_MAX, window.innerWidth - MARGIN * 2);
+
+/** Resolve a sequência para a largura atual: cada passo pode trazer um
+ *  `mobile` com alvo e texto próprios, ou `mobile: null` para sumir no
+ *  celular. Nada disso é enfeite — abaixo de `lg` metade dos alvos do tour
+ *  (`nav-primarios`, `nav-more`) simplesmente não está na página. */
+function passosPara(estreito) {
+  if (!estreito) return STEPS.map(({ mobile, ...passo }) => passo);
+  return STEPS.map(({ mobile, ...passo }) => (mobile === undefined ? passo : mobile && { ...passo, ...mobile }))
+    .filter(Boolean);
+}
 
 export default function OnboardingTour({ onDone }) {
+  // `lg` do Tailwind (1024px) é a mesma fronteira onde a barra de links dá
+  // lugar ao menu deslizante em Nav.jsx — o tour tem de contar a mesma
+  // história que a tela está mostrando.
+  const [estreito, setEstreito] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches,
+  );
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 1023px)");
+    const ouvir = (e) => setEstreito(e.matches);
+    mq.addEventListener("change", ouvir);
+    return () => mq.removeEventListener("change", ouvir);
+  }, []);
+  const passos = useMemo(() => passosPara(estreito), [estreito]);
+
   const [stepIndex, setStepIndex] = useState(0);
   const [revealed, setRevealed] = useState(0);
   const [rect, setRect] = useState(null);
+  // Altura REAL do balão. O valor fixo de 220px subestimava o balão a 340px de
+  // largura (o texto quebra em cinco ou seis linhas), e como ele é `fixed` o
+  // rodapé com "Próximo"/"Pular tour" podia cair abaixo da dobra sem que
+  // houvesse como rolar até lá — o aluno ficava preso no guia.
+  const [bubbleH, setBubbleH] = useState(ESTIMATED_HEIGHT);
+  const bubbleRef = useRef(null);
   const spotlightRef = useRef(null);
   const typeTimerRef = useRef(null);
 
-  const step = STEPS[stepIndex];
+  const step = passos[Math.min(stepIndex, passos.length - 1)];
 
   const clearSpotlight = useCallback(() => {
     spotlightRef.current?.classList.remove("tour-spotlight");
@@ -151,6 +200,20 @@ export default function OnboardingTour({ onDone }) {
 
   useEffect(() => clearSpotlight, [clearSpotlight]);
 
+  // Mede a altura real do balão e reposiciona a partir dela. Um
+  // `ResizeObserver` e não uma medição única porque a altura muda enquanto o
+  // texto é digitado e a cada passo — e é a altura que decide se o rodapé com
+  // os botões cabe na tela.
+  useLayoutEffect(() => {
+    const el = bubbleRef.current;
+    if (!el) return;
+    const medir = () => setBubbleH(el.getBoundingClientRect().height || ESTIMATED_HEIGHT);
+    medir();
+    const ro = new ResizeObserver(medir);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [stepIndex]);
+
   // Efeito de digitação — sem IA, só um contador revelando `step.text` rápido.
   useEffect(() => {
     setRevealed(0);
@@ -178,27 +241,40 @@ export default function OnboardingTour({ onDone }) {
       setRevealed(step.text.length); // clique durante a digitação: revela tudo de uma vez
       return;
     }
-    if (stepIndex === STEPS.length - 1) finish();
+    if (stepIndex >= passos.length - 1) finish();
     else setStepIndex((i) => i + 1);
   };
 
   const anchored = Boolean(step.target && rect);
   const bubbleStyle = anchored
     ? (() => {
+        const largura = larguraBalao();
+        // Abaixo do alvo se couber; senão acima; e se não couber de nenhum dos
+        // dois lados, encostado na borda de baixo — nunca fora dela. Os três
+        // casos usam a altura medida, não um palpite.
         let top = rect.bottom + MARGIN;
-        if (top + ESTIMATED_HEIGHT > window.innerHeight) top = Math.max(MARGIN, rect.top - ESTIMATED_HEIGHT - MARGIN);
-        let left = rect.left + rect.width / 2 - BUBBLE_WIDTH / 2;
-        left = Math.min(Math.max(left, MARGIN), window.innerWidth - BUBBLE_WIDTH - MARGIN);
-        return { position: "fixed", top, left, width: BUBBLE_WIDTH };
+        if (top + bubbleH > window.innerHeight) top = rect.top - bubbleH - MARGIN;
+        top = Math.min(Math.max(top, MARGIN), Math.max(MARGIN, window.innerHeight - bubbleH - MARGIN));
+
+        let left = rect.left + rect.width / 2 - largura / 2;
+        // Piso DEPOIS do teto: invertido, o piso perdia para um teto negativo
+        // em telas estreitas e jogava o balão para fora pela esquerda.
+        left = Math.max(MARGIN, Math.min(left, window.innerWidth - largura - MARGIN));
+        return { position: "fixed", top, left, width: largura };
       })()
-    : { position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" };
+    : { position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", padding: MARGIN };
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 100, pointerEvents: "none" }} data-testid="onboarding-tour">
       <div style={bubbleStyle}>
         <div
+          ref={bubbleRef}
           className="tour-bubble pointer-events-auto rounded-2xl p-6 relative reveal"
-          style={{ width: anchored ? BUBBLE_WIDTH : 360 }}
+          // Centralizado eram 360px cravados, sem teto: num aparelho de 320px
+          // o balão era mais largo que a tela. E é justamente no modo
+          // centralizado que o celular cai com mais frequência, porque o alvo
+          // `nav-primarios` não existe abaixo de `lg`.
+          style={{ width: anchored ? "100%" : "min(360px, 100%)" }}
           data-testid={`onboarding-step-${stepIndex}`}
         >
           <div className="absolute top-3 left-3 w-6 h-6 rounded-full bg-sapiens-navy flex items-center justify-center shrink-0">
@@ -210,7 +286,7 @@ export default function OnboardingTour({ onDone }) {
 
           <div className="pt-7">
             <div className="font-mono-alt text-[10px] uppercase tracking-[0.25em] text-sapiens-accentDeep mb-1">
-              {stepIndex + 1}/{STEPS.length}
+              {stepIndex + 1}/{passos.length}
             </div>
             <div className="font-display font-bold text-lg text-zinc-950">{step.title}</div>
             <p className="mt-2 text-sm text-zinc-600 leading-relaxed min-h-[3.6em]">
@@ -235,7 +311,7 @@ export default function OnboardingTour({ onDone }) {
               )}
             </div>
             <button onClick={next} className="pill btn-sapiens inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-medium" data-testid="onboarding-next">
-              {stepIndex === STEPS.length - 1 ? "Começar" : "Próximo"} <ArrowRight className="w-3.5 h-3.5" />
+              {stepIndex >= passos.length - 1 ? "Começar" : "Próximo"} <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>

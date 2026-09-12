@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Nav from "../components/Nav";
 import { api, errMsg } from "../lib/api";
 import { toast } from "sonner";
-import { Zap, Check, Loader2, History, ShoppingBag, Network, RefreshCw, XCircle, AlertTriangle, Infinity as InfinityIcon, Copy, QrCode } from "lucide-react";
+import { Zap, Check, Loader2, History, ShoppingBag, Network, RefreshCw, XCircle, AlertTriangle, Infinity as InfinityIcon, Copy, QrCode, ExternalLink } from "lucide-react";
 
 const MP_SDK_URL = "https://sdk.mercadopago.com/js/v2";
 
@@ -38,6 +38,7 @@ function PaymentBrick({ publicKey, pkg, onSuccess, onCancel }) {
   const [status, setStatus] = useState("loading"); // 'loading' | 'ready' | 'submitting' | 'error' | 'pix'
   const [error, setError] = useState(null);
   const [pix, setPix] = useState(null); // { qr_code, qr_code_base64, ticket_url } quando o método é Pix
+  const campoPixRef = useRef(null);
 
   useEffect(() => {
     let cancelado = false;
@@ -170,9 +171,25 @@ function PaymentBrick({ publicKey, pkg, onSuccess, onCancel }) {
               data-testid="sparks-pix-qr-image"
             />
           )}
+          {/* No celular o QR Code não serve: ninguém escaneia a própria tela.
+              O `ticket_url` já vinha na resposta do Mercado Pago e não era
+              usado por tela nenhuma — é ele que abre o pagamento no app do
+              banco ou do MP, que é o caminho real de quem está no telefone. */}
+          {pix.ticket_url && (
+            <a
+              href={pix.ticket_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="pill btn-sapiens mt-4 inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full text-xs font-medium"
+              data-testid="sparks-pix-abrir-app"
+            >
+              <ExternalLink className="w-3.5 h-3.5" /> Pagar no app do banco
+            </a>
+          )}
           {pix.qr_code && (
             <div className="mt-4">
               <textarea
+                ref={campoPixRef}
                 readOnly
                 value={pix.qr_code}
                 rows={3}
@@ -180,10 +197,21 @@ function PaymentBrick({ publicKey, pkg, onSuccess, onCancel }) {
                 className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-xs text-zinc-600 font-mono-alt resize-none"
                 data-testid="sparks-pix-copia-cola"
               />
+              {/* `writeText` devolve uma promessa e REJEITA onde a área de
+                  transferência é bloqueada — navegador embutido do WhatsApp e
+                  do Instagram, que é por onde boa parte dos alunos abre o
+                  link. Sem o `catch`, o toast dizia "copiado" de qualquer
+                  jeito e a pessoa voltava para o banco com a área de
+                  transferência vazia, sem entender por quê. */}
               <button
-                onClick={() => {
-                  navigator.clipboard.writeText(pix.qr_code);
-                  toast.success("Código Pix copiado.");
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(pix.qr_code);
+                    toast.success("Código Pix copiado.");
+                  } catch {
+                    campoPixRef.current?.select();
+                    toast.error("Seu navegador não deixou copiar. O código está selecionado acima — segure e escolha Copiar.");
+                  }
                 }}
                 className="pill btn-sapiens mt-2 inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full text-xs font-medium"
                 data-testid="sparks-pix-copiar"
