@@ -181,6 +181,61 @@ INDICES: list[tuple[str, list[tuple[str, int]], dict]] = [
      {"name": "reset_token_unico", "unique": True}),
     ("password_resets", [("expires_at_dt", pymongo.ASCENDING)],
      {"name": "reset_ttl", "expireAfterSeconds": 0}),
+
+    # --- engajamento (ofensiva, XP, missões, liga) ---
+    # `engajamento_perfil` e `engajamento_dia` têm `_id` determinístico
+    # (`uid` e `uid:dia`), então a leitura já é por chave primária.
+    # O TTL existe porque `engajamento_dia` cresce um documento por aluno por
+    # DIA e não é fonte de verdade de nada: o histórico real são os eventos de
+    # behavior no Firestore. Sem ele, a coleção cresce para sempre guardando
+    # contadores de missão de 2027.
+    ("engajamento_dia", [("expurgo_em_dt", pymongo.ASCENDING)],
+     {"name": "engajamento_dia_ttl", "expireAfterSeconds": 0}),
+    # A consulta quente da liga: ranking de uma divisão numa semana, ordenado
+    # por pontos. Sem este índice, cada abertura da tela varre a coleção
+    # inteira — e a tela da liga é justamente a que se atualiza muitas vezes
+    # no domingo à noite.
+    ("liga_semana", [
+        ("semana", pymongo.ASCENDING),
+        ("liga_id", pymongo.ASCENDING),
+        ("pontos", pymongo.DESCENDING),
+    ], {"name": "liga_ranking"}),
+    # `_liga_de_entrada` busca a última semana do aluno para aplicar subida
+    # ou descida.
+    ("liga_semana", [("uid", pymongo.ASCENDING), ("semana", pymongo.DESCENDING)],
+     {"name": "liga_por_aluno"}),
+
+    # --- comunidade (mural de dúvidas) ---
+    ("comunidade_duvidas", [("duvida_id", pymongo.ASCENDING)],
+     {"name": "duvida_id_unico", "unique": True}),
+    # O mural: filtra por status e área, ordena por data. É a consulta que roda
+    # a cada abertura da aba.
+    ("comunidade_duvidas", [
+        ("status", pymongo.ASCENDING),
+        ("area", pymongo.ASCENDING),
+        ("created_at", pymongo.DESCENDING),
+    ], {"name": "mural_por_area"}),
+    ("comunidade_duvidas", [("student_id", pymongo.ASCENDING), ("created_at", pymongo.DESCENDING)],
+     {"name": "duvidas_do_aluno"}),
+    ("comunidade_respostas", [("resposta_id", pymongo.ASCENDING)],
+     {"name": "resposta_id_unico", "unique": True}),
+    ("comunidade_respostas", [("duvida_id", pymongo.ASCENDING), ("created_at", pymongo.ASCENDING)],
+     {"name": "respostas_da_duvida"}),
+    # Teto diário de Sparks por respostas úteis (`comunidade.MAX_SPARKS_DIA`):
+    # sem índice, a contagem varre todas as respostas da plataforma a cada
+    # "marcar melhor resposta".
+    ("comunidade_respostas", [
+        ("student_id", pymongo.ASCENDING),
+        ("melhor", pymongo.ASCENDING),
+        ("pago_em_dia", pymongo.ASCENDING),
+    ], {"name": "teto_diario_sparks"}),
+    # O voto único por (tipo, alvo, pessoa) é garantido pelo `_id`
+    # determinístico; este índice serve à consulta "o que EU já votei nesta
+    # thread", que a tela faz uma vez por abertura.
+    ("comunidade_votos", [("uid", pymongo.ASCENDING), ("alvo", pymongo.ASCENDING)],
+     {"name": "votos_do_aluno"}),
+    ("comunidade_reportes", [("resolvido", pymongo.ASCENDING), ("created_at", pymongo.DESCENDING)],
+     {"name": "fila_de_moderacao"}),
 ]
 
 

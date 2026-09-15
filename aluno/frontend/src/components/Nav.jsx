@@ -2,12 +2,23 @@ import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { api } from "../lib/api";
-import { LogOut, Compass, History, Zap, Brain, ShieldCheck, MoreHorizontal, Trash2, LayoutGrid, GraduationCap, PenLine, MessageCircle, BookOpen, ListChecks, MessageSquareWarning, CalendarClock, CalendarDays } from "lucide-react";
+import { LogOut, Compass, History, Zap, Brain, ShieldCheck, MoreHorizontal, Trash2, LayoutGrid, GraduationCap, PenLine, MessageCircle, BookOpen, ListChecks, MessageSquareWarning, CalendarClock, CalendarDays, Users, Trophy } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTitle, SheetDescription } from "./ui/sheet";
 import BrandMark from "./BrandMark";
 import Mentis from "./Mentis";
 import AulasParticularesModal from "./AulasParticularesModal";
+
+export const EVENTO_SPARKS = "sparks:mudou";
+
+/** Avisa a barra que o saldo mudou. Chame depois de QUALQUER ação que credite
+ *  ou debite Sparks sem sair da página. Um evento de janela, e não um contexto
+ *  de React, porque o chip vive na barra e quem gasta vive na tela — um
+ *  provedor para carregar um inteiro entre os dois seria mais encanamento do
+ *  que problema. */
+export function avisarSparksMudou() {
+  window.dispatchEvent(new Event(EVENTO_SPARKS));
+}
 
 // Única fonte da lista de navegação — usada tanto nos links visíveis em
 // desktop (+ dropdown "mais") quanto no menu mobile, pra nunca divergir.
@@ -34,7 +45,14 @@ const PRIMARY_LINKS = [
   { to: "/redacao", icon: PenLine, label: "Redação", testid: "nav-redacao", tour: "nav-redacao" },
   { to: "/mentis", icon: MessageCircle, label: "Mentis", testid: "nav-mentis", tour: "nav-mentis", mascote: true },
 ];
+// Comunidade e Liga entram no menu "mais", NÃO na barra: a medição de
+// 2026-09-12 deixou 6px de folga com o rótulo "Sair" e usuário admin, e
+// qualquer item novo aqui empurra a porta de sair para fora da tela (ver a
+// nota de largura no fim deste arquivo). As duas são descobertas pelo Painel,
+// que carrega o card da ofensiva/liga e o convite do mural.
 const SECONDARY_LINKS = [
+  { to: "/comunidade", icon: Users, label: "Comunidade", testid: "nav-comunidade" },
+  { to: "/liga", icon: Trophy, label: "Liga da semana", testid: "nav-liga" },
   { to: "/exams", icon: Compass, label: "Provas do ENEM", testid: "nav-exams" },
   { to: "/revisoes", icon: CalendarClock, label: "Revisões", testid: "nav-revisoes" },
   { to: "/cognitive-profile", icon: Brain, label: "Cognitivo", testid: "nav-cognitive" },
@@ -47,12 +65,23 @@ const SECONDARY_LINKS = [
 
 // Saldo de Sparks — sempre visível (mesmo no mobile), mas discreto: um chip
 // pequeno, sem chamar mais atenção que os links de navegação.
+//
+// Relê o saldo quando alguém dispara `sparks:mudou` (ver `avisarSparksMudou`).
+// Sem isso o chip busca uma vez na montagem e nunca mais: o aluno gastava 30
+// Sparks destacando uma dúvida, via a confirmação na tela, e a barra continuava
+// exibindo o saldo antigo até ele trocar de página. Um número de dinheiro que
+// mente logo depois da compra é o pior lugar possível para um número mentir.
 function SparksChip() {
   const [sparks, setSparks] = useState(null);
   useEffect(() => {
     let ativo = true;
-    api.get("/firestore/students/me/sparks").then(({ data }) => { if (ativo) setSparks(data.sparks_balance); }).catch(() => {});
-    return () => { ativo = false; };
+    const ler = () =>
+      api.get("/firestore/students/me/sparks")
+        .then(({ data }) => { if (ativo) setSparks(data.sparks_balance); })
+        .catch(() => {});
+    ler();
+    window.addEventListener(EVENTO_SPARKS, ler);
+    return () => { ativo = false; window.removeEventListener(EVENTO_SPARKS, ler); };
   }, []);
   if (sparks == null) return null;
   return (

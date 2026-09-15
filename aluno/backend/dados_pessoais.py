@@ -71,6 +71,16 @@ COLECOES_POR_USUARIO: tuple[tuple[str, str], ...] = (
     # ele está, em que horário, todos os dias da semana. Sai inteira com a
     # conta, pelo `student_id` que `cronograma_routes._gravar` sempre grava.
     ("cronogramas", "student_id"),
+    # Engajamento: XP, ofensiva, missões e posição na liga. Tudo é perfil de
+    # comportamento do titular e sai inteiro — inclusive `liga_semana`, que
+    # guarda o NOME exibido no ranking.
+    ("engajamento_perfil", "uid"),
+    ("engajamento_dia", "uid"),
+    ("liga_semana", "uid"),
+    # Voto na comunidade é opinião individual identificada: sai com a conta.
+    # A contagem agregada no conteúdo votado não é reconstruível a partir de
+    # quem votou, então ela fica (art. 12).
+    ("comunidade_votos", "uid"),
 )
 
 # Coleções que guardam dado de aluno mas NÃO cabem no padrão acima — cada uma
@@ -80,6 +90,10 @@ COLECOES_TRATAMENTO_ESPECIAL: tuple[str, ...] = (
     "redacao_avaliacoes",         # pende de `redacao_id`, não de `user_id`
     "treino_questoes_ia",         # `$pull` do aluno; a questão é conteúdo e fica
     "mentis_intervencoes_abertas",  # `_id` composto `"{uid}|{chave}"`
+    # Mural de dúvidas: ANONIMIZADO, não apagado. Ver `_anonimizar_comunidade`.
+    "comunidade_duvidas",
+    "comunidade_respostas",
+    "comunidade_reportes",
 )
 
 # Coleções SEM dado pessoal, classificadas de propósito para que o teste de
@@ -116,6 +130,11 @@ SUBCOLECOES_FIRESTORE = (
     "sparks_questoes",
     "sparks_reports",
     "sparks_admin_grants",
+    # Concedidas por `firestore_service.grant_sparks_evento` — o nome da
+    # subcoleção é `sparks_{categoria}`. Cada categoria nova precisa entrar
+    # aqui, senão o comprovante daquele ganho não sai na exportação.
+    "sparks_missoes",
+    "sparks_comunidade",
 )
 
 TOMBSTONE = "<titular-excluido>"
@@ -167,6 +186,18 @@ async def exportar(user_id: str) -> dict[str, Any]:
                 export["mongo"]["redacao_avaliacoes"] = [_limpar(d) for d in docs]
     except Exception:  # noqa: BLE001
         logger.exception("exportar: falha lendo redacao_avaliacoes")
+
+    # Comunidade: o que o aluno escreveu no mural é dele e tem que sair na
+    # cópia. Pende de `student_id` e não do `user_id` padrão, por isso fica
+    # fora do laço acima.
+    for colecao in ("comunidade_duvidas", "comunidade_respostas"):
+        try:
+            docs = await _db[colecao].find({"student_id": user_id}).to_list(10000)
+            if docs:
+                export["mongo"][colecao] = [_limpar(d) for d in docs]
+        except Exception:  # noqa: BLE001
+            logger.exception("exportar: falha lendo %s", colecao)
+            export["mongo"][colecao] = {"erro": "não foi possível ler esta coleção"}
 
     # Pagamentos: o titular tem direito à própria cópia mesmo sendo o registro
     # que sobrevive à exclusão.
@@ -227,6 +258,48 @@ async def _anonimizar_pagamentos(user_id: str) -> int:
     return r.modified_count
 
 
+async def _anonimizar_comunidade(user_id: str) -> dict[str, int]:
+    """O mural é conversa entre pessoas: o titular sai, a conversa fica.
+
+    Apagar a dúvida de quem pediu a conta de volta destruiria junto as
+    respostas que OUTROS alunos escreveram — trabalho deles, não dele. E
+    apagar a resposta dele arrancaria o meio de uma thread que outra pessoa
+    ainda usa para estudar.
+
+    A saída é a mesma de `_anonimizar_pagamentos`: cortar o vínculo com a
+    pessoa em vez de destruir o registro. Some o `student_id`, some o nome, e
+    o que resta ("Aluno removido" + o texto sobre matemática) não reconstrói o
+    titular — é dado anonimizado, fora do alcance da LGPD por força do art. 12.
+
+    O `$pull` em `reportada_por` é o mesmo raciocínio pelo avesso: a lista é
+    de PESSOAS e precisa perder esta; o conteúdo moderado continua moderado.
+    """
+    saida: dict[str, int] = {}
+    anonimo = {"student_id": TOMBSTONE, "autor_nome": "Aluno removido", "titular_excluido_em": _agora()}
+    for colecao in ("comunidade_duvidas", "comunidade_respostas"):
+        try:
+            r = await _db[colecao].update_many({"student_id": user_id}, {"$set": anonimo})
+            saida[f"{colecao}_anonimizadas"] = r.modified_count
+            r2 = await _db[colecao].update_many(
+                {"reportada_por": user_id}, {"$pull": {"reportada_por": user_id}}
+            )
+            saida[f"{colecao}_reportes_desvinculados"] = r2.modified_count
+        except Exception:  # noqa: BLE001
+            logger.exception("excluir: falha anonimizando %s", colecao)
+            saida[colecao] = -1
+    # O reporte guarda POR QUE um conteúdo saiu do ar: é prova da decisão de
+    # moderação e não pode sumir junto com quem reportou — mas quem reportou,
+    # sim, é dado pessoal e vira lápide.
+    try:
+        r = await _db.comunidade_reportes.update_many(
+            {"reportado_por": user_id}, {"$set": {"reportado_por": TOMBSTONE}}
+        )
+        saida["comunidade_reportes_anonimizados"] = r.modified_count
+    except Exception:  # noqa: BLE001
+        logger.exception("excluir: falha anonimizando comunidade_reportes")
+    return saida
+
+
 async def excluir(user_id: str) -> dict[str, Any]:
     """Apaga o aluno. Devolve o relatório do que saiu, coleção a coleção.
 
@@ -247,6 +320,7 @@ async def excluir(user_id: str) -> dict[str, Any]:
         logger.exception("excluir: não consegui listar redações de %s", user_id)
 
     relatorio["mongo"]["sparks_payments_anonimizados"] = await _anonimizar_pagamentos(user_id)
+    relatorio["mongo"].update(await _anonimizar_comunidade(user_id))
 
     for colecao, campo in COLECOES_POR_USUARIO:
         try:

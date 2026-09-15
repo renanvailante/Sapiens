@@ -63,6 +63,15 @@ LIMITES: dict[str, tuple[int, int]] = {
     # semana várias vezes enquanto se ajustam os horários, e fecha a porta
     # para a rota de .ics virar um repetidor de requisições.
     "cronograma": (30, 3600),
+    # Engajamento: resgatar missão e comprar congelador. Poucas ações por dia
+    # por natureza; o limite existe só para um script não ficar batendo na
+    # rota de resgate à espera de uma corrida que a trava do Mongo já fecha.
+    "engajamento": (60, 3600),
+    # Mural de dúvidas. É a única superfície do produto onde um aluno escreve
+    # algo que outro lê, então o limite é também a primeira defesa contra spam:
+    # 40/hora cobre uma tarde inteira respondendo colegas e torna inviável
+    # despejar conteúdo em massa.
+    "comunidade": (40, 3600),
 }
 
 _eventos: dict[str, deque[float]] = defaultdict(deque)

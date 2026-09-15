@@ -42,6 +42,7 @@ from pydantic import BaseModel, Field
 from pymongo.errors import DuplicateKeyError
 
 import ai_service
+import engajamento_service
 import firestore_service as fs
 import llm_telemetry
 import rate_limit
@@ -295,6 +296,16 @@ async def submeter_redacao(payload: CorrecaoRequest, user: User = Depends(requir
         {"$set": {"status": "concluida", "redacao_id": redacao.redacao_id,
                   "atualizado_em": _iso(_agora())}},
     )
+
+    # A redação é a tarefa mais cara em esforço do produto e a mais decisiva no
+    # ENEM — por isso vale ~8 questões de XP (ver `XP_POR_ACAO`). `chave_unica`
+    # pelo `redacao_id` para uma reentrega do mesmo texto nunca pagar de novo.
+    await engajamento_service.registrar_acao(
+        user.user_id, ["redacao_corrigida"], contadores={"redacoes": 1},
+        nome=user.name, chave_unica=f"redacao:{redacao.redacao_id}",
+    )
+    await engajamento_service.somar_ao_perfil(user.user_id, "redacoes")
+
     return {
         "redacao": redacao.model_dump(),
         "avaliacao": avaliacao.model_dump(),

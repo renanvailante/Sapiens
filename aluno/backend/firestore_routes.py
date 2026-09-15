@@ -19,6 +19,7 @@ from auth import require_user, require_admin
 from models import User
 import ai_service
 import annotation_service
+import engajamento_service
 import firestore_service as fs
 import microdiagnostico
 import revisao_service
@@ -252,6 +253,19 @@ async def register_answer(payload: AnswerPayload, user: User = Depends(require_u
     # tela teria de perguntar ao servidor "esta resposta tem causa?" numa
     # segunda chamada, pagando de novo o que já estava na mão.
     raiz = None if acertou else causa_raiz(master, payload.alternativa_escolhida)
+
+    # XP e contadores de missão. É a ÚNICA porta por onde XP entra pela
+    # prática, e ela fica aqui, depois do evento de behavior já gravado, de
+    # propósito: assim é impossível somar XP sem que exista uma resposta real
+    # por trás. `registrar_acao` engole as próprias falhas (ver o docstring
+    # dele) — perder XP é aborrecimento, perder a resposta é perder o estudo.
+    await engajamento_service.registrar_acao(
+        user.user_id,
+        ["questao_respondida"] + (["questao_correta"] if acertou else []),
+        contadores={"questoes": 1, "acertos": 1 if acertou else 0},
+        nome=user.name,
+    )
+
     return {
         "acertou": acertou,
         "correta": correta_letra,

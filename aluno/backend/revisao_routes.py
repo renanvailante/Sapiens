@@ -24,6 +24,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
+import engajamento_service
 import firestore_service as fs
 import microdiagnostico
 import revisao_service
@@ -64,7 +65,16 @@ async def dispensar(user: User = Depends(require_user)):
 @router.post("/intervencao/concluir")
 async def concluir(user: User = Depends(require_user)):
     """O aluno foi trabalhar nisso. Libera a vaga sem contar dispensa."""
-    return await asyncio.to_thread(revisao_service.dispensar_intervencao, user.user_id, dispensada=False)
+    resultado = await asyncio.to_thread(
+        revisao_service.dispensar_intervencao, user.user_id, dispensada=False
+    )
+    # XP da revisão. Não dá para farmar clicando: existe UMA intervenção ativa
+    # por vez, e a próxima só nasce de evidência nova no motor cognitivo — o
+    # botão não fabrica trabalho, só declara o que já foi feito.
+    await engajamento_service.registrar_acao(
+        user.user_id, ["revisao_concluida"], contadores={"revisoes": 1}, nome=user.name
+    )
+    return resultado
 
 
 # ---------------------------------------------------------------------------

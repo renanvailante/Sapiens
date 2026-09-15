@@ -38,6 +38,9 @@ const MinhasQuestoes = lazy(() => import("./pages/MinhasQuestoes"));
 const MentisChat = lazy(() => import("./pages/MentisChat"));
 const SparksStore = lazy(() => import("./pages/SparksStore"));
 const Feed = lazy(() => import("./pages/Feed"));
+const Comunidade = lazy(() => import("./pages/Comunidade"));
+const ComunidadeDuvida = lazy(() => import("./pages/ComunidadeDuvida"));
+const Liga = lazy(() => import("./pages/Liga"));
 const Questoes = lazy(() => import("./pages/Questoes"));
 const Redacao = lazy(() => import("./pages/Redacao"));
 const Sugestoes = lazy(() => import("./pages/Sugestoes"));
@@ -58,6 +61,7 @@ const AdminCuradoria = lazy(() => import("./pages/AdminCuradoria"));
 const AdminPromoCodes = lazy(() => import("./pages/AdminPromoCodes"));
 const StudentHistory = lazy(() => import("./pages/StudentHistory"));
 const AdminTransacoes = lazy(() => import("./pages/AdminTransacoes"));
+const AdminComunidade = lazy(() => import("./pages/AdminComunidade"));
 
 function Carregando() {
   return (
@@ -117,6 +121,13 @@ function AppRouter() {
       <Route path="/mentis" element={<ProtectedRoute><Pagina titulo="Mentis"><MentisChat /></Pagina></ProtectedRoute>} />
       <Route path="/sparks" element={<ProtectedRoute><Pagina titulo="Sparks"><SparksStore /></Pagina></ProtectedRoute>} />
       <Route path="/feed" element={<ProtectedRoute><Pagina titulo="Feed"><Feed /></Pagina></ProtectedRoute>} />
+      <Route path="/comunidade" element={<ProtectedRoute><Pagina titulo="Comunidade"><Comunidade /></Pagina></ProtectedRoute>} />
+      <Route path="/comunidade/:duvidaId" element={<ProtectedRoute><Pagina titulo="Dúvida da comunidade"><ComunidadeDuvida /></Pagina></ProtectedRoute>} />
+      <Route path="/liga" element={<ProtectedRoute><Pagina titulo="Liga"><Liga /></Pagina></ProtectedRoute>} />
+      {/* "mural" e "duvidas" são como o aluno chama a aba; o redirect evita
+          que o palpite caia na página de "não encontrada". */}
+      <Route path="/mural" element={<Navigate to="/comunidade" replace />} />
+      <Route path="/duvidas" element={<Navigate to="/comunidade" replace />} />
       <Route path="/redacao" element={<ProtectedRoute><Pagina titulo="Redação"><Redacao /></Pagina></ProtectedRoute>} />
       <Route path="/sugestoes" element={<ProtectedRoute><Pagina titulo="Reclamações e sugestões"><Sugestoes /></Pagina></ProtectedRoute>} />
 
@@ -131,6 +142,7 @@ function AppRouter() {
       <Route path="/admin/promo-codes" element={<AdminRoute><Pagina titulo="Admin · Códigos de promoção"><AdminPromoCodes /></Pagina></AdminRoute>} />
       <Route path="/admin/users" element={<AdminRoute><Pagina titulo="Admin · Usuários"><AdminUsers /></Pagina></AdminRoute>} />
       <Route path="/admin/transacoes" element={<AdminRoute><Pagina titulo="Admin · Transações"><AdminTransacoes /></Pagina></AdminRoute>} />
+      <Route path="/admin/comunidade" element={<AdminRoute><Pagina titulo="Admin · Comunidade"><AdminComunidade /></Pagina></AdminRoute>} />
       <Route path="/admin/history" element={<AdminRoute><Pagina titulo="Admin · Histórico"><StudentHistory /></Pagina></AdminRoute>} />
 
       {/* Antes caía na landing: uma URL errada levava a pessoa para a página de

@@ -982,6 +982,42 @@ def grant_report_sparks(uid: str, report_id: str, amount: int = 5) -> dict[str, 
     return {"ja_concedido": False, **doc}
 
 
+def grant_sparks_evento(
+    uid: str, *, categoria: str, chave: str, amount: int, meta: Optional[dict[str, Any]] = None,
+) -> dict[str, Any]:
+    """Credita Sparks por um evento de engajamento, UMA única vez por
+    `(categoria, chave)`.
+
+    Uma função genérica no lugar de três quase idênticas
+    (`grant_missao_sparks`, `grant_comunidade_sparks`, `grant_indicacao_sparks`)
+    porque a única coisa que mudaria entre elas é o nome da subcoleção — e o
+    que importa, a garantia de não pagar duas vezes, é exatamente igual nas
+    três: `create()` sobre um caminho determinístico, no mesmo commit
+    transacional do incremento do saldo (ver `_conceder_sparks_atomico`).
+
+    A chave tem que ser determinística e conter tudo que distingue o evento.
+    Missão diária: `"2026-09-15:responder5"` — o mesmo aluno pode cumprir a
+    mesma missão amanhã, e amanhã é outro pagamento; o mesmo dia não.
+
+    `categoria` vira o nome da subcoleção, então cada tipo de recompensa fica
+    auditável em separado, do mesmo jeito que `sparks_rounds` e `sparks_reports`.
+    """
+    caminho = f"sparks_{categoria}"
+    ref = _student_doc_ref(uid).collection(caminho).document(chave)
+    doc = {
+        "categoria": categoria,
+        "chave": chave,
+        "student_id": uid,
+        "sparks_ganhos": amount,
+        "meta": meta or {},
+        "created_at": _now_iso(),
+    }
+    if not _conceder_sparks_atomico(ref, doc, uid, amount):
+        existente = ref.get().to_dict() or {}
+        return {"ja_concedido": True, **existente, "sparks_ganhos": 0}
+    return {"ja_concedido": False, **doc}
+
+
 def grant_admin_sparks(uid: str, *, amount: int, admin_email: str, motivo: str = "") -> dict[str, Any]:
     """Credita Sparks manualmente por ação de um admin (suporte, ajuste de
     saldo, teste). Ao contrário de `grant_round_sparks`/`grant_question_sparks`/

@@ -4,7 +4,8 @@ import { api } from "../lib/api";
 import IntervencaoMentis from "../components/IntervencaoMentis";
 import CardDeMelhora from "../components/CardDeMelhora";
 import { ResumoDaFila } from "../components/FilaDeRevisao";
-import Nav from "../components/Nav";
+import Nav, { EVENTO_SPARKS } from "../components/Nav";
+import PainelDeProgresso from "../components/PainelDeProgresso";
 import OnboardingTour from "../components/OnboardingTour";
 import AulasParticularesModal from "../components/AulasParticularesModal";
 import Mentis from "../components/Mentis";
@@ -14,7 +15,7 @@ import {
   ArrowRight, Sparkles, Flame, Zap, Target, Network, Trophy, ListChecks, Medal, Award,
   CheckCircle2, GraduationCap, CloudOff, RotateCw, Star, Rocket, Crown, Gem, Layers,
   CalendarDays, TrendingUp, BookOpen, Compass, Flag, PenLine, HelpCircle, PlayCircle,
-  MessageSquareWarning,
+  MessageSquareWarning, Users,
 } from "lucide-react";
 import { useAuth } from "../lib/auth";
 
@@ -67,8 +68,6 @@ function computeWeek(dates) {
   }
   return days;
 }
-
-const WEEKDAY_LABEL = ["D", "S", "T", "Q", "Q", "S", "S"];
 
 // ---------------- Conquistas ----------------
 // Cada uma computada de dados que já existem, nunca de um contador à parte
@@ -324,6 +323,20 @@ export default function Dashboard() {
 
   useEffect(() => { carregar(); }, [carregar]);
 
+  // O saldo de Sparks muda DENTRO desta página: resgatar uma missão credita
+  // sem trocar de rota. Sem isto o card "Sparks" continuava exibindo o valor
+  // de antes do resgate, contradizendo o próprio aviso de "+8 Sparks" que a
+  // tela acabara de dar. Só o saldo é relido — recarregar o painel inteiro a
+  // cada moeda seria pagar dez chamadas por uma.
+  useEffect(() => {
+    const relerSaldo = () =>
+      api.get("/firestore/students/me/sparks")
+        .then(({ data }) => setSparks(data.sparks_balance))
+        .catch(() => {});
+    window.addEventListener(EVENTO_SPARKS, relerSaldo);
+    return () => window.removeEventListener(EVENTO_SPARKS, relerSaldo);
+  }, []);
+
   const latest = analyses[0];
   const streak = computeStreak(activityDates);
   const week = computeWeek(activityDates);
@@ -564,25 +577,22 @@ export default function Dashboard() {
           </div>
         </section>
 
-        {/* Sequência · Semana · Questões · Sparks */}
-        <div className="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-4" data-tour="dash-stats">
-          <Estatistica icone={Flame} rotulo="Sequência" valor={streak} sufixo={streak === 1 ? "dia" : "dias"} testid="dash-streak" />
+        {/* OFENSIVA · NÍVEL · LIGA · MISSÕES DO DIA.
+            Vem logo depois do herói porque responde "o que mudou desde ontem
+            e o que eu faço agora" — e some sozinho se a chamada falhar.
 
-          <div className="card-sapiens rounded-2xl p-5" data-testid="dash-week">
-            <div className="font-mono-alt text-[10px] uppercase tracking-[0.3em] text-zinc-400">Esta semana</div>
-            <div className="mt-2 flex items-center justify-between">
-              {week.map((d) => (
-                <div key={d.key} className="flex flex-col items-center gap-1" data-testid={`dash-week-${d.key}`}>
-                  <span className="text-[9px] text-zinc-400">{WEEKDAY_LABEL[new Date(d.key + "T00:00:00Z").getUTCDay()]}</span>
-                  <span
-                    className={`w-5 h-5 rounded-full ${d.active ? "bg-sapiens-accent" : "bg-zinc-100"} ${d.isToday ? "ring-2 ring-offset-2 ring-sapiens-accentSoft" : ""}`}
-                  />
-                </div>
-              ))}
-            </div>
-            <div className="mt-2 text-xs text-zinc-500">{weekActiveDays}/7 dias com estudo</div>
-          </div>
+            A sequência e a fita da semana moravam aqui embaixo, calculadas no
+            navegador a partir de `activityDates`. Saíram de propósito: aquele
+            cálculo não conhece congelador, então, no dia em que um congelador
+            salvasse a ofensiva, esta tela mostraria 0 dias no card de cima e
+            12 no de baixo. Duas respostas para a mesma pergunta na mesma tela
+            é pior do que qualquer uma das duas. Agora o servidor é a única
+            fonte. */}
+        <div className="mt-6">
+          <PainelDeProgresso />
+        </div>
 
+        <div className="mt-4 grid grid-cols-2 gap-4" data-tour="dash-stats">
           <Estatistica icone={ListChecks} rotulo="Respondidas" valor={totalRespondidas} tint="text-sapiens-accentDeep" testid="dash-respondidas" />
 
           <Link to="/sparks" className="lift block" data-testid="dash-sparks-link">
@@ -900,6 +910,32 @@ export default function Dashboard() {
             Solicitar aula <ArrowRight className="w-4 h-4" />
           </button>
         </div>
+
+        {/* COMUNIDADE. Mora no menu "mais" (a barra não tem largura para mais
+            um item — ver a nota de medição em `Nav.jsx`), então é este card
+            que a torna descobrível. O convite fala das duas pontas: quem está
+            travado publica, quem sabe responde e ganha Sparks. */}
+        <Link
+          to="/comunidade"
+          className="lift card-sapiens mt-4 flex flex-col gap-4 rounded-2xl p-6 md:flex-row md:items-center md:p-7"
+          data-testid="dash-comunidade"
+        >
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-sapiens-accent/25 bg-sapiens-accent/15 text-sapiens-accent">
+            <Users className="h-6 w-6" strokeWidth={1.8} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="font-display text-lg font-bold tracking-tight text-zinc-950">
+              Travou numa questão? Pergunte à comunidade.
+            </div>
+            <div className="mt-1 text-sm text-zinc-500">
+              Publicar é de graça. E quando a sua resposta resolve a dúvida de outro aluno, você ganha
+              Sparks — explicar é o estudo que mais rende.
+            </div>
+          </div>
+          <span className="pill btn-vidro inline-flex shrink-0 items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm">
+            Abrir o mural <ArrowRight className="h-4 w-4" />
+          </span>
+        </Link>
 
         {/* Conquistas — cada uma computada de dados que já existem */}
         <div className="mt-4 card-sapiens rounded-2xl p-5" data-testid="dash-achievements" data-tour="dash-achievements">

@@ -3,6 +3,7 @@ redação — sem banco real, síncronos por baixo mas com a mesma interface
 `async def` que o código de produção espera."""
 from __future__ import annotations
 
+import copy
 import sys
 from pathlib import Path
 
@@ -13,15 +14,72 @@ BACKEND = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BACKEND))
 
 
+def _chave_ordenavel(valor):
+    """Ordena mesmo com `None` no meio (campo ausente em parte dos documentos).
+
+    Comparar `None` com `str` ou `int` levanta `TypeError` em Python, e é
+    exatamente o que acontece quando se ordena por um campo opcional —
+    `destacada_ate` só existe em dúvida destacada. O Mongo põe ausente/nulo
+    ANTES de tudo na ordem crescente; a tupla `(0, "")` reproduz isso.
+    """
+    if valor is None:
+        return (0, "")
+    if isinstance(valor, bool):
+        return (1, int(valor))
+    if isinstance(valor, (int, float)):
+        return (1, valor)
+    return (2, str(valor))
+
+
+def _avaliar_expr(expr, doc: dict):
+    """Avalia a expressão de agregação do `$addFields` usada pelo mural:
+    referência de campo (`"$campo"`), `$cond`, `$gt`. Nada além disso — um
+    operador novo deve falhar alto aqui, não devolver `None` calado."""
+    if isinstance(expr, str) and expr.startswith("$"):
+        return doc.get(expr[1:])
+    if isinstance(expr, dict):
+        if "$cond" in expr:
+            teste, entao, senao = expr["$cond"]
+            return entao if _avaliar_expr(teste, doc) else senao
+        if "$gt" in expr:
+            a, b = (_avaliar_expr(x, doc) for x in expr["$gt"])
+            return a is not None and b is not None and a > b
+        raise NotImplementedError(f"expressão {list(expr)} não suportada pelo dublê")
+    return expr
+
+
 class FakeCursor:
+    """`sort` e `limit` ORDENAM e CORTAM de verdade.
+
+    Eram no-ops que devolviam `self`. Um teste de ranking (quem está em 1º na
+    liga) ou de "a resposta marcada como melhor aparece primeiro" passava sem
+    provar nada: a ordem que ele observava era a de inserção, não a que o Mongo
+    real produziria. Um dublê que aceita a chamada e ignora o efeito é pior que
+    um que não a suporta — o segundo quebra, o primeiro mente.
+    """
+
     def __init__(self, docs: list[dict]):
         self._docs = docs
         self._i = 0
 
-    def sort(self, *args, **kwargs):
+    def sort(self, campo_ou_lista, direcao: int = 1):
+        pares = (
+            list(campo_ou_lista)
+            if isinstance(campo_ou_lista, (list, tuple))
+            else [(campo_ou_lista, direcao)]
+        )
+        for campo, dir_ in reversed(pares):
+            self._docs.sort(key=lambda d: _chave_ordenavel(d.get(campo)), reverse=dir_ < 0)
         return self
 
-    def limit(self, *args, **kwargs):
+    def limit(self, n: int):
+        if n:
+            self._docs = self._docs[:n]
+        return self
+
+    def skip(self, n: int):
+        if n:
+            self._docs = self._docs[n:]
         return self
 
     async def to_list(self, length=None):
@@ -45,9 +103,18 @@ class FakeUpdateResult:
     fato mudou (a exclusão de conta reporta quantos pagamentos anonimizou).
     Aqui os dois são iguais porque o dublê sempre aplica o update que casou."""
 
-    def __init__(self, matched_count: int):
+    def __init__(self, matched_count: int, upserted_id=None, modified_count: int | None = None):
         self.matched_count = matched_count
-        self.modified_count = matched_count
+        # Por padrão, casou = modificou (o que basta para a maioria dos
+        # chamadores). `update_one` passa o valor de verdade, comparando o
+        # documento antes e depois — ver o comentário lá.
+        self.modified_count = matched_count if modified_count is None else modified_count
+        # `UpdateResult.upserted_id` é como se distingue "criei o documento
+        # agora" de "já existia e nada mudou" — os dois chegam com
+        # `modified_count == 0`. A guarda de chave única do motor de
+        # engajamento (`registrar_acao(chave_unica=...)`) depende dessa
+        # diferença para não pagar XP duas vezes pelo mesmo bloco.
+        self.upserted_id = upserted_id
 
 
 class FakeDeleteResult:
@@ -84,9 +151,36 @@ class FakeCollection:
         ),
     }
 
+    @staticmethod
+    def _caminho(doc: dict, caminho: str):
+        """Resolve `"a.b"` e também `"lista.0"` — índice numérico dentro de
+        array, que é como o Mongo pergunta "esta lista tem pelo menos um
+        elemento?" (`{"reportada_por.0": {"$exists": true}}`, a consulta da
+        fila de moderação)."""
+        alvo = doc
+        for parte in caminho.split("."):
+            if isinstance(alvo, list):
+                if not parte.isdigit() or int(parte) >= len(alvo):
+                    return None
+                alvo = alvo[int(parte)]
+            elif isinstance(alvo, dict):
+                alvo = alvo.get(parte)
+            else:
+                return None
+        return alvo
+
     def _bate(self, doc: dict, query: dict) -> bool:
         for k, v in query.items():
-            atual = doc.get(k)
+            # `$or` é operador de nível de consulta, não nome de campo.
+            if k == "$or":
+                if not any(self._bate(doc, sub) for sub in v):
+                    return False
+                continue
+            if isinstance(v, dict) and "$exists" in v:
+                if (self._caminho(doc, k) is not None) != bool(v["$exists"]):
+                    return False
+                continue
+            atual = self._caminho(doc, k) if "." in k else doc.get(k)
             if isinstance(v, dict) and any(op in v for op in self._OPS):
                 for op, esperado in v.items():
                     if not self._OPS[op](atual, esperado):
@@ -199,13 +293,23 @@ class FakeCollection:
     async def update_one(self, query: dict, update: dict, upsert: bool = False):
         for doc in self.docs:
             if self._bate(doc, query):
+                # `modified_count` é 0 quando o update CASOU mas não mudou
+                # nada — `$addToSet` de um elemento que já está na lista, ou
+                # `$set` do mesmo valor. O dublê devolvia 1 nesses casos, e com
+                # isso toda guarda do tipo "só passa se eu fui quem inseriu"
+                # (a chave única do motor de engajamento) parecia funcionar no
+                # teste e não funcionava no Mongo. Comparar antes/depois é a
+                # única forma de o dublê contar a mesma coisa que o banco.
+                antes = copy.deepcopy(doc)
                 self._aplicar_update(doc, update)
-                return FakeUpdateResult(matched_count=1)
+                return FakeUpdateResult(matched_count=1, modified_count=int(antes != doc))
         if upsert:
-            novo = dict(query)
+            # `$ne`/`$gt` e afins no filtro são CONDIÇÃO de busca, não valor
+            # inicial: o Mongo não cria um campo com `{"$ne": "x"}` dentro.
+            novo = {k: v for k, v in query.items() if not isinstance(v, dict)}
             self._aplicar_update(novo, update)
             self.docs.append(novo)
-            return FakeUpdateResult(matched_count=0)
+            return FakeUpdateResult(matched_count=0, upserted_id=novo.get("_id", True))
         return FakeUpdateResult(matched_count=0)
 
     async def update_many(self, query: dict, update: dict):
@@ -236,6 +340,38 @@ class FakeCollection:
 
     async def count_documents(self, query: dict | None = None):
         return len([d for d in self.docs if self._bate(d, query or {})])
+
+    def aggregate(self, pipeline: list[dict]):
+        """Suporte a `$match`, `$addFields`, `$sort`, `$skip`, `$limit` e
+        `$project` — os estágios que o mural de dúvidas usa.
+
+        O mural precisa de agregação por um motivo real: "destaque comprado
+        sobe ao topo ENQUANTO vale" é uma ordenação por um campo que não está
+        guardado (a comparação de `destacada_ate` com o instante de agora).
+        Sem `$addFields`, um destaque VENCIDO continuaria ordenando acima de
+        todo mundo — o aluno teria comprado 24h e levado para sempre.
+        """
+        docs = [dict(d) for d in self.docs]
+        for estagio in pipeline:
+            (op, arg), = estagio.items()
+            if op == "$match":
+                docs = [d for d in docs if self._bate(d, arg)]
+            elif op == "$addFields":
+                for d in docs:
+                    for campo, expr in arg.items():
+                        d[campo] = _avaliar_expr(expr, d)
+            elif op == "$sort":
+                for campo, direcao in reversed(list(arg.items())):
+                    docs.sort(key=lambda d: _chave_ordenavel(d.get(campo)), reverse=direcao < 0)
+            elif op == "$skip":
+                docs = docs[arg:]
+            elif op == "$limit":
+                docs = docs[:arg]
+            elif op == "$project":
+                docs = [self._projetar(d, arg) for d in docs]
+            else:  # pragma: no cover - estágio novo precisa entrar aqui de propósito
+                raise NotImplementedError(f"estágio {op} não suportado pelo dublê")
+        return FakeCursor(docs)
 
 
 class FakeDB:
@@ -341,6 +477,35 @@ def _sem_firestore_real(monkeypatch):
     import firestore_service
 
     monkeypatch.setattr(firestore_service, "get_firestore", lambda *a, **k: _ClienteSemRede())
+
+
+@pytest.fixture(autouse=True)
+def _sem_mongo_real_no_engajamento():
+    """A outra metade do vazamento descrito acima: o MONGO da máquina.
+
+    `_sem_firestore_real` fecha o Firestore, mas o `_db` que `import server`
+    espalha é um cliente de Mongo REAL, e ele continuava ligado nos módulos que
+    ninguém redublava. O motor de engajamento tornou isso visível: as rotas de
+    responder questão, concluir bloco e corrigir redação agora chamam
+    `registrar_acao`, então rodar a suíte escrevia XP, contador do dia e linha
+    de LIGA no banco local, em nome dos usuários de fixture (`U1`, `U-cron`).
+
+    O sintoma foi bizarro e instrutivo: a liga do desenvolvedor aparecia com
+    dois competidores que nunca existiram — a suíte de testes fabricando
+    exatamente os adversários fantasmas que `engajamento.py` promete não criar.
+
+    Com `_db = None`, `registrar_acao` sai pelo atalho de "sem Mongo" e não
+    escreve nada. Quem precisa do banco no teste põe o próprio dublê, que roda
+    depois desta fixture e vence (é o que `test_engajamento.py` faz).
+    """
+    import comunidade
+    import engajamento_service
+
+    for modulo in (engajamento_service, comunidade):
+        modulo.set_db(None)
+    yield
+    for modulo in (engajamento_service, comunidade):
+        modulo.set_db(None)
 
 
 class _TransacaoFalsa:

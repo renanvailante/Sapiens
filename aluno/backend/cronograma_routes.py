@@ -43,6 +43,7 @@ from pydantic import BaseModel, Field
 import ai_service
 import annotation_service
 import cronograma as cg
+import engajamento_service
 import firestore_service as fs
 import llm_telemetry
 import prioridade_enem
@@ -866,6 +867,20 @@ async def concluir_bloco(bloco_id: str, payload: ConcluirPayload, user: User = D
     # problema dele mesmo.
     concluidos = dict(sorted(concluidos.items(), reverse=True)[:6])
     await _gravar(user.user_id, {"concluidos": concluidos})
+
+    # XP pelo bloco cumprido — com `chave_unica`, porque desmarcar e marcar de
+    # novo não pode virar uma máquina de XP. Continua valendo o que o docstring
+    # acima diz: isto NÃO é evidência de aprendizagem e não toca o diagnóstico;
+    # é só o reconhecimento de ter seguido o próprio plano.
+    if payload.concluido:
+        await engajamento_service.registrar_acao(
+            user.user_id,
+            ["bloco_cronograma"],
+            contadores={"blocos": 1},
+            nome=user.name,
+            chave_unica=f"bloco:{semana_iso}:{bloco_id}",
+        )
+
     total = len(plano.get("blocos") or [])
     return {
         "bloco_id": bloco_id,

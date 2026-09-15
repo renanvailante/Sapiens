@@ -43,6 +43,7 @@ from pydantic import BaseModel, Field
 from pymongo.errors import DuplicateKeyError
 
 import ai_service
+import engajamento_service
 import firestore_service as fs
 import llm_cache
 import llm_telemetry
@@ -365,6 +366,15 @@ async def responder(hab_id: str, payload: ResponderRequest, user: User = Depends
     # `grant_question_sparks` (mesmo `DocumentReference.create()` que
     # `grant_round_sparks`/`grant_purchase_sparks` já usam).
     ganho = fs.grant_question_sparks(user.user_id, item_id)
+
+    # Mesmo XP da questão do ENEM: praticar é praticar. O contador `treino` é
+    # o que a missão "10 questões do banco de treino" lê.
+    await engajamento_service.registrar_acao(
+        user.user_id,
+        ["questao_respondida"] + (["questao_correta"] if resultado["acertou"] else []),
+        contadores={"treino": 1, "questoes": 1, "acertos": 1 if resultado["acertou"] else 0},
+        nome=user.name,
+    )
 
     stats = fs.ler_treino_stats(user.user_id).get(hab_id, {"respondidas": 0, "acertos": 0})
     return {
