@@ -58,6 +58,14 @@ class User(BaseModel):
     # por link a concedem. Sem ela, uma senha criada por terceiro é invalidada
     # no primeiro login Google da dona real (ver `auth.google_sign_in`).
     email_verificado: bool = False
+    # Código de promoção efetivamente APLICADO no cadastro (já normalizado em
+    # maiúsculas), e quantos Sparks ele deu. `None` significa duas coisas
+    # diferentes que a tela distingue pela data da conta: cadastro sem código,
+    # ou conta anterior a 2026-09-15, quando o vínculo aluno↔código passou a
+    # ser gravado. Antes disso só existia o contador global `promo_codes.usos`,
+    # que diz QUANTOS usaram e nunca QUEM.
+    promo_code: str | None = None
+    promo_sparks: int | None = None
     created_at: str = Field(default_factory=_now_iso)
 
 

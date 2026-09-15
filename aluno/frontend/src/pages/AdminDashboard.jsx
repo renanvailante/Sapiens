@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { api, errMsg} from "../lib/api";
 import Nav from "../components/Nav";
-import { FileText, Zap, Brain, Users, ClipboardList, ArrowRight, ShieldCheck, RefreshCw, Database, GraduationCap, Flag, Ticket, Gift, MessageSquareWarning } from "lucide-react";
+import { FileText, Zap, Brain, Users, ClipboardList, ArrowRight, ShieldCheck, RefreshCw, Database, GraduationCap, Flag, Ticket, Gift, MessageSquareWarning, Receipt } from "lucide-react";
 
 function StatCard({ label, value, hint }) {
   return (
@@ -34,8 +34,10 @@ const SECTIONS = [
     desc: "Criar e gerenciar códigos que dão Sparks de bônus no cadastro." },
   { to: "/admin/history", icon: ClipboardList, title: "Histórico do Aluno",
     desc: "Response Event Store — histórico append-only por aluno com filtros." },
-  { to: "/admin/users", icon: Users, title: "Usuários & permissões",
-    desc: "Conceder ou revogar acesso administrativo aos usuários." },
+  { to: "/admin/users", icon: Users, title: "Alunos & permissões",
+    desc: "Saldo de Sparks, questões respondidas e cupom de cada aluno — e a ficha completa ao clicar. Também concede ou revoga acesso admin." },
+  { to: "/admin/transacoes", icon: Receipt, title: "Transações de Sparks",
+    desc: "Toda cobrança já registrada: quem comprou, qual pacote, quanto tinha de saldo, quando e por qual forma de pagamento." },
 ];
 
 export default function AdminDashboard() {

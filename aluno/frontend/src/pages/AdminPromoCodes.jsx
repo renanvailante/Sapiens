@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { api, errMsg } from "../lib/api";
 import Nav from "../components/Nav";
-import { Ticket, Plus, Trash2 } from "lucide-react";
+import { Ticket, Plus, Trash2, Users, ChevronDown, ChevronRight } from "lucide-react";
 
 function formatDate(iso) {
   try {
@@ -18,8 +18,18 @@ export default function AdminPromoCodes() {
   const [code, setCode] = useState("");
   const [amount, setAmount] = useState("");
   const [creating, setCreating] = useState(false);
+  const [aberto, setAberto] = useState(null);
+  const [totalComCupom, setTotalComCupom] = useState(null);
 
-  const load = () => api.get("/admin/promo-codes").then(({ data }) => { setCodes(data); setLoaded(true); });
+  // `/uso` devolve o catálogo JÁ enriquecido com quem usou cada código — é
+  // um superconjunto de `/admin/promo-codes`, então uma chamada só serve a
+  // tela inteira (criar/ativar/excluir continuam usando as rotas de sempre).
+  const load = () =>
+    api.get("/admin/promo-codes/uso").then(({ data }) => {
+      setCodes(data.items || []);
+      setTotalComCupom(data.total_alunos_com_cupom ?? null);
+      setLoaded(true);
+    });
   useEffect(() => { load(); }, []);
 
   const criar = async (e) => {
@@ -32,7 +42,7 @@ export default function AdminPromoCodes() {
     setCreating(true);
     try {
       const { data } = await api.post("/admin/promo-codes", { code: code.trim(), sparks_amount: valor });
-      setCodes((prev) => [data, ...prev]);
+      setCodes((prev) => [{ ...data, alunos: [], alunos_count: 0, usos_sem_vinculo: 0 }, ...prev]);
       setCode("");
       setAmount("");
       toast.success(`Código ${data.code} criado.`);
@@ -46,7 +56,8 @@ export default function AdminPromoCodes() {
   const alternarAtivo = async (c) => {
     try {
       const { data } = await api.patch(`/admin/promo-codes/${c.code}`, { active: !c.active });
-      setCodes((prev) => prev.map((x) => (x.code === c.code ? data : x)));
+      // Preserva os campos de uso: o PATCH devolve só o documento do catálogo.
+      setCodes((prev) => prev.map((x) => (x.code === c.code ? { ...x, ...data } : x)));
     } catch (e) {
       toast.error(errMsg(e, "Falha ao atualizar código."));
     }
@@ -77,6 +88,13 @@ export default function AdminPromoCodes() {
         <p className="mt-3 text-white/60 max-w-lg">
           Quem se cadastra sem código ganha o bônus padrão de Sparks. Com um código ativo, ganha a quantidade programada aqui em vez do padrão.
         </p>
+        {totalComCupom != null && (
+          <p className="mt-2 text-white/40 text-sm max-w-lg">
+            {totalComCupom} conta(s) com cupom registrado. O vínculo aluno↔cupom passou a ser
+            gravado em 15/09/2026 — cadastros anteriores contam em “usos” sem aparecer na lista de
+            alunos.
+          </p>
+        )}
 
         <form onSubmit={criar} className="mt-8 card-sapiens rounded-2xl p-6 flex flex-col md:flex-row gap-3 md:items-end">
           <div className="flex-1">
@@ -122,8 +140,43 @@ export default function AdminPromoCodes() {
                   </span>
                 </div>
                 <div className="mt-1 text-sm text-zinc-500">
-                  {c.sparks_amount} Sparks · usado {c.usos || 0}x · criado em {formatDate(c.created_at)}
+                  {c.sparks_amount} Sparks · usado {c.usos || 0}x
+                  {c.created_at && <> · criado em {formatDate(c.created_at)}</>}
+                  {c.excluido && <> · <span className="text-rose-500">excluído do catálogo</span></>}
                 </div>
+                <button
+                  onClick={() => setAberto(aberto === c.code ? null : c.code)}
+                  // `flex-wrap`: com o aviso de usos antigos a linha passa da
+                  // largura da coluna, e um `inline-flex` sem quebra mantinha
+                  // a altura de uma linha só — o rótulo sumia atrás do card.
+                  className="mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-left text-xs font-medium text-zinc-600 hover:underline"
+                  data-testid={`admin-promo-alunos-${c.code}`}
+                >
+                  {aberto === c.code ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                  <Users className="w-3.5 h-3.5" />
+                  {c.alunos_count} aluno(s) com este cupom
+                  {c.usos_sem_vinculo > 0 && (
+                    <span className="text-zinc-400">
+                      (+{c.usos_sem_vinculo} uso(s) anteriores ao registro)
+                    </span>
+                  )}
+                </button>
+                {aberto === c.code && (
+                  <div className="mt-3 space-y-1.5">
+                    {c.alunos.length === 0 && (
+                      <div className="text-xs text-zinc-400">Nenhuma conta vinculada a este cupom.</div>
+                    )}
+                    {c.alunos.map((a) => (
+                      <div key={a.user_id} className="flex items-center gap-3 border border-zinc-100 rounded-xl px-3 py-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium text-zinc-900 truncate">{a.name}</div>
+                          <div className="text-xs text-zinc-500 truncate">{a.email}</div>
+                        </div>
+                        <div className="text-xs font-mono-alt text-zinc-400 shrink-0">{formatDate(a.created_at)}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <button

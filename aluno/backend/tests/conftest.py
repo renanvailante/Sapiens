@@ -100,12 +100,35 @@ class FakeCollection:
                 return False
         return True
 
+    @staticmethod
+    def _projetar(doc: dict, projection: dict | None) -> dict:
+        """Aplica a projeção como o Mongo real: `{"campo": 0}` exclui,
+        `{"campo": 1}` inclui só o que foi pedido, e `_id` é o único campo que
+        pode ser excluído no meio de uma projeção de inclusão.
+
+        O dublê ignorava a projeção e devolvia o documento inteiro. Isso não é
+        só imprecisão: `admin_routes.list_users` depende de
+        `{"password_hash": 0}` para o hash de senha de todo aluno não sair na
+        resposta de uma tela de admin, e nenhum teste conseguia provar isso —
+        o dublê devolvia o hash e o servidor não.
+        """
+        if not projection:
+            return dict(doc)
+        incluir = {k for k, v in projection.items() if v and k != "_id"}
+        if incluir:
+            saida = {k: doc[k] for k in incluir if k in doc}
+            if projection.get("_id") and "_id" in doc:
+                saida["_id"] = doc["_id"]
+            return saida
+        excluir = {k for k, v in projection.items() if not v}
+        return {k: v for k, v in doc.items() if k not in excluir}
+
     async def find_one(self, query: dict, projection: dict | None = None, sort=None):
         candidatos = [d for d in self.docs if self._bate(d, query)]
         if sort:
             for campo, direcao in reversed(list(sort)):
                 candidatos.sort(key=lambda d: d.get(campo) or "", reverse=direcao < 0)
-        return dict(candidatos[0]) if candidatos else None
+        return self._projetar(candidatos[0], projection) if candidatos else None
 
     @staticmethod
     def _set_dotted(doc: dict, caminho: str, valor) -> None:
@@ -207,7 +230,9 @@ class FakeCollection:
 
     def find(self, query: dict | None = None, projection: dict | None = None):
         query = query or {}
-        return FakeCursor([d for d in self.docs if self._bate(d, query)])
+        return FakeCursor(
+            [self._projetar(d, projection) for d in self.docs if self._bate(d, query)]
+        )
 
     async def count_documents(self, query: dict | None = None):
         return len([d for d in self.docs if self._bate(d, query or {})])

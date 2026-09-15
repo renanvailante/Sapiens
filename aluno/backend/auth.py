@@ -163,17 +163,42 @@ async def require_admin(request: Request) -> User:
     return user
 
 
-async def _bonus_de_cadastro(promo_code: str | None) -> int:
+async def _bonus_de_cadastro(promo_code: str | None) -> tuple[int, str | None, int | None]:
     """Sparks iniciais da conta nova: valor do código de promoção se um
     código ativo foi informado, senão o bônus padrão. Importado aqui dentro
     (não no topo do módulo) porque `promo_codes_routes` importa `require_admin`
     deste próprio arquivo — import no topo criaria um ciclo.
+
+    Devolve `(sparks, codigo_aplicado, sparks_do_codigo)`. O código volta
+    NORMALIZADO (maiúsculas) e só quando de fato valeu — código inexistente ou
+    desativado devolve `None`, que é o que faz o cadastro registrar "sem
+    cupom" em vez do texto que a pessoa digitou. Sem esses dois campos extras,
+    a única memória de promoção era o contador `promo_codes.usos`: sabia-se
+    quantas contas usaram um código e nunca QUAIS.
     """
     import firestore_service as fs
     import promo_codes_routes as promo_module
 
-    valor = await promo_module.validar_e_registrar_uso(promo_code)
-    return valor if valor is not None else fs.SPARKS_INITIAL_BALANCE
+    aplicado = await promo_module.validar_e_registrar_uso(promo_code)
+    if aplicado is None:
+        return fs.SPARKS_INITIAL_BALANCE, None, None
+    return aplicado["sparks_amount"], aplicado["code"], aplicado["sparks_amount"]
+
+
+async def _registrar_cupom(user_id: str, code: str | None, sparks: int | None) -> None:
+    """Carimba na conta o cupom que valeu no cadastro.
+
+    Uma escrita separada, logo depois do `insert_one`, e não um campo no
+    `User` construído antes: a ORDEM importa. `validar_e_registrar_uso`
+    incrementa o contador de usos do código, e incrementá-lo antes de a conta
+    existir faria um cadastro que falhasse (e-mail duplicado numa corrida)
+    consumir um uso de cupom que ninguém recebeu.
+    """
+    if not code:
+        return
+    await _db.users.update_one(
+        {"user_id": user_id}, {"$set": {"promo_code": code, "promo_sparks": sparks}}
+    )
 
 
 @router.post("/signup")
@@ -194,7 +219,8 @@ async def signup(
         is_admin=_is_admin_email(payload.email),
     )
     await _db.users.insert_one(user.model_dump())
-    sparks_iniciais = await _bonus_de_cadastro(payload.promo_code)
+    sparks_iniciais, cupom, cupom_sparks = await _bonus_de_cadastro(payload.promo_code)
+    await _registrar_cupom(user.user_id, cupom, cupom_sparks)
     fs.ensure_student_profile(user.user_id, user.name, user.email, initial_sparks=sparks_iniciais)
     token = await _create_session(user.user_id)
     _set_cookie(response, token)
@@ -305,7 +331,8 @@ async def google_sign_in(
         )
         await _db.users.insert_one(novo.model_dump())
         user_id = novo.user_id
-        sparks_iniciais = await _bonus_de_cadastro(promo_code)
+        sparks_iniciais, cupom, cupom_sparks = await _bonus_de_cadastro(promo_code)
+        await _registrar_cupom(user_id, cupom, cupom_sparks)
         fs.ensure_student_profile(user_id, nome, email, initial_sparks=sparks_iniciais)
 
     token = await _create_session(user_id)

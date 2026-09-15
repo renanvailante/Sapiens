@@ -57,6 +57,7 @@ const AdminSugestoes = lazy(() => import("./pages/AdminSugestoes"));
 const AdminCuradoria = lazy(() => import("./pages/AdminCuradoria"));
 const AdminPromoCodes = lazy(() => import("./pages/AdminPromoCodes"));
 const StudentHistory = lazy(() => import("./pages/StudentHistory"));
+const AdminTransacoes = lazy(() => import("./pages/AdminTransacoes"));
 
 function Carregando() {
   return (
@@ -129,6 +130,7 @@ function AppRouter() {
       <Route path="/admin/curadoria" element={<AdminRoute><Pagina titulo="Admin · Curadoria"><AdminCuradoria /></Pagina></AdminRoute>} />
       <Route path="/admin/promo-codes" element={<AdminRoute><Pagina titulo="Admin · Códigos de promoção"><AdminPromoCodes /></Pagina></AdminRoute>} />
       <Route path="/admin/users" element={<AdminRoute><Pagina titulo="Admin · Usuários"><AdminUsers /></Pagina></AdminRoute>} />
+      <Route path="/admin/transacoes" element={<AdminRoute><Pagina titulo="Admin · Transações"><AdminTransacoes /></Pagina></AdminRoute>} />
       <Route path="/admin/history" element={<AdminRoute><Pagina titulo="Admin · Histórico"><StudentHistory /></Pagina></AdminRoute>} />
 
       {/* Antes caía na landing: uma URL errada levava a pessoa para a página de

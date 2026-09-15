@@ -506,8 +506,18 @@ async def process_payment_webhook(db, mp_payment_id: str) -> dict:
             currency=existing["currency"],
             source=existing["source"],
         )
+        # Copia o saldo antes/depois carimbado no comprovante do Firestore
+        # (`grant_purchase_sparks`) para o registro de cobrança do Mongo. É o
+        # que deixa o painel de transações mostrar "tinha X, ficou com Y" sem
+        # ler o Firestore uma vez por linha da tabela. `.get()` e não índice:
+        # pagamentos creditados ANTES desta feature não têm os campos, e a
+        # tela mostra "—" para eles em vez de inventar um número.
+        atualizacao = {"credited": True, "updated_at": _now_iso()}
+        if resultado.get("saldo_antes") is not None:
+            atualizacao["saldo_antes"] = resultado["saldo_antes"]
+            atualizacao["saldo_apos"] = resultado.get("saldo_apos")
         await db.sparks_payments.update_one(
-            {"mp_payment_id": mp_payment_id}, {"$set": {"credited": True, "updated_at": _now_iso()}}
+            {"mp_payment_id": mp_payment_id}, {"$set": atualizacao}
         )
         return {"matched": True, "credited": True, "ja_creditado": resultado.get("ja_creditado", False)}
 

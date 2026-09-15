@@ -703,6 +703,90 @@ def list_students_with_behavior(limit: int = 500) -> list[dict[str, Any]]:
     return rows[:limit]
 
 
+def resumo_dos_alunos() -> dict[str, dict[str, Any]]:
+    """Saldo de Sparks e volume de respostas de TODOS os alunos, por uid.
+
+    Uma varredura de `students`, 1 leitura por aluno — a mesma ordem de
+    grandeza de `list_students_with_behavior`, e pelo mesmo motivo: o painel
+    de admin precisa de um número por aluno, não do histórico de ninguém (ver
+    `project_aluno_disciplina_leitura_firestore`).
+
+    **Não reconstrói agregado ausente**, de propósito. Reconstruir custa
+    O(eventos) do aluno, e este é o caminho de UMA tela de listagem: um único
+    carregamento poderia disparar dezenas de reconstruções em série. Quando o
+    agregado não existe, `questoes_respondidas` vem `None` — que a tela mostra
+    como "—". Dizer "não sei" é correto; dizer "0" para quem respondeu 300
+    questões não é. Quem reconstrói é o laço diário de perfil cognitivo, que
+    já chama `list_students_with_behavior`.
+    """
+    client = get_firestore()
+    resumo: dict[str, dict[str, Any]] = {}
+    varridos = 0
+    for snap in client.collection("students").stream():
+        varridos += 1
+        if varridos > _TETO_ALUNOS_VARRIDOS:
+            logger.error(
+                "resumo_dos_alunos: base passou de %d alunos e a varredura foi truncada. "
+                "Está na hora de paginar esta consulta.", _TETO_ALUNOS_VARRIDOS,
+            )
+            break
+        dados = snap.to_dict() or {}
+        agregado = dados.get("agregado") or None
+        resumo[snap.id] = {
+            "sparks_balance": dados.get("sparks_balance"),
+            "questoes_respondidas": (
+                int(agregado.get("total_respostas") or 0) if agregado is not None else None
+            ),
+            "dias_ativos": len((agregado or {}).get("dias_ativos") or []),
+            "ultima_atividade": (agregado or {}).get("atualizado_em"),
+            "perfil_criado_em": dados.get("created_at"),
+        }
+    return resumo
+
+
+def resumo_de_um_aluno(uid: str) -> dict[str, Any]:
+    """Tudo que o documento `students/{uid}` sabe sobre um aluno, em UMA
+    leitura — para a ficha que o admin abre ao clicar num aluno.
+
+    As listas grandes que moram no agregado (`item_ids_respondidos`,
+    `dias_ativos`) voltam RESUMIDAS: contagem e os dias mais recentes. A ficha
+    quer o tamanho do histórico, não o histórico — que já tem tela própria
+    (`/admin/history`) e é caro de trafegar.
+    """
+    snap = _student_doc_ref(uid).get()
+    if not snap.exists:
+        return {"existe": False}
+    dados = snap.to_dict() or {}
+    agregado = dados.get("agregado") or {}
+    treino = dados.get("treino_agregado") or {}
+    respondidas = sum(int((v or {}).get("respondidas") or 0) for v in treino.values() if isinstance(v, dict))
+    acertos = sum(int((v or {}).get("acertos") or 0) for v in treino.values() if isinstance(v, dict))
+    revisao = dados.get("revisao") or {}
+    return {
+        "existe": True,
+        "nome": dados.get("nome"),
+        "email": dados.get("email"),
+        "criado_em": dados.get("created_at"),
+        "sparks_balance": dados.get("sparks_balance"),
+        "questoes_respondidas": int(agregado.get("total_respostas") or 0) if agregado else None,
+        "itens_distintos": len(agregado.get("item_ids_respondidos") or []),
+        "dias_ativos": len(agregado.get("dias_ativos") or []),
+        "ultimos_dias": sorted(agregado.get("dias_ativos") or [], reverse=True)[:14],
+        "ultima_atividade": agregado.get("atualizado_em"),
+        "agregado_reconstruido_em": agregado.get("reconstruido_em"),
+        "treino": {
+            "habilidades_tocadas": len(treino),
+            "respondidas": respondidas,
+            "acertos": acertos,
+        },
+        "revisao": {
+            "processos_acompanhados": len(revisao.get("processos") or {}),
+            "intervencao_ativa": bool(revisao.get("intervencao_ativa")),
+            "atualizado_em": revisao.get("atualizado_em"),
+        },
+    }
+
+
 # ======================================================================
 # Sparks — recompensa por rodada do ENEM (10 questões; a última rodada do
 # bloco de 45 fecha com 5). Estrutura:
@@ -742,7 +826,9 @@ def list_sparks_rounds(uid: str, limit: int = 200) -> list[dict[str, Any]]:
     return [d.to_dict() for d in docs]
 
 
-def _conceder_sparks_atomico(ref, doc: dict[str, Any], uid: str, amount: int) -> bool:
+def _conceder_sparks_atomico(
+    ref, doc: dict[str, Any], uid: str, amount: int, *, registrar_saldo: bool = False,
+) -> bool:
     """Cria `doc` em `ref` E soma `amount` ao saldo — as duas coisas, ou nenhuma.
 
     Devolve `True` quando foi ESTA chamada que concedeu, `False` quando o
@@ -767,11 +853,28 @@ def _conceder_sparks_atomico(ref, doc: dict[str, Any], uid: str, amount: int) ->
     `create()` só vence uma vez num caminho que ainda não existe —, agora
     dentro do commit transacional. `AlreadyExists` não é erro retentável, então
     o SDK não repete a transação: ela aborta inteira, sem escrever o saldo.
+
+    `registrar_saldo` carimba no comprovante o saldo ANTES e DEPOIS da
+    concessão. Custa uma leitura a mais, DENTRO da transação (é a única forma
+    de o "antes" ser o mesmo valor que o `Increment` vai somar — lido fora, um
+    gasto concorrente do aluno o tornaria mentira). Por isso é opt-in e hoje só
+    a compra o liga: uma compra acontece algumas vezes por aluno na vida,
+    enquanto `grant_question_sparks` roda a cada questão respondida, e uma
+    leitura extra ali multiplicaria a conta do Firestore pelo volume de
+    respostas da plataforma inteira (ver
+    `project_aluno_disciplina_leitura_firestore`).
     """
     transaction = get_firestore().transaction()
 
     @firestore.transactional
     def _run(transaction) -> bool:
+        if registrar_saldo:
+            # Toda leitura tem que vir antes de toda escrita na mesma
+            # transação — daí este `get` estar acima do `create`.
+            atual = _student_doc_ref(uid).get(transaction=transaction)
+            antes = int((atual.to_dict() or {}).get("sparks_balance") or 0)
+            doc["saldo_antes"] = antes
+            doc["saldo_apos"] = antes + amount
         transaction.create(ref, doc)
         if amount:
             transaction.update(
@@ -964,7 +1067,10 @@ def grant_purchase_sparks(
         "source": source,
         "created_at": _now_iso(),
     }
-    if not _conceder_sparks_atomico(ref, doc, uid, sparks_amount):
+    # `registrar_saldo=True` só aqui: o comprovante de COMPRA é o único que
+    # precisa responder "quanto o aluno tinha antes de pagar" no painel de
+    # transações. Ver o custo dessa leitura extra em `_conceder_sparks_atomico`.
+    if not _conceder_sparks_atomico(ref, doc, uid, sparks_amount, registrar_saldo=True):
         existente = ref.get().to_dict() or {}
         return {"ja_creditado": True, **existente}
     return {"ja_creditado": False, **doc}

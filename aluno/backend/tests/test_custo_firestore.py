@@ -225,6 +225,52 @@ class TestListagemDeAlunos:
         assert len(fs.list_students_with_behavior(limit=500)) == 120
 
 
+class TestResumoDoPainelAdmin:
+    """`resumo_dos_alunos`: a tela de "Alunos e permissões" mostra saldo e
+    questões de TODO MUNDO. O custo tem de ser o mesmo da listagem acima."""
+
+    def _montar(self, monkeypatch, snaps):
+        contador = {"lidos": 0}
+        monkeypatch.setattr(fs, "get_firestore", lambda: _ClienteFalso(snaps, contador))
+        return contador
+
+    def test_uma_varredura_serve_a_tela_inteira(self, monkeypatch):
+        snaps = [
+            _Snap(f"U{i}", {"sparks_balance": 100 * i,
+                            "agregado": {"total_respostas": 300, "dias_ativos": ["2026-09-01"]}})
+            for i in range(1, 7)
+        ]
+        contador = self._montar(monkeypatch, snaps)
+        resumo = fs.resumo_dos_alunos()
+        assert len(resumo) == 6
+        assert resumo["U3"]["sparks_balance"] == 300
+        assert resumo["U3"]["questoes_respondidas"] == 300
+        # 6 leituras para 6 alunos — não 6 por linha renderizada, nem O(eventos).
+        assert contador["lidos"] == 6
+
+    def test_aluno_sem_agregado_nao_dispara_reconstrucao(self, monkeypatch):
+        """Reconstruir custa O(eventos) POR ALUNO. Num carregamento de tela
+        isso vira uma cascata; a tela mostra "—" e o laço diário reconstrói."""
+        snaps = [_Snap("legado", {"sparks_balance": 40})]
+        self._montar(monkeypatch, snaps)
+
+        def _nunca(uid):
+            raise AssertionError("a listagem do painel reconstruiu um agregado")
+
+        monkeypatch.setattr(fs, "reconstruir_agregado", _nunca)
+        resumo = fs.resumo_dos_alunos()
+        assert resumo["legado"]["questoes_respondidas"] is None
+        assert resumo["legado"]["sparks_balance"] == 40
+
+    def test_aluno_sem_resposta_continua_na_lista(self, monkeypatch):
+        """Ao contrário de `list_students_with_behavior`: esta tela é a de
+        CONTAS, e uma conta que nunca respondeu nada continua sendo uma conta
+        que o admin precisa ver (e a quem pode dar ou tirar admin)."""
+        snaps = [_Snap("zerado", {"sparks_balance": 100, "agregado": {"total_respostas": 0}})]
+        self._montar(monkeypatch, snaps)
+        assert fs.resumo_dos_alunos()["zerado"]["questoes_respondidas"] == 0
+
+
 # ============================================ provisionamento
 
 

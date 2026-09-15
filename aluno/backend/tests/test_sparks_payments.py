@@ -672,7 +672,11 @@ class _FakeStudentDoc:
     def __init__(self, data=None):
         self._data = dict(data or {})
 
-    def get(self):
+    def get(self, transaction=None):
+        # `transaction=` porque o crédito de COMPRA lê o saldo dentro da
+        # própria transação, para carimbar `saldo_antes`/`saldo_apos` no
+        # comprovante. O dublê ignora o argumento: aqui não há isolamento a
+        # simular, só a assinatura a respeitar.
         return self
 
     def to_dict(self):
@@ -726,6 +730,43 @@ class TestGrantPurchaseSparksIdempotente:
 
         assert resultado["ja_creditado"] is False
         assert student_doc.to_dict()["sparks_balance"] == 300
+
+    def test_comprovante_carimba_o_saldo_antes_e_depois(self, monkeypatch):
+        """O painel de transações mostra "tinha X, ficou com Y" — e esses dois
+        números precisam ser lidos DENTRO da transação que credita, senão um
+        gasto concorrente do aluno os tornaria uma mentira plausível."""
+        purchase_doc = _FakePurchaseDoc()
+        student_doc = _FakeStudentDoc({"sparks_balance": 100})
+        monkeypatch.setattr(fs, "_purchase_ref", lambda uid, payment_id: purchase_doc)
+        monkeypatch.setattr(fs, "_student_doc_ref", lambda uid: student_doc)
+
+        resultado = fs.grant_purchase_sparks(
+            "uid-1", payment_id="mp-1", package_id="spark_200", sparks_amount=200,
+            price_cents=1990, currency="BRL", source="manual",
+        )
+
+        assert resultado["saldo_antes"] == 100
+        assert resultado["saldo_apos"] == 300
+        assert purchase_doc.to_dict()["saldo_antes"] == 100
+
+    def test_recompensa_por_questao_nao_paga_a_leitura_extra(self, monkeypatch):
+        """`registrar_saldo` é opt-in por motivo de CUSTO: `grant_question_sparks`
+        roda a cada questão respondida da plataforma, e uma leitura a mais ali
+        multiplica a conta do Firestore pelo volume de respostas."""
+        leituras = {"n": 0}
+
+        class _Contando(_FakeStudentDoc):
+            def get(self, transaction=None):
+                leituras["n"] += 1
+                return self
+
+        student_doc = _Contando({"sparks_balance": 100})
+        monkeypatch.setattr(fs, "_question_spark_ref", lambda uid, item_id: _FakePurchaseDoc())
+        monkeypatch.setattr(fs, "_student_doc_ref", lambda uid: student_doc)
+
+        fs.grant_question_sparks("uid-1", "ITEM-1", amount=1)
+
+        assert leituras["n"] == 0, "a concessão por questão leu o saldo — custo O(respostas)"
 
     def test_segunda_chamada_nao_credita_de_novo(self, monkeypatch):
         purchase_doc = _FakePurchaseDoc()
