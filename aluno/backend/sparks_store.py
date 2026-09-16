@@ -60,11 +60,20 @@ PACKAGES: dict[str, SparksPackage] = {
             #  * `mentis_ilimitada` — abrir o chat, cada mensagem, a
             #    explicação de questão e a intervenção da causa raiz param de
             #    cobrar Spark (ver o atalho em `mentis_routes._cobrar`);
+            #
+            # ATENÇÃO (2026-09-16): a loja anuncia `mentis_ilimitada` como
+            # "por um mês", mas o backend concede uma FLAG PERMANENTE
+            # (`firestore_service.marcar_mentis_ilimitada`, sem validade).
+            # Hoje entregamos MAIS do que anunciamos — o lado seguro da
+            # divergência, e não o contrário — mas ainda é divergência.
+            # Fechar isso exige guardar o vencimento por aluno e checá-lo em
+            # `mentis_routes`; enquanto não existir, NÃO escreva em lugar
+            # nenhum que o direito expira de fato.
             #  * `comunidade_vip` — a sala fechada do mural, onde a equipe e o
             #    1º colocado respondem (ver `comunidade.SALA_VIP`).
             direitos=("mentis_ilimitada", "comunidade_vip"),
             beneficios=(
-                "Mentis ILIMITADA para sempre",
+                "Mentis ILIMITADA por um mês",
                 "Comunidade VIP — sala fechada",
             ),
         ),

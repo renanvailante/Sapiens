@@ -737,7 +737,7 @@ export default function SparksStore() {
               </div>
               <div className="mt-1 text-sm leading-relaxed text-white/60">
                 Uma compra e o chat, as explicações de questão e as intervenções da causa raiz
-                deixam de gastar Spark — para sempre, sem mensalidade e sem limite de
+                deixam de gastar Spark por um mês, sem limite de
                 mensagens. Junto vem a <strong className="font-semibold text-white/85">Comunidade
                 VIP</strong>, a sala fechada do mural, e os {pacoteIlimitado.sparks_amount} Sparks,
                 que não expiram.
@@ -830,9 +830,6 @@ export default function SparksStore() {
                           {b}
                         </li>
                       ))}
-                      <li className="pt-0.5 text-[11px] font-normal leading-snug text-violet-700/80">
-                        Uma compra, para sempre. Sem mensalidade e sem renovação.
-                      </li>
                     </ul>
                   )}
                   <button
