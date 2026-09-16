@@ -60,15 +60,9 @@ PACKAGES: dict[str, SparksPackage] = {
             #  * `mentis_ilimitada` — abrir o chat, cada mensagem, a
             #    explicação de questão e a intervenção da causa raiz param de
             #    cobrar Spark (ver o atalho em `mentis_routes._cobrar`);
-            #
-            # ATENÇÃO (2026-09-16): a loja anuncia `mentis_ilimitada` como
-            # "por um mês", mas o backend concede uma FLAG PERMANENTE
-            # (`firestore_service.marcar_mentis_ilimitada`, sem validade).
-            # Hoje entregamos MAIS do que anunciamos — o lado seguro da
-            # divergência, e não o contrário — mas ainda é divergência.
-            # Fechar isso exige guardar o vencimento por aluno e checá-lo em
-            # `mentis_routes`; enquanto não existir, NÃO escreva em lugar
-            # nenhum que o direito expira de fato.
+            #    Este é o único direito com PRAZO: vence em
+            #    `PRAZO_DOS_DIREITOS_DIAS["mentis_ilimitada"]` dias, contados
+            #    da aprovação do pagamento.
             #  * `comunidade_vip` — a sala fechada do mural, onde a equipe e o
             #    1º colocado respondem (ver `comunidade.SALA_VIP`).
             direitos=("mentis_ilimitada", "comunidade_vip"),
@@ -98,6 +92,23 @@ def get_package(package_id: str) -> SparksPackage | None:
 
 def list_packages() -> list[SparksPackage]:
     return list(PACKAGES.values())
+
+
+# Direitos que VENCEM, e em quantos dias. O que não está aqui é permanente.
+#
+# Mora no catálogo, coladinho no texto que a loja anuncia, porque os dois têm
+# de dizer a mesma coisa: "Mentis ILIMITADA por um mês" (em `beneficios`) e os
+# 30 dias saem do MESMO arquivo. Separá-los é o defeito que este módulo existe
+# para evitar — foi assim que a loja chegou a anunciar "para sempre" enquanto
+# ninguém sabia dizer o que o servidor concedia.
+PRAZO_DOS_DIREITOS_DIAS: dict[str, int] = {
+    "mentis_ilimitada": 30,
+}
+
+
+def prazo_do_direito_dias(direito: str) -> int | None:
+    """Em quantos dias este direito vence, ou `None` se for para sempre."""
+    return PRAZO_DOS_DIREITOS_DIAS.get(direito)
 
 
 def is_valid_frequency(days: int) -> bool:

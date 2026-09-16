@@ -16,7 +16,7 @@ import logging
 import os
 import re
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 from zoneinfo import ZoneInfo
 
@@ -1127,30 +1127,91 @@ def list_sparks_purchases(uid: str, limit: int = 100) -> list[dict[str, Any]]:
 
 
 # ---------------------------------------------------------------------------
-# Direitos permanentes — o que o pacote de R$119,90 compra além de saldo
+# Direitos — o que o pacote de R$119,90 compra além de saldo
 # ---------------------------------------------------------------------------
 #
 # Cada direito é uma flag booleana no documento do aluno
-# (`students/{uid}.mentis_ilimitada`, `...comunidade_vip`), e NÃO uma
-# assinatura com validade: o que foi vendido é "para sempre", e qualquer data
-# de expiração aqui seria uma promessa diferente da que a loja faz. Concedidos
-# só pelo webhook de pagamento aprovado, no mesmo lugar em que os Sparks são
+# (`students/{uid}.mentis_ilimitada`, `...comunidade_vip`). Concedidos só pelo
+# webhook de pagamento aprovado, no mesmo lugar em que os Sparks são
 # creditados. A lista do que pode existir mora em `sparks_store.DIREITOS`.
+#
+# Alguns VENCEM. Quem diz quais, e em quantos dias, é o catálogo
+# (`sparks_store.PRAZO_DOS_DIREITOS_DIAS`) — o mesmo arquivo que escreve o
+# texto vendido na loja, para que "por um mês" e 30 dias nunca divirjam. O
+# vencimento é gravado ao lado da flag, em `{direito}_ate` (ISO-8601 UTC).
+#
+# A AUSÊNCIA de `{direito}_ate` quer dizer PARA SEMPRE, e isso é deliberado:
+# é o que faz quem comprou antes de 2026-09-16 — quando a loja vendia "Mentis
+# ILIMITADA para sempre" — continuar com o que pagou. Nenhuma migração tira
+# direito de ninguém; o prazo só existe para quem compra a partir de agora.
 
 
 def conceder_direitos(uid: str, direitos: tuple[str, ...] | list[str]) -> None:
-    """Liga os direitos numa escrita só.
+    """Liga os direitos numa escrita só, com o vencimento de cada um.
 
-    Idempotente por natureza (escrever `True` duas vezes não muda nada), então
-    o reenvio de webhook do Mercado Pago não precisa de guarda extra.
+    Idempotente por natureza para os direitos SEM prazo (escrever `True` duas
+    vezes não muda nada). Para os COM prazo isso não bastaria: chamar duas
+    vezes daria dois meses. Quem garante a chamada única é o webhook —
+    `dedupe_or_skip` no recebimento e a flag `credited` no pagamento — e é
+    por isso que comprar de novo pode ESTENDER sem medo (ver abaixo).
     """
+    import sparks_store
+
     if not direitos:
         return
+
+    com_prazo = {
+        d: dias
+        for d in direitos
+        if (dias := sparks_store.prazo_do_direito_dias(d)) is not None
+    }
+
+    # Comprar de novo ESTENDE o que ainda não venceu, em vez de zerar: quem
+    # renova faltando dez dias tem de terminar com 40, não com 30. Custa UMA
+    # leitura, e só quando existe direito com prazo — o caminho é o webhook de
+    # pagamento aprovado, que roda uma vez por compra, e não um caminho quente.
+    vigentes: dict[str, datetime] = {}
+    if com_prazo:
+        try:
+            atual = _student_doc_ref(uid).get().to_dict() or {}
+        except Exception:  # noqa: BLE001
+            # Sem conseguir ler, contamos a partir de agora. Perde-se, no pior
+            # caso, o saldo de dias de quem já tinha mais de um período
+            # acumulado E teve falha de leitura no mesmo instante. A
+            # alternativa — não gravar vencimento — daria acesso perpétuo de
+            # graça, que é o erro caro.
+            logger.warning(
+                "Não foi possível ler o vencimento atual de %s; contando a partir de agora.", uid
+            )
+            atual = {}
+        for d in com_prazo:
+            quando = _ler_vencimento(atual, d)
+            if quando is not None:
+                vigentes[d] = quando
+
+    agora = datetime.now(timezone.utc)
     campos: dict[str, Any] = {}
     for d in direitos:
         campos[d] = True
         campos[f"{d}_em"] = _now_iso()
+        dias = com_prazo.get(d)
+        if dias is not None:
+            partida = max(agora, vigentes.get(d, agora))
+            campos[f"{d}_ate"] = (partida + timedelta(days=dias)).isoformat()
     _student_doc_ref(uid).set(campos, merge=True)
+
+
+def _ler_vencimento(dados: dict[str, Any], direito: str) -> datetime | None:
+    """A data de vencimento gravada, ou `None` se não houver (= para sempre)."""
+    bruto = dados.get(f"{direito}_ate")
+    if not bruto:
+        return None
+    try:
+        quando = datetime.fromisoformat(str(bruto))
+    except ValueError:
+        logger.warning("Vencimento ilegível em %s_ate: %r", direito, bruto)
+        return None
+    return quando if quando.tzinfo else quando.replace(tzinfo=timezone.utc)
 
 
 def ler_direitos(uid: str) -> dict[str, bool]:
@@ -1172,11 +1233,47 @@ def ler_direitos(uid: str) -> dict[str, bool]:
     except Exception:  # noqa: BLE001
         logger.warning("Não foi possível ler os direitos de %s.", uid)
         dados = {}
-    return {d: bool(dados.get(d)) for d in sparks_store.DIREITOS}
+    agora = datetime.now(timezone.utc)
+    return {d: _direito_vigente(dados, d, agora) for d in sparks_store.DIREITOS}
+
+
+def _direito_vigente(dados: dict[str, Any], direito: str, agora: datetime) -> bool:
+    """A flag está ligada E o prazo ainda não passou.
+
+    Sem `{direito}_ate` gravado, vale para sempre — ver o cabeçalho desta
+    seção: é o que preserva quem comprou quando a loja vendia "para sempre".
+
+    Data ilegível NÃO tira o direito (`_ler_vencimento` devolve `None` e o
+    direito vira permanente). É o oposto da regra de falha de LEITURA logo
+    acima, e de propósito: lá, o Firestore fora do ar afetaria a base inteira,
+    e liberar de graça seria caro; aqui, o estrago é um campo corrompido no
+    documento de UMA pessoa que comprovadamente pagou — e a pessoa que pagou
+    não pode perder o que comprou por causa de um bug nosso de gravação.
+    """
+    if not dados.get(direito):
+        return False
+    vence = _ler_vencimento(dados, direito)
+    return vence is None or vence > agora
 
 
 def tem_mentis_ilimitada(uid: str) -> bool:
     return ler_direitos(uid).get("mentis_ilimitada", False)
+
+
+def vencimento_do_direito(uid: str, direito: str) -> str | None:
+    """Quando este direito vence (ISO-8601), ou `None` se for para sempre —
+    ou se a pessoa simplesmente não tiver o direito. Existe para a tela poder
+    escrever a data em vez de "para sempre": dizer "para sempre" a quem tem um
+    mês é a mesma mentira que este módulo acabou de sair de dentro."""
+    try:
+        dados = _student_doc_ref(uid).get().to_dict() or {}
+    except Exception:  # noqa: BLE001
+        logger.warning("Não foi possível ler o vencimento de %s para %s.", direito, uid)
+        return None
+    if not dados.get(direito):
+        return None
+    vence = _ler_vencimento(dados, direito)
+    return vence.isoformat() if vence else None
 
 
 def tem_comunidade_vip(uid: str) -> bool:

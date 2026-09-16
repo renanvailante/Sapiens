@@ -455,16 +455,29 @@ async def concluir_rodada(payload: RodadaConcluirPayload, user: User = Depends(r
 
 @router.get("/students/me/sparks")
 async def meus_sparks(user: User = Depends(require_user)):
-    """Saldo + o direito permanente que a loja vende.
+    """Saldo + os direitos que a loja vende, e até quando valem.
 
     `mentis_ilimitada` vem junto porque as duas coisas aparecem no mesmo
     lugar da tela (o chip da barra, a loja, o chat) e separá-las em duas
     chamadas faria a interface piscar entre "cobra" e "não cobra".
+
+    `mentis_ilimitada_ate` é a data de vencimento, e vem `null` para dois
+    casos diferentes que a tela trata igual: quem não tem o direito, e quem o
+    tem PARA SEMPRE (comprou antes de 2026-09-16, quando a loja vendia sem
+    prazo). Nos dois, não há data para escrever.
     """
     _safe_call(fs.ensure_student_profile, user.user_id, user.name, user.email)
     saldo = _safe_call(fs.ensure_sparks_balance, user.user_id)
     direitos = _safe_call(fs.ler_direitos, user.user_id) or {}
-    return {"sparks_balance": saldo, **direitos, "direitos": direitos}
+    vence = None
+    if direitos.get("mentis_ilimitada"):
+        vence = _safe_call(fs.vencimento_do_direito, user.user_id, "mentis_ilimitada")
+    return {
+        "sparks_balance": saldo,
+        **direitos,
+        "direitos": direitos,
+        "mentis_ilimitada_ate": vence,
+    }
 
 
 @router.get("/students/me/activity")

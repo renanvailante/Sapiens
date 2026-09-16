@@ -1,5 +1,9 @@
-"""Os direitos que o pacote de R$119,90 vende: Mentis ILIMITADA e Comunidade
-VIP, os dois para sempre.
+"""Os direitos que o pacote de R$119,90 vende: Mentis ILIMITADA (por um mês,
+desde 2026-09-16) e Comunidade VIP (para sempre).
+
+O prazo da Mentis é testado em `test_validade_dos_direitos.py`; aqui se testa
+o que não depende de data — o catálogo ser a fonte única, e quem tem o direito
+VIGENTE não pagar.
 
 Isto é publicidade que vira contrato. A loja anuncia "Mentis ilimitada" no
 card de 4.000 Sparks; se o servidor continuasse cobrando os 70 da sessão e os

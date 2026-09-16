@@ -421,6 +421,10 @@ export default function SparksStore() {
   // as duas informações aparecem juntas na tela e buscá-las em duas chamadas
   // faria a loja piscar entre "compre" e "você já tem".
   const [mentisIlimitada, setMentisIlimitada] = useState(false);
+  // `null` quer dizer "sem data para escrever", e vale tanto para quem não
+  // tem o direito quanto para quem o tem PARA SEMPRE (comprou antes de
+  // 2026-09-16). A faixa abaixo trata os dois do mesmo jeito.
+  const [mentisIlimitadaAte, setMentisIlimitadaAte] = useState(null);
   const [packages, setPackages] = useState([]);
   const [publicKey, setPublicKey] = useState(null);
   const [mpDisponivel, setMpDisponivel] = useState(true);
@@ -458,6 +462,7 @@ export default function SparksStore() {
     ]).then(([saldo, catalogo, pk, purch, rds, cost, recarga]) => {
       setSparks(saldo?.sparks_balance ?? null);
       setMentisIlimitada(Boolean(saldo?.mentis_ilimitada));
+      setMentisIlimitadaAte(saldo?.mentis_ilimitada_ate || null);
       setPackages(catalogo.packages || []);
       setFrequencies(catalogo.auto_recharge_frequencies_days || []);
       setDefaultBaseline(catalogo.default_baseline ?? 50);
@@ -712,8 +717,16 @@ export default function SparksStore() {
                 Mentis ilimitada e Comunidade VIP: são seus.
               </div>
               <div className="text-sm text-violet-200/70">
-                Chat, explicação de questão e intervenção da causa raiz não gastam Spark —
-                para sempre. Seu saldo serve para o resto do produto.{" "}
+                Chat, explicação de questão e intervenção da causa raiz não gastam Spark
+                {/* Quem comprou antes de 2026-09-16 pagou por "para sempre" e
+                    continua com isso — para essas pessoas não há data, e
+                    dizer-lhes que vence seria tirar o que elas compraram.
+                    Para quem comprou depois, escrever "para sempre" seria a
+                    mentira simétrica. A data manda nas duas. */}
+                {mentisIlimitadaAte
+                  ? ` até ${new Date(mentisIlimitadaAte).toLocaleDateString("pt-BR")}`
+                  : " — para sempre"}
+                . Seu saldo serve para o resto do produto.{" "}
                 <Link to="/comunidade?sala=vip" className="font-semibold text-violet-100 underline">
                   Abrir a sala VIP
                 </Link>
