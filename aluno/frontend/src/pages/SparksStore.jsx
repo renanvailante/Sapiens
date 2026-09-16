@@ -802,7 +802,13 @@ export default function SparksStore() {
                   data-testid={`sparks-package-${p.package_id}`}
                 >
                   <div className={`flex items-center gap-2 font-display font-extrabold text-zinc-950 ${NIVEL.amount}`}>
-                    <Zap className={nivel >= 2 ? "w-7 h-7 text-amber-500" : "w-5 h-5 text-amber-500"} fill="currentColor" /> {p.sparks_amount}
+                    {/* `shrink-0` não é enfeite: num flex, o SVG encolhe ANTES do texto,
+                        e o card de 1.500 Sparks é o que junta o número maior
+                        (`text-5xl`) com a coluna mais estreita da grade — ali o
+                        relâmpago era espremido a 0px de largura e sumia da tela,
+                        só nesse card. Medido com o CSS compilado, a 1440px:
+                        0.0px sem a classe, 30.8px com ela. */}
+                    <Zap className={`shrink-0 ${nivel >= 2 ? "w-7 h-7" : "w-5 h-5"} text-amber-500`} fill="currentColor" /> {p.sparks_amount}
                   </div>
                   <div className="mt-1 text-sm text-zinc-500">{p.label}</div>
                   <div className={`mt-4 font-mono-alt font-bold text-sapiens-navy ${NIVEL.price}`}>{formatBRL(p.price_cents)}</div>
