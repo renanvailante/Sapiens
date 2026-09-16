@@ -10,8 +10,10 @@ import { api, errMsg } from "../lib/api";
 import Nav, { avisarSparksMudou } from "../components/Nav";
 import PedirWhatsApp from "../components/PedirWhatsApp";
 import MentorUSP from "../components/MentorUSP";
+import ContagemEnem from "../components/ContagemEnem";
 import { useDeclararContextoMentis } from "../lib/mentisContexto";
 import { marcarAcessoDaLive } from "../lib/live";
+import { quintasAteAProva } from "../lib/enem";
 
 /**
  * `/cursos` — a aba de Cursos e, principalmente, a AULA AO VIVO DE QUINTA.
@@ -220,6 +222,9 @@ export default function Cursos() {
   };
 
   const agenda = useMemo(() => linkDaAgenda(live), [live]);
+  // Aritmética, não retórica: cada quinta até a prova é uma aula que existe
+  // ou não existe. Ver `lib/enem.js`.
+  const quintasRestantes = quintasAteAProva();
 
   return (
     <div className="min-h-screen">
@@ -230,6 +235,12 @@ export default function Cursos() {
             {erro}
           </div>
         )}
+
+        {/* O relógio primeiro: é ele que explica por que esta página importa
+            hoje e não mês que vem. */}
+        <div className="mb-6">
+          <ContagemEnem comCta={false} testid="cursos-contagem-enem" />
+        </div>
 
         {/* ---------------------------------------------------------------
             A LIVE. Primeira coisa da página, e a única que existe hoje.
@@ -274,6 +285,12 @@ export default function Cursos() {
               lugar no vestibular mais disputado do país resolvendo questão na sua frente e
               respondendo as suas perguntas — 90 minutos, uma vez por semana.
             </p>
+            {quintasRestantes > 0 && (
+              <p className="mt-3 max-w-2xl text-sm font-medium text-amber-200/90" data-testid="cursos-quintas-restantes">
+                Até a prova cabem {quintasRestantes === 1 ? "só mais 1 aula" : `só mais ${quintasRestantes} aulas`}.
+                A de quinta que passar não volta.
+              </p>
+            )}
 
             {live?.tema && (
               <div
@@ -434,7 +451,7 @@ export default function Cursos() {
         {/* ---------------------------------------------------------------
             OS CURSOS — todos em breve, nenhum cobra nada
             --------------------------------------------------------------- */}
-        <section className="mt-12" data-testid="cursos-catalogo">
+        <section id="cursos" className="mt-12 scroll-mt-24" data-testid="cursos-catalogo">
           <div className="flex flex-wrap items-baseline justify-between gap-3">
             <h2 className="font-display text-2xl font-extrabold tracking-tighter text-white md:text-3xl">
               Cursos completos
@@ -444,11 +461,22 @@ export default function Cursos() {
             </span>
           </div>
           <p className="mt-2 max-w-2xl text-sm text-white/55">
-            Quatro trilhas do zero ao ENEM, gravadas e organizadas na ordem em que o
-            conteúdo cobra. <strong className="font-semibold text-white/80">Ainda não
-            abriram</strong> — quem garante agora paga uma vez e fica com o curso para
-            sempre, sem pagar de novo quando ele entrar no ar.
+            Quatro trilhas do zero ao ENEM, gravadas{" "}
+            <strong className="font-semibold text-white/85">pelo mesmo 1º colocado de
+            Medicina da USP</strong> que dá a aula ao vivo de quinta — na ordem em que o
+            conteúdo cobra, e não na ordem em que o livro apresenta.{" "}
+            <strong className="font-semibold text-white/80">Ainda não abriram</strong>:
+            quem garante agora paga uma vez e fica com o curso para sempre, sem pagar de
+            novo quando ele entrar no ar.
           </p>
+          <div className="mt-4 flex flex-wrap items-center gap-2.5 rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+            <MentorUSP tamanho="p" comSelo={false} testid="cursos-catalogo-mentor" />
+            <div className="min-w-0 flex-1 text-sm text-white/60">
+              <strong className="font-semibold text-white">Quem grava é ele.</strong> Os quatro
+              cursos são feitos pela mesma pessoa que passou em 1º lugar em Medicina na USP —
+              não é conteúdo de banco de apostila com nome de professor na capa.
+            </div>
+          </div>
 
           <div className="mt-5 grid gap-3 md:grid-cols-2">
             {(dados?.cursos || []).map((c) => (

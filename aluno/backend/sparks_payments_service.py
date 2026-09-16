@@ -512,6 +512,21 @@ async def process_payment_webhook(db, mp_payment_id: str) -> dict:
         # ler o Firestore uma vez por linha da tabela. `.get()` e não índice:
         # pagamentos creditados ANTES desta feature não têm os campos, e a
         # tela mostra "—" para eles em vez de inventar um número.
+        # Os direitos permanentes do pacote (hoje: Mentis ilimitada e
+        # Comunidade VIP, em `spark_4000`) são concedidos AQUI, no mesmo ponto
+        # do crédito e sob a mesma condição — pagamento aprovado. Falhar aqui
+        # não pode desfazer o crédito que já entrou: o log é o que resta para
+        # a conciliação à mão.
+        direitos = sparks_store.direitos_do_pacote(existing["package_id"])
+        if direitos:
+            try:
+                fs.conceder_direitos(existing["user_id"], direitos)
+            except Exception:  # noqa: BLE001
+                logger.exception(
+                    "DIREITOS NÃO CONCEDIDOS (%s) para %s (pagamento %s) — conceder à mão.",
+                    ", ".join(direitos), existing["user_id"], mp_payment_id,
+                )
+
         atualizacao = {"credited": True, "updated_at": _now_iso()}
         if resultado.get("saldo_antes") is not None:
             atualizacao["saldo_antes"] = resultado["saldo_antes"]

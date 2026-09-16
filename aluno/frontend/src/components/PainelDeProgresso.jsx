@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { api, errMsg } from "../lib/api";
 import { avisarSparksMudou } from "./Nav";
 import {
-  Flame, Snowflake, Trophy, Zap, CalendarDays, ArrowRight, Check, Loader2,
+  Flame, Snowflake, Trophy, Zap, ArrowRight, Check, Loader2,
 } from "lucide-react";
 
 /**
@@ -292,14 +292,11 @@ export default function PainelDeProgresso() {
 
   return (
     <section className="reveal" data-testid="painel-progresso">
-      {estado.enem && (
-        <div className="mb-4 flex items-center gap-2 text-xs text-white/50" data-testid="progresso-enem">
-          <CalendarDays className="h-3.5 w-3.5" />
-          Faltam <strong className="font-semibold text-white/80">{estado.enem.dias} dias</strong> para o
-          {estado.enem.fase === 1 ? " primeiro" : " segundo"} dia do ENEM.
-        </div>
-      )}
-
+      {/* A contagem para o ENEM saiu daqui em 2026-09-15: ela virou a faixa
+          grande do topo do Painel (`components/ContagemEnem.jsx`), com
+          relógio ao vivo. Dois contadores da mesma data na mesma tela
+          divergiam em um dia — este contava dias de calendário, o outro conta
+          até as 13h30 do domingo — e o aluno via os dois de uma vez. */}
       <div className="grid gap-3 md:grid-cols-3">
         <Ofensiva
           dados={estado.ofensiva}

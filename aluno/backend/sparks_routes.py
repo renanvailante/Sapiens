@@ -74,6 +74,12 @@ async def list_packages(_: User = Depends(require_user)):
                 "highlight": p.highlight,
                 "destaque_tamanho": p.destaque_tamanho,
                 "oculto": p.oculto,
+                # O direito permanente que a compra concede. A loja ANUNCIA
+                # com este campo e o webhook CONCEDE com o mesmo objeto de
+                # catálogo (`sparks_store.concede_mentis_ilimitada`) — as
+                # duas pontas não podem divergir.
+                "beneficios": list(p.beneficios),
+                "direitos": list(p.direitos),
             }
             for p in sparks_store.list_packages()
         ],

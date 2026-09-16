@@ -3,6 +3,7 @@ import { ArrowRight, Sparkles, Brain, Network, ChevronRight, Radio, Video, Clock
 import { useAuth } from "../lib/auth";
 import BrandMark from "../components/BrandMark";
 import MentorUSP from "../components/MentorUSP";
+import ContagemEnem from "../components/ContagemEnem";
 import { OPERADOR } from "../lib/operador";
 
 const CYCLE = ["Resolver", "Observar", "Estimar estado cognitivo", "Identificar lacunas", "Adaptar", "Evoluir"];
@@ -55,6 +56,12 @@ export default function Landing() {
             Analisar uma prova <ArrowRight className="w-4 h-4" />
           </button>
         </div>
+      </div>
+
+      {/* O relógio do ENEM, público: quem ainda não entrou está correndo
+          contra a mesma data de quem já está aqui dentro. */}
+      <div className="max-w-4xl mx-auto px-6 md:px-10 pb-10">
+        <ContagemEnem comCta={false} testid="landing-contagem-enem" />
       </div>
 
       {/* A AULA AO VIVO DE QUINTA — a primeira coisa depois do herói.

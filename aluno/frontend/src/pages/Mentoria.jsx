@@ -5,6 +5,7 @@ import {
 import Nav from "../components/Nav";
 import MentorUSP from "../components/MentorUSP";
 import ListaDeEsperaMentoria from "../components/ListaDeEsperaMentoria";
+import ContagemEnem from "../components/ContagemEnem";
 import { useDeclararContextoMentis } from "../lib/mentisContexto";
 
 /**
@@ -56,6 +57,10 @@ export default function Mentoria() {
     <div className="min-h-screen">
       <Nav />
       <div className="mx-auto max-w-5xl px-6 py-8 md:px-10 md:py-10">
+        <div className="mb-6">
+          <ContagemEnem comCta={false} testid="mentoria-contagem-enem" />
+        </div>
+
         {/* --------------------------------------------------------------
             O ROSTO. Primeira coisa da página, em tamanho grande.
             -------------------------------------------------------------- */}

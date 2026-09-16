@@ -1126,6 +1126,63 @@ def list_sparks_purchases(uid: str, limit: int = 100) -> list[dict[str, Any]]:
     return [d.to_dict() for d in docs]
 
 
+# ---------------------------------------------------------------------------
+# Direitos permanentes — o que o pacote de R$119,90 compra além de saldo
+# ---------------------------------------------------------------------------
+#
+# Cada direito é uma flag booleana no documento do aluno
+# (`students/{uid}.mentis_ilimitada`, `...comunidade_vip`), e NÃO uma
+# assinatura com validade: o que foi vendido é "para sempre", e qualquer data
+# de expiração aqui seria uma promessa diferente da que a loja faz. Concedidos
+# só pelo webhook de pagamento aprovado, no mesmo lugar em que os Sparks são
+# creditados. A lista do que pode existir mora em `sparks_store.DIREITOS`.
+
+
+def conceder_direitos(uid: str, direitos: tuple[str, ...] | list[str]) -> None:
+    """Liga os direitos numa escrita só.
+
+    Idempotente por natureza (escrever `True` duas vezes não muda nada), então
+    o reenvio de webhook do Mercado Pago não precisa de guarda extra.
+    """
+    if not direitos:
+        return
+    campos: dict[str, Any] = {}
+    for d in direitos:
+        campos[d] = True
+        campos[f"{d}_em"] = _now_iso()
+    _student_doc_ref(uid).set(campos, merge=True)
+
+
+def ler_direitos(uid: str) -> dict[str, bool]:
+    """Todos os direitos do aluno em UMA leitura.
+
+    Uma leitura e não uma por direito: eles aparecem juntos na mesma tela, e
+    o Firestore deste projeto já estourou cota uma vez por leitura acumulada
+    em caminho quente (incidente de 2026-09-04).
+
+    Falha de leitura devolve tudo `False`: na dúvida, cobra-se o Spark e o
+    aluno reclama — o inverso (liberar de graça por instabilidade) daria de
+    presente o produto mais caro do catálogo para a base inteira durante o
+    incidente.
+    """
+    import sparks_store
+
+    try:
+        dados = _student_doc_ref(uid).get().to_dict() or {}
+    except Exception:  # noqa: BLE001
+        logger.warning("Não foi possível ler os direitos de %s.", uid)
+        dados = {}
+    return {d: bool(dados.get(d)) for d in sparks_store.DIREITOS}
+
+
+def tem_mentis_ilimitada(uid: str) -> bool:
+    return ler_direitos(uid).get("mentis_ilimitada", False)
+
+
+def tem_comunidade_vip(uid: str) -> bool:
+    return ler_direitos(uid).get("comunidade_vip", False)
+
+
 class InsufficientSparksError(Exception):
     """Saldo de Sparks do aluno é menor que o custo da ação."""
 

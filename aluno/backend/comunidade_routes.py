@@ -12,6 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 import comunidade
+import firestore_service as fs
 import rate_limit
 from auth import require_admin, require_user
 from models import User
@@ -26,6 +27,10 @@ class DuvidaRequest(BaseModel):
     titulo: str = Field(..., min_length=8, max_length=160)
     corpo: str = Field(..., min_length=10, max_length=4000)
     item_id: str | None = Field(default=None, max_length=120)
+    # "geral" (todo aluno) ou "vip" (só quem comprou o pacote de R$119,90).
+    # O padrão é a geral: um cliente que não conhece a VIP nunca publica
+    # sem querer numa sala fechada.
+    sala: str = Field(default="geral", max_length=10)
 
 
 class RespostaRequest(BaseModel):
@@ -36,14 +41,43 @@ class ReporteRequest(BaseModel):
     motivo: str = Field(default="", max_length=500)
 
 
+def _ehVip(user: User) -> bool:
+    """Admin entra na VIP sem comprar: ele MODERA a sala, e moderar uma sala
+    que não se pode abrir é impossível."""
+    return bool(user.is_admin) or fs.tem_comunidade_vip(user.user_id)
+
+
+def _exigir_vip(user: User) -> None:
+    if not _ehVip(user):
+        # 403 e não 404: esconder a existência da sala seria esconder também
+        # o motivo de ela estar fechada, e o motivo é justamente o que a
+        # tela precisa dizer para vender o acesso.
+        raise HTTPException(
+            status_code=403,
+            detail="A Comunidade VIP é do pacote de 4.000 Sparks (R$119,90).",
+        )
+
+
 @router.get("")
 async def mural(
     area: str | None = None,
     filtro: str = "recentes",
     pular: int = 0,
+    sala: str = comunidade.SALA_GERAL,
     user: User = Depends(require_user),
 ):
-    return await comunidade.listar(area=area, filtro=filtro, uid=user.user_id, pular=pular)
+    if sala == comunidade.SALA_VIP:
+        _exigir_vip(user)
+    return await comunidade.listar(
+        area=area, filtro=filtro, uid=user.user_id, pular=pular, sala=sala,
+    )
+
+
+@router.get("/vip/acesso")
+async def acesso_vip(user: User = Depends(require_user)):
+    """A tela pergunta ANTES de tentar abrir a sala — assim ela mostra o
+    convite de compra em vez de um erro 403 no meio da navegação."""
+    return {"vip": _ehVip(user)}
 
 
 @router.get("/duvidas/{duvida_id}")
@@ -51,6 +85,11 @@ async def uma_duvida(duvida_id: str, user: User = Depends(require_user)):
     dados = await comunidade.ler_duvida(duvida_id, uid=user.user_id)
     if dados is None:
         raise HTTPException(status_code=404, detail="Dúvida não encontrada.")
+    # O link de uma dúvida da VIP circula (alguém cola no WhatsApp): a porta
+    # precisa estar aqui também, não só na listagem. `ler_duvida` devolve
+    # `{duvida, respostas, meus_votos}` — a sala está no documento de dentro.
+    if (dados.get("duvida") or {}).get("sala") == comunidade.SALA_VIP:
+        _exigir_vip(user)
     return dados
 
 
@@ -60,6 +99,8 @@ async def publicar(
     user: User = Depends(require_user),
     _: None = Depends(rate_limit.por_usuario("comunidade")),
 ):
+    if payload.sala == comunidade.SALA_VIP:
+        _exigir_vip(user)
     return await comunidade.publicar_duvida(
         student_id=user.user_id,
         autor_nome=user.name,
@@ -67,6 +108,7 @@ async def publicar(
         titulo=payload.titulo,
         corpo=payload.corpo,
         item_id=payload.item_id,
+        sala=payload.sala,
     )
 
 
@@ -77,6 +119,9 @@ async def responder(
     user: User = Depends(require_user),
     _: None = Depends(rate_limit.por_usuario("comunidade")),
 ):
+    alvo = await comunidade.ler_duvida(duvida_id, uid=user.user_id)
+    if alvo and (alvo.get("duvida") or {}).get("sala") == comunidade.SALA_VIP:
+        _exigir_vip(user)
     resultado = await comunidade.responder(
         duvida_id=duvida_id, student_id=user.user_id, autor_nome=user.name, corpo=payload.corpo
     )

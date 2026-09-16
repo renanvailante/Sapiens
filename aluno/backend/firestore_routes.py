@@ -455,9 +455,16 @@ async def concluir_rodada(payload: RodadaConcluirPayload, user: User = Depends(r
 
 @router.get("/students/me/sparks")
 async def meus_sparks(user: User = Depends(require_user)):
+    """Saldo + o direito permanente que a loja vende.
+
+    `mentis_ilimitada` vem junto porque as duas coisas aparecem no mesmo
+    lugar da tela (o chip da barra, a loja, o chat) e separá-las em duas
+    chamadas faria a interface piscar entre "cobra" e "não cobra".
+    """
     _safe_call(fs.ensure_student_profile, user.user_id, user.name, user.email)
     saldo = _safe_call(fs.ensure_sparks_balance, user.user_id)
-    return {"sparks_balance": saldo}
+    direitos = _safe_call(fs.ler_direitos, user.user_id) or {}
+    return {"sparks_balance": saldo, **direitos, "direitos": direitos}
 
 
 @router.get("/students/me/activity")

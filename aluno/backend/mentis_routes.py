@@ -107,6 +107,16 @@ def _safe_reembolso(uid: str, cost: int):
 
 
 def _cobrar(uid: str, custo: int) -> int:
+    """Ponto ÚNICO de cobrança da Mentis — explicação, intervenção, abertura
+    de sessão e cada mensagem passam por aqui.
+
+    Por ser único, é também onde a **Mentis ilimitada** acontece: quem comprou
+    o pacote de R$119,90 (ver `sparks_store`) não paga nenhuma das quatro. O
+    atalho vem ANTES do débito, e não um desconto depois, porque "ilimitada"
+    tem de significar que o saldo nem é tocado.
+    """
+    if fs.tem_mentis_ilimitada(uid):
+        return fs.read_sparks_balance(uid)
     fs.ensure_sparks_balance(uid)
     try:
         return fs.deduct_sparks(uid, custo)
@@ -829,7 +839,9 @@ class MensagemPayload(BaseModel):
     contexto_tela: Optional[str] = Field(default=None, max_length=_CONTEXTO_TELA_MAX_CHARS)
 
 
-def _serializar_sessao(sessao: dict, saldo: Optional[int] = None) -> dict[str, Any]:
+def _serializar_sessao(
+    sessao: dict, saldo: Optional[int] = None, ilimitada: bool = False,
+) -> dict[str, Any]:
     return {
         "ativa": True,
         "sessao_id": sessao["_id"],
@@ -840,6 +852,7 @@ def _serializar_sessao(sessao: dict, saldo: Optional[int] = None) -> dict[str, A
         "custo_mensagem": MENSAGEM_COST,
         "custo_sessao": SESSAO_COST,
         "sparks_balance": saldo,
+        "mentis_ilimitada": ilimitada,
     }
 
 
@@ -855,6 +868,7 @@ async def _sessao_ativa(uid: str) -> Optional[dict]:
 async def ler_sessao(user: User = Depends(require_user)):
     """Retomar uma sessão em curso é DE GRAÇA — as 70 Sparks compram 24h de
     acesso, não uma aba aberta. Fechar a página sem querer não pode custar."""
+    ilimitada = fs.tem_mentis_ilimitada(user.user_id)
     sessao = await _sessao_ativa(user.user_id)
     if not sessao:
         return {
@@ -863,8 +877,12 @@ async def ler_sessao(user: User = Depends(require_user)):
             "custo_mensagem": MENSAGEM_COST,
             "duracao_horas": SESSAO_HORAS,
             "sparks_balance": fs.ensure_sparks_balance(user.user_id),
+            "mentis_ilimitada": ilimitada,
         }
-    return {**_serializar_sessao(sessao, fs.read_sparks_balance(user.user_id)), "duracao_horas": SESSAO_HORAS}
+    return {
+        **_serializar_sessao(sessao, fs.read_sparks_balance(user.user_id), ilimitada),
+        "duracao_horas": SESSAO_HORAS,
+    }
 
 
 @router.post("/sessao")
@@ -881,7 +899,13 @@ async def abrir_sessao(
     fs.ensure_student_profile(user.user_id, user.name, user.email)
     existente = await _sessao_ativa(user.user_id)
     if existente:
-        return {**_serializar_sessao(existente, fs.read_sparks_balance(user.user_id)), "nova": False}
+        return {
+            **_serializar_sessao(
+                existente, fs.read_sparks_balance(user.user_id),
+                fs.tem_mentis_ilimitada(user.user_id),
+            ),
+            "nova": False,
+        }
 
     saldo = _cobrar(user.user_id, SESSAO_COST)
     try:
@@ -928,7 +952,10 @@ async def abrir_sessao(
         ],
     }
     await _db.mentis_sessoes.insert_one(sessao)
-    return {**_serializar_sessao(sessao, saldo), "nova": True}
+    return {
+        **_serializar_sessao(sessao, saldo, fs.tem_mentis_ilimitada(user.user_id)),
+        "nova": True,
+    }
 
 
 def _montar_prompt_chat(

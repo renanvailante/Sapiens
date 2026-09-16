@@ -78,6 +78,27 @@ _MAX_TITULO = 160
 _MAX_CORPO = 4000
 
 
+# ---------------------------------------------------------------------------
+# Salas
+# ---------------------------------------------------------------------------
+#
+# O mural tem duas: a GERAL, que é de todo aluno, e a VIP, que é a sala
+# fechada de quem comprou o pacote de R$119,90 (ver `sparks_store.DIREITOS`).
+#
+# Uma sala, e não uma coleção separada, porque tudo o que já existe — voto,
+# melhor resposta, destaque, moderação, exclusão de conta pela LGPD —
+# continua valendo sem uma segunda implementação de cada coisa. O que muda é
+# quem pode LER e ESCREVER, e isso é decidido na rota.
+#
+# **Dúvidas anteriores a 2026-09-15 não têm o campo `sala`.** Por isso a
+# consulta da geral é `{"sala": {"$ne": SALA_VIP}}` e nunca `== "geral"`: no
+# Mongo, `$ne` casa também com o documento em que o campo não existe, então
+# o mural antigo continua aparecendo sem precisar de migração.
+SALA_GERAL = "geral"
+SALA_VIP = "vip"
+SALAS: tuple[str, ...] = (SALA_GERAL, SALA_VIP)
+
+
 def _now() -> datetime:
     return datetime.now(timezone.utc)
 
@@ -95,9 +116,15 @@ def _uid() -> str:
 # ---------------------------------------------------------------------------
 
 async def publicar_duvida(
-    *, student_id: str, autor_nome: str, area: str, titulo: str, corpo: str, item_id: str | None = None,
+    *, student_id: str, autor_nome: str, area: str, titulo: str, corpo: str,
+    item_id: str | None = None, sala: str = SALA_GERAL,
 ) -> dict[str, Any]:
-    """Publica uma dúvida. Grátis, sempre — ver a decisão 1 no topo."""
+    """Publica uma dúvida. Grátis, sempre — ver a decisão 1 no topo.
+
+    `sala` é validada aqui contra a lista fechada, mas QUEM PODE publicar na
+    VIP é decidido na rota (`comunidade_routes`): esta camada não conhece
+    Firestore nem direitos de compra.
+    """
     if area not in AREAS:
         area = "Outro"
     doc = {
@@ -105,6 +132,7 @@ async def publicar_duvida(
         "student_id": student_id,
         "autor_nome": autor_nome or "Aluno",
         "area": area,
+        "sala": sala if sala in SALAS else SALA_GERAL,
         "titulo": titulo.strip()[:_MAX_TITULO],
         "corpo": corpo.strip()[:_MAX_CORPO],
         # Quando a dúvida nasce de uma questão específica, o link permite à
@@ -162,7 +190,8 @@ async def responder(
 # ---------------------------------------------------------------------------
 
 async def listar(
-    *, area: str | None = None, filtro: str = "recentes", uid: str | None = None, limite: int = 30, pular: int = 0,
+    *, area: str | None = None, filtro: str = "recentes", uid: str | None = None,
+    limite: int = 30, pular: int = 0, sala: str = SALA_GERAL,
 ) -> dict[str, Any]:
     """Mural, paginado.
 
@@ -171,6 +200,10 @@ async def listar(
     com vinte dúvidas e vira uma varredura silenciosa com duas mil.
     """
     consulta: dict[str, Any] = {"status": "publicada"}
+    # `$ne` e não `== "geral"`: o mural anterior a 2026-09-15 não tem o campo
+    # `sala`, e `$ne` casa com o documento em que ele não existe. Sem isto,
+    # toda dúvida antiga sumiria da tela no dia em que a VIP entrou no ar.
+    consulta["sala"] = SALA_VIP if sala == SALA_VIP else {"$ne": SALA_VIP}
     if area and area in AREAS:
         consulta["area"] = area
     if filtro == "sem_resposta":
@@ -198,7 +231,7 @@ async def listar(
     ]
     itens = await _db.comunidade_duvidas.aggregate(pipeline).to_list(length=50)
     total = await _db.comunidade_duvidas.count_documents(consulta)
-    return {"items": itens, "total": total, "areas": list(AREAS)}
+    return {"items": itens, "total": total, "areas": list(AREAS), "sala": sala}
 
 
 async def ler_duvida(duvida_id: str, *, uid: str | None = None) -> dict[str, Any] | None:

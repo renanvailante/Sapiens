@@ -7,7 +7,7 @@ import Baloes, { BALOES_INICIAIS } from "../components/MentisBaloes";
 import MentisAtalhos from "../components/MentisAtalhos";
 import MentisAcao from "../components/MentisAcao";
 import { useContextoMentisAtual } from "../lib/mentisContexto";
-import { Send, Zap, Clock, Target, TrendingUp, AlertCircle } from "lucide-react";
+import { Send, Zap, Clock, Target, TrendingUp, AlertCircle, Infinity as InfinityIcon } from "lucide-react";
 
 /**
  * Chat com a Mentis — a única tela do produto onde o aluno CONVERSA com a
@@ -117,8 +117,11 @@ function Dossie({ dossie }) {
 }
 
 /** Tela de entrada: o que a sessão é, quanto custa, o que ela não faz. */
-function Portao({ custoSessao, custoMensagem, saldo, abrindo, erro, aoAbrir }) {
-  const semSaldo = saldo != null && saldo < custoSessao;
+function Portao({ custoSessao, custoMensagem, saldo, abrindo, erro, aoAbrir, ilimitada }) {
+  // Com o direito do pacote de R$119,90 não existe preço nesta tela: nem para
+  // abrir, nem por mensagem, nem "saldo insuficiente". Mostrar o preço
+  // riscado seria lembrar a pessoa de um custo que ela já eliminou.
+  const semSaldo = !ilimitada && saldo != null && saldo < custoSessao;
   return (
     <div className="max-w-2xl mx-auto">
       <div className="card-sapiens rounded-3xl p-8 md:p-10 text-center" data-testid="mentis-portao">
@@ -134,22 +137,52 @@ function Portao({ custoSessao, custoMensagem, saldo, abrindo, erro, aoAbrir }) {
           está catalogado por trás disso. Você pergunta; ela responde sobre <em>você</em>.
         </p>
 
-        <div className="mt-7 grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
-          <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
-            <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-white/40">
-              <Zap className="w-3 h-3 text-amber-400" /> Abrir a sessão
+        {ilimitada ? (
+          <div
+            className="mt-7 flex items-center gap-3 rounded-xl border border-violet-400/35 bg-violet-500/12 px-4 py-4 text-left"
+            data-testid="mentis-ilimitada"
+          >
+            <InfinityIcon className="h-6 w-6 shrink-0 text-violet-300" />
+            <div className="min-w-0">
+              <div className="font-display text-lg font-bold tracking-tight text-violet-100">
+                Sua Mentis é ilimitada.
+              </div>
+              <div className="text-xs text-violet-200/70">
+                Abrir a sessão e conversar não custa Spark nenhum — para sempre.
+              </div>
             </div>
-            <div className="mt-1 font-display text-xl font-bold text-white">{custoSessao} Sparks</div>
-            <div className="text-xs text-white/50">vale 24h — entre e saia à vontade</div>
           </div>
-          <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
-            <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-white/40">
-              <Send className="w-3 h-3 text-[#4FD9FF]" /> Cada mensagem
+        ) : (
+          <>
+            <div className="mt-7 grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
+              <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
+                <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-white/40">
+                  <Zap className="w-3 h-3 text-amber-400" /> Abrir a sessão
+                </div>
+                <div className="mt-1 font-display text-xl font-bold text-white">{custoSessao} Sparks</div>
+                <div className="text-xs text-white/50">vale 24h — entre e saia à vontade</div>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
+                <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-white/40">
+                  <Send className="w-3 h-3 text-[#4FD9FF]" /> Cada mensagem
+                </div>
+                <div className="mt-1 font-display text-xl font-bold text-white">{custoMensagem} Sparks</div>
+                <div className="text-xs text-white/50">cobrada só quando ela responde</div>
+              </div>
             </div>
-            <div className="mt-1 font-display text-xl font-bold text-white">{custoMensagem} Sparks</div>
-            <div className="text-xs text-white/50">cobrada só quando ela responde</div>
-          </div>
-        </div>
+            <Link
+              to="/sparks"
+              className="mt-3 flex items-center gap-2.5 rounded-xl border border-violet-400/30 bg-violet-500/10 px-4 py-3 text-left transition-colors hover:border-violet-400/60"
+              data-testid="mentis-oferta-ilimitada"
+            >
+              <InfinityIcon className="h-4 w-4 shrink-0 text-violet-300" />
+              <span className="text-xs leading-snug text-violet-100/85">
+                <strong className="font-semibold text-violet-100">Cansou de contar Spark?</strong>{" "}
+                O pacote de R$119,90 deixa a Mentis ilimitada para sempre.
+              </span>
+            </Link>
+          </>
+        )}
 
         {erro && (
           <p className="mt-5 text-sm font-medium text-rose-300" data-testid="mentis-portao-erro">{erro}</p>
@@ -313,13 +346,15 @@ export default function MentisChat() {
             abrindo={abrindo}
             erro={erro}
             aoAbrir={abrir}
+            ilimitada={Boolean(sessao?.mentis_ilimitada)}
           />
         </div>
       </div>
     );
   }
 
-  const semSaldoMensagem = saldo != null && saldo < custoMensagem;
+  const semSaldoMensagem =
+    !sessao?.mentis_ilimitada && saldo != null && saldo < custoMensagem;
 
   // Balões a mostrar agora: os fixos de abertura enquanto só existe a
   // mensagem de boas-vindas, ou os contextuais que vieram junto da última
@@ -347,7 +382,11 @@ export default function MentisChat() {
                 <Clock className="w-3 h-3" /> sessão termina em {formatarExpiracao(sessao.expira_em)}
               </span>
               <span className="inline-flex items-center gap-1">
-                <Zap className="w-3 h-3 text-amber-400" /> {custoMensagem} Sparks por mensagem
+                {sessao?.mentis_ilimitada ? (
+                  <><InfinityIcon className="w-3 h-3 text-violet-300" /> mensagens ilimitadas</>
+                ) : (
+                  <><Zap className="w-3 h-3 text-amber-400" /> {custoMensagem} Sparks por mensagem</>
+                )}
               </span>
               {saldo != null && <span>saldo {saldo}</span>}
             </div>

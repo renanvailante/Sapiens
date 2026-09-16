@@ -18,6 +18,7 @@ import { faixaDeDominio } from "../lib/dominio";
 import { proximaQuinta, temAcessoLocal } from "../lib/live";
 import PedirWhatsApp from "../components/PedirWhatsApp";
 import MentorUSP from "../components/MentorUSP";
+import ContagemEnem from "../components/ContagemEnem";
 import { useDeclararContextoMentis } from "../lib/mentisContexto";
 import {
   ArrowRight, Sparkles, Compass, Target, Trophy, CloudOff, RotateCw, PlayCircle,
@@ -556,6 +557,15 @@ export default function Dashboard() {
             </button>
           </div>
         )}
+
+        {/* ---------------------------------------------------------------
+            0. O RELÓGIO. Antes do mapa, porque é o que decide a prioridade
+            de tudo o que vem depois — e porque some sozinho quando as duas
+            datas do ENEM passam.
+            --------------------------------------------------------------- */}
+        <div className="mb-6" data-tour="dash-enem">
+          <ContagemEnem testid="dash-contagem-enem" />
+        </div>
 
         {/* ---------------------------------------------------------------
             1. O MAPA. A vitrine do produto, e a primeira coisa na página.

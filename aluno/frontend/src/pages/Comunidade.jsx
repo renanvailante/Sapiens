@@ -1,12 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import Nav from "../components/Nav";
 import { api, errMsg } from "../lib/api";
 import { useDeclararContextoMentis } from "../lib/mentisContexto";
-import {
-  Users, MessageCircle, CheckCircle2, ArrowUp, Sparkles, Loader2, PenLine, Filter,
-} from "lucide-react";
+import { Users, MessageCircle, CheckCircle2, ArrowUp, Sparkles, Loader2, PenLine, Filter, Lock } from "lucide-react";
 
 /**
  * O mural de dúvidas.
@@ -90,7 +88,7 @@ function CardDeDuvida({ duvida }) {
   );
 }
 
-function FormularioDeDuvida({ areas, aoPublicar }) {
+function FormularioDeDuvida({ areas, aoPublicar, sala = "geral" }) {
   const [aberto, setAberto] = useState(false);
   const [area, setArea] = useState("Matemática");
   const [titulo, setTitulo] = useState("");
@@ -104,7 +102,9 @@ function FormularioDeDuvida({ areas, aoPublicar }) {
     if (!valido || enviando) return;
     setEnviando(true);
     try {
-      await api.post("/comunidade/duvidas", { area, titulo: titulo.trim(), corpo: corpo.trim() });
+      await api.post("/comunidade/duvidas", {
+        area, titulo: titulo.trim(), corpo: corpo.trim(), sala,
+      });
       setTitulo("");
       setCorpo("");
       setAberto(false);
@@ -198,19 +198,47 @@ export default function Comunidade() {
   const [filtro, setFiltro] = useState("sem_resposta");
   const [area, setArea] = useState("");
   const [carregando, setCarregando] = useState(true);
+  // A sala vem da URL para que o link da sala VIP possa ser enviado e
+  // favoritado — `?sala=vip` é o endereço dela.
+  const [params, setParams] = useSearchParams();
+  const sala = params.get("sala") === "vip" ? "vip" : "geral";
+  const [souVip, setSouVip] = useState(null);
 
-  useDeclararContextoMentis("No mural de dúvidas da comunidade.");
+  useDeclararContextoMentis(
+    sala === "vip" ? "Na sala VIP da comunidade." : "No mural de dúvidas da comunidade.",
+  );
+
+  // Pergunta ANTES de tentar abrir a sala: assim quem não comprou vê o convite
+  // em vez de um 403 no meio da navegação.
+  useEffect(() => {
+    api.get("/comunidade/vip/acesso")
+      .then(({ data }) => setSouVip(Boolean(data.vip)))
+      .catch(() => setSouVip(false));
+  }, []);
+
+  const trocarSala = (nova) => {
+    const p = new URLSearchParams(params);
+    if (nova === "vip") p.set("sala", "vip");
+    else p.delete("sala");
+    setParams(p, { replace: true });
+  };
 
   const carregar = useCallback(() => {
+    if (sala === "vip" && souVip === false) {
+      setDados({ items: [], total: 0, areas: [] });
+      setCarregando(false);
+      return;
+    }
     setCarregando(true);
-    const params = new URLSearchParams({ filtro });
-    if (area) params.set("area", area);
+    const busca = new URLSearchParams({ filtro });
+    if (area) busca.set("area", area);
+    if (sala === "vip") busca.set("sala", "vip");
     api
-      .get(`/comunidade?${params}`)
+      .get(`/comunidade?${busca}`)
       .then(({ data }) => setDados(data))
       .catch(() => setDados({ items: [], total: 0, areas: [] }))
       .finally(() => setCarregando(false));
-  }, [filtro, area]);
+  }, [filtro, area, sala, souVip]);
 
   useEffect(carregar, [carregar]);
 
@@ -228,15 +256,73 @@ export default function Comunidade() {
           Ninguém trava sozinho.
         </h1>
         <p className="mt-3 max-w-xl text-white/60">
-          Publique sua dúvida e responda a de outro aluno. Quando alguém marca a sua resposta como a
-          que resolveu, você ganha Sparks — explicar é o estudo que mais rende.
+          {sala === "vip"
+            ? "A sala fechada de quem tem o pacote de 4.000 Sparks. Menos gente, resposta mais rápida — e a equipe lê todas."
+            : "Publique sua dúvida e responda a de outro aluno. Quando alguém marca a sua resposta como a que resolveu, você ganha Sparks — explicar é o estudo que mais rende."}
         </p>
 
-        <div className="mt-8">
-          <FormularioDeDuvida areas={dados.areas.length ? dados.areas : ["Matemática"]} aoPublicar={carregar} />
+        {/* As duas salas. A VIP aparece para todo mundo de propósito: quem
+            não tem o direito precisa saber que ela existe — é o que a torna
+            comprável — e clicar leva ao convite, nunca a um erro. */}
+        <div className="mt-6 inline-flex rounded-full border border-white/10 bg-white/[0.04] p-1" data-testid="comunidade-salas">
+          <button
+            onClick={() => trocarSala("geral")}
+            className={`pill rounded-full px-4 py-2 text-xs font-medium transition-colors ${
+              sala === "geral" ? "bg-white/12 text-white" : "text-white/50 hover:text-white"
+            }`}
+            data-testid="comunidade-sala-geral"
+          >
+            Mural aberto
+          </button>
+          <button
+            onClick={() => trocarSala("vip")}
+            className={`pill inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-medium transition-colors ${
+              sala === "vip"
+                ? "bg-violet-500/25 text-violet-100"
+                : "text-violet-300/70 hover:text-violet-200"
+            }`}
+            data-testid="comunidade-sala-vip"
+          >
+            {souVip === false && <Lock className="h-3 w-3" />} Sala VIP
+          </button>
         </div>
 
-        <div className="mt-8 flex flex-wrap items-center gap-2">
+        {sala === "vip" && souVip === false ? (
+          <div
+            className="mt-6 rounded-2xl border border-violet-400/30 bg-violet-500/10 p-6"
+            data-testid="comunidade-vip-fechada"
+          >
+            <div className="flex items-center gap-2 font-display text-xl font-bold tracking-tight text-violet-100">
+              <Lock className="h-5 w-5" /> Esta sala é fechada.
+            </div>
+            <p className="mt-2 max-w-xl text-sm leading-relaxed text-violet-100/70">
+              A Comunidade VIP vem com o pacote de 4.000 Sparks (R$119,90) — o mesmo que deixa a
+              Mentis ilimitada para sempre. É a sala com menos gente e resposta mais rápida, e a
+              equipe lê todas as dúvidas que entram aqui.
+            </p>
+            <Link
+              to="/sparks"
+              className="pill btn-sapiens mt-5 inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-medium"
+              data-testid="comunidade-vip-comprar"
+            >
+              Quero o acesso VIP
+            </Link>
+          </div>
+        ) : (
+          <div className="mt-8">
+            <FormularioDeDuvida
+              areas={dados.areas.length ? dados.areas : ["Matemática"]}
+              aoPublicar={carregar}
+              sala={sala}
+            />
+          </div>
+        )}
+
+        <div
+          className={`mt-8 flex flex-wrap items-center gap-2 ${
+            sala === "vip" && souVip === false ? "hidden" : ""
+          }`}
+        >
           {FILTROS.map((f) => (
             <button
               key={f.id}
@@ -267,7 +353,7 @@ export default function Comunidade() {
           </span>
         </div>
 
-        <div className="mt-4 space-y-3">
+        <div className={`mt-4 space-y-3 ${sala === "vip" && souVip === false ? "hidden" : ""}`}>
           {carregando ? (
             <div className="flex items-center gap-2 py-8 text-white/50">
               <Loader2 className="h-4 w-4 animate-spin" /> Carregando…

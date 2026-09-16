@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import Nav from "../components/Nav";
 import { api, errMsg } from "../lib/api";
 import { toast } from "sonner";
@@ -346,6 +347,10 @@ function AutoRechargeBrick({ publicKey, pkg, frequencyDays, baseline, onSuccess,
 
 export default function SparksStore() {
   const [sparks, setSparks] = useState(null);
+  // O direito permanente do pacote de R$119,90. Vem do MESMO GET do saldo —
+  // as duas informações aparecem juntas na tela e buscá-las em duas chamadas
+  // faria a loja piscar entre "compre" e "você já tem".
+  const [mentisIlimitada, setMentisIlimitada] = useState(false);
   const [packages, setPackages] = useState([]);
   const [publicKey, setPublicKey] = useState(null);
   const [mpDisponivel, setMpDisponivel] = useState(true);
@@ -366,15 +371,16 @@ export default function SparksStore() {
 
   const carregar = () => {
     Promise.all([
-      api.get("/firestore/students/me/sparks").then(({ data }) => data.sparks_balance).catch(() => null),
+      api.get("/firestore/students/me/sparks").then(({ data }) => data).catch(() => null),
       api.get("/sparks/packages").then(({ data }) => data).catch(() => ({ packages: [], auto_recharge_frequencies_days: [], default_baseline: 50 })),
       api.get("/sparks/config").then(({ data }) => data.public_key).catch(() => { setMpDisponivel(false); return null; }),
       api.get("/sparks/purchases/me").then(({ data }) => data.items || []).catch(() => []),
       api.get("/firestore/students/me/rounds").then(({ data }) => data.rounds || []).catch(() => []),
       api.get("/skills-map").then(({ data }) => data.cost).catch(() => null),
       api.get("/sparks/auto-recharge/me").then(({ data }) => (data?.active ? data : null)).catch(() => null),
-    ]).then(([s, catalogo, pk, purch, rds, cost, recarga]) => {
-      setSparks(s);
+    ]).then(([saldo, catalogo, pk, purch, rds, cost, recarga]) => {
+      setSparks(saldo?.sparks_balance ?? null);
+      setMentisIlimitada(Boolean(saldo?.mentis_ilimitada));
       setPackages(catalogo.packages || []);
       setFrequencies(catalogo.auto_recharge_frequencies_days || []);
       setDefaultBaseline(catalogo.default_baseline ?? 50);
@@ -388,6 +394,11 @@ export default function SparksStore() {
     });
   };
   useEffect(carregar, []);
+
+  // O pacote que concede o direito, escolhido pelo CATÁLOGO e não por um
+  // `package_id` escrito na tela: o dia em que o produto mudar o pacote que
+  // dá Mentis ilimitada, esta tela acompanha sozinha.
+  const pacoteIlimitado = packages.find((p) => (p.beneficios || []).length > 0 && !p.oculto);
 
   const baseline = autoRecharge?.baseline ?? defaultBaseline;
   // `Number(x) || padrao` devolvia o padrão quando o aluno digitava 0, porque
@@ -561,6 +572,59 @@ export default function SparksStore() {
           </div>
         )}
 
+        {/* O ARGUMENTO PRINCIPAL DA LOJA, antes da grade de pacotes: o de
+            R$119,90 não é "mais Sparks", é a Mentis parar de cobrar para
+            sempre. Quem já comprou vê a confirmação no lugar do anúncio —
+            vender de novo o que a pessoa já tem é o jeito mais rápido de
+            fazer ela duvidar do que comprou. */}
+        {mentisIlimitada ? (
+          <div
+            className="mt-10 flex flex-wrap items-center gap-4 rounded-2xl border border-violet-400/35 bg-violet-500/12 p-5"
+            data-testid="sparks-mentis-ilimitada-ativa"
+          >
+            <InfinityIcon className="h-7 w-7 shrink-0 text-violet-300" />
+            <div className="min-w-0 flex-1">
+              <div className="font-display text-lg font-bold tracking-tight text-violet-100">
+                Mentis ilimitada e Comunidade VIP: são seus.
+              </div>
+              <div className="text-sm text-violet-200/70">
+                Chat, explicação de questão e intervenção da causa raiz não gastam Spark —
+                para sempre. Seu saldo serve para o resto do produto.{" "}
+                <Link to="/comunidade?sala=vip" className="font-semibold text-violet-100 underline">
+                  Abrir a sala VIP
+                </Link>
+              </div>
+            </div>
+          </div>
+        ) : pacoteIlimitado ? (
+          <button
+            type="button"
+            onClick={() => setSelectedPkg(pacoteIlimitado)}
+            className="lift mt-10 flex w-full flex-wrap items-center gap-4 rounded-2xl border border-violet-400/35 bg-gradient-to-r from-violet-500/[0.16] via-violet-500/[0.06] to-transparent p-5 text-left hover:border-violet-400/60"
+            data-testid="sparks-mentis-ilimitada-oferta"
+          >
+            <InfinityIcon className="h-8 w-8 shrink-0 text-violet-300" />
+            <div className="min-w-0 flex-1">
+              <div className="font-mono-alt text-[10px] uppercase tracking-[0.25em] text-violet-300/90">
+                {formatBRL(pacoteIlimitado.price_cents)} · {pacoteIlimitado.sparks_amount} Sparks
+              </div>
+              <div className="mt-0.5 font-display text-xl font-extrabold tracking-tight text-white md:text-2xl">
+                A Mentis para de cobrar. E a sala VIP abre.
+              </div>
+              <div className="mt-1 text-sm leading-relaxed text-white/60">
+                Uma compra e o chat, as explicações de questão e as intervenções da causa raiz
+                deixam de gastar Spark — para sempre, sem mensalidade e sem limite de
+                mensagens. Junto vem a <strong className="font-semibold text-white/85">Comunidade
+                VIP</strong>, a sala fechada do mural, e os {pacoteIlimitado.sparks_amount} Sparks,
+                que não expiram.
+              </div>
+            </div>
+            <span className="pill btn-sapiens inline-flex shrink-0 items-center gap-2 rounded-full px-6 py-3.5 text-sm font-semibold">
+              Quero a Mentis ilimitada
+            </span>
+          </button>
+        ) : null}
+
         <div className="mt-10 flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2 text-white/80 font-display font-bold text-lg">
             <ShoppingBag className="w-4 h-4" /> Pacotes de Sparks
@@ -618,6 +682,29 @@ export default function SparksStore() {
                   </div>
                   <div className="mt-1 text-sm text-zinc-500">{p.label}</div>
                   <div className={`mt-4 font-mono-alt font-bold text-sapiens-navy ${NIVEL.price}`}>{formatBRL(p.price_cents)}</div>
+                  {/* O direito PERMANENTE que a compra concede. Vem do
+                      catálogo do servidor (`sparks_store.beneficio`), a mesma
+                      fonte que o webhook usa para conceder — anunciar aqui o
+                      que o servidor não entrega seria o pior defeito possível
+                      numa tela de pagamento. */}
+                  {(p.beneficios || []).length > 0 && (
+                    <ul
+                      className={`mt-4 space-y-1.5 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2.5 ${
+                        nivel >= 2 ? "text-sm" : "text-xs"
+                      }`}
+                      data-testid={`sparks-beneficios-${p.package_id}`}
+                    >
+                      {p.beneficios.map((b) => (
+                        <li key={b} className="flex items-start gap-2 font-semibold leading-snug text-violet-900">
+                          <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-violet-600" />
+                          {b}
+                        </li>
+                      ))}
+                      <li className="pt-0.5 text-[11px] font-normal leading-snug text-violet-700/80">
+                        Uma compra, para sempre. Sem mensalidade e sem renovação.
+                      </li>
+                    </ul>
+                  )}
                   <button
                     onClick={() => setSelectedPkg(p)}
                     disabled={!mpDisponivel || !publicKey}
