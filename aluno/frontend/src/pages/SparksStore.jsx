@@ -30,16 +30,164 @@ function formatBRL(cents) {
   return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
-// Painel de pagamento — monta o Payment Brick do Mercado Pago dentro de
-// `containerId`. O aluno digita os dados do cartão DENTRO do widget oficial
+// A tela de pagamento PADRÃO da loja: Pix.
+//
+// Antes, clicar em "Comprar" abria o Payment Brick do Mercado Pago, que pede
+// e-mail e CPF antes de mostrar qualquer coisa — um formulário inteiro entre
+// a vontade de comprar e o código para pagar, com dados que nós já temos. O
+// QR Code agora é gerado no próprio clique (`POST /sparks/purchases` com
+// `payment_method_id: "pix"`), e o que aparece aqui é só o que serve para
+// pagar: o código para escanear, o botão que abre o app do banco e o
+// copia-e-cola.
+function PainelPix({ pkg, estado, pix, erro, onFechar, onCartao, onTentarDeNovo }) {
+  const campoPixRef = useRef(null);
+
+  const copiar = async () => {
+    // `writeText` devolve uma promessa e REJEITA onde a área de transferência
+    // é bloqueada — navegador embutido do WhatsApp e do Instagram, que é por
+    // onde boa parte dos alunos abre o link. Sem o `catch`, o toast dizia
+    // "copiado" de qualquer jeito e a pessoa voltava para o banco com a área
+    // de transferência vazia, sem entender por quê.
+    try {
+      await navigator.clipboard.writeText(pix.qr_code);
+      toast.success("Código Pix copiado. Cole no app do seu banco.");
+    } catch {
+      campoPixRef.current?.select();
+      toast.error("Seu navegador não deixou copiar. O código está selecionado acima — segure e escolha Copiar.");
+    }
+  };
+
+  const validade = (() => {
+    if (!pix?.expira_em) return null;
+    const quando = new Date(pix.expira_em);
+    if (Number.isNaN(quando.getTime())) return null;
+    return quando.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  })();
+
+  return (
+    <div className="card-sapiens rounded-2xl p-6" data-testid="sparks-painel-pix">
+      <div className="flex items-center justify-between gap-4 mb-4">
+        <div>
+          <div className="font-mono-alt text-[10px] uppercase tracking-[0.3em] text-zinc-400">Pagamento por Pix · Mercado Pago</div>
+          <div className="font-display font-bold text-lg text-zinc-950">{pkg.label} · {formatBRL(pkg.price_cents)}</div>
+        </div>
+        <button onClick={onFechar} className="text-xs text-zinc-400 hover:text-zinc-700">Fechar</button>
+      </div>
+
+      {estado === "gerando" && (
+        <div className="flex items-center gap-2 text-sm text-zinc-500 py-10 justify-center" data-testid="sparks-pix-gerando">
+          <Loader2 className="w-4 h-4 animate-spin" /> Gerando seu código Pix...
+        </div>
+      )}
+
+      {estado === "erro" && (
+        <div data-testid="sparks-pix-erro">
+          <div className="text-sm text-rose-600">{erro}</div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              onClick={onTentarDeNovo}
+              className="pill btn-sapiens px-4 py-2 rounded-full text-xs font-medium"
+              data-testid="sparks-pix-tentar-de-novo"
+            >
+              Tentar de novo
+            </button>
+            {onCartao && (
+              <button
+                onClick={onCartao}
+                className="pill px-4 py-2 rounded-full text-xs font-medium border border-zinc-200 text-zinc-600 hover:border-zinc-400"
+                data-testid="sparks-pix-erro-cartao"
+              >
+                Pagar com cartão
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {estado === "pronto" && pix && (
+        <div className="text-center">
+          <div className="flex items-center justify-center gap-2 text-sm font-semibold text-zinc-800">
+            <QrCode className="w-4 h-4" /> Escaneie o QR Code ou copie o código
+          </div>
+          {pix.qr_code_base64 && (
+            <img
+              src={`data:image/png;base64,${pix.qr_code_base64}`}
+              alt="QR Code Pix"
+              className="mx-auto mt-3 w-48 h-48 rounded-xl border border-zinc-200"
+              data-testid="sparks-pix-qr-image"
+            />
+          )}
+          {pix.qr_code && (
+            <div className="mt-4">
+              <textarea
+                ref={campoPixRef}
+                readOnly
+                value={pix.qr_code}
+                rows={3}
+                onClick={(e) => e.target.select()}
+                className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-xs text-zinc-600 font-mono-alt resize-none"
+                data-testid="sparks-pix-copia-cola"
+              />
+              <button
+                onClick={copiar}
+                className="pill btn-sapiens mt-2 inline-flex w-full items-center justify-center gap-2 px-5 py-3 rounded-full text-sm font-semibold sm:w-auto"
+                data-testid="sparks-pix-copiar"
+              >
+                <Copy className="w-4 h-4" /> Copiar código Pix
+              </button>
+            </div>
+          )}
+          {/* No celular o QR Code não serve: ninguém escaneia a própria tela.
+              O `ticket_url` é o que abre o pagamento no app do banco ou do
+              MP, que é o caminho real de quem está no telefone. */}
+          {pix.ticket_url && (
+            <div>
+              <a
+                href={pix.ticket_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="pill mt-2 inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full text-xs font-medium border border-zinc-200 text-zinc-600 hover:border-zinc-400"
+                data-testid="sparks-pix-abrir-app"
+              >
+                <ExternalLink className="w-3.5 h-3.5" /> Abrir no app do banco
+              </a>
+            </div>
+          )}
+          <p className="mt-4 text-xs text-zinc-500">
+            Os Sparks entram automaticamente assim que o Mercado Pago confirmar o pagamento — pode fechar esta tela
+            quando quiser, isso não cancela o Pix.
+            {validade && ` Este código vale até ${validade}.`}
+          </p>
+        </div>
+      )}
+
+      {/* Fora do bloco do QR Code de propósito: quem já sabe que vai pagar no
+          cartão não deve ter que esperar um código Pix terminar de nascer
+          para poder dizer isso. */}
+      {onCartao && estado !== "erro" && (
+        <div className="text-center">
+          <button
+            onClick={onCartao}
+            className="mt-3 text-xs text-zinc-400 underline hover:text-zinc-700"
+            data-testid="sparks-pix-prefiro-cartao"
+          >
+            Prefiro pagar com cartão
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Pagamento com cartão — só para quem escolhe explicitamente, pelo link no
+// painel do Pix. Monta o Payment Brick do Mercado Pago dentro de
+// `containerId`: o aluno digita os dados do cartão DENTRO do widget oficial
 // do MP (não num campo nosso); `onSubmit` só recebe de volta um token opaco.
 function PaymentBrick({ publicKey, pkg, onSuccess, onCancel }) {
   const containerId = useRef(`mp-brick-${pkg.package_id}`).current;
   const brickRef = useRef(null);
-  const [status, setStatus] = useState("loading"); // 'loading' | 'ready' | 'submitting' | 'error' | 'pix'
+  const [status, setStatus] = useState("loading"); // 'loading' | 'ready' | 'submitting' | 'error'
   const [error, setError] = useState(null);
-  const [pix, setPix] = useState(null); // { qr_code, qr_code_base64, ticket_url } quando o método é Pix
-  const campoPixRef = useRef(null);
 
   useEffect(() => {
     let cancelado = false;
@@ -64,10 +212,11 @@ function PaymentBrick({ publicKey, pkg, onSuccess, onCancel }) {
         return mp.bricks().create("payment", containerId, {
           initialization: { amount: pkg.price_cents / 100 },
           customization: {
-            // Pix entra na categoria "bankTransfer" na taxonomia do Brick —
-            // não existe uma chave dedicada "pix". Cartão continua
-            // exatamente como estava, só acrescentei a categoria nova.
-            paymentMethods: { creditCard: "all", debitCard: "all", bankTransfer: "all" },
+            // Só cartão: o Pix tem caminho próprio (`PainelPix`), gerado no
+            // clique e sem formulário. Deixar `bankTransfer` aqui devolveria
+            // o aluno ao pedido de e-mail e CPF que esta mudança tirou do
+            // caminho — dois jeitos de pagar por Pix, um deles pior.
+            paymentMethods: { creditCard: "all", debitCard: "all" },
           },
           callbacks: {
             onReady: () => { if (!cancelado) { clearTimeout(tempoLimite); setStatus("ready"); } },
@@ -89,18 +238,7 @@ function PaymentBrick({ publicKey, pkg, onSuccess, onCancel }) {
                   issuer_id: formData.issuer_id,
                   payer: formData.payer,
                 })
-                .then(({ data }) => {
-                  // Pix não aprova na hora: fica "pending" até o aluno pagar.
-                  // O QR Code/copia-e-cola vêm nesta MESMA resposta — nada de
-                  // segunda chamada — e ficam na tela enquanto o pagamento é
-                  // aguardado em segundo plano (`acompanharPagamento`, no
-                  // componente pai, credita os Sparks quando o webhook confirmar).
-                  if (data.pix?.qr_code) {
-                    setPix(data.pix);
-                    setStatus("pix");
-                  }
-                  onSuccess(data);
-                })
+                .then(({ data }) => onSuccess(data))
                 .catch((e) => {
                   setStatus("ready");
                   setError(errMsg(e, "O Mercado Pago recusou o pagamento."));
@@ -129,7 +267,7 @@ function PaymentBrick({ publicKey, pkg, onSuccess, onCancel }) {
     <div className="card-sapiens rounded-2xl p-6" data-testid="sparks-payment-brick">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <div className="font-mono-alt text-[10px] uppercase tracking-[0.3em] text-zinc-400">Pagamento seguro · Mercado Pago</div>
+          <div className="font-mono-alt text-[10px] uppercase tracking-[0.3em] text-zinc-400">Cartão · Mercado Pago</div>
           <div className="font-display font-bold text-lg text-zinc-950">{pkg.label} · {formatBRL(pkg.price_cents)}</div>
         </div>
         <button onClick={onCancel} className="text-xs text-zinc-400 hover:text-zinc-700">Cancelar</button>
@@ -153,78 +291,10 @@ function PaymentBrick({ publicKey, pkg, onSuccess, onCancel }) {
           )}
         </div>
       )}
-      <div id={containerId} className={status === "pix" ? "hidden" : ""} />
+      <div id={containerId} />
       {status === "submitting" && (
         <div className="flex items-center gap-2 text-sm text-zinc-500 mt-3 justify-center">
           <Loader2 className="w-4 h-4 animate-spin" /> Confirmando com o Mercado Pago...
-        </div>
-      )}
-      {status === "pix" && pix && (
-        <div className="text-center" data-testid="sparks-pix-panel">
-          <div className="flex items-center justify-center gap-2 text-sm font-semibold text-zinc-800 mb-3">
-            <QrCode className="w-4 h-4" /> Escaneie o QR Code ou copie o código Pix
-          </div>
-          {pix.qr_code_base64 && (
-            <img
-              src={`data:image/png;base64,${pix.qr_code_base64}`}
-              alt="QR Code Pix"
-              className="mx-auto w-48 h-48 rounded-xl border border-zinc-200"
-              data-testid="sparks-pix-qr-image"
-            />
-          )}
-          {/* No celular o QR Code não serve: ninguém escaneia a própria tela.
-              O `ticket_url` já vinha na resposta do Mercado Pago e não era
-              usado por tela nenhuma — é ele que abre o pagamento no app do
-              banco ou do MP, que é o caminho real de quem está no telefone. */}
-          {pix.ticket_url && (
-            <a
-              href={pix.ticket_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="pill btn-sapiens mt-4 inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full text-xs font-medium"
-              data-testid="sparks-pix-abrir-app"
-            >
-              <ExternalLink className="w-3.5 h-3.5" /> Pagar no app do banco
-            </a>
-          )}
-          {pix.qr_code && (
-            <div className="mt-4">
-              <textarea
-                ref={campoPixRef}
-                readOnly
-                value={pix.qr_code}
-                rows={3}
-                onClick={(e) => e.target.select()}
-                className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-xs text-zinc-600 font-mono-alt resize-none"
-                data-testid="sparks-pix-copia-cola"
-              />
-              {/* `writeText` devolve uma promessa e REJEITA onde a área de
-                  transferência é bloqueada — navegador embutido do WhatsApp e
-                  do Instagram, que é por onde boa parte dos alunos abre o
-                  link. Sem o `catch`, o toast dizia "copiado" de qualquer
-                  jeito e a pessoa voltava para o banco com a área de
-                  transferência vazia, sem entender por quê. */}
-              <button
-                onClick={async () => {
-                  try {
-                    await navigator.clipboard.writeText(pix.qr_code);
-                    toast.success("Código Pix copiado.");
-                  } catch {
-                    campoPixRef.current?.select();
-                    toast.error("Seu navegador não deixou copiar. O código está selecionado acima — segure e escolha Copiar.");
-                  }
-                }}
-                className="pill btn-sapiens mt-2 inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full text-xs font-medium"
-                data-testid="sparks-pix-copiar"
-              >
-                <Copy className="w-3.5 h-3.5" /> Copiar código
-              </button>
-            </div>
-          )}
-          <p className="mt-4 text-xs text-zinc-500">
-            Os Sparks entram automaticamente assim que o Mercado Pago confirmar o pagamento — pode fechar esta tela
-            quando quiser, isso não cancela o Pix.
-          </p>
         </div>
       )}
     </div>
@@ -357,7 +427,14 @@ export default function SparksStore() {
   const [purchases, setPurchases] = useState([]);
   const [rounds, setRounds] = useState([]);
   const [mapCost, setMapCost] = useState(null);
+  // Cartão: só para quem escolhe de propósito, pelo link dentro do painel do Pix.
   const [selectedPkg, setSelectedPkg] = useState(null);
+  // Pix é o caminho padrão da loja — o clique em "Comprar" já gera o código,
+  // sem pedir e-mail nem CPF antes (o e-mail o servidor tira da conta).
+  const [pixPkg, setPixPkg] = useState(null);
+  const [pixEstado, setPixEstado] = useState("gerando"); // 'gerando' | 'pronto' | 'erro'
+  const [pixDados, setPixDados] = useState(null);
+  const [pixErro, setPixErro] = useState(null);
   const [loading, setLoading] = useState(true);
   const [aguardandoPagamento, setAguardandoPagamento] = useState(false);
 
@@ -437,6 +514,13 @@ export default function SparksStore() {
   // no servidor: `GET /sparks/purchases/{id}` repergunta o status enquanto o
   // pagamento estiver em aberto. Por isso o Pix precisa de uma janela longa —
   // não é "esperar o webhook", é a própria tela confirmando o pagamento.
+  const fecharPagamento = useCallback(() => {
+    setSelectedPkg(null);
+    setPixPkg(null);
+    setPixDados(null);
+    setPixErro(null);
+  }, []);
+
   const acompanharPagamento = useCallback(async (purchaseId, ehPix = false) => {
     setAguardandoPagamento(true);
     // Cartão responde em segundos. Pix leva o tempo de o aluno sair para o app
@@ -452,10 +536,10 @@ export default function SparksStore() {
         const { data } = await api.get(`/sparks/purchases/${purchaseId}`);
         if (data.credited) {
           setAguardandoPagamento(false);
-          // Pix fica com o QR Code aberto até confirmar — fecha só agora,
+          // O Pix fica com o QR Code aberto até confirmar — fecha só agora,
           // que o pagamento realmente foi creditado. Cartão já tinha fechado
           // na hora (`onPurchaseSuccess`), então isto é um no-op pra ele.
-          setSelectedPkg(null);
+          fecharPagamento();
           toast.success(`+${data.sparks_amount} Sparks creditados!`);
           carregar();
           return;
@@ -465,7 +549,7 @@ export default function SparksStore() {
         // deixar o aluno olhando um QR Code que não vale mais nada.
         if (data.status === "rejected" || data.status === "cancelled") {
           setAguardandoPagamento(false);
-          setSelectedPkg(null);
+          fecharPagamento();
           toast.error(
             ehPix
               ? "O prazo deste Pix expirou. Gere um novo para pagar."
@@ -489,26 +573,66 @@ export default function SparksStore() {
       "O Mercado Pago ainda está confirmando. Os Sparks entram sozinhos assim que ele responder.",
     );
     carregar();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fecharPagamento]);
 
+  // O caminho normal da loja: um clique, e o código para pagar aparece.
+  // Nenhum formulário no meio — o servidor já sabe quem é o aluno e usa o
+  // e-mail da conta, que é o único campo que o Mercado Pago exige no Pix.
+  //
+  // Clicar de novo no mesmo pacote NÃO gera um segundo código: o servidor
+  // devolve o Pix que ainda está em aberto (`_pix_em_aberto`), justamente
+  // para ninguém pagar dois QR Codes do mesmo produto.
+  const comprarComPix = (p) => {
+    setSelectedPkg(null);
+    setPixPkg(p);
+    setPixEstado("gerando");
+    setPixDados(null);
+    setPixErro(null);
+    api
+      .post("/sparks/purchases", { package_id: p.package_id, payment_method_id: "pix" })
+      .then(({ data }) => {
+        if (!data?.pix?.qr_code) {
+          setPixEstado("erro");
+          setPixErro("O Mercado Pago não devolveu o código Pix desta vez.");
+          return;
+        }
+        setPixDados(data.pix);
+        setPixEstado("pronto");
+        if (data.purchase_id) acompanharPagamento(data.purchase_id, true);
+      })
+      .catch((e) => {
+        setPixEstado("erro");
+        setPixErro(errMsg(e, "Não foi possível gerar o código Pix."));
+      });
+  };
+
+  // Cartão — só para quem pede. O Brick do Mercado Pago (e o formulário que
+  // vem com ele) deixou de ser o primeiro passo de toda compra.
   const onPurchaseSuccess = (data) => {
+    setSelectedPkg(null);
     if (data?.status === "rejected") {
-      setSelectedPkg(null);
       toast.error("Pagamento recusado — tente outro cartão.");
       return;
     }
-    // Pix mostra QR Code + copia-e-cola dentro do próprio `PaymentBrick` — a
-    // tela só fecha quando `acompanharPagamento` detectar o crédito (acima).
-    // Cartão continua fechando na hora, como sempre fez.
-    if (!data?.pix) {
-      setSelectedPkg(null);
-    }
     if (data?.purchase_id) {
-      acompanharPagamento(data.purchase_id, !!data?.pix);
-    } else if (!data?.pix) {
+      acompanharPagamento(data.purchase_id, false);
+    } else {
       setTimeout(carregar, 3000);
     }
   };
+
+  // O painel de pagamento nasce abaixo da grade de pacotes: sem isto, em
+  // tela pequena o aluno clica em "Comprar" e parece que nada aconteceu.
+  useEffect(() => {
+    if (!pixPkg && !selectedPkg) return undefined;
+    const t = setTimeout(() => {
+      document
+        .getElementById("painel-pagamento")
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 80);
+    return () => clearTimeout(t);
+  }, [pixPkg, selectedPkg]);
 
   // Histórico unificado: compras (Mercado Pago) e rodadas (Sparks ganhos
   // praticando), cada evento com seu próprio sinal — nunca inventa um saldo
@@ -599,7 +723,7 @@ export default function SparksStore() {
         ) : pacoteIlimitado ? (
           <button
             type="button"
-            onClick={() => setSelectedPkg(pacoteIlimitado)}
+            onClick={() => comprarComPix(pacoteIlimitado)}
             className="lift mt-10 flex w-full flex-wrap items-center gap-4 rounded-2xl border border-violet-400/35 bg-gradient-to-r from-violet-500/[0.16] via-violet-500/[0.06] to-transparent p-5 text-left hover:border-violet-400/60"
             data-testid="sparks-mentis-ilimitada-oferta"
           >
@@ -706,7 +830,7 @@ export default function SparksStore() {
                     </ul>
                   )}
                   <button
-                    onClick={() => setSelectedPkg(p)}
+                    onClick={() => comprarComPix(p)}
                     disabled={!mpDisponivel || !publicKey}
                     className={`pill btn-sapiens mt-5 inline-flex items-center justify-center gap-2 px-4 rounded-full font-medium disabled:opacity-40 disabled:cursor-not-allowed ${NIVEL.btn}`}
                     data-testid={`sparks-buy-${p.package_id}`}
@@ -719,14 +843,28 @@ export default function SparksStore() {
           })}
         </div>
 
-        {selectedPkg && publicKey && (
-          <div className="mt-6">
-            <PaymentBrick
-              publicKey={publicKey}
-              pkg={selectedPkg}
-              onSuccess={onPurchaseSuccess}
-              onCancel={() => setSelectedPkg(null)}
-            />
+        {(pixPkg || selectedPkg) && (
+          <div className="mt-6" id="painel-pagamento">
+            {selectedPkg && publicKey ? (
+              <PaymentBrick
+                publicKey={publicKey}
+                pkg={selectedPkg}
+                onSuccess={onPurchaseSuccess}
+                onCancel={() => setSelectedPkg(null)}
+              />
+            ) : pixPkg ? (
+              <PainelPix
+                pkg={pixPkg}
+                estado={pixEstado}
+                pix={pixDados}
+                erro={pixErro}
+                onFechar={fecharPagamento}
+                onTentarDeNovo={() => comprarComPix(pixPkg)}
+                // Sem chave pública não há Brick para abrir — melhor não
+                // oferecer um caminho que não existe.
+                onCartao={publicKey ? () => { setPixPkg(null); setSelectedPkg(pixPkg); } : null}
+              />
+            ) : null}
           </div>
         )}
 
@@ -858,7 +996,7 @@ export default function SparksStore() {
           return pacoteTeste ? (
             <div className="mt-16 pt-6 border-t border-white/10 text-center">
               <button
-                onClick={() => setSelectedPkg(pacoteTeste)}
+                onClick={() => comprarComPix(pacoteTeste)}
                 className="text-[11px] text-white/30 hover:text-white/60 underline"
                 data-testid="sparks-buy-spark_test_15"
               >

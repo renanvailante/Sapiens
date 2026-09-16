@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import pymongo.errors
@@ -78,6 +78,108 @@ def _notification_url() -> str | None:
 
 # ---------------------------------------------------------------- compra avulsa
 
+# Janela em que um Pix já gerado é devolvido de novo em vez de virar outro.
+# A loja passou a gerar o QR Code no próprio clique de "Comprar", sem
+# formulário nenhum no meio: sem isto, três cliques curiosos viram três
+# cobranças pendentes de verdade — e um aluno que pagasse dois QR Codes do
+# mesmo pacote pagaria duas vezes por um produto só.
+PIX_REAPROVEITAR_MINUTOS = 25
+
+# Prazo de validade do QR Code (o mínimo aceito pelo Mercado Pago é 30
+# minutos). Uma hora é folga de sobra para sair, abrir o app do banco e
+# voltar. O padrão do MP quando não mandamos nada são 24 horas — barato
+# quando cada Pix nascia de um formulário preenchido à mão, caro agora que
+# nasce de um clique: cada QR Code abandonado fica sendo reperguntado ao
+# Mercado Pago pelo laço de reconciliação até expirar.
+PIX_VALIDADE_MINUTOS = 60
+
+
+def _payer(user: User, informado: dict, *, is_pix: bool) -> dict:
+    """Dados do pagador enviados ao Mercado Pago.
+
+    `identification` só entra quando existe: antes ia como `null` sempre que
+    o pagador não informasse CPF, o que passou a ser o caso COMUM agora que o
+    Pix é gerado sem formulário. Campo ausente é o formato documentado para
+    "não informado" — `null` não é. O CPF continua opcional para Pix na
+    Checkout API; só o e-mail é obrigatório, e esse nós temos da conta.
+    """
+    payer = {"email": informado.get("email") or user.email}
+    identificacao = informado.get("identification")
+    if identificacao:
+        payer["identification"] = identificacao
+    if is_pix:
+        # Nome do titular no comprovante do banco — o aluno reconhece a
+        # cobrança. Só no Pix: no cartão, quem manda o pagador é o Brick.
+        nome, _, sobrenome = (user.name or "").strip().partition(" ")
+        if nome:
+            payer["first_name"] = nome
+        if sobrenome:
+            payer["last_name"] = sobrenome
+    return payer
+
+
+def _pix_expira_em() -> str:
+    """Prazo do QR Code no formato que o Mercado Pago documenta
+    (`yyyy-MM-ddTHH:mm:ss.SSS±hh:mm`)."""
+    vence = datetime.now(timezone.utc) + timedelta(minutes=PIX_VALIDADE_MINUTOS)
+    return vence.strftime("%Y-%m-%dT%H:%M:%S.000+00:00")
+
+
+def _criar_pagamento(payload: dict) -> dict:
+    """`mp.create_payment`, com uma segunda tentativa sem `date_of_expiration`.
+
+    O prazo do Pix é uma economia nossa (ver `PIX_VALIDADE_MINUTOS`), não
+    parte do produto: se o Mercado Pago recusar o formato da data, a compra
+    tem que acontecer mesmo assim. Repetir aqui não arrisca cobrar duas
+    vezes — um 400 de validação não cria pagamento nenhum do lado do MP.
+    """
+    try:
+        return mp.create_payment(payload)
+    except mp.MercadoPagoError as exc:
+        # Só 400: um erro de validação é a única falha que garante que nada
+        # foi criado do outro lado. Timeout, 5xx ou queda de rede podem ter
+        # criado o pagamento assim mesmo — repetir ali seria gerar uma
+        # segunda cobrança para o mesmo clique.
+        if "date_of_expiration" not in payload or getattr(exc, "status_code", None) != 400:
+            raise
+        motivo = " ".join(
+            str(parte).lower()
+            for parte in (
+                getattr(exc, "message", "") or "",
+                getattr(exc, "error", "") or "",
+                getattr(exc, "causes", "") or "",
+            )
+        )
+        if "expiration" not in motivo and "date" not in motivo:
+            raise
+        logger.warning(
+            "Mercado Pago recusou o prazo do Pix (%s) — recriando sem prazo.", motivo.strip()
+        )
+        return mp.create_payment({k: v for k, v in payload.items() if k != "date_of_expiration"})
+
+
+async def _pix_em_aberto(db, user_id: str, package_id: str) -> dict | None:
+    """O Pix mais recente deste aluno para este pacote que ainda vale pagar."""
+    desde = (
+        datetime.now(timezone.utc) - timedelta(minutes=PIX_REAPROVEITAR_MINUTOS)
+    ).isoformat()
+    doc = await db.sparks_payments.find_one(
+        {
+            "user_id": user_id,
+            "package_id": package_id,
+            "payment_method_id": "pix",
+            "credited": False,
+            "status": {"$nin": list(_STATUS_FINAIS)},
+            "created_at": {"$gt": desde},
+        },
+        {"_id": 0},
+        sort=[("created_at", -1)],
+    )
+    if doc and (doc.get("pix") or {}).get("qr_code"):
+        return doc
+    return None
+
+
 async def create_purchase(db, user: User, package_id: str, brick_payload: dict) -> dict:
     pkg = sparks_store.get_package(package_id)
     if pkg is None:
@@ -86,15 +188,23 @@ async def create_purchase(db, user: User, package_id: str, brick_payload: dict) 
     payment_method_id = brick_payload.get("payment_method_id")
     is_pix = payment_method_id == "pix"
 
+    if is_pix:
+        aberto = await _pix_em_aberto(db, user.user_id, pkg.package_id)
+        if aberto is not None:
+            return {
+                "purchase_id": aberto["purchase_id"],
+                "status": aberto.get("status"),
+                "status_detail": aberto.get("status_detail"),
+                "pix": aberto.get("pix"),
+                "reaproveitado": True,
+            }
+
     purchase_id = uuid.uuid4().hex
     payload = {
         "transaction_amount": round(pkg.price_cents / 100, 2),
         "description": f"Sapiens — {pkg.label}",
         "payment_method_id": payment_method_id,
-        "payer": {
-            "email": (brick_payload.get("payer") or {}).get("email") or user.email,
-            "identification": (brick_payload.get("payer") or {}).get("identification"),
-        },
+        "payer": _payer(user, brick_payload.get("payer") or {}, is_pix=is_pix),
         "external_reference": purchase_id,
         "notification_url": _notification_url(),
         "metadata": {
@@ -105,10 +215,10 @@ async def create_purchase(db, user: User, package_id: str, brick_payload: dict) 
         },
     }
     if is_pix:
-        # Pix não usa token nem parcelamento — só método + valor + pagador.
-        # Enviar `installments`/`token` aqui não é o formato documentado
-        # para Pix e não faz sentido (não há cartão nenhum envolvido).
-        pass
+        # Pix não usa token nem parcelamento — só método + valor + pagador
+        # (+ prazo). Enviar `installments`/`token` aqui não é o formato
+        # documentado para Pix e não faz sentido (não há cartão envolvido).
+        payload["date_of_expiration"] = _pix_expira_em()
     else:
         if not brick_payload.get("token"):
             raise MissingCardTokenError()
@@ -118,7 +228,7 @@ async def create_purchase(db, user: User, package_id: str, brick_payload: dict) 
 
     payload = {k: v for k, v in payload.items() if v is not None}
 
-    response = mp.create_payment(payload)
+    response = _criar_pagamento(payload)
 
     pix = None
     if is_pix:
@@ -131,6 +241,10 @@ async def create_purchase(db, user: User, package_id: str, brick_payload: dict) 
             "qr_code": transacao.get("qr_code"),
             "qr_code_base64": transacao.get("qr_code_base64"),
             "ticket_url": transacao.get("ticket_url"),
+            # Quem manda o prazo é a resposta do MP, não o nosso relógio: se a
+            # segunda tentativa de `_criar_pagamento` tirou a data, isto vem
+            # com o prazo padrão dele — e a tela mostra a verdade.
+            "expira_em": response.get("date_of_expiration"),
         }
 
     doc = {

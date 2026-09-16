@@ -151,17 +151,29 @@ class FakeCollection:
                     elif op == "$exists":
                         if (campo in doc) is not valor:
                             return False
+                    elif op == "$ne":
+                        if doc.get(campo) == valor:
+                            return False
+                    elif op == "$gt":
+                        atual = doc.get(campo)
+                        if atual is None or not atual > valor:
+                            return False
                     else:
                         raise NotImplementedError(f"operador não suportado no dublê: {op}")
             elif doc.get(campo) != esperado:
                 return False
         return True
 
-    async def find_one(self, filt, projection=None):
-        for doc in self._docs:
-            if self._matches(doc, filt):
-                return dict(doc)
-        return None
+    async def find_one(self, filt, projection=None, sort=None):
+        candidatos = [doc for doc in self._docs if self._matches(doc, filt)]
+        if sort:
+            # Só o que o código sob teste usa: uma chave, direção ±1. Ordenar
+            # de verdade importa aqui — `_pix_em_aberto` depende de receber o
+            # Pix MAIS RECENTE, e um dublê que ignora o `sort` devolveria o
+            # mais antigo sem o teste perceber.
+            for campo, direcao in reversed(sort):
+                candidatos.sort(key=lambda d: d.get(campo) or "", reverse=direcao < 0)
+        return dict(candidatos[0]) if candidatos else None
 
     async def insert_one(self, doc):
         if self._unique_field and any(
@@ -297,6 +309,202 @@ class TestCreatePurchasePix:
         stored = _run(db.sparks_payments.find_one({"purchase_id": result["purchase_id"]}))
         assert stored["credited"] is False
         assert stored["pix"]["qr_code"] == "00020126580014br.gov.bcb.pix..."
+
+    # ------------------------------------------- Pix direto (clique em "Comprar")
+
+    def test_pix_sem_formulario_usa_o_email_da_conta(self, monkeypatch):
+        """O clique em "Comprar" manda só o pacote — nenhum dado de pagador.
+
+        É o ponto inteiro da compra em um clique: o e-mail obrigatório do
+        Mercado Pago sai da conta do aluno, não de um formulário que ele
+        preenche de novo a cada compra.
+        """
+        captured = {}
+
+        def fake_create_payment(payload):
+            captured.update(payload)
+            return self._payload_pix_da_resposta_mp()
+
+        monkeypatch.setattr(svc.mp, "create_payment", fake_create_payment)
+
+        result = _run(svc.create_purchase(
+            FakeDB(), _user(email="maria@exemplo.com", name="Maria Silva"),
+            "spark_200", {"payment_method_id": "pix"},
+        ))
+
+        assert captured["payer"]["email"] == "maria@exemplo.com"
+        assert captured["payer"]["first_name"] == "Maria"
+        assert captured["payer"]["last_name"] == "Silva"
+        # CPF é opcional no Pix e ninguém digitou nenhum: o campo tem que
+        # ficar AUSENTE, não ir como `null`.
+        assert "identification" not in captured["payer"]
+        assert result["pix"]["qr_code"]
+
+    def test_cpf_informado_continua_indo_para_o_mp(self, monkeypatch):
+        captured = {}
+
+        def fake_create_payment(payload):
+            captured.update(payload)
+            return self._payload_pix_da_resposta_mp()
+
+        monkeypatch.setattr(svc.mp, "create_payment", fake_create_payment)
+
+        _run(svc.create_purchase(FakeDB(), _user(), "spark_200", {
+            "payment_method_id": "pix",
+            "payer": {"email": "aluno@exemplo.com",
+                      "identification": {"type": "CPF", "number": "12345678909"}},
+        }))
+
+        assert captured["payer"]["identification"] == {"type": "CPF", "number": "12345678909"}
+
+    def test_qr_code_tem_prazo_de_validade(self, monkeypatch):
+        """Sem prazo, o padrão do MP é 24h — e cada QR Code abandonado fica
+        um dia inteiro sendo reperguntado pelo laço de reconciliação."""
+        from datetime import datetime, timedelta, timezone
+
+        captured = {}
+        monkeypatch.setattr(svc.mp, "create_payment",
+                            lambda p: captured.update(p) or self._payload_pix_da_resposta_mp())
+
+        _run(svc.create_purchase(FakeDB(), _user(), "spark_200", {"payment_method_id": "pix"}))
+
+        vence = datetime.strptime(captured["date_of_expiration"], "%Y-%m-%dT%H:%M:%S.000+00:00")
+        vence = vence.replace(tzinfo=timezone.utc)
+        falta = vence - datetime.now(timezone.utc)
+        # Acima do mínimo aceito pelo Mercado Pago (30 min) e dentro do que
+        # este módulo promete.
+        assert timedelta(minutes=30) < falta <= timedelta(minutes=svc.PIX_VALIDADE_MINUTOS)
+
+    def test_prazo_recusado_pelo_mp_nao_derruba_a_compra(self, monkeypatch):
+        """O prazo é economia nossa, não produto: se o MP recusar o formato
+        da data, a compra acontece mesmo assim — sem prazo."""
+        tentativas = []
+
+        def fake_create_payment(payload):
+            tentativas.append(dict(payload))
+            if "date_of_expiration" in payload:
+                raise mpc.MercadoPagoError(400, {"message": "invalid date_of_expiration"})
+            return self._payload_pix_da_resposta_mp()
+
+        monkeypatch.setattr(svc.mp, "create_payment", fake_create_payment)
+
+        result = _run(svc.create_purchase(FakeDB(), _user(), "spark_200", {"payment_method_id": "pix"}))
+
+        assert len(tentativas) == 2
+        assert "date_of_expiration" not in tentativas[1]
+        assert result["pix"]["qr_code"]
+
+    def test_recusa_que_nao_e_sobre_o_prazo_nao_e_repetida(self, monkeypatch):
+        """Repetir uma recusa qualquer seria arriscar duas cobranças."""
+        tentativas = []
+
+        def fake_create_payment(payload):
+            tentativas.append(dict(payload))
+            raise mpc.MercadoPagoError(400, {"message": "collector user without key enabled"})
+
+        monkeypatch.setattr(svc.mp, "create_payment", fake_create_payment)
+
+        with pytest.raises(mpc.MercadoPagoError):
+            _run(svc.create_purchase(FakeDB(), _user(), "spark_200", {"payment_method_id": "pix"}))
+        assert len(tentativas) == 1
+
+    def test_clicar_de_novo_devolve_o_mesmo_qr_code(self, monkeypatch):
+        """Dois QR Codes válidos do mesmo pacote é um jeito de o aluno pagar
+        duas vezes por um produto só."""
+        chamadas = []
+
+        def fake_create_payment(payload):
+            chamadas.append(payload)
+            return self._payload_pix_da_resposta_mp()
+
+        monkeypatch.setattr(svc.mp, "create_payment", fake_create_payment)
+        db = FakeDB()
+        user = _user()
+
+        primeira = _run(svc.create_purchase(db, user, "spark_200", {"payment_method_id": "pix"}))
+        segunda = _run(svc.create_purchase(db, user, "spark_200", {"payment_method_id": "pix"}))
+
+        assert len(chamadas) == 1
+        assert segunda["purchase_id"] == primeira["purchase_id"]
+        assert segunda["pix"]["qr_code"] == primeira["pix"]["qr_code"]
+        assert segunda["reaproveitado"] is True
+
+    def test_outro_pacote_gera_outro_qr_code(self, monkeypatch):
+        chamadas = []
+        monkeypatch.setattr(svc.mp, "create_payment",
+                            lambda p: chamadas.append(p) or self._payload_pix_da_resposta_mp())
+        db = FakeDB()
+        user = _user()
+
+        _run(svc.create_purchase(db, user, "spark_200", {"payment_method_id": "pix"}))
+        _run(svc.create_purchase(db, user, "spark_600", {"payment_method_id": "pix"}))
+
+        assert len(chamadas) == 2
+
+    def test_pix_ja_creditado_nao_e_reaproveitado(self, monkeypatch):
+        """Quem pagou e quer comprar de novo precisa de um Pix novo."""
+        chamadas = []
+        monkeypatch.setattr(svc.mp, "create_payment",
+                            lambda p: chamadas.append(p) or self._payload_pix_da_resposta_mp())
+        db = FakeDB()
+        user = _user()
+
+        primeira = _run(svc.create_purchase(db, user, "spark_200", {"payment_method_id": "pix"}))
+        _run(db.sparks_payments.update_one(
+            {"purchase_id": primeira["purchase_id"]},
+            {"$set": {"credited": True, "status": "approved"}},
+        ))
+        segunda = _run(svc.create_purchase(db, user, "spark_200", {"payment_method_id": "pix"}))
+
+        assert len(chamadas) == 2
+        assert segunda["purchase_id"] != primeira["purchase_id"]
+
+    def test_pix_velho_demais_nao_e_reaproveitado(self, monkeypatch):
+        """Fora da janela, o código pode estar perto de expirar — mostrar um
+        QR Code que morre no meio do caminho é pior que gerar outro."""
+        from datetime import datetime, timedelta, timezone
+
+        chamadas = []
+        monkeypatch.setattr(svc.mp, "create_payment",
+                            lambda p: chamadas.append(p) or self._payload_pix_da_resposta_mp())
+        db = FakeDB()
+        user = _user()
+
+        primeira = _run(svc.create_purchase(db, user, "spark_200", {"payment_method_id": "pix"}))
+        velho = (datetime.now(timezone.utc)
+                 - timedelta(minutes=svc.PIX_REAPROVEITAR_MINUTOS + 1)).isoformat()
+        _run(db.sparks_payments.update_one(
+            {"purchase_id": primeira["purchase_id"]}, {"$set": {"created_at": velho}},
+        ))
+        _run(svc.create_purchase(db, user, "spark_200", {"payment_method_id": "pix"}))
+
+        assert len(chamadas) == 2
+
+    def test_pix_de_outro_aluno_nunca_e_reaproveitado(self, monkeypatch):
+        chamadas = []
+        monkeypatch.setattr(svc.mp, "create_payment",
+                            lambda p: chamadas.append(p) or self._payload_pix_da_resposta_mp())
+        db = FakeDB()
+
+        _run(svc.create_purchase(db, _user(user_id="user-1"), "spark_200", {"payment_method_id": "pix"}))
+        _run(svc.create_purchase(db, _user(user_id="user-2"), "spark_200", {"payment_method_id": "pix"}))
+
+        assert len(chamadas) == 2
+
+    def test_cartao_nunca_reaproveita_nada(self, monkeypatch):
+        """Reaproveitar só faz sentido para um código que fica esperando ser
+        pago; cartão cobra na hora, e duas compras são duas compras."""
+        chamadas = []
+        monkeypatch.setattr(svc.mp, "create_payment", lambda p: chamadas.append(p) or {
+            "id": f"mp-card-{len(chamadas)}", "status": "approved", "status_detail": "accredited",
+        })
+        db = FakeDB()
+        user = _user()
+
+        _run(svc.create_purchase(db, user, "spark_200", {"token": "t1", "payment_method_id": "visa"}))
+        _run(svc.create_purchase(db, user, "spark_200", {"token": "t2", "payment_method_id": "visa"}))
+
+        assert len(chamadas) == 2
 
     def test_cartao_continua_sem_campo_pix(self, monkeypatch):
         """Garantia de que a mudança do Pix não vazou nada pro fluxo de cartão."""
