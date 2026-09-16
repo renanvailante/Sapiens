@@ -4,7 +4,7 @@ import { useAuth } from "../lib/auth";
 import { api } from "../lib/api";
 import {
   Zap, ShieldCheck, LayoutGrid, GraduationCap, PenLine, MessageCircle, Compass,
-  CalendarDays, LogOut,
+  CalendarDays, Users, LogOut,
 } from "lucide-react";
 import BrandMark from "./BrandMark";
 import Mentis from "./Mentis";
@@ -21,24 +21,36 @@ export function avisarSparksMudou() {
   window.dispatchEvent(new Event(EVENTO_SPARKS));
 }
 
-// As cinco coisas que o aluno FAZ. A ordem é decisão de produto, revista em
+// As seis coisas que o aluno FAZ. A ordem é decisão de produto, revista em
 // 2026-09-15: o **Mapa de Treino vem primeiro** — é a superfície de maior
 // impacto visual do Sapiens e a que comunica o valor do produto em cinco
 // segundos; deixá-lo em terceiro era esconder a vitrine atrás do estoque.
-// Depois o Painel (para onde tudo volta), Redação, Cronograma e a Mentis.
+// Depois o Painel (para onde tudo volta), Redação, Cronograma, a COMUNIDADE
+// e a Mentis.
+//
+// A Comunidade entrou aqui (2026-09-15) porque ela é a única aba cujo valor
+// depende de OUTRAS pessoas: um mural que ninguém abre não tem quem responda,
+// e dentro do lançador ele só era aberto por quem já sabia que existia.
 //
 // "Provas do ENEM" não está aqui porque o Painel abre nelas com o botão
 // principal, e tudo o mais mora no LANÇADOR (o botão de grade) — que deixou
 // de ser um menu de texto de dez linhas e virou uma grade visual onde cada
 // ferramenta aparece com nome e função.
 //
-// `curto` existe por causa da largura: a barra vive num container de 1152px
-// que nenhum monitor largo aumenta. Ver a nota de medição no fim do arquivo.
+// `texto` é o que a barra DESENHA; `label` continua sendo o nome acessível
+// (aria-label e title), sempre por extenso. Uma string quando o rótulo é o
+// mesmo em toda largura, ou `[estreito, largo]` quando a medida obriga a
+// encurtar antes de 2xl. Ver a nota de medição no fim do arquivo: a barra
+// vive num container de 1152px que nenhum monitor largo aumenta.
 const PRIMARY_LINKS = [
   { to: "/treino", icon: Compass, label: "Treino", testid: "nav-treino", tour: "nav-treino" },
   { to: "/dashboard", icon: LayoutGrid, label: "Painel", testid: "nav-dashboard", tour: "nav-dashboard" },
   { to: "/redacao", icon: PenLine, label: "Redação", testid: "nav-redacao", tour: "nav-redacao" },
-  { to: "/cronograma", icon: CalendarDays, label: "Cronograma", curto: "Semana", testid: "nav-cronograma" },
+  // "Semana" em TODA largura: "Cronograma" por extenso a 2xl custava os 26px
+  // que faltavam para a Comunidade caber escrita por inteiro, e "Semana" diz
+  // a mesma coisa em menos espaço — o nome completo continua no title.
+  { to: "/cronograma", icon: CalendarDays, label: "Cronograma", texto: "Semana", testid: "nav-cronograma" },
+  { to: "/comunidade", icon: Users, label: "Comunidade", texto: ["Mural", "Comunidade"], testid: "nav-comunidade" },
   { to: "/mentis", icon: MessageCircle, label: "Mentis", testid: "nav-mentis", tour: "nav-mentis", mascote: true },
 ];
 
@@ -105,10 +117,15 @@ export default function Nav() {
           data-testid="nav-brand"
         >
           <BrandMark className="h-7 w-7 lg:h-8 lg:w-8" />
-          Sapiens
+          {/* Entre 1024 e 1279 a barra fica só com o SÍMBOLO. Com a
+              Comunidade dentro, a soma dos filhos a 1024px dava 959px num
+              espaço de 944 — estourava 15px, e é nessa faixa que estão os
+              notebooks de 13". A palavra custa 96px e o símbolo sozinho
+              continua sendo a marca; é o mesmo que o celular já faz. */}
+          <span className="hidden xl:inline">Sapiens</span>
         </Link>
         {user && (
-          <div className="flex items-center gap-1 lg:gap-2 2xl:gap-3">
+          <div className="flex items-center gap-1 lg:gap-2">
             {/* Envelope próprio (e não os links soltos) porque o guia de
                 primeira sessão aponta para a BARRA inteira num passo só. */}
             <div className="hidden items-center gap-0.5 lg:flex 2xl:gap-1" data-tour="nav-primarios">
@@ -116,20 +133,20 @@ export default function Nav() {
                 <Link
                   key={l.to}
                   to={l.to}
-                  className="flex items-center gap-1.5 rounded-full px-2 py-2 text-sm text-white/60 transition-colors hover:text-white 2xl:gap-2 2xl:px-2.5"
+                  className="flex items-center gap-1.5 rounded-full px-2 py-2 text-sm text-white/60 transition-colors hover:text-white 2xl:gap-2"
                   data-testid={l.testid}
                   data-tour={l.tour}
                   aria-label={l.label}
                   title={l.label}
                 >
                   {l.mascote ? <Mentis className="h-5 w-5" variante="icone" /> : <l.icon className="h-4 w-4" />}
-                  {l.curto ? (
+                  {Array.isArray(l.texto) ? (
                     <>
-                      <span className="hidden 2xl:inline">{l.label}</span>
-                      <span className="2xl:hidden">{l.curto}</span>
+                      <span className="hidden 2xl:inline">{l.texto[1]}</span>
+                      <span className="2xl:hidden">{l.texto[0]}</span>
                     </>
                   ) : (
-                    <span>{l.label}</span>
+                    <span>{l.texto || l.label}</span>
                   )}
                 </Link>
               ))}
@@ -184,7 +201,10 @@ export default function Nav() {
                 aria-label="Admin"
                 title="Admin"
               >
-                <ShieldCheck className="h-4 w-4" /> <span className="hidden 2xl:inline">Admin</span>
+                {/* Só o ícone, em toda largura — o rótulo "Admin" a 2xl
+                    custava 53px, e quem entra por aqui sabe o que o escudo
+                    verde faz. */}
+                <ShieldCheck className="h-4 w-4" />
               </Link>
             )}
             <button
@@ -214,3 +234,31 @@ export default function Nav() {
     </div>
   );
 }
+
+// ---------------------------------------------------------------------------
+// MEDIÇÃO DA BARRA — 2026-09-15, com usuário ADMIN (o caso mais largo)
+// ---------------------------------------------------------------------------
+//
+// A barra vive num `max-w-6xl` com `px-10`: 1072px de conteúdo útil a partir
+// de 1152px de viewport, e NENHUM monitor mais largo aumenta isso. Toda vez
+// que um item entra aqui, a soma dos filhos tem de ser MEDIDA — não estimada.
+// Os números abaixo saíram do CSS compilado do bundle, com a Manrope
+// carregada, somando o retângulo de cada filho da barra.
+//
+//   viewport   antes (5 abas)   agora (6 abas)
+//   1024px            33px            84px     (marca só símbolo abaixo de xl)
+//   1280px           161px           113px
+//   1536px            86px            37px
+//
+// A Comunidade cabe escrita por extenso a 2xl e vira "Mural" abaixo disso.
+// Quatro cortes pagaram a aba nova; os três primeiros só valem a 2xl, e foi
+// por isso que o quarto precisou existir:
+//
+//   · rótulo "Admin" — só o ícone, em toda largura
+//   · "Cronograma" -> "Semana", em toda largura
+//   · px-2.5 -> px-2 nos links, gap-3 -> gap-2 no agrupamento
+//   · a palavra "Sapiens" some abaixo de xl (só o símbolo)
+//
+// O último não é enfeite: sem ele, a 1024px a soma dava 959px num espaço de
+// 944 e a barra ESTOURAVA 15px. É a faixa dos notebooks de 13" — o lugar
+// onde ninguém testa e todo mundo trabalha.

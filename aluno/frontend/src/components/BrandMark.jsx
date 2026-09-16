@@ -14,10 +14,9 @@ import { useId } from "react";
 // legível a 20px, o tamanho em que a marca mais aparece (o botão do menu no
 // celular): um contorno fino desse tamanho empasta, uma massa cheia não.
 //
-// O sulco frontal é o único ACESO, no azul da marca, e termina num nó —
-// o mesmo nó azul que o "S" antigo tinha, a única peça que atravessou o
-// redesenho. É a história do produto em um traço: de todos os caminhos do
-// cérebro, o Sapiens acende um por vez.
+// O sulco frontal é o único ACESO, no azul da marca — a cor é a única peça
+// do "S" antigo que atravessou o redesenho. É a história do produto em um
+// traço: de todos os caminhos do cérebro, o Sapiens acende um por vez.
 //
 // `tone="light"` (padrão) = massa branca, para fundo escuro.
 // `tone="dark"` = massa navy, para fundo claro.
@@ -30,12 +29,20 @@ const MASSA =
   "C62 11 76 16 79 26 C89 30 90 44 81 49 C84 56 79 62 73 60 " +
   "C74 70 66 77 57 76 C52 80 44 80 39 76 C34 79 27 77 30 71 Z";
 
-// Três sulcos concêntricos, todos curvando para o mesmo lado. Curvas em S
-// (duas inversões) devolviam a letra antiga por dentro do cérebro, que é
-// exatamente o que este redesenho veio tirar.
-const SULCO_TRASEIRO = "M31 64 C21 55 23 41 34 35";
-const SULCO_MEIO = "M44 73 C36 64 39 49 50 43";
-const SULCO_ACESO = "M59 69 C52 61 55 50 65 47 C74 44 77 34 71 28";
+// Os sulcos. O par grande é ESPELHADO — um enrola para um lado, o outro
+// para o outro — e é ele que faz a forma ler como cérebro; o terceiro, curto,
+// na base, tira a simetria perfeita. Três coisas aprendidas desenhando, cada
+// uma o defeito de um desenho anterior:
+//
+// 1. Curva em S (duas inversões no mesmo traço) devolve a letra antiga por
+//    dentro do cérebro — exatamente o que este redesenho veio tirar.
+// 2. Três arcos iguais e concêntricos não viram cérebro: viram o símbolo de
+//    wifi dentro de uma nuvem.
+// 3. Um sulco muito mais longo que os outros vira gancho e puxa o olho para
+//    fora do desenho.
+const SULCO_TRASEIRO = "M31 61 C23 53 26 40 37 37";
+const SULCO_MEIO = "M47 74 C42 68 44 60 50 57";
+const SULCO_ACESO = "M70 62 C77 53 74 41 63 38";
 
 export default function BrandMark({ className = "w-7 h-7", tone = "light" }) {
   // Duas marcas na mesma página (barra + lançador) teriam o mesmo `id` de
@@ -75,7 +82,6 @@ export default function BrandMark({ className = "w-7 h-7", tone = "light" }) {
         strokeWidth="4.3"
         strokeLinecap="round"
       />
-      <circle cx="71" cy="28" r="5.6" fill={aceso} />
     </svg>
   );
 }
