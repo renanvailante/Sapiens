@@ -714,7 +714,9 @@ Responda EXCLUSIVAMENTE com JSON no formato:
   mapa_treino (o mapa de missões), missoes (as missões de hoje), conquistas,
   questoes (praticar provas do ENEM), minhas_questoes (as questões que ele já
   gerou), progresso (análise de desempenho), revisoes, redacao, cronograma,
-  sparks, comunidade, aulas (aula particular com alunos de Medicina da USP).
+  sparks, comunidade, cursos (os cursos e a aula ao vivo de quinta),
+  live (a aula ao vivo de quinta com o 1º colocado de Medicina da USP),
+  mentoria (a lista de espera da mentoria com esse mesmo 1º colocado).
   Use SEMPRE que citar uma dessas telas na resposta — o botão leva ele até
   lá, e navegar não custa Spark nenhum. Não descreva o caminho do menu na
   resposta: o botão é o caminho;
@@ -752,7 +754,7 @@ DESTINOS: dict[str, dict[str, str]] = {
     "cronograma": {"rota": "/cronograma", "rotulo": "Ver a minha semana"},
     "sparks": {"rota": "/sparks", "rotulo": "Ver meus Sparks"},
     "comunidade": {"rota": "/comunidade", "rotulo": "Abrir o mural da comunidade"},
-    "aulas": {"rota": "/aulas", "rotulo": "Aula com alunos de Medicina da USP"},
+    "mentoria": {"rota": "/mentoria", "rotulo": "Entrar na lista de espera da mentoria"},
     "cursos": {"rota": "/cursos", "rotulo": "Ver os cursos e a aula ao vivo de quinta"},
     "live": {"rota": "/cursos#live", "rotulo": "Entrar na aula ao vivo de quinta"},
 }

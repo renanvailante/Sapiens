@@ -63,6 +63,8 @@ COLECOES_POR_USUARIO: tuple[tuple[str, str], ...] = (
     ("feed_progress", "user_id"),
     ("question_reports", "user_id"),
     ("sugestoes", "user_id"),
+    # Fila de espera da mentoria (nome de coleção anterior ao produto atual,
+    # preservado para não perder o histórico — ver `mentoria_routes`).
     ("aulas_particulares", "user_id"),
     # Quem pagou a aula ao vivo de quinta e em quais cursos se inscreveu para
     # ser avisado. É histórico de consumo do titular — sai com a conta. O

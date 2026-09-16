@@ -501,12 +501,14 @@ def _sem_mongo_real_no_engajamento():
     import comunidade
     import cursos_routes
     import engajamento_service
+    import mentoria_routes
     import onboarding_routes
 
     # TODO MÓDULO NOVO QUE RECEBA `set_db` PRECISA ENTRAR AQUI. Sem isso a
     # suíte volta a escrever no Mongo da máquina, e o sintoma aparece longe da
     # causa (dados fantasma no banco, nenhum erro).
-    modulos = (engajamento_service, comunidade, onboarding_routes, cursos_routes)
+    modulos = (engajamento_service, comunidade, onboarding_routes, cursos_routes,
+               mentoria_routes)
     for modulo in modulos:
         modulo.set_db(None)
     yield

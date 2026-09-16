@@ -254,7 +254,7 @@ function FichaDoAluno({ userId, onFechar }) {
                 <LinhaFicha rotulo="Sessões com a Mentis" valor={numero(atividade.sessoes_mentis)} />
                 <LinhaFicha rotulo="Reportes de questão" valor={numero(atividade.reportes_de_questao)} />
                 <LinhaFicha rotulo="Reclamações e sugestões" valor={numero(atividade.sugestoes)} />
-                <LinhaFicha rotulo="Pedidos de aula particular" valor={numero(atividade.aulas_particulares)} />
+                <LinhaFicha rotulo="Na fila da mentoria" valor={numero(atividade.fila_da_mentoria)} />
                 <LinhaFicha rotulo="Aulas ao vivo pagas" valor={numero(atividade.aulas_ao_vivo)} />
               </BlocoFicha>
 

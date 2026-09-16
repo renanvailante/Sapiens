@@ -25,7 +25,7 @@ export default function Privacidade() {
           <li><strong>Cadastro:</strong> nome, e-mail e, se você entrar com Google, sua foto de perfil.</li>
           <li><strong>Estudo:</strong> as questões que você respondeu, a alternativa escolhida, se acertou, quanto tempo levou e se mudou de resposta.</li>
           <li><strong>Conteúdo enviado:</strong> redações que você submete e fotos de cartão-resposta.</li>
-          <li><strong>Contato:</strong> nome e WhatsApp, quando você solicita aula particular.</li>
+          <li><strong>Contato:</strong> nome e WhatsApp, informados no cadastro e quando você entra na lista de espera da mentoria.</li>
           <li><strong>Técnico:</strong> endereço IP e navegador, registrados junto a erros da aplicação por até 30 dias.</li>
         </ul>
         <p className="mt-3">
@@ -40,7 +40,7 @@ export default function Privacidade() {
           <li><strong>Execução do contrato</strong> (art. 7º, V): cadastro, respostas e conteúdo enviado — sem eles o produto não funciona.</li>
           <li><strong>Cumprimento de obrigação legal</strong> (art. 7º, II): registros de pagamento, guardados pelo prazo que a legislação fiscal exige.</li>
           <li><strong>Legítimo interesse</strong> (art. 7º, IX): registros técnicos de erro, usados só para consertar o que quebrou e mantidos por 30 dias.</li>
-          <li><strong>Consentimento</strong> (art. 7º, I): solicitação de aula particular, que só acontece quando você preenche o formulário.</li>
+          <li><strong>Consentimento</strong> (art. 7º, I): entrada na lista de espera da mentoria, que só acontece quando você preenche o formulário.</li>
         </ul>
       </section>
 

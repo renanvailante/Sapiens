@@ -229,9 +229,18 @@ class PasteAnswerKeyRequest(BaseModel):
     raw_text: str  # pasted content from INEP
 
 
-# ---------- Aulas particulares ----------
+# ---------- Lista de espera da mentoria ----------
+#
+# Era "aulas particulares" até 2026-09-15. Ver o docstring de
+# `mentoria_routes.py`: o produto deixou de ser aula avulsa com vários
+# professores e virou a fila de espera de UMA mentoria — a do 1º colocado de
+# Medicina da USP.
+#
+# Os VALORES de `status` e o prefixo `aula_` de `request_id` continuam os
+# mesmos porque estão gravados nos registros existentes. O rótulo que o admin
+# lê ("na fila", "conversando", "virou mentoria") mora no frontend.
 
-AULAS_PARTICULARES_AREAS = [
+MENTORIA_AREAS = [
     "Matemática",
     "Ciências da Natureza",
     "Linguagens",
@@ -239,10 +248,10 @@ AULAS_PARTICULARES_AREAS = [
     "Redação",
 ]
 
-AULAS_PARTICULARES_STATUS = ["pendente", "em_andamento", "concluida", "cancelada"]
+MENTORIA_STATUS = ["pendente", "em_andamento", "concluida", "cancelada"]
 
 
-class AulaParticularRequest(BaseModel):
+class MentoriaEspera(BaseModel):
     request_id: str = Field(default_factory=lambda: f"aula_{uuid.uuid4().hex[:12]}")
     user_id: str
     nome_completo: str
@@ -254,7 +263,7 @@ class AulaParticularRequest(BaseModel):
     updated_at: str = Field(default_factory=_now_iso)
 
 
-class CreateAulaParticularRequest(BaseModel):
+class CreateMentoriaEsperaRequest(BaseModel):
     nome_completo: str = Field(..., min_length=1, max_length=200)
     whatsapp: str = Field(..., min_length=8, max_length=30)
     # Sem `min_length`: a rota já recusa lista vazia com uma mensagem que o
@@ -264,7 +273,7 @@ class CreateAulaParticularRequest(BaseModel):
     descricao: str = Field(default="", max_length=2_000)
 
 
-class UpdateAulaParticularStatusRequest(BaseModel):
+class UpdateMentoriaStatusRequest(BaseModel):
     status: str
 
 

@@ -2,13 +2,16 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { api, errMsg } from "../lib/api";
 import Nav from "../components/Nav";
-import { GraduationCap, MessageCircle } from "lucide-react";
+import { Medal, MessageCircle } from "lucide-react";
 
+// Os VALORES são os que já estão gravados no banco desde a época de "aulas
+// particulares" (ver `backend/mentoria_routes.py`); o que mudou é o rótulo,
+// porque a coisa que eles descrevem hoje é uma FILA, não um pedido de aula.
 const STATUS_OPTIONS = [
-  { value: "pendente", label: "Pendente" },
-  { value: "em_andamento", label: "Em andamento" },
-  { value: "concluida", label: "Concluída" },
-  { value: "cancelada", label: "Cancelada" },
+  { value: "pendente", label: "Na fila" },
+  { value: "em_andamento", label: "Conversando" },
+  { value: "concluida", label: "Virou mentoria" },
+  { value: "cancelada", label: "Saiu da fila" },
 ];
 
 const STATUS_STYLE = {
@@ -32,17 +35,17 @@ function formatDate(iso) {
   }
 }
 
-export default function AdminAulasParticulares() {
+export default function AdminMentoria() {
   const [requests, setRequests] = useState([]);
   const [loaded, setLoaded] = useState(false);
   const [filter, setFilter] = useState("");
 
-  const load = () => api.get("/aulas-particulares").then(({ data }) => { setRequests(data); setLoaded(true); });
+  const load = () => api.get("/mentoria").then(({ data }) => { setRequests(data); setLoaded(true); });
   useEffect(() => { load(); }, []);
 
   const updateStatus = async (r, status) => {
     try {
-      await api.patch(`/aulas-particulares/${r.request_id}`, { status });
+      await api.patch(`/mentoria/${r.request_id}`, { status });
       toast.success("Status atualizado.");
       setRequests((prev) => prev.map((x) => (x.request_id === r.request_id ? { ...x, status } : x)));
     } catch (e) {
@@ -57,30 +60,32 @@ export default function AdminAulasParticulares() {
       <Nav />
       <div className="max-w-5xl mx-auto px-6 md:px-10 py-12">
         <div className="flex items-center gap-3 mb-3">
-          <GraduationCap className="w-4 h-4 text-sapiens-accent" />
-          <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-white/50">Admin · Aulas particulares</div>
+          <Medal className="w-4 h-4 text-sapiens-accent" />
+          <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-white/50">Admin · Mentoria</div>
         </div>
-        <h1 className="font-display text-4xl font-extrabold tracking-tighter text-white" data-testid="admin-aulas-title">
-          Solicitações de aula
+        <h1 className="font-display text-4xl font-extrabold tracking-tighter text-white" data-testid="admin-mentoria-title">
+          Lista de espera da mentoria
         </h1>
-        <p className="mt-3 text-white/60 max-w-lg">
-          Todas as solicitações de aula particular enviadas pelos alunos. Atualize o status e fale direto pelo WhatsApp.
+        <p className="mt-3 text-white/60 max-w-xl">
+          Quem está esperando a mentoria com o 1º colocado de Medicina da USP, da chegada mais
+          recente para a mais antiga. Fale pelo WhatsApp e mova a pessoa na fila — o aluno vê a
+          própria posição, então tirar alguém de "na fila" muda o número que os outros enxergam.
         </p>
 
         <div className="mt-8 flex flex-wrap gap-2">
           <button
             onClick={() => setFilter("")}
             className={`pill text-xs font-medium px-3.5 py-2 rounded-full border ${filter === "" ? "border-sapiens-accent bg-sapiens-accentSoft text-sapiens-navy" : "border-white/15 text-white/60 hover:text-white"}`}
-            data-testid="admin-aulas-filter-all"
+            data-testid="admin-mentoria-filter-all"
           >
-            Todas ({requests.length})
+            Todos ({requests.length})
           </button>
           {STATUS_OPTIONS.map((s) => (
             <button
               key={s.value}
               onClick={() => setFilter(s.value)}
               className={`pill text-xs font-medium px-3.5 py-2 rounded-full border ${filter === s.value ? "border-sapiens-accent bg-sapiens-accentSoft text-sapiens-navy" : "border-white/15 text-white/60 hover:text-white"}`}
-              data-testid={`admin-aulas-filter-${s.value}`}
+              data-testid={`admin-mentoria-filter-${s.value}`}
             >
               {s.label} ({requests.filter((r) => r.status === s.value).length})
             </button>
@@ -90,11 +95,11 @@ export default function AdminAulasParticulares() {
         <div className="mt-6 space-y-3">
           {loaded && visible.length === 0 && (
             <div className="card-sapiens rounded-2xl p-8 text-center text-zinc-500 text-sm">
-              Nenhuma solicitação {filter ? "com esse status" : "ainda"}.
+              Ninguém {filter ? "com esse status" : "na fila ainda"}.
             </div>
           )}
           {visible.map((r) => (
-            <div key={r.request_id} className="card-sapiens rounded-2xl p-5" data-testid={`admin-aulas-row-${r.request_id}`}>
+            <div key={r.request_id} className="card-sapiens rounded-2xl p-5" data-testid={`admin-mentoria-row-${r.request_id}`}>
               <div className="flex flex-col md:flex-row md:items-start gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -120,7 +125,7 @@ export default function AdminAulasParticulares() {
                     target="_blank"
                     rel="noopener noreferrer"
                     className="pill btn-sapiens flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full text-xs font-semibold"
-                    data-testid={`admin-aulas-whatsapp-${r.request_id}`}
+                    data-testid={`admin-mentoria-whatsapp-${r.request_id}`}
                   >
                     <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
                   </a>
@@ -128,7 +133,7 @@ export default function AdminAulasParticulares() {
                     value={r.status}
                     onChange={(e) => updateStatus(r, e.target.value)}
                     className="border border-zinc-200 rounded-xl px-3 py-2 text-xs bg-white outline-none focus:border-zinc-900"
-                    data-testid={`admin-aulas-status-${r.request_id}`}
+                    data-testid={`admin-mentoria-status-${r.request_id}`}
                   >
                     {STATUS_OPTIONS.map((s) => (
                       <option key={s.value} value={s.value}>{s.label}</option>

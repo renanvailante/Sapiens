@@ -96,7 +96,10 @@ INDICES: list[tuple[str, list[tuple[str, int]], dict]] = [
     ("redacao_cobrancas", [("user_id", pymongo.ASCENDING), ("criado_em", pymongo.DESCENDING)],
      {"name": "cobrancas_do_aluno"}),
     ("redacao_feedbacks", [("user_id", pymongo.ASCENDING)], {"name": "feedbacks_do_aluno"}),
+    # Fila de espera da mentoria. O nome da coleção é anterior ao produto
+    # atual e ficou de propósito — ver `mentoria_routes`.
     ("aulas_particulares", [("created_at", pymongo.DESCENDING)], {"name": "aulas_recentes"}),
+    ("aulas_particulares", [("user_id", pymongo.ASCENDING)], {"name": "fila_do_aluno"}),
 
     # --- cursos e a aula ao vivo de quinta ---
     # O acesso à live tem `_id = "{uid}:{edicao}"`, que o Mongo já indexa e

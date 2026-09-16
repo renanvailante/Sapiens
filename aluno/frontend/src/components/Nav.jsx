@@ -152,11 +152,11 @@ export default function Nav() {
             {/* A porta das AULAS. Mesmo rótulo curto e mesma largura de antes
                 (ver a nota de medição no fim do arquivo: a barra tem ~51px de
                 folga a 1536 e nenhum monitor a aumenta) — o que mudou é o
-                destino: em vez de abrir só o modal de aula particular, leva à
-                aba de Cursos, onde moram a AULA AO VIVO de quinta com o 1º
-                colocado de Medicina da USP, os cursos e o pedido de aula
-                particular. O ponto pulsante é a única coisa acrescentada, e
-                ele é posicionado em cima do ícone: custa 0px de largura. */}
+                destino: em vez de abrir um modal de pedido de aula, leva à aba
+                de Cursos, onde moram a AULA AO VIVO de quinta com o 1º
+                colocado de Medicina da USP e os cursos. O ponto pulsante é a
+                única coisa acrescentada, e ele é posicionado em cima do
+                ícone: custa 0px de largura. */}
             <Link
               to="/cursos"
               className="btn-calor pill relative hidden shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-3.5 py-2 text-xs lg:inline-flex 2xl:text-sm"

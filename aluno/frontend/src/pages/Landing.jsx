@@ -1,7 +1,8 @@
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, Sparkles, Brain, Network, ChevronRight, Radio, Video, Clock } from "lucide-react";
+import { ArrowRight, Sparkles, Brain, Network, ChevronRight, Radio, Video, Clock, Medal, Users } from "lucide-react";
 import { useAuth } from "../lib/auth";
 import BrandMark from "../components/BrandMark";
+import MentorUSP from "../components/MentorUSP";
 import { OPERADOR } from "../lib/operador";
 
 const CYCLE = ["Resolver", "Observar", "Estimar estado cognitivo", "Identificar lacunas", "Adaptar", "Evoluir"];
@@ -62,7 +63,8 @@ export default function Landing() {
           landing é onde mora quem ainda não entrou. */}
       <div className="max-w-4xl mx-auto px-6 md:px-10 pb-16">
         <div className="mapa-vitrine relative overflow-hidden rounded-3xl p-7 md:p-10" data-testid="landing-live">
-          <div className="relative">
+          <div className="relative grid gap-8 md:grid-cols-[1fr_auto] md:items-center">
+            <div className="min-w-0">
             <span className="inline-flex items-center gap-2 rounded-full border border-rose-400/40 bg-rose-500/15 px-3 py-1.5 font-mono-alt text-[10px] font-bold uppercase tracking-[0.2em] text-rose-200">
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-75" />
@@ -97,6 +99,32 @@ export default function Landing() {
               <span className="inline-flex items-center gap-1.5 text-xs text-white/45">
                 <Video className="w-3.5 h-3.5" /> ao vivo no Google Meet
               </span>
+            </div>
+
+            <div className="mt-7 flex flex-wrap items-center gap-4 border-t border-white/10 pt-6">
+              <MentorUSP tamanho="p" comSelo={false} testid="landing-mentor-mini" />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5 font-mono-alt text-[10px] uppercase tracking-[0.2em] text-amber-200">
+                  <Medal className="w-3 h-3" /> A mesma pessoa, um a um
+                </div>
+                <div className="mt-0.5 text-sm text-white/60">
+                  A mentoria individual tem lista de espera — uma pessoa, poucas vagas.
+                </div>
+              </div>
+              <button
+                onClick={() => nav(user ? "/mentoria" : "/login")}
+                className="pill btn-vidro inline-flex shrink-0 items-center gap-2 rounded-full px-5 py-3 text-sm"
+                data-testid="landing-mentoria-cta"
+              >
+                <Users className="w-4 h-4" /> Entrar na lista
+              </button>
+            </div>
+            </div>
+
+            {/* O rosto grande. É o maior ativo do produto e a landing é onde
+                mora quem ainda não conhece ninguém aqui. */}
+            <div className="order-first flex justify-center md:order-none">
+              <MentorUSP tamanho="g" testid="landing-mentor" />
             </div>
           </div>
         </div>

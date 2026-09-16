@@ -29,7 +29,7 @@ export const ATALHOS = [
   { rota: "/redacao", icone: PenLine, rotulo: "Redação" },
   { rota: "/cronograma", icone: CalendarDays, rotulo: "Minha semana" },
   { rota: "/sparks", icone: Zap, rotulo: "Sparks" },
-  { rota: "/aulas", icone: GraduationCap, rotulo: "Aula com a USP" },
+  { rota: "/mentoria", icone: GraduationCap, rotulo: "Mentoria com a USP" },
 ];
 
 export default function MentisAtalhos({ compacto = false, limite }) {

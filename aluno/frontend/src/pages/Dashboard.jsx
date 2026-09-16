@@ -17,11 +17,12 @@ import { avaliarConquistas } from "../lib/conquistas";
 import { faixaDeDominio } from "../lib/dominio";
 import { proximaQuinta, temAcessoLocal } from "../lib/live";
 import PedirWhatsApp from "../components/PedirWhatsApp";
+import MentorUSP from "../components/MentorUSP";
 import { useDeclararContextoMentis } from "../lib/mentisContexto";
 import {
   ArrowRight, Sparkles, Compass, Target, Trophy, CloudOff, RotateCw, PlayCircle,
   MessageSquareWarning, Users, GraduationCap, PenLine, Brain, Zap, CalendarDays,
-  HelpCircle, Download, ChevronRight, Radio, Video,
+  HelpCircle, Download, ChevronRight, Radio, Video, Medal,
 } from "lucide-react";
 import { useAuth } from "../lib/auth";
 
@@ -168,11 +169,12 @@ function ChamadaDaLive() {
       data-testid="dash-live"
       data-tour="dash-live"
     >
-      <span className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-rose-400/30 bg-rose-500/15 text-rose-200">
-        <Radio className="h-5 w-5" strokeWidth={1.8} />
-        <span className="absolute -right-0.5 -top-0.5 flex h-2.5 w-2.5">
+      {/* O ROSTO, e não um ícone: quem dá a aula é o argumento. */}
+      <span className="relative shrink-0">
+        <MentorUSP tamanho="p" comSelo={false} testid="dash-live-mentor" />
+        <span className="absolute -right-1 -top-1 flex h-3 w-3">
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-500 opacity-80" />
-          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-rose-500" />
+          <span className="relative inline-flex h-3 w-3 rounded-full bg-rose-500" />
         </span>
       </span>
       <div className="min-w-0 flex-1">
@@ -849,10 +851,10 @@ export default function Dashboard() {
               tour="dash-cursos"
             />
             <Ferramenta
-              to="/aulas"
-              icone={GraduationCap}
-              nome="Aulas com a USP"
-              selo="Aula particular com alunos de Medicina da USP"
+              to="/mentoria"
+              icone={Medal}
+              nome="Mentoria"
+              selo="Lista de espera · 1º colocado de Medicina da USP"
               destaque
               testid="dash-aulas-particulares-cta"
               tour="dash-aulas"

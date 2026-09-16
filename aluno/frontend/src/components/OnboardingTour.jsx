@@ -115,8 +115,8 @@ const STEPS = [
   },
   {
     target: "dash-aulas",
-    title: "Aula com gente de verdade",
-    text: "Quando o problema é maior que uma questão: aula particular com alunos de Medicina da USP.",
+    title: "Mentoria com o 1º colocado da USP",
+    text: "Quando o problema é maior que uma questão: entre na lista de espera da mentoria com quem passou em 1º lugar em Medicina na USP.",
   },
   {
     target: "dash-extras",

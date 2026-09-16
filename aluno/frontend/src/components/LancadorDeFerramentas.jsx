@@ -53,7 +53,7 @@ const GRUPOS = [
       { rota: "/mentis", icone: MessageCircle, nome: "Mentis", nota: "Ela leu o seu histórico inteiro" },
       { rota: "/cursos", icone: Radio, nome: "Aula ao vivo · quinta", nota: "Com o 1º colocado de Medicina da USP", destaque: true, aoVivo: true },
       { rota: "/cursos", icone: GraduationCap, nome: "Cursos", nota: "Matemática, redação, TRI e leitura", chave: "cursos-catalogo" },
-      { rota: "/aulas", icone: GraduationCap, nome: "Aula particular", nota: "Um a um, com alunos de Medicina da USP", destaque: true },
+      { rota: "/mentoria", icone: Medal, nome: "Mentoria", nota: "Lista de espera · com o 1º colocado de Medicina da USP", destaque: true },
       { rota: "/comunidade", icone: Users, nome: "Comunidade", nota: "Pergunte, responda, ganhe Sparks" },
       { rota: "/sugestoes", icone: MessageSquareWarning, nome: "Fale com a equipe", nota: "Achou um erro? Tem uma ideia?" },
     ],

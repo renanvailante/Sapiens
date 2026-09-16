@@ -131,6 +131,8 @@ async def detalhe_usuario(user_id: str, admin: User = Depends(require_admin)):
         _contar("redacoes", {"user_id": user_id}),
         _contar("question_reports", {"user_id": user_id}),
         _contar("sugestoes", {"user_id": user_id}),
+        # A coleção guarda a fila da mentoria — o nome interno ficou (ver
+        # `mentoria_routes`), o que ela significa hoje é "entrou na fila".
         _contar("aulas_particulares", {"user_id": user_id}),
         _contar("sparks_payments", {"user_id": user_id}),
         _contar("sparks_payments", {"user_id": user_id, "credited": True}),
@@ -162,7 +164,7 @@ async def detalhe_usuario(user_id: str, admin: User = Depends(require_admin)):
             "redacoes": redacoes,
             "reportes_de_questao": reportes,
             "sugestoes": sugestoes,
-            "aulas_particulares": aulas,
+            "fila_da_mentoria": aulas,
             "aulas_ao_vivo": lives,
             "sessoes_mentis": sessoes_mentis,
         },

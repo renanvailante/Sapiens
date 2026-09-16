@@ -44,7 +44,7 @@ import diagnostico_routes as diagnostico_module
 import motor_routes as motor_module
 import perfil_cognitivo_service
 import mentis_routes as mentis_module
-import aulas_particulares_routes as aulas_particulares_module
+import mentoria_routes as mentoria_module
 import cursos_routes as cursos_module
 import sparks_payments_service
 import sparks_routes as sparks_module
@@ -81,7 +81,7 @@ admin_module.set_db(db)
 promo_codes_module.set_db(db)
 firestore_module.set_db(db)
 mentis_module.set_db(db)
-aulas_particulares_module.set_db(db)
+mentoria_module.set_db(db)
 cursos_module.set_db(db)
 sparks_module.set_db(db)
 redacao_module.set_db(db)
@@ -324,7 +324,7 @@ api_router.include_router(skills_map_module.router)
 api_router.include_router(diagnostico_module.router)
 api_router.include_router(motor_module.router)
 api_router.include_router(mentis_module.router)
-api_router.include_router(aulas_particulares_module.router)
+api_router.include_router(mentoria_module.router)
 api_router.include_router(cursos_module.router)
 api_router.include_router(cursos_module.router_admin)
 api_router.include_router(sparks_module.router)

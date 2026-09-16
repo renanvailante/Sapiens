@@ -2,13 +2,14 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import {
-  Radio, Zap, Clock, Video, Copy, Check, CalendarPlus, GraduationCap, Bell,
+  Radio, Zap, Clock, Video, Copy, Check, CalendarPlus, Bell,
   BellRing, Lock, ArrowRight, Sparkles, Trophy, Target, MessageCircleMore,
-  PlayCircle, ShieldCheck, Infinity as Infinito,
+  PlayCircle, ShieldCheck, Infinity as Infinito, Medal,
 } from "lucide-react";
 import { api, errMsg } from "../lib/api";
 import Nav, { avisarSparksMudou } from "../components/Nav";
 import PedirWhatsApp from "../components/PedirWhatsApp";
+import MentorUSP from "../components/MentorUSP";
 import { useDeclararContextoMentis } from "../lib/mentisContexto";
 import { marcarAcessoDaLive } from "../lib/live";
 
@@ -238,7 +239,8 @@ export default function Cursos() {
           className="mapa-vitrine relative scroll-mt-24 overflow-hidden rounded-3xl p-6 md:p-8"
           data-testid="cursos-live"
         >
-          <div className="relative">
+          <div className="relative grid gap-7 md:grid-cols-[1fr_auto] md:items-center">
+            <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-2 rounded-full border border-rose-400/40 bg-rose-500/15 px-3 py-1.5 font-mono-alt text-[10px] font-bold uppercase tracking-[0.2em] text-rose-200">
                 <span className="relative flex h-2 w-2">
@@ -385,6 +387,14 @@ export default function Cursos() {
                 </div>
               )}
             </div>
+            </div>
+
+            {/* O rosto de quem dá a aula, do lado do preço. No celular ele
+                vai para o fim do bloco em vez de empurrar a manchete para
+                baixo da dobra. */}
+            <div className="order-first flex justify-center md:order-none md:justify-end">
+              <MentorUSP tamanho="m" testid="cursos-live-mentor" />
+            </div>
           </div>
         </section>
 
@@ -525,22 +535,20 @@ export default function Cursos() {
           </div>
         </section>
 
-        {/* ---- Aula particular: o outro produto de gente, com endereço próprio ---- */}
+        {/* ---- A mentoria: a mesma pessoa, um a um, com fila ---- */}
         <Link
-          to="/aulas"
+          to="/mentoria"
           className="lift mt-10 flex items-center gap-4 rounded-2xl border border-[#4FD9FF]/20 bg-[#4FD9FF]/[0.06] p-5 hover:border-[#4FD9FF]/45"
-          data-testid="cursos-aula-particular"
+          data-testid="cursos-mentoria"
         >
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#4FD9FF]/30 bg-[#4FD9FF]/15 text-[#7FD8FF]">
-            <GraduationCap className="h-5 w-5" strokeWidth={1.7} />
-          </span>
+          <MentorUSP tamanho="p" comSelo={false} testid="cursos-mentoria-foto" />
           <div className="min-w-0 flex-1">
             <div className="font-display text-base font-bold tracking-tight text-white">
-              Quer aula só para você?
+              Quer ele só para você?
             </div>
             <div className="text-xs text-white/45">
-              Aula particular, um a um, com alunos de Medicina da USP. Combinamos horário
-              pelo WhatsApp.
+              A mentoria é um a um, com o próprio 1º colocado. Uma pessoa, poucas vagas —
+              entre na lista de espera.
             </div>
           </div>
           <ArrowRight className="h-4 w-4 shrink-0 text-white/30" />

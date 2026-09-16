@@ -39,7 +39,7 @@ const MinhasQuestoes = lazy(() => import("./pages/MinhasQuestoes"));
 const MentisChat = lazy(() => import("./pages/MentisChat"));
 const BemVindo = lazy(() => import("./pages/BemVindo"));
 const Conquistas = lazy(() => import("./pages/Conquistas"));
-const Aulas = lazy(() => import("./pages/Aulas"));
+const Mentoria = lazy(() => import("./pages/Mentoria"));
 const Cursos = lazy(() => import("./pages/Cursos"));
 const SparksStore = lazy(() => import("./pages/SparksStore"));
 const Feed = lazy(() => import("./pages/Feed"));
@@ -59,7 +59,7 @@ const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const AdminUsers = lazy(() => import("./pages/AdminUsers"));
 const AdminFeed = lazy(() => import("./pages/AdminFeed"));
 const AdminAnnotations = lazy(() => import("./pages/AdminAnnotations"));
-const AdminAulasParticulares = lazy(() => import("./pages/AdminAulasParticulares"));
+const AdminMentoria = lazy(() => import("./pages/AdminMentoria"));
 const AdminCursos = lazy(() => import("./pages/AdminCursos"));
 const AdminReportesQuestoes = lazy(() => import("./pages/AdminReportesQuestoes"));
 const AdminSugestoes = lazy(() => import("./pages/AdminSugestoes"));
@@ -104,10 +104,12 @@ function AppRouter() {
           para cá quem ainda tem `flags.onboarded === false`. */}
       <Route path="/bem-vindo" element={<ProtectedRoute><Pagina titulo="Bem-vindo ao Sapiens"><BemVindo /></Pagina></ProtectedRoute>} />
       <Route path="/conquistas" element={<ProtectedRoute><Pagina titulo="Conquistas"><Conquistas /></Pagina></ProtectedRoute>} />
-      {/* Aula particular com alunos de Medicina da USP. Não é um formulário
-          novo: é o mesmo modal da barra, agora com endereço próprio — sem
-          rota, a Mentis não tinha como levar ninguém até ele. */}
-      <Route path="/aulas" element={<ProtectedRoute><Pagina titulo="Aulas com alunos de Medicina da USP"><Aulas /></Pagina></ProtectedRoute>} />
+      {/* A mentoria com o 1º colocado de Medicina da USP. Substituiu a "aula
+          particular" em 2026-09-15: não é mais um pedido de aula avulsa, é a
+          LISTA DE ESPERA de uma mentoria com uma pessoa só. `/aulas` continua
+          existindo como redirect porque o endereço antigo circulou. */}
+      <Route path="/mentoria" element={<ProtectedRoute><Pagina titulo="Mentoria com o 1º colocado de Medicina da USP"><Mentoria /></Pagina></ProtectedRoute>} />
+      <Route path="/aulas" element={<Navigate to="/mentoria" replace />} />
       {/* Cursos + a aula ao vivo de quinta com o 1º colocado de Medicina da
           USP. `/live` é como o aluno chama a coisa quando o link chega pelo
           WhatsApp — o redirect evita que o palpite caia em "não encontrada". */}
@@ -154,7 +156,8 @@ function AppRouter() {
       <Route path="/admin/answer-keys" element={<AdminRoute><Pagina titulo="Admin · Gabaritos"><Admin /></Pagina></AdminRoute>} />
       <Route path="/admin/feed" element={<AdminRoute><Pagina titulo="Admin · Feed"><AdminFeed /></Pagina></AdminRoute>} />
       <Route path="/admin/annotations" element={<AdminRoute><Pagina titulo="Admin · Anotações"><AdminAnnotations /></Pagina></AdminRoute>} />
-      <Route path="/admin/aulas-particulares" element={<AdminRoute><Pagina titulo="Admin · Aulas particulares"><AdminAulasParticulares /></Pagina></AdminRoute>} />
+      <Route path="/admin/mentoria" element={<AdminRoute><Pagina titulo="Admin · Lista de espera da mentoria"><AdminMentoria /></Pagina></AdminRoute>} />
+      <Route path="/admin/aulas-particulares" element={<Navigate to="/admin/mentoria" replace />} />
       <Route path="/admin/cursos" element={<AdminRoute><Pagina titulo="Admin · Cursos e live"><AdminCursos /></Pagina></AdminRoute>} />
       <Route path="/admin/reportes-questoes" element={<AdminRoute><Pagina titulo="Admin · Sugestões de correção"><AdminReportesQuestoes /></Pagina></AdminRoute>} />
       <Route path="/admin/sugestoes" element={<AdminRoute><Pagina titulo="Admin · Reclamações e sugestões"><AdminSugestoes /></Pagina></AdminRoute>} />
