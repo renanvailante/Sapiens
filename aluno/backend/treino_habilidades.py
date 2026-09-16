@@ -25,7 +25,11 @@ logger = logging.getLogger("sapiens.treino_habilidades")
 _ARQUIVO_PADRAO = "banco_treino_habilidades_v1.json"
 
 ONTOLOGY_VERSION_TREINO = "treino-habilidades-1.0"
-CUSTO_POR_QUESTAO_NOVA = 3
+# Preço de UMA questão gerada por IA, em Sparks. Número único do produto:
+# o Treino (`/treino/precos`), o botão de ação da Mentis e a tela de
+# geração leem daqui — nenhuma tela escreve o preço à mão.
+# 2026-09-15: subiu de 3 para 5 (decisão de produto).
+CUSTO_POR_QUESTAO_NOVA = 5
 
 
 class BancoTreinoIndisponivelError(RuntimeError):

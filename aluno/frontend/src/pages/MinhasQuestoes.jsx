@@ -4,6 +4,7 @@ import { Sparkles, CheckCircle2, XCircle, Loader2 } from "lucide-react";
 import { api, errMsg } from "../lib/api";
 import Nav from "../components/Nav";
 import Mentis from "../components/Mentis";
+import GerarQuestoesPainel from "../components/GerarQuestoesPainel";
 
 /**
  * Questões que a Mentis já gerou (ou reaproveitou de outro aluno) para este
@@ -105,6 +106,10 @@ export default function MinhasQuestoes() {
   const [erro, setErro] = useState(null);
   const [saldo, setSaldo] = useState(null);
 
+  // `recarga` sobe a cada geração: as questões novas precisam aparecer na
+  // lista sem o aluno recarregar a página que acabou de cobrá-lo.
+  const [recarga, setRecarga] = useState(0);
+
   useEffect(() => {
     let ativo = true;
     setCarregando(true);
@@ -115,7 +120,7 @@ export default function MinhasQuestoes() {
       .catch((e) => { if (ativo) setErro(errMsg(e, "Não foi possível carregar suas questões.")); })
       .finally(() => { if (ativo) setCarregando(false); });
     return () => { ativo = false; };
-  }, [habId]);
+  }, [habId, recarga]);
 
   return (
     <div className="min-h-screen">
@@ -137,6 +142,13 @@ export default function MinhasQuestoes() {
           </div>
         )}
 
+        {/* A geração mora AQUI, e não só dentro do briefing de uma habilidade
+            do mapa. A tela que lista as questões geradas era a única que não
+            sabia gerá-las — mandava o aluno para outra. */}
+        <div className="mt-6">
+          <GerarQuestoesPainel habIdInicial={habId} aoGerar={() => setRecarga((n) => n + 1)} />
+        </div>
+
         <div className="mt-6 space-y-4">
           {carregando && (
             <div className="flex items-center gap-2 py-16 justify-center text-white/50 text-sm">
@@ -149,9 +161,8 @@ export default function MinhasQuestoes() {
           )}
 
           {!carregando && !erro && itens.length === 0 && (
-            <div className="card-sapiens rounded-2xl p-8 text-center text-sm text-white/50">
-              Você ainda não tem questões geradas. Peça à Mentis ou use "Praticar mais" numa
-              habilidade do Treino.
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-8 text-center text-sm text-white/45">
+              Nenhuma questão gerada ainda. Escolha um ponto acima e peça as primeiras.
             </div>
           )}
 

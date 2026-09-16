@@ -119,6 +119,15 @@ LACUNA_SEM_MEDIDA = 0.50
 # lacuna comprovada sempre passe na frente de uma presumida de mesmo tamanho.
 FATOR_SEM_MEDIDA = 0.60
 
+# Faixa em que a dificuldade DECLARADA pelo aluno no primeiro acesso (0 a 10,
+# ver `onboarding_routes`) é lida como lacuna presumida. Nem 0 nem 1: quem diz
+# "zero dificuldade" numa frente que nunca respondeu continua tendo alguma
+# lacuna, e quem diz 10 não vira certeza absoluta. `LACUNA_SEM_MEDIDA` (0.50)
+# fica exatamente no meio da faixa, então um slider em 5 devolve o
+# comportamento de quem nunca declarou nada.
+_LACUNA_DECLARADA_MIN = 0.20
+_LACUNA_DECLARADA_MAX = 0.80
+
 REDACAO_NOTA_MAXIMA = 1000
 
 
@@ -170,7 +179,14 @@ def _estado(respondidas: int) -> str:
     return "medido"
 
 
-def _porque(nome: str, peso: float, estado: str, taxa: Optional[float], respondidas: int) -> str:
+def _porque(
+    nome: str,
+    peso: float,
+    estado: str,
+    taxa: Optional[float],
+    respondidas: int,
+    declarada: Optional[int] = None,
+) -> str:
     """A frase que a interface mostra. Sempre diz as DUAS metades: o peso na
     prova e a medida do aluno — sem uma delas o aluno não consegue discordar
     da ordem, e uma recomendação com a qual não dá para discordar é ordem, não
@@ -182,6 +198,12 @@ def _porque(nome: str, peso: float, estado: str, taxa: Optional[float], respondi
     else:
         peso_txt = f"{nome} rende menos ponto por hora estudada"
     if estado == "sem_medida":
+        if isinstance(declarada, int):
+            return (
+                f"{peso_txt}, e você mesmo marcou {declarada} de 10 de dificuldade aqui no "
+                "primeiro acesso. É a sua leitura, não medida minha — responda algumas "
+                "questões e eu troco o palpite por número."
+            )
         return (
             f"{peso_txt}, e você ainda não respondeu o bastante aqui para eu medir. "
             "Entra na sua semana pelo peso na prova, não por diagnóstico."
@@ -192,12 +214,25 @@ def _porque(nome: str, peso: float, estado: str, taxa: Optional[float], respondi
     return f"{peso_txt}, e {medida}."
 
 
-def _linha(chave: str, respondidas: int, acertos: int) -> dict[str, Any]:
+def _lacuna_declarada(nota: Optional[int]) -> Optional[float]:
+    """0-10 do slider do onboarding -> lacuna presumida, ou None.
+
+    Só vale onde NÃO há medida. Assim que o aluno responde o bastante para a
+    frente sair de `sem_medida`, a contagem real toma o lugar do que ele
+    achava — opinião nunca sobrescreve medição, só preenche o silêncio.
+    """
+    if not isinstance(nota, int) or not 0 <= nota <= 10:
+        return None
+    faixa = _LACUNA_DECLARADA_MAX - _LACUNA_DECLARADA_MIN
+    return round(_LACUNA_DECLARADA_MIN + faixa * (nota / 10), 3)
+
+
+def _linha(chave: str, respondidas: int, acertos: int, declarada: Optional[int] = None) -> dict[str, Any]:
     base = _POR_CHAVE[chave]
     estado = _estado(respondidas)
     if estado == "sem_medida":
         taxa: Optional[float] = round(100 * acertos / respondidas, 1) if respondidas else None
-        lacuna = LACUNA_SEM_MEDIDA
+        lacuna = _lacuna_declarada(declarada) or LACUNA_SEM_MEDIDA
         rendimento = base["peso"] * lacuna * FATOR_SEM_MEDIDA
         confianca = _confianca(respondidas)
     else:
@@ -218,11 +253,12 @@ def _linha(chave: str, respondidas: int, acertos: int) -> dict[str, Any]:
         "confianca": confianca,
         "estado": estado,
         "rendimento": round(rendimento, 4),
-        "porque": _porque(base["nome"], base["peso"], estado, taxa, respondidas),
+        "declarada": declarada if estado == "sem_medida" else None,
+        "porque": _porque(base["nome"], base["peso"], estado, taxa, respondidas, declarada),
     }
 
 
-def _linha_redacao(redacao: Optional[dict[str, Any]]) -> dict[str, Any]:
+def _linha_redacao(redacao: Optional[dict[str, Any]], declarada: Optional[int] = None) -> dict[str, Any]:
     """A Redação não tem taxa de acerto — tem nota de 0 a 1000. A lacuna é o
     quanto falta para 1000 na MELHOR redação já corrigida (a melhor, não a
     última: uma redação ruim num dia ruim não apaga o que o aluno provou que
@@ -236,8 +272,11 @@ def _linha_redacao(redacao: Optional[dict[str, Any]]) -> dict[str, Any]:
             "area_enem": None, "rota": base["rota"],
             "respondidas": 0, "acertos": 0, "taxa_acerto": None,
             "nota": None, "corrigidas": 0,
-            "lacuna": LACUNA_SEM_MEDIDA, "confianca": 0.0, "estado": "sem_medida",
-            "rendimento": round(base["peso"] * LACUNA_SEM_MEDIDA * FATOR_SEM_MEDIDA, 4),
+            "lacuna": _lacuna_declarada(declarada) or LACUNA_SEM_MEDIDA,
+            "confianca": 0.0, "estado": "sem_medida", "declarada": declarada,
+            "rendimento": round(
+                base["peso"] * (_lacuna_declarada(declarada) or LACUNA_SEM_MEDIDA) * FATOR_SEM_MEDIDA, 4
+            ),
             "porque": (
                 "A Redação vale 1000 pontos sozinha e é a nota que mais sobe com treino — "
                 "e você ainda não corrigiu nenhuma aqui. É o ponto de partida mais barato "
@@ -290,6 +329,7 @@ def _consolidar_natureza(linhas: list[dict[str, Any]]) -> list[dict[str, Any]]:
 def ranking(
     disciplina_stats: Optional[dict[str, dict[str, int]]] = None,
     redacao: Optional[dict[str, Any]] = None,
+    dificuldade_declarada: Optional[dict[str, int]] = None,
 ) -> list[dict[str, Any]]:
     """Todas as frentes, da que mais rende ponto para a que menos rende.
 
@@ -297,18 +337,26 @@ def ranking(
     classificado por `classificar_disciplina`. `redacao` é
     `{"melhor_nota": int, "corrigidas": int}` ou None.
 
+    `dificuldade_declarada` é `{chave: 0..10}` vindo do onboarding
+    (`onboarding_routes.dificuldade_por_frente`). Ela só muda a ordem das
+    frentes **ainda sem medida** — é o que faz a primeira semana de quem
+    acabou de se cadastrar começar por onde ELE disse que sofre, em vez de
+    começar sempre igual para todo mundo.
+
     Devolve SEMPRE a lista inteira, inclusive as frentes sem medida: uma
     frente que some da resposta é uma frente que o aluno nunca descobre que
     existe. Quem decide o que mostrar é a tela.
     """
     stats = disciplina_stats or {}
+    declaradas = dificuldade_declarada or {}
     linhas = [
         _linha(d["chave"], int((stats.get(d["chave"]) or {}).get("respondidas") or 0),
-               int((stats.get(d["chave"]) or {}).get("acertos") or 0))
+               int((stats.get(d["chave"]) or {}).get("acertos") or 0),
+               declaradas.get(d["chave"]))
         for d in DISCIPLINAS
         if d["chave"] != "redacao"
     ]
-    linhas.append(_linha_redacao(redacao))
+    linhas.append(_linha_redacao(redacao, declaradas.get("redacao")))
     linhas = _consolidar_natureza(linhas)
     # Desempate por peso e depois por nome: sem isso, duas frentes de
     # rendimento idêntico trocariam de lugar entre duas leituras seguidas e o

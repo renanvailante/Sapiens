@@ -46,6 +46,7 @@ import cronograma as cg
 import engajamento_service
 import firestore_service as fs
 import llm_telemetry
+import onboarding_routes
 import prioridade_enem
 import rate_limit
 import revisao_service
@@ -204,7 +205,12 @@ async def _prioridades(uid: str) -> list[dict[str, Any]]:
     except Exception:  # noqa: BLE001
         logger.exception("cronograma: diagnóstico indisponível para %s", uid)
         stats = {}
-    return prioridade_enem.ranking(stats, await _resumo_redacao(uid))
+    # A dificuldade que o aluno declarou no primeiro acesso só pesa nas
+    # frentes que ainda não têm medida — ver `prioridade_enem.ranking`. Uma
+    # leitura do Mongo por chave primária; sem onboarding, devolve `{}` e o
+    # ranking fica idêntico ao de antes.
+    declaradas = await onboarding_routes.dificuldade_por_frente(uid)
+    return prioridade_enem.ranking(stats, await _resumo_redacao(uid), declaradas)
 
 
 async def _habilidades_fracas(uid: str, limite: int = 2) -> list[dict[str, Any]]:

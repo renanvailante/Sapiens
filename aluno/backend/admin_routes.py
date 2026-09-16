@@ -15,6 +15,7 @@ import mercadopago_client as mp
 import perfil_cognitivo_service
 import sparks_payments_service as sparks_svc
 import sparks_store
+import whatsapp as wa
 
 logger = logging.getLogger("sapiens.admin")
 
@@ -34,6 +35,10 @@ async def summary(admin: User = Depends(require_admin)):
     trashed = await _db.analyses.count_documents({"deleted": True})
     users_count = await _db.users.count_documents({})
     admins_count = await _db.users.count_documents({"is_admin": True})
+    # Quantas contas dá para alcançar por WhatsApp. O número interessa sozinho:
+    # é o tamanho real da lista para avisar da aula de quinta, e a distância
+    # entre ele e `users` é quanto do produto ficou fora do alcance da equipe.
+    com_whatsapp = await _db.users.count_documents({"whatsapp_e164": {"$exists": True}})
     feed_items = await _db.feed_items.count_documents({})
     feed_published = await _db.feed_items.count_documents({"published": True})
     annotations = await _db.question_annotations.count_documents({})
@@ -45,6 +50,7 @@ async def summary(admin: User = Depends(require_admin)):
         "analyses_trashed": trashed,
         "users": users_count,
         "admins": admins_count,
+        "com_whatsapp": com_whatsapp,
         "feed_items": feed_items,
         "feed_items_published": feed_published,
         "annotations": annotations,
@@ -78,6 +84,12 @@ async def list_users(admin: User = Depends(require_admin)):
         logger.warning("Resumo de Sparks/respostas indisponível na lista de usuários: %s", exc)
 
     for d in docs:
+        # O número sai daqui pronto para USAR: formatado para leitura e com o
+        # endereço que abre a conversa. Montar `wa.me` na tela significaria
+        # reimplementar a normalização em JavaScript e as duas versões
+        # divergirem no primeiro número de outro país.
+        d["whatsapp_fmt"] = wa.formatar_br(d.get("whatsapp_e164")) or d.get("whatsapp")
+        d["whatsapp_link"] = wa.link_conversa(d.get("whatsapp_e164"))
         r = resumo.get(d["user_id"]) or {}
         d["sparks_balance"] = r.get("sparks_balance")
         d["questoes_respondidas"] = r.get("questoes_respondidas")
@@ -113,6 +125,7 @@ async def detalhe_usuario(user_id: str, admin: User = Depends(require_admin)):
 
     (
         analises, redacoes, reportes, sugestoes, aulas, pagamentos, pagos, sessoes_mentis,
+        lives,
     ) = await asyncio.gather(
         _contar("analyses", {"user_id": user_id, "deleted": False}),
         _contar("redacoes", {"user_id": user_id}),
@@ -122,7 +135,11 @@ async def detalhe_usuario(user_id: str, admin: User = Depends(require_admin)):
         _contar("sparks_payments", {"user_id": user_id}),
         _contar("sparks_payments", {"user_id": user_id, "credited": True}),
         _contar("mentis_sessoes", {"user_id": user_id}),
+        _contar("cursos_live_acessos", {"user_id": user_id}),
     )
+
+    conta["whatsapp_fmt"] = wa.formatar_br(conta.get("whatsapp_e164")) or conta.get("whatsapp")
+    conta["whatsapp_link"] = wa.link_conversa(conta.get("whatsapp_e164"))
 
     transacoes = await _db.sparks_payments.find(
         {"user_id": user_id}, {"_id": 0}
@@ -146,6 +163,7 @@ async def detalhe_usuario(user_id: str, admin: User = Depends(require_admin)):
             "reportes_de_questao": reportes,
             "sugestoes": sugestoes,
             "aulas_particulares": aulas,
+            "aulas_ao_vivo": lives,
             "sessoes_mentis": sessoes_mentis,
         },
         "financeiro": {

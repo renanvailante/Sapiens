@@ -499,12 +499,18 @@ def _sem_mongo_real_no_engajamento():
     depois desta fixture e vence (é o que `test_engajamento.py` faz).
     """
     import comunidade
+    import cursos_routes
     import engajamento_service
+    import onboarding_routes
 
-    for modulo in (engajamento_service, comunidade):
+    # TODO MÓDULO NOVO QUE RECEBA `set_db` PRECISA ENTRAR AQUI. Sem isso a
+    # suíte volta a escrever no Mongo da máquina, e o sintoma aparece longe da
+    # causa (dados fantasma no banco, nenhum erro).
+    modulos = (engajamento_service, comunidade, onboarding_routes, cursos_routes)
+    for modulo in modulos:
         modulo.set_db(None)
     yield
-    for modulo in (engajamento_service, comunidade):
+    for modulo in modulos:
         modulo.set_db(None)
 
 

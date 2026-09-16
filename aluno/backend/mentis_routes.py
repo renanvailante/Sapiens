@@ -50,6 +50,7 @@ import firestore_service as fs
 import llm_cache
 import llm_telemetry
 import motor_cognitivo
+import onboarding_routes
 import prioridade_enem
 import rate_limit
 import treino_habilidades as th
@@ -490,7 +491,11 @@ def _pct(linha: dict) -> str:
 
 
 def _montar_dossie(
-    nome: str, diagnostico: dict, agregado: dict, prioridades: Optional[list[dict]] = None
+    nome: str,
+    diagnostico: dict,
+    agregado: dict,
+    prioridades: Optional[list[dict]] = None,
+    declarado: Optional[str] = None,
 ) -> dict[str, Any]:
     """Compacta o diagnóstico real num bloco de texto de tamanho previsível +
     um resumo estruturado para a interface mostrar sem chamar o modelo.
@@ -555,6 +560,16 @@ def _montar_dossie(
             "depois Biologia, Química e Física; por último Ciências Humanas e Linguagens. "
             "Uma frente 'ainda sem medida' está na lista pelo peso na prova, não por diagnóstico — "
             "diga isso quando citá-la."
+        )
+    # O que o aluno declarou sobre si no primeiro acesso (objetivo, tempo por
+    # dia, meta no ENEM, onde ELE acha que sofre). Entra rotulado como
+    # opinião, nunca como medida — a regra de "use somente os números do
+    # dossiê" continua valendo para tudo que é contagem.
+    if declarado:
+        linhas.append(declarado)
+        linhas.append(
+            "Trate isso como a intenção dele, não como diagnóstico: a meta e o tempo por dia "
+            "são o que você usa para dimensionar qualquer plano que propuser."
         )
     linhas.append(
         "Catálogo de habilidades de treino disponíveis (use o hab_id exato ao propor "
@@ -694,15 +709,53 @@ Responda EXCLUSIVAMENTE com JSON no formato:
   decidir que praticar uma habilidade específica é o próximo passo — use
   SEMPRE um `hab_id` exato do catálogo do dossiê, nunca um nome livre.
   `quantidade` entre 1 e 5;
+  {"tipo": "ir", "destino": "CHAVE"} quando a melhor continuação for o aluno
+  ABRIR uma tela do Sapiens. Chaves válidas, e nada fora desta lista:
+  mapa_treino (o mapa de missões), missoes (as missões de hoje), conquistas,
+  questoes (praticar provas do ENEM), minhas_questoes (as questões que ele já
+  gerou), progresso (análise de desempenho), revisoes, redacao, cronograma,
+  sparks, comunidade, aulas (aula particular com alunos de Medicina da USP).
+  Use SEMPRE que citar uma dessas telas na resposta — o botão leva ele até
+  lá, e navegar não custa Spark nenhum. Não descreva o caminho do menu na
+  resposta: o botão é o caminho;
   {"tipo": "montar_cronograma"} quando o aluno pedir cronograma, agenda,
   rotina, plano da semana ou "por onde começo", ou quando o problema dele for
   claramente de organização do tempo e não de conteúdo. NÃO escreva a agenda
   hora a hora na resposta: o Sapiens monta a semana em cima dos compromissos
   reais dele e das prioridades acima, e essa montagem é de graça. Diga em uma
   frase o que a semana vai priorizar e deixe o botão fazer o resto.
-  Nenhuma das duas gera nada nem cobra Sparks sozinha: viram um botão que o
+  Nenhuma das três gera nada nem cobra Sparks sozinha: viram um botão que o
   aluno decide clicar ou não.
 Sem markdown, sem texto fora do JSON."""
+
+# ---------- A Mentis como camada de navegação ----------
+#
+# A terceira forma de `acao`: levar o aluno a uma tela do produto. Existe
+# porque o chat era a única superfície que sabia o que o aluno precisava e não
+# tinha como levá-lo até lá — a resposta dizia "abra o Mapa de Treino" e o
+# aluno tinha de procurar a aba sozinho.
+#
+# Lista FECHADA de propósito, e cada item existe hoje no `App.js`. O modelo
+# escolhe uma chave desta tabela, nunca uma URL: assim ele não pode inventar
+# rota, nem mandar o aluno para fora do produto, nem cair numa página que
+# ainda não existe. Navegar é grátis — nenhum destino daqui cobra Spark nem
+# chama modelo; o que custar, custa na tela de destino, com o preço à vista.
+DESTINOS: dict[str, dict[str, str]] = {
+    "mapa_treino": {"rota": "/treino", "rotulo": "Abrir o Mapa de Treino"},
+    "missoes": {"rota": "/dashboard#missoes", "rotulo": "Ver minhas missões de hoje"},
+    "conquistas": {"rota": "/conquistas", "rotulo": "Ver minhas conquistas"},
+    "questoes": {"rota": "/exams", "rotulo": "Praticar questões do ENEM"},
+    "minhas_questoes": {"rota": "/minhas-questoes", "rotulo": "Abrir as questões que eu gerei"},
+    "progresso": {"rota": "/cognitive-profile", "rotulo": "Ver minha análise de desempenho"},
+    "revisoes": {"rota": "/revisoes", "rotulo": "Revisar o que ficou pendente"},
+    "redacao": {"rota": "/redacao", "rotulo": "Escrever uma redação"},
+    "cronograma": {"rota": "/cronograma", "rotulo": "Ver a minha semana"},
+    "sparks": {"rota": "/sparks", "rotulo": "Ver meus Sparks"},
+    "comunidade": {"rota": "/comunidade", "rotulo": "Abrir o mural da comunidade"},
+    "aulas": {"rota": "/aulas", "rotulo": "Aula com alunos de Medicina da USP"},
+    "cursos": {"rota": "/cursos", "rotulo": "Ver os cursos e a aula ao vivo de quinta"},
+    "live": {"rota": "/cursos#live", "rotulo": "Entrar na aula ao vivo de quinta"},
+}
 
 _SUGESTOES_MAX = 3
 _SUGESTAO_TEXTO_MAX_CHARS = 90
@@ -739,6 +792,12 @@ def _validar_acao(valor: Any) -> Optional[dict[str, Any]]:
         # aluno. A Mentis aqui só decide que ESTE é o próximo passo — ela não
         # dita o cronograma, e por isso não há nada que ela possa errar.
         return {"tipo": "montar_cronograma"}
+    if valor.get("tipo") == "ir":
+        destino = valor.get("destino")
+        alvo = DESTINOS.get(destino) if isinstance(destino, str) else None
+        if alvo is None:
+            return None
+        return {"tipo": "ir", "destino": destino, **alvo}
     if valor.get("tipo") != "gerar_questoes":
         return None
     hab_id = valor.get("hab_id")
@@ -828,8 +887,14 @@ async def abrir_sessao(
         agregado = fs.ler_agregado(user.user_id)
         # `compute_diagnostico_real` já traz a contagem por disciplina, então
         # o ranking de rendimento não custa nenhuma leitura a mais aqui.
-        prioridades = prioridade_enem.ranking(diagnostico.get("por_disciplina") or {})
-        dossie = _montar_dossie(user.name or user.email, diagnostico, agregado, prioridades)
+        declaradas = await onboarding_routes.dificuldade_por_frente(user.user_id)
+        prioridades = prioridade_enem.ranking(
+            diagnostico.get("por_disciplina") or {}, None, declaradas
+        )
+        declarado = await onboarding_routes.resumo_para_modelo(user.user_id)
+        dossie = _montar_dossie(
+            user.name or user.email, diagnostico, agregado, prioridades, declarado
+        )
     except Exception as exc:  # noqa: BLE001
         saldo_restituido = _safe_reembolso(user.user_id, SESSAO_COST)
         logger.exception(

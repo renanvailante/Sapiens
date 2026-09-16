@@ -24,6 +24,14 @@ HUB_DOMAIN_MAP: dict[int, list[str]] = {
     6: ["DOM-EXPERIMENTAL", "DOM-CLASSIF"],
 }
 
+# Índice inverso do mapa acima. Existe para que a contagem por eixo possa ser
+# feita evento a evento (em `annotation_service`), onde é preciso saber a que
+# eixo um domínio pertence ANTES de somar — só assim uma questão conta uma
+# vez por eixo, e não uma vez por domínio.
+DOMAIN_TO_HUB: dict[str, int] = {
+    dom_id: hub_id for hub_id, dom_ids in HUB_DOMAIN_MAP.items() for dom_id in dom_ids
+}
+
 HUBS: list[dict[str, Any]] = [
     {
         "hub": 1,
@@ -88,50 +96,98 @@ HUBS: list[dict[str, Any]] = [
 ]
 
 
+# ----------------------------------------------------------------------
+# Escala do mapa (recalibrada em 2026-09-15)
+#
+# Antes, o número de um vértice era COBERTURA: processos tocados / processos
+# do domínio. Um domínio com três processos ficava "coberto" na primeira
+# rodada, e o mapa anunciava "Dominado" para quem tinha respondido três
+# questões — a barra subia por o assunto ter APARECIDO, não por ter sido
+# acertado. É o pior tipo de número num produto de estudo: parabeniza cedo e
+# some com a razão de voltar.
+#
+# Agora o número é VOLUME DE ACERTOS no eixo, com retornos decrescentes, e a
+# âncora é explícita (e travada em teste):
+#
+#     ACERTOS_ANCORA acertos naquele eixo  ->  MASTERY_ANCORA de exibição.
+#
+# Ou seja: "Dominado" (80%, ver `frontend/src/lib/dominio.js`) exige 40
+# acertos naquele eixo. Errar não desconta — só não soma: a régua é "quanto
+# você já acertou aqui", não "qual é a sua taxa de acerto".
+# ----------------------------------------------------------------------
+
 MASTERY_CEILING = 0.92  # teto de exibição: nunca mostrar >92%, por design do produto.
-_MASTERY_CURVE_K = 3.0  # controla o quão rápido o ganho marginal cai perto do teto.
+ACERTOS_ANCORA = 40     # acertos necessários num eixo para...
+MASTERY_ANCORA = 0.80   # ...este valor de exibição ("Dominado").
+
+# Constante de tempo da curva — DERIVADA da âncora, não escolhida a olho:
+# é a solução de MASTERY_CEILING * (1 - e^(-n/TAU)) = MASTERY_ANCORA em
+# n = ACERTOS_ANCORA. Mexer na âncora reescala tudo sozinho.
+_TAU_ACERTOS = -ACERTOS_ANCORA / math.log(1 - MASTERY_ANCORA / MASTERY_CEILING)
 
 
-def _diminishing_mastery(raw: float) -> float:
-    """Converte progresso bruto (0..1, resposta/total) num valor de exibição
-    com retornos decrescentes: sobe rápido no início e fica cada vez mais
-    difícil subir perto do teto — nunca alcança `MASTERY_CEILING`, só se
-    aproxima assintoticamente dele. É deliberadamente mais difícil "chegar
-    perto de 100%" do que sair de 0% — reflete que dominar totalmente uma
-    frente ampla é raro por design, não um limite técnico.
+def mastery_por_acertos(acertos: float) -> float:
+    """Mastery de exibição (0..1) a partir do número de acertos no eixo.
+
+    Retornos decrescentes: passa exatamente pela âncora e se aproxima de
+    `MASTERY_CEILING` sem nunca passar dele (só o encosta, por arredondamento,
+    lá pelas duas centenas de acertos). Ordens de grandeza, para conferir a
+    sensação: 5 acertos ~21%, 10 ~37%, 20 ~59%, 40 = 80%, 60 ~88%, 80 ~90%.
     """
-    raw = max(0.0, min(1.0, raw))
-    return round(MASTERY_CEILING * (1 - math.exp(-_MASTERY_CURVE_K * raw)), 4)
+    n = max(0.0, float(acertos or 0))
+    return round(MASTERY_CEILING * (1 - math.exp(-n / _TAU_ACERTOS)), 4)
 
 
-def compute_hexagon(ontology_tree: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Deriva mastery 0..1 por vértice cosmético a partir da árvore real da
-    ontologia (só contagem de processos respondidos/total por domínio), já
-    passado pela curva de retornos decrescentes (`_diminishing_mastery`).
+def compute_hexagon(hub_stats: dict[Any, dict[str, int]] | None) -> list[dict[str, Any]]:
+    """Deriva o vértice cosmético de cada eixo a partir da contagem por hub já
+    agregada em `annotation_service._read_firestore_answered`, onde cada
+    questão respondida conta UMA vez por hub — um item que aciona dois
+    domínios do mesmo hub (hub 5 tem três) não vale dobrado, senão "40
+    acertos" chegaria com 14 questões.
 
-    Não devolve nenhum nome real — só `hub` (1-6), `label` (genérico) e
-    `mastery`. É a única ponte entre o dado real e este mapa decorativo.
+    Devolve `acertos`/`respondidas` junto do `mastery` de propósito: é isso
+    que fica gravado no snapshot e o que permite reexibir o mapa numa escala
+    nova sem reler nada do Firestore (ver `rescale_hexagon`).
     """
-    dom_counts: dict[str, dict[str, int]] = {}
-    for dnode in ontology_tree:
-        total = 0
-        answered = 0
-        for cnode in dnode.get("children", []) or []:
-            for pnode in cnode.get("children", []) or []:
-                total += 1
-                if pnode.get("answered"):
-                    answered += 1
-        dom_counts[dnode.get("code")] = {"total": total, "answered": answered}
-
+    stats = hub_stats or {}
     hexagon = []
     for hub in HUBS:
-        dom_ids = HUB_DOMAIN_MAP.get(hub["hub"], [])
-        total = sum(dom_counts.get(d, {}).get("total", 0) for d in dom_ids)
-        answered = sum(dom_counts.get(d, {}).get("answered", 0) for d in dom_ids)
-        raw = answered / total if total else 0.0
-        mastery = _diminishing_mastery(raw) if total else 0.0
-        hexagon.append({"hub": hub["hub"], "label": hub["label"], "mastery": mastery})
+        entry = stats.get(hub["hub"]) or stats.get(str(hub["hub"])) or {}
+        acertos = int(entry.get("acertos") or 0)
+        hexagon.append({
+            "hub": hub["hub"],
+            "label": hub["label"],
+            "mastery": mastery_por_acertos(acertos),
+            "acertos": acertos,
+            "respondidas": int(entry.get("respondidas") or 0),
+        })
     return hexagon
+
+
+def rescale_hexagon(hexagon: list[dict[str, Any]] | None) -> tuple[list[dict[str, Any]], bool]:
+    """Recalcula `mastery` a partir dos `acertos` gravados no snapshot.
+
+    O mapa é servido do snapshot em toda abertura do Painel; reler o
+    histórico de respostas por requisição é exatamente a forma do incidente de
+    cota do Firestore. Guardar a contagem ao lado do número é o que permite
+    trocar a escala e o efeito valer para todo mundo sem pagar leitura nenhuma.
+
+    Snapshot da escala antiga (cobertura, sem `acertos`) não tem conversão
+    possível: aquele número não guardava quantas questões havia por trás.
+    Esses voltam zerados e com `escala_antiga`: "ainda não medido" fica falso
+    até a próxima geração, enquanto "Dominado" ficaria falso e convincente.
+    """
+    if not hexagon:
+        return [], False
+    rescaled: list[dict[str, Any]] = []
+    escala_antiga = False
+    for item in hexagon:
+        if "acertos" in item:
+            rescaled.append({**item, "mastery": mastery_por_acertos(item.get("acertos"))})
+        else:
+            escala_antiga = True
+            rescaled.append({**item, "mastery": 0.0, "acertos": 0, "respondidas": 0})
+    return rescaled, escala_antiga
 
 
 def _stable_unit(*parts: str) -> float:
@@ -148,11 +204,16 @@ def build_hub_tree(uid: str, hexagon: list[dict[str, Any]]) -> list[dict[str, An
     (`leaf`), estável por aluno — mesmo hub/mesma folha sempre rendem o mesmo
     número para o mesmo `uid`, então a árvore não "pisca" a cada re-render.
 
-    O percentual do hub vem do mastery real (`hexagon`, já derivado de
-    processos respondidos); o percentual de cada folha é uma variação
-    decorativa em torno desse número — não existe granularidade real por
-    folha (elas são só rótulos ilustrativos), então isso NUNCA deve ser lido
-    como uma medida por si.
+    O percentual do hub vem do mastery real (`hexagon`, derivado dos acertos);
+    o percentual de cada folha é uma variação decorativa DENTRO desse número —
+    não existe granularidade real por folha (elas são só rótulos
+    ilustrativos), então isso NUNCA deve ser lido como uma medida por si.
+
+    Duas regras impedem a decoração de mentir: folha nenhuma passa do
+    percentual do próprio hub, e hub sem acerto nenhum tem folha zerada. Antes
+    havia um piso de 4% e uma base fictícia de até 30% para hub zerado — um
+    eixo "Não explorado" exibia folhas perto de 40%, que é justamente o número
+    inflado que esta escala veio remover.
     """
     mastery_by_hub = {h["hub"]: h["mastery"] for h in hexagon}
     tree: list[dict[str, Any]] = []
@@ -163,9 +224,7 @@ def build_hub_tree(uid: str, hexagon: list[dict[str, Any]]) -> list[dict[str, An
             leaves = []
             for leaf in branch["leaves"]:
                 jitter = _stable_unit(uid, str(hub["hub"]), branch["name"], leaf)
-                base = hub_pct if hub_pct > 0 else jitter * 30
-                pct = base * (0.55 + jitter * 0.9)
-                pct = max(4.0, min(MASTERY_CEILING * 100, round(pct, 1)))
+                pct = round(hub_pct * (0.6 + jitter * 0.4), 1) if hub_pct > 0 else 0.0
                 leaves.append({"name": leaf, "percent": pct})
             branches.append({"name": branch["name"], "leaves": leaves})
         tree.append({
@@ -178,20 +237,22 @@ def build_hub_tree(uid: str, hexagon: list[dict[str, Any]]) -> list[dict[str, An
     return tree
 
 
-_FEEDBACK_MIN_RESPOSTAS = 3  # amostra mínima por domínio p/ entrar no resumo de acerto
+_FEEDBACK_MIN_RESPOSTAS = 10  # amostra mínima por eixo p/ entrar no resumo de acerto
 
 
-def compute_feedback(rounds_history: list[dict[str, Any]], domain_stats: dict[str, dict[str, int]]) -> dict[str, Any]:
+def compute_feedback(rounds_history: list[dict[str, Any]], hub_stats: dict[Any, dict[str, int]] | None) -> dict[str, Any]:
     """Resumo gamificado de "onde você mais acerta" / "no que focar", montado
     a partir do HISTÓRICO de resumos de rodada já gravado (`rounds_history`,
-    de `students/{uid}/sparks_rounds`) e da contagem bruta de acertos por
-    domínio (`domain_stats`, de `annotation_service`). Nunca expõe nome real
-    de domínio/processo/competência — só o rótulo cosmético do hub.
+    de `students/{uid}/sparks_rounds`) e da contagem por eixo (`hub_stats`, de
+    `annotation_service`). Nunca expõe nome real de domínio/processo/
+    competência — só o rótulo cosmético do hub.
 
-    Determinístico, sem IA: soma frequência de padrão de erro por domínio
-    (já filtrada por `_PADRAO_FREQUENCIA_MINIMA` em `resumo_rodada`) e taxa de
-    acerto por domínio, cada uma agregada para o hub cosmético via
-    `HUB_DOMAIN_MAP`.
+    Determinístico, sem IA: soma frequência de padrão de erro por domínio (já
+    filtrada por `_PADRAO_FREQUENCIA_MINIMA` em `resumo_rodada`), agregada
+    para o hub via `HUB_DOMAIN_MAP`, e taxa de acerto por eixo lida direto de
+    `hub_stats` — que já conta cada questão UMA vez por eixo. Somar os
+    domínios aqui contava em dobro o item que aciona dois domínios do mesmo
+    eixo, e a "taxa de acerto" saía de uma base inflada.
     """
     error_freq_by_dom: dict[str, int] = {}
     for rodada in rounds_history:
@@ -200,14 +261,16 @@ def compute_feedback(rounds_history: list[dict[str, Any]], domain_stats: dict[st
                 continue
             error_freq_by_dom[p["id"]] = error_freq_by_dom.get(p["id"], 0) + int(p.get("frequencia") or 0)
 
+    stats = hub_stats or {}
     hub_difficulty: dict[int, int] = {}
     hub_respondidas: dict[int, int] = {}
     hub_acertos: dict[int, int] = {}
     for hub in HUBS:
         dom_ids = HUB_DOMAIN_MAP.get(hub["hub"], [])
+        entry = stats.get(hub["hub"]) or stats.get(str(hub["hub"])) or {}
         hub_difficulty[hub["hub"]] = sum(error_freq_by_dom.get(d, 0) for d in dom_ids)
-        hub_respondidas[hub["hub"]] = sum(domain_stats.get(d, {}).get("respondidas", 0) for d in dom_ids)
-        hub_acertos[hub["hub"]] = sum(domain_stats.get(d, {}).get("acertos", 0) for d in dom_ids)
+        hub_respondidas[hub["hub"]] = int(entry.get("respondidas") or 0)
+        hub_acertos[hub["hub"]] = int(entry.get("acertos") or 0)
 
     label_by_hub = {h["hub"]: h["label"] for h in HUBS}
 

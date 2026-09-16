@@ -66,6 +66,16 @@ class User(BaseModel):
     # que diz QUANTOS usaram e nunca QUEM.
     promo_code: str | None = None
     promo_sparks: int | None = None
+    # WhatsApp do aluno — pedido no cadastro (2026-09-15) porque é o único
+    # canal em que a equipe realmente alcança um estudante: e-mail de menor de
+    # idade não é lido, e o link da aula ao vivo de quinta precisa chegar a
+    # quem pagou por ele. Dois campos de propósito: `whatsapp` é o que a
+    # pessoa digitou (ela reconhece) e `whatsapp_e164` é o número discável,
+    # que é o que o painel do admin usa para abrir a conversa. Ver
+    # `whatsapp.py`. `None` nas contas anteriores a esta data e em quem entrou
+    # pelo Google sem informar — a tela pede depois, não inventa número.
+    whatsapp: str | None = None
+    whatsapp_e164: str | None = None
     created_at: str = Field(default_factory=_now_iso)
 
 
@@ -179,6 +189,12 @@ class SignupRequest(BaseModel):
     email: EmailStr
     name: str = Field(..., min_length=1, max_length=120)
     password: str = Field(..., min_length=8, max_length=200)
+    # WhatsApp: OBRIGATÓRIO no cadastro por e-mail. É o canal de contato do
+    # produto (link da aula ao vivo, aviso de turma, suporte) e pedi-lo depois
+    # significa não ter o número de quem mais precisa dele. O formato é
+    # validado em `whatsapp.normalizar`, não aqui — o `min_length` abaixo só
+    # impede o campo vazio; a mensagem que o aluno lê vem de lá.
+    whatsapp: str = Field(..., min_length=8, max_length=30)
     # Opcional: código de promoção que troca o bônus padrão de Sparks do
     # cadastro pelo valor programado no código (ver `promo_codes_routes.py`).
     # Um código inválido/expirado nunca barra a criação da conta — só cai

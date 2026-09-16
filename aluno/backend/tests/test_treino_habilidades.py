@@ -340,6 +340,15 @@ def test_tres_acertos_seguidos_classificam_como_forte(fake_db, behavior):
 # --------------------------------------------------------------- gerar (IA)
 
 
+# O preço de uma questão gerada é decisão de produto e mora num lugar só
+# (`treino_habilidades.CUSTO_POR_QUESTAO_NOVA`). Os testes derivam dele em vez
+# de repetir o número: uma mudança de preço não pode quebrar oito testes que
+# não são sobre preço — o teste do preço em si é
+# `test_preco_da_questao_gerada_e_o_do_catalogo`.
+def _custo(quantidade: int) -> int:
+    return quantidade * th.CUSTO_POR_QUESTAO_NOVA
+
+
 def _payload_gerar(chave="chave-teste-1", **kw) -> routes.GerarRequest:
     dados = {"quantidade": 2, "dificuldade": "MEDIO", "idempotency_key": chave}
     dados.update(kw)
@@ -377,11 +386,11 @@ def test_gerar_com_falha_do_modelo_cobra_e_devolve_tudo(fake_db, carteira, monke
     resposta = _run(routes.gerar_questoes("HAB-01", _payload_gerar(quantidade=2), user=_user()))
 
     assert resposta["status"] == "falhou"
-    assert carteira.debitos == [("aluno-1", 6)]
-    assert carteira.reembolsos == [("aluno-1", 6)]
+    assert carteira.debitos == [("aluno-1", _custo(2))]
+    assert carteira.reembolsos == [("aluno-1", _custo(2))]
     assert carteira.saldos["aluno-1"] == 1000  # saldo intacto no fim
     assert resposta["sparks_cobrados"] == 0
-    assert resposta["sparks_devolvidos"] == 6
+    assert resposta["sparks_devolvidos"] == _custo(2)
     assert resposta["sparks_balance"] == 1000
     assert fake_db.treino_questoes_ia.docs == []
 
@@ -393,7 +402,7 @@ def test_gerar_com_sucesso_cobra_por_questao_entregue_e_persiste(fake_db, cartei
 
     assert resposta["status"] == "ok"
     assert resposta["quantidade"] == 5
-    assert carteira.debitos == [("aluno-1", 15)]
+    assert carteira.debitos == [("aluno-1", _custo(5))]
     assert carteira.reembolsos == []  # entregou tudo o que cobrou — nada a devolver
     assert len(fake_db.treino_questoes_ia.docs) == 5
     assert all(d["hab_id"] == "HAB-01" and "aluno-1" in d["mostrada_para"] for d in fake_db.treino_questoes_ia.docs)
@@ -419,7 +428,7 @@ def test_gerar_reaproveita_pool_da_habilidade_sem_chamar_o_modelo_de_novo(fake_d
     assert chamou_de_novo["n"] == 0
     assert resposta["status"] == "ok"
     assert resposta["quantidade"] == 3
-    assert carteira.debitos == [("aluno-1", 9), ("aluno-2", 9)]
+    assert carteira.debitos == [("aluno-1", _custo(3)), ("aluno-2", _custo(3))]
     # as mesmas 3 questões agora foram mostradas aos dois alunos
     assert all(set(d["mostrada_para"]) == {"aluno-1", "aluno-2"} for d in fake_db.treino_questoes_ia.docs)
 
@@ -451,7 +460,7 @@ def test_mesma_chave_nao_cobra_duas_vezes(fake_db, carteira, monkeypatch):
     primeira = _run(routes.gerar_questoes("HAB-01", _payload_gerar("k-repetida"), user=_user()))
     segunda = _run(routes.gerar_questoes("HAB-01", _payload_gerar("k-repetida"), user=_user()))
 
-    assert carteira.debitos == [("aluno-1", 6)]  # só cobrou uma vez
+    assert carteira.debitos == [("aluno-1", _custo(2))]  # só cobrou uma vez
     assert segunda == primeira
 
 
@@ -460,7 +469,7 @@ def test_chave_nova_cobra_de_novo(fake_db, carteira, monkeypatch):
     _mock_gemini_sucesso(monkeypatch)
     _run(routes.gerar_questoes("HAB-01", _payload_gerar("chave-aaa1"), user=_user()))
     _run(routes.gerar_questoes("HAB-01", _payload_gerar("chave-bbb2"), user=_user()))
-    assert carteira.debitos == [("aluno-1", 6), ("aluno-1", 6)]
+    assert carteira.debitos == [("aluno-1", _custo(2)), ("aluno-1", _custo(2))]
 
 
 def test_mesma_chave_de_outro_aluno_nao_colide(fake_db, carteira, monkeypatch):
@@ -468,7 +477,7 @@ def test_mesma_chave_de_outro_aluno_nao_colide(fake_db, carteira, monkeypatch):
     _mock_gemini_sucesso(monkeypatch)
     _run(routes.gerar_questoes("HAB-01", _payload_gerar("chave-mesma"), user=_user("aluno-1")))
     _run(routes.gerar_questoes("HAB-01", _payload_gerar("chave-mesma"), user=_user("aluno-2")))
-    assert carteira.debitos == [("aluno-1", 6), ("aluno-2", 6)]
+    assert carteira.debitos == [("aluno-1", _custo(2)), ("aluno-2", _custo(2))]
 
 
 def test_saldo_insuficiente_nao_cobra_nem_cria_reivindicacao(fake_db, monkeypatch):
@@ -525,7 +534,7 @@ def test_reembolso_falho_nao_trava_a_chave_para_sempre(fake_db, carteira, monkey
     # e a reivindicação foi marcada concluída mesmo com o reembolso tendo falhado
     # silenciosamente (mesmo contrato de redacao_routes._safe_reembolso).
     assert resposta["status"] == "falhou"
-    assert carteira.debitos == [("aluno-1", 6)]
+    assert carteira.debitos == [("aluno-1", _custo(2))]
 
 
 def test_concorrencia_na_mesma_chave_so_cobra_uma_vez(fake_db, carteira, monkeypatch):
@@ -541,7 +550,7 @@ def test_concorrencia_na_mesma_chave_so_cobra_uma_vez(fake_db, carteira, monkeyp
         )
 
     resultados = _run(_duas_juntas())
-    assert carteira.debitos == [("aluno-1", 6)]
+    assert carteira.debitos == [("aluno-1", _custo(2))]
     assert resultados[0]["status"] == resultados[1]["status"] == "ok"
     assert resultados[0] == resultados[1]
 
@@ -628,3 +637,15 @@ def test_responder_questao_ia_e_idempotente_na_segunda_vez(fake_db, behavior):
     # a segunda resposta não reescreve behavior nem credita Sparks de novo
     assert len(behavior.eventos) == 1
     assert behavior.saldos["aluno-1"] == behavior.inicial + 1
+
+
+def test_preco_da_questao_gerada_e_o_do_catalogo():
+    """O preço anunciado por `/treino/precos` é o mesmo que o gerador cobra.
+
+    Estas são as duas pontas que o aluno vê: o número que a tela mostra antes
+    de ele clicar e o número que sai do saldo dele depois. Já divergiram uma
+    vez — a rota de preços tinha a sua própria constante — e o aluno não tem
+    como saber qual das duas está certa.
+    """
+    assert routes.CUSTO_POR_QUESTAO == th.CUSTO_POR_QUESTAO_NOVA
+    assert _run(routes.precos(_user())) == {"custo_por_questao": th.CUSTO_POR_QUESTAO_NOVA}

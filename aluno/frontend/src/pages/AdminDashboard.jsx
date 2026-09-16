@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { api, errMsg} from "../lib/api";
 import Nav from "../components/Nav";
-import { FileText, Zap, Brain, Users, ClipboardList, ArrowRight, ShieldCheck, RefreshCw, Database, GraduationCap, Flag, Ticket, Gift, MessageSquareWarning, Receipt } from "lucide-react";
+import { FileText, Zap, Brain, Users, ClipboardList, ArrowRight, ShieldCheck, RefreshCw, Database, GraduationCap, Flag, Ticket, Gift, MessageSquareWarning, Receipt, Radio } from "lucide-react";
 
 function StatCard({ label, value, hint }) {
   return (
@@ -24,6 +24,8 @@ const SECTIONS = [
     desc: "Ingerir JSONs anotados por IA especializada — versionados, verbatim." },
   { to: "/admin/curadoria", icon: ShieldCheck, title: "Curadoria",
     desc: "Oferta de itens por processo, revisão humana do elo raiz e o Sapiens Lab. É o que destrava o portão de crença." },
+  { to: "/admin/cursos", icon: Radio, title: "Aula ao vivo e cursos",
+    desc: "Publicar o link do Meet e o tema da quinta, ver quem pagou (com o WhatsApp de cada um) e a fila de espera dos cursos." },
   { to: "/admin/aulas-particulares", icon: GraduationCap, title: "Aulas particulares",
     desc: "Ver e responder solicitações de aula particular dos alunos." },
   { to: "/admin/reportes-questoes", icon: Flag, title: "Sugestões de correção",
@@ -103,7 +105,11 @@ export default function AdminDashboard() {
         <div className="mt-10 grid grid-cols-2 md:grid-cols-4 gap-3">
           <StatCard label="Provas" value={summary?.exams} hint={`${summary?.answer_keys ?? 0} gabaritos`} />
           <StatCard label="Análises ativas" value={summary?.analyses_active} hint={`${summary?.analyses_trashed ?? 0} na lixeira`} />
-          <StatCard label="Usuários" value={summary?.users} hint={`${summary?.admins ?? 0} admins`} />
+          <StatCard
+            label="Usuários"
+            value={summary?.users}
+            hint={`${summary?.admins ?? 0} admins · ${summary?.com_whatsapp ?? 0} com WhatsApp`}
+          />
           <StatCard label="Anotações" value={summary?.annotations} hint="ITEMs anotados" />
           <StatCard label="Feed" value={summary?.feed_items} hint={`${summary?.feed_items_published ?? 0} publicados`} />
           <StatCard label="Interações no feed" value={summary?.feed_interactions} hint="Eventos brutos" />

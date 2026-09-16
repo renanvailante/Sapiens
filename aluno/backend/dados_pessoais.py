@@ -64,6 +64,13 @@ COLECOES_POR_USUARIO: tuple[tuple[str, str], ...] = (
     ("question_reports", "user_id"),
     ("sugestoes", "user_id"),
     ("aulas_particulares", "user_id"),
+    # Quem pagou a aula ao vivo de quinta e em quais cursos se inscreveu para
+    # ser avisado. É histórico de consumo do titular — sai com a conta. O
+    # registro de que a edição aconteceu não depende disto (é o documento de
+    # configuração, que não tem aluno nenhum dentro).
+    ("cursos_live_acessos", "user_id"),
+    ("cursos_acessos", "user_id"),
+    ("cursos_interesse", "user_id"),
     ("treino_geracoes", "user_id"),
     ("perfil_derivado_cache", "user_id"),
     ("client_errors", "user_id"),
@@ -71,6 +78,11 @@ COLECOES_POR_USUARIO: tuple[tuple[str, str], ...] = (
     # ele está, em que horário, todos os dias da semana. Sai inteira com a
     # conta, pelo `student_id` que `cronograma_routes._gravar` sempre grava.
     ("cronogramas", "student_id"),
+    # O que o aluno declarou sobre si no primeiro acesso: objetivo, tempo
+    # disponível, meta no ENEM e onde ELE diz ter dificuldade. É declaração do
+    # titular sobre a própria vida — sai inteira com a conta, pelo mesmo
+    # `student_id` que `onboarding_routes._gravar` sempre grava.
+    ("onboarding_perfil", "student_id"),
     # Engajamento: XP, ofensiva, missões e posição na liga. Tudo é perfil de
     # comportamento do titular e sai inteiro — inclusive `liga_semana`, que
     # guarda o NOME exibido no ranking.
@@ -103,6 +115,9 @@ COLECOES_SEM_DADO_PESSOAL: tuple[str, ...] = (
     # Acervo e conteúdo
     "exams", "answer_keys", "questoes_public", "questoes_master", "feed_items",
     "question_annotations", "promo_codes",
+    # Link do Meet e tema de cada edição da aula ao vivo: conteúdo publicado
+    # pelo admin, chaveado pela DATA da edição. Nenhum aluno dentro.
+    "cursos_config",
     # Caches de LLM: chaveados por hash do conteúdo, compartilhados entre alunos
     "mentis_explicacoes", "mentis_intervencoes", "treino_conceitos",
     # Telemetria de custo: sem campo de usuário

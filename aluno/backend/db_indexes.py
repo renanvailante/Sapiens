@@ -98,6 +98,26 @@ INDICES: list[tuple[str, list[tuple[str, int]], dict]] = [
     ("redacao_feedbacks", [("user_id", pymongo.ASCENDING)], {"name": "feedbacks_do_aluno"}),
     ("aulas_particulares", [("created_at", pymongo.DESCENDING)], {"name": "aulas_recentes"}),
 
+    # --- cursos e a aula ao vivo de quinta ---
+    # O acesso à live tem `_id = "{uid}:{edicao}"`, que o Mongo já indexa e
+    # mantém único — é dele que vem a garantia de "um acesso por aluno por
+    # edição, cobrado uma vez" (ver `cursos_routes`). Este índice serve à
+    # outra consulta: a lista de inscritos de UMA edição, que é a tela que o
+    # admin abre toda quinta-feira.
+    ("cursos_live_acessos", [("edicao", pymongo.ASCENDING), ("criado_em", pymongo.ASCENDING)],
+     {"name": "inscritos_da_edicao"}),
+    ("cursos_live_acessos", [("user_id", pymongo.ASCENDING)], {"name": "acessos_do_aluno"}),
+    # Lista de avisados de cada curso "em breve". Mesmo desenho: `_id` é
+    # `"{uid}:{curso_id}"`, então marcar interesse duas vezes é um upsert.
+    ("cursos_interesse", [("curso_id", pymongo.ASCENDING)], {"name": "interesse_por_curso"}),
+    ("cursos_interesse", [("user_id", pymongo.ASCENDING)], {"name": "interesse_do_aluno"}),
+    # Compra de curso (acesso vitalício). `_id` = `"{uid}:{curso_id}"` já é
+    # único e é ele que impede a segunda cobrança; estes dois servem às duas
+    # listas: "meus cursos" na aba do aluno e "quem comprou" no admin.
+    ("cursos_acessos", [("user_id", pymongo.ASCENDING)], {"name": "cursos_do_aluno"}),
+    ("cursos_acessos", [("curso_id", pymongo.ASCENDING), ("criado_em", pymongo.ASCENDING)],
+     {"name": "compradores_do_curso"}),
+
     # Reivindicações de geração de questões novas do banco de treino
     # (`treino_routes`). Mesmo desenho de `redacao_cobrancas`: `_id`
     # (`user:chave`) já é único por padrão do Mongo, este índice é só para

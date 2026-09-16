@@ -18,7 +18,13 @@ from auth import require_user
 from models import User
 import annotation_service
 import firestore_service as fs
-from cosmetic_skills_map import HUBS, build_hub_tree, compute_feedback, compute_hexagon
+from cosmetic_skills_map import (
+    HUBS,
+    build_hub_tree,
+    compute_feedback,
+    compute_hexagon,
+    rescale_hexagon,
+)
 
 logger = logging.getLogger("sapiens.skills_map")
 
@@ -41,7 +47,10 @@ router = APIRouter(prefix="", tags=["skills-map"])
 SKILLS_MAP_FIRST_COST = 20
 SKILLS_MAP_COST = 20
 
-_ZERO_HEXAGON = [{"hub": h["hub"], "label": h["label"], "mastery": 0.0} for h in HUBS]
+_ZERO_HEXAGON = [
+    {"hub": h["hub"], "label": h["label"], "mastery": 0.0, "acertos": 0, "respondidas": 0}
+    for h in HUBS
+]
 
 
 def _next_cost(existing: dict | None) -> int:
@@ -53,14 +62,22 @@ async def get_skills_map(user: User = Depends(require_user)):
     fs.ensure_student_profile(user.user_id, user.name, user.email)
     saldo = fs.ensure_sparks_balance(user.user_id)
     snap = fs.read_skills_map(user.user_id) or {}
-    hexagon = snap.get("hexagon") or _ZERO_HEXAGON
+    # A leitura NÃO recalcula nada a partir do histórico de respostas — isso
+    # custaria O(eventos) do Firestore em toda abertura do Painel. O que ela
+    # faz é reaplicar a escala atual sobre a contagem gravada no snapshot, o
+    # que é aritmética pura: mudar a régua vale para quem já gerou o mapa,
+    # sem uma leitura a mais. Snapshot da escala antiga volta zerado.
+    gravado, escala_antiga = rescale_hexagon(snap.get("hexagon"))
     return {
-        "hubs": build_hub_tree(user.user_id, hexagon),
-        "hexagon": snap.get("hexagon"),
+        "hubs": build_hub_tree(user.user_id, gravado or _ZERO_HEXAGON),
+        "hexagon": gravado or None,
         "feedback": snap.get("feedback"),
         "updated_at": snap.get("updated_at"),
         "sparks_balance": saldo,
         "cost": _next_cost(snap),
+        # O front usa isto para convidar a regerar em vez de exibir um mapa
+        # vazio sem explicação.
+        "escala_antiga": escala_antiga,
     }
 
 
@@ -87,9 +104,9 @@ async def generate_skills_map(
     # dinheiro real. A compensação devolve exatamente o que foi cobrado.
     try:
         profile = await annotation_service.compute_cognitive_profile(user.user_id)
-        hexagon = compute_hexagon(profile["ontology_tree"])
+        hexagon = compute_hexagon(profile.get("hub_stats"))
         rounds_history = fs.list_sparks_rounds(user.user_id, limit=200)
-        feedback = compute_feedback(rounds_history, profile["domain_stats"])
+        feedback = compute_feedback(rounds_history, profile.get("hub_stats"))
         updated_at = fs.write_skills_map(user.user_id, hexagon, feedback)
     except Exception as exc:  # noqa: BLE001
         saldo_restituido = _safe_reembolso(user.user_id, cost)
@@ -109,4 +126,5 @@ async def generate_skills_map(
         "updated_at": updated_at,
         "sparks_balance": saldo,
         "cost": _next_cost(fs.read_skills_map(user.user_id)),
+        "escala_antiga": False,
     }

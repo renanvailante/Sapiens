@@ -31,6 +31,7 @@ from fastapi import APIRouter, Body, Cookie, Depends, HTTPException, Request, Re
 
 import rate_limit
 import settings
+import whatsapp as wa
 from models import LoginRequest, SignupRequest, User, UserSession, generate_user_id
 
 logger = logging.getLogger("sapiens.auth")
@@ -212,11 +213,19 @@ async def signup(
     existing = await _db.users.find_one({"email": payload.email}, {"_id": 0})
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
+    # O número é validado ANTES de a conta existir: um cadastro que cria a
+    # conta e só depois recusa o telefone deixaria o aluno com uma conta que
+    # ele acha que não criou e um erro na tela.
+    try:
+        whatsapp_digitado, whatsapp_e164 = wa.normalizar(payload.whatsapp)
+    except wa.WhatsAppInvalido as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     user = User(
         user_id=await _gerar_user_id_unico(payload.name),
         email=payload.email, name=payload.name, provider="email",
         password_hash=_hash_password(payload.password),
         is_admin=_is_admin_email(payload.email),
+        whatsapp=whatsapp_digitado, whatsapp_e164=whatsapp_e164,
     )
     await _db.users.insert_one(user.model_dump())
     sparks_iniciais, cupom, cupom_sparks = await _bonus_de_cadastro(payload.promo_code)
@@ -257,6 +266,7 @@ async def google_sign_in(
     response: Response,
     id_token: str = Body(..., embed=True),
     promo_code: str | None = Body(default=None, embed=True),
+    whatsapp: str | None = Body(default=None, embed=True),
 ):
     """Troca um ID token do Firebase pela sessão do Sapiens.
 
@@ -324,10 +334,16 @@ async def google_sign_in(
         campos["email_verificado"] = True
         await _db.users.update_one({"user_id": user_id}, {"$set": campos})
     else:
+        # O WhatsApp aqui é OPCIONAL, ao contrário do cadastro por e-mail: o
+        # botão do Google também cria conta a partir da tela de LOGIN, onde
+        # não há formulário nenhum para preencher. Quem entrar assim é
+        # convidado a informar o número depois (`POST /auth/whatsapp`) — e
+        # recusar a conta neste ponto seria barrar quem já provou o e-mail.
         novo = User(
             user_id=await _gerar_user_id_unico(nome),
             email=email, name=nome, picture=foto, provider="google",
             is_admin=admin, email_verificado=True,
+            **_campos_de_whatsapp(whatsapp),
         )
         await _db.users.insert_one(novo.model_dump())
         user_id = novo.user_id
@@ -339,6 +355,45 @@ async def google_sign_in(
     _set_cookie(response, token)
     doc = await _db.users.find_one({"user_id": user_id}, {"_id": 0, "password_hash": 0})
     return {"user": doc, "token": token}
+
+
+def _campos_de_whatsapp(bruto: str | None) -> dict[str, str]:
+    """`{}` quando não veio número; os dois campos quando veio um válido.
+
+    Um número inválido no login com Google é IGNORADO em vez de derrubar a
+    entrada: o campo é opcional nesse caminho, e recusar a autenticação por
+    causa de um telefone mal digitado trocaria um dado que falta por uma
+    pessoa que não consegue entrar.
+    """
+    if not bruto:
+        return {}
+    try:
+        digitado, e164 = wa.normalizar(bruto)
+    except wa.WhatsAppInvalido:
+        logger.info("WhatsApp inválido ignorado no login com Google.")
+        return {}
+    return {"whatsapp": digitado, "whatsapp_e164": e164}
+
+
+@router.post("/whatsapp")
+async def definir_whatsapp(request: Request, whatsapp: str = Body(..., embed=True)):
+    """Informa (ou corrige) o WhatsApp da conta.
+
+    Existe por dois caminhos que o cadastro não cobre: contas criadas antes de
+    2026-09-15, quando o campo não existia, e contas criadas pelo botão do
+    Google a partir da tela de login. Sem esta rota, o aluno mais antigo — que
+    é justamente o mais engajado — seria o único que a equipe não consegue
+    avisar da aula de quinta.
+    """
+    user = await require_user(request)
+    try:
+        digitado, e164 = wa.normalizar(whatsapp)
+    except wa.WhatsAppInvalido as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    await _db.users.update_one(
+        {"user_id": user.user_id}, {"$set": {"whatsapp": digitado, "whatsapp_e164": e164}}
+    )
+    return {"ok": True, "whatsapp": digitado}
 
 
 @router.get("/me")

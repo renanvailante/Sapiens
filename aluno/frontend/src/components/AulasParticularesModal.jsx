@@ -103,7 +103,7 @@ export default function AulasParticularesModal({ open, onClose }) {
               Solicitação enviada!
             </div>
             <p className="mt-2 text-sm text-zinc-500 max-w-sm mx-auto">
-              Recebemos seu pedido de aula particular. Nossa equipe vai entrar em contato pelo WhatsApp em breve.
+              Entramos em contato pelo WhatsApp para combinar horário e professor.
             </p>
             <button
               onClick={handleClose}
@@ -119,10 +119,11 @@ export default function AulasParticularesModal({ open, onClose }) {
               <GraduationCap className="w-5 h-5" strokeWidth={1.7} />
             </div>
             <div className="mt-4 font-display text-2xl font-bold tracking-tight text-zinc-950">
-              Tenha aulas conosco
+              Aula particular com alunos de Medicina da USP
             </div>
             <p className="mt-2 text-sm text-zinc-500">
-              Conte um pouco sobre o que você precisa. Entraremos em contato pelo WhatsApp para combinar os detalhes.
+              Aula ao vivo, um a um, com quem passou. Diga o que você precisa e a gente
+              combina o resto pelo WhatsApp.
             </p>
 
             <form onSubmit={submit} className="mt-6 space-y-4">

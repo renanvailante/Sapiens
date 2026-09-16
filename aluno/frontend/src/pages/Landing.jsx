@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, Sparkles, Brain, Network, ChevronRight } from "lucide-react";
+import { ArrowRight, Sparkles, Brain, Network, ChevronRight, Radio, Video, Clock } from "lucide-react";
 import { useAuth } from "../lib/auth";
 import BrandMark from "../components/BrandMark";
 import { OPERADOR } from "../lib/operador";
@@ -53,6 +53,52 @@ export default function Landing() {
           >
             Analisar uma prova <ArrowRight className="w-4 h-4" />
           </button>
+        </div>
+      </div>
+
+      {/* A AULA AO VIVO DE QUINTA — a primeira coisa depois do herói.
+          É o único compromisso com hora marcada que o produto tem, o
+          argumento mais forte que ele oferece a quem ainda não entrou, e a
+          landing é onde mora quem ainda não entrou. */}
+      <div className="max-w-4xl mx-auto px-6 md:px-10 pb-16">
+        <div className="mapa-vitrine relative overflow-hidden rounded-3xl p-7 md:p-10" data-testid="landing-live">
+          <div className="relative">
+            <span className="inline-flex items-center gap-2 rounded-full border border-rose-400/40 bg-rose-500/15 px-3 py-1.5 font-mono-alt text-[10px] font-bold uppercase tracking-[0.2em] text-rose-200">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-rose-400" />
+              </span>
+              Ao vivo · toda quinta-feira
+            </span>
+            <h2 className="mt-5 font-display text-3xl md:text-5xl font-extrabold tracking-tighter leading-[1.03] text-white">
+              {/* Sem `.shimmer` aqui, ao contrário do "Sapiens" do herói: o
+                  gradiente animado sobre `background-clip: text` come a
+                  barriga do "P" em tamanho de display e a palavra lê "USF"
+                  (medido no navegador em 2026-09-15). */}
+              Toda quinta você estuda com o{" "}
+              <span className="text-[#7FD8FF]">1º colocado de Medicina da USP</span>.
+            </h2>
+            <p className="mt-4 max-w-2xl text-white/65 leading-relaxed">
+              Ao vivo, 90 minutos, uma vez por semana. Ele resolve questão na sua frente,
+              conta a rotina que o levou ao primeiro lugar no vestibular mais disputado do
+              país e responde as suas perguntas no fim. Não é gravação, não é resumo em PDF.
+            </p>
+            <div className="mt-6 flex flex-wrap items-center gap-3">
+              <button
+                onClick={() => nav(user ? "/cursos" : "/login")}
+                className="pill btn-calor inline-flex items-center gap-2 text-base font-medium px-7 py-4 rounded-full"
+                data-testid="landing-live-cta"
+              >
+                <Radio className="w-4 h-4" /> Quero entrar na próxima quinta
+              </button>
+              <span className="inline-flex items-center gap-1.5 text-xs text-white/45">
+                <Clock className="w-3.5 h-3.5" /> 20h, horário de Brasília
+              </span>
+              <span className="inline-flex items-center gap-1.5 text-xs text-white/45">
+                <Video className="w-3.5 h-3.5" /> ao vivo no Google Meet
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 

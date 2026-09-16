@@ -1,108 +1,145 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { api } from "../lib/api";
 import BrandMark from "./BrandMark";
+import Mentis from "./Mentis";
 import { ArrowRight, X } from "lucide-react";
 
-// Tour guiado do primeiro login: uma sequência de balões que aponta pras
-// peças reais da UI (via `data-tour="..."` nos elementos-alvo, espalhados
-// por Dashboard.jsx, Nav.jsx e MentisWidget.jsx). Nunca bloqueia a página
-// por baixo — é dispensável a qualquer momento, e não repete depois que
-// `flags.onboarded` vira `true` no perfil do aluno (Firestore). O botão
-// "Rever o guia", no topo do Painel, reabre esta mesma sequência.
+// Tour guiado da Mentis: uma sequência de balões que aponta pras peças reais
+// da UI (via `data-tour="..."` nos elementos-alvo, espalhados por
+// Dashboard.jsx, PainelDeProgresso.jsx, Nav.jsx e MentisWidget.jsx). Nunca
+// bloqueia a página por baixo — é dispensável a qualquer momento.
 //
-// A régua do que entra aqui (2026-09-09): o guia tem de cobrir TUDO o que o
-// aluno precisa saber para usar o produto sozinho — as abas da barra,
-// de onde saem as questões, o que custa Sparks e por quê, e o fato de que
-// todo card de dificuldade é clicável. Um passo por ideia; alvo que pode não
-// existir na tela (uma seção que só aparece com dado) simplesmente centraliza
-// o balão, sem quebrar a sequência.
+// QUANDO ABRE (revisto em 2026-09-15): uma vez por SESSÃO do navegador, não
+// uma vez na vida. Quem entra na plataforma vê o guia; quem recarrega a página
+// no meio do estudo, não. Quem quiser rever fora disso tem o botão "Guia" no
+// topo do Painel e o "Rever o guia" no lançador de ferramentas — os dois
+// abrem esta mesma sequência (ver `Dashboard.jsx`, `?guia=1`).
+//
+// O QUE ENTRA: TUDO o que o aluno pode usar. A régua antiga era "as nove
+// ferramentas principais"; ela deixava de fora justamente o que ninguém
+// descobre sozinho — provas do ENEM, revisões, cronograma, liga, ofensiva,
+// comunidade, instalar o app, falar com a equipe. Uma ferramenta que só existe
+// atrás de um ícone de grade não existe para quem não sabe que ela existe.
+//
+// Uma frase por passo, sempre. Completo não quer dizer longo de ler: são
+// vinte e um passos de uma linha, não cinco parágrafos de filosofia do
+// produto. Alvo que pode não estar na tela (seção que só aparece com dado)
+// simplesmente centraliza o balão, sem quebrar a sequência.
 const STEPS = [
   {
     target: null,
-    title: "Bem-vindo(a) ao Sapiens",
-    text: "Um minuto e você sabe usar tudo por aqui. Pode pular quando quiser — o guia volta pelo botão \u201cRever o guia\u201d.",
+    mascote: true,
+    title: "Oi, eu sou a Mentis",
+    text: "Eu acompanho você até a prova. Em um minuto eu te mostro tudo o que existe aqui dentro.",
+  },
+  // O MAPA PRIMEIRO. É a peça de maior impacto visual do Sapiens e a que
+  // comunica o valor do produto sem um parágrafo — começar por ela é decisão
+  // de produto, não ordem de tela.
+  {
+    target: "dash-mapa",
+    title: "Mapa de Treino",
+    text: "56 pontos. Cada um é uma missão curta. Domine um e o território ao redor se revela.",
   },
   {
-    target: "nav-primarios",
-    title: "Suas cinco abas",
-    text: "Painel, Cronograma, Treino, Redação e Mentis. Nesta ordem: onde você se orienta, onde decide o que fazer hoje, onde treina, onde escreve e com quem conversa.",
-    // No celular a barra de links não existe — ela vira o painel deslizante
-    // atrás deste botão. Apontar para `nav-primarios` ali centralizava um
-    // balão falando de abas que não estavam em lugar nenhum da tela.
-    mobile: {
-      target: "nav-mobile-trigger",
-      title: "Tudo começa neste botão",
-      text: "Painel, Cronograma, Treino, Redação e Mentis — as telas onde você estuda — moram neste menu, junto com todo o resto do produto.",
-    },
+    target: "dash-provas",
+    title: "Provas do ENEM",
+    text: "As provas inteiras, questão por questão, do jeito que caíram — e cada resposta alimenta o resto.",
   },
   {
-    target: "dash-hero",
-    title: "Tudo começa nas provas",
-    text: "O botão principal abre todas as provas do ENEM. Você responde questão a questão, e a cada dez o Sapiens fecha uma rodada com o seu padrão de erro.",
+    target: "dash-mastery",
+    title: "Seu domínio",
+    text: "Seis frentes. Cada uma sobe com ACERTO: 40 acertos numa frente é o que vale um \u201cDominado\u201d.",
   },
   {
-    target: "dash-stats",
-    title: "Seus números do dia",
-    text: "Sequência de dias, a semana, quantas questões você já respondeu e o seu saldo de Sparks. Consistência vale mais que maratona.",
+    target: "tour-ofensiva",
+    title: "Ofensiva",
+    text: "Dias seguidos estudando. Se faltar um, o congelador salva a sequência.",
   },
   {
-    target: "nav-sparks",
-    title: "Sparks",
-    text: "A moeda dos recursos com IA. Você ganha respondendo questões e pode comprar mais. Nada com IA acontece sem o preço aparecer antes.",
+    target: "tour-liga",
+    title: "Liga da semana",
+    text: "Seu XP te coloca numa tabela com outros alunos. Zera toda segunda.",
+  },
+  {
+    target: "tour-missoes",
+    title: "Missões de hoje",
+    text: "Três por dia, trocam à meia-noite. Concluir rende Sparks e XP.",
+  },
+  {
+    target: "dash-conquistas",
+    title: "Conquistas",
+    text: "Clique em qualquer uma: ela abre com o seu progresso, o que falta e onde conseguir.",
   },
   {
     target: "dash-foco",
-    title: "Todo card de erro é clicável",
-    text: "Cada dificuldade aqui leva a algum lugar: a missão do Treino que trata aquilo, ou um pedido pronto à Mentis sobre aquele ponto.",
+    title: "Onde focar",
+    text: "Suas dificuldades, com destino. Todo card leva à missão que trata aquilo — ou a mim.",
+    // Some quando o aluno ainda não tem medida nenhuma: apontar para uma
+    // seção que não está na tela centralizaria um balão falando do nada.
   },
   {
-    target: "dash-foco",
-    title: "E nada é enviado sozinho",
-    text: "Ao pedir à Mentis, a mensagem já vem escrita, mas parada. Você escolhe abrir o chat, ou enviar se ele já estiver aberto — vendo o custo antes.",
+    target: "dash-hoje",
+    title: "Hoje",
+    text: "Seu cronograma da semana e as revisões que venceram — o que tem hora marcada aparece aqui.",
   },
   {
-    target: "dash-treino",
-    title: "Treino",
-    text: "Um mapa de missões curtas. Dominar um ponto revela o território ao redor — e é para cá que os cards de dificuldade te mandam.",
+    target: "dash-mentis",
+    mascote: true,
+    title: "Eu leio o seu histórico",
+    text: "Antes da primeira palavra eu já sei onde você escorrega. Te levar a qualquer tela daqui é de graça.",
   },
   {
     target: "dash-redacao",
     title: "Redação",
-    text: "Escreva no padrão ENEM e receba a nota nas cinco competências. Se quiser entender a nota, a Mentis lê a sua redação e explica.",
+    text: "Escreva no padrão ENEM e receba a nota nas cinco competências.",
   },
   {
-    target: "dash-mentis",
-    title: "Mentis",
-    text: "Ela lê o seu histórico inteiro antes da primeira palavra: onde você erra, com que amostra, e qual padrão está por trás. Depois é conversa.",
+    target: "dash-gerar",
+    title: "Questões feitas para você",
+    text: "Eu gero questões novas sobre a sua lacuna exata. 5 Sparks cada uma, sempre com o preço à vista.",
   },
   {
-    target: "mentis-widget",
-    title: "Ela vai com você",
-    text: "Este ícone abre a mesma conversa em qualquer tela — e ela sabe em qual você está quando você pergunta.",
+    target: "dash-desempenho",
+    title: "Meu desempenho",
+    text: "Não é quanto você errou. É por quê — o padrão que se repete nos seus erros.",
   },
   {
-    target: "nav-more",
-    title: "O resto fica aqui",
-    text: "Provas por área, seu perfil cognitivo, as questões que você gerou, histórico, feed e o canal de reclamações e sugestões: tudo neste menu.",
-    // No celular isto não é um segundo menu: é o mesmo painel deslizante que
-    // o passo das abas já apresentou. Repetir seria mostrar duas vezes a
-    // mesma porta.
-    mobile: null,
+    target: "dash-sparks",
+    title: "Sparks",
+    text: "A moeda do que usa IA. Você ganha estudando e pode comprar. Nada com IA roda sem o preço aparecer antes.",
+  },
+  {
+    target: "dash-comunidade",
+    title: "Comunidade",
+    text: "Mural de dúvidas: perguntar é de graça e responder bem rende Sparks.",
   },
   {
     target: "dash-aulas",
     title: "Aula com gente de verdade",
-    text: "Quando o problema é maior que uma questão, dá para pedir aula particular com a nossa equipe por aqui.",
+    text: "Quando o problema é maior que uma questão: aula particular com alunos de Medicina da USP.",
   },
   {
-    target: "dash-achievements",
-    title: "Conquistas",
-    text: "Poucas, e só as que realmente importam. Todas contadas do que você fez de fato — nada de medalha de participação.",
+    target: "dash-extras",
+    title: "App e contato",
+    text: "Instale o Sapiens no aparelho e fale com a equipe quando achar um erro ou tiver uma ideia.",
+  },
+  {
+    target: "nav-more",
+    title: "Tudo o que existe",
+    text: "Este botão abre o produto inteiro em grade: liga, histórico, feed, lixeira e todas as telas.",
+    mobile: { target: "nav-mobile-trigger" },
+  },
+  {
+    target: "mentis-widget",
+    mascote: true,
+    title: "Estou em toda tela",
+    text: "Este ícone me chama de qualquer lugar do Sapiens, sem você perder o que estava fazendo.",
   },
   {
     target: null,
-    title: "Pronto!",
-    text: "É isso. Comece pelas provas do ENEM no botão principal do Painel — o resto aparece a partir do que você responder.",
+    mascote: true,
+    title: "É isso",
+    text: "Comece abrindo o mapa. Para rever este guia, o botão \u201cGuia\u201d fica no topo do Painel.",
   },
 ];
 
@@ -277,9 +314,15 @@ export default function OnboardingTour({ onDone }) {
           style={{ width: anchored ? "100%" : "min(360px, 100%)" }}
           data-testid={`onboarding-step-${stepIndex}`}
         >
-          <div className="absolute top-3 left-3 w-6 h-6 rounded-full bg-sapiens-navy flex items-center justify-center shrink-0">
-            <BrandMark className="w-3.5 h-3.5" tone="light" />
-          </div>
+          {/* Nos passos em que a Mentis fala na primeira pessoa, é a cara
+              dela no selo — não a marca. O guia É ela. */}
+          {step.mascote ? (
+            <Mentis className="absolute left-2.5 top-2.5 h-7 w-7 shrink-0" variante="icone" />
+          ) : (
+            <div className="absolute left-3 top-3 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-sapiens-navy">
+              <BrandMark className="h-3.5 w-3.5" tone="light" />
+            </div>
+          )}
           <button onClick={finish} className="absolute top-3 right-3 text-zinc-300 hover:text-zinc-600" data-testid="onboarding-close" aria-label="Pular tour">
             <X className="w-4 h-4" />
           </button>

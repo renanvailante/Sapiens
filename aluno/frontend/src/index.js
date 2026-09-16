@@ -19,6 +19,22 @@ const queryClient = new QueryClient({
   },
 });
 
+// Service worker: registrado SÓ para tornar o app instalável (Android,
+// Windows, macOS — ver `public/sw.js` e `components/InstalarApp.jsx`). Ele não
+// guarda nada em cache de propósito, então não há risco de aluno preso numa
+// versão antiga do bundle depois de um deploy.
+//
+// Fora de produção não registra: em `npm start` o service worker interceptaria
+// o servidor de desenvolvimento sem ganho nenhum.
+if ("serviceWorker" in navigator && process.env.NODE_ENV === "production") {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(() => {
+      // Falhar aqui só significa que o botão de instalar nativo não aparece;
+      // o passo a passo manual continua valendo. Nada do produto depende disto.
+    });
+  });
+}
+
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
   <React.StrictMode>

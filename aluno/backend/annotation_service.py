@@ -14,6 +14,10 @@ from typing import Any
 import firestore_service as fs
 import prioridade_enem
 from cognitive_ontology import build_ontology_tree, ontology_version
+# Só o índice domínio->eixo: a contagem por eixo precisa acontecer evento a
+# evento, aqui, para que uma questão não conte duas vezes no mesmo eixo.
+# Nenhuma decisão pedagógica desta camada depende do módulo cosmético.
+from cosmetic_skills_map import DOMAIN_TO_HUB
 
 logger = logging.getLogger("sapiens.cognitive")
 
@@ -128,7 +132,11 @@ _CACHE_DERIVADO_TTL_SEGUNDOS = 6 * 3600
 # v1 não tem esse campo, e servi-lo daria a todo aluno com cache quente um
 # cronograma montado como se ele nunca tivesse respondido nada. A versão na
 # chave é o que garante que cache velho simplesmente não é encontrado.
-_CACHE_DERIVADO_VERSAO = "v2"
+# v3 (2026-09-15): o agregado "answered" passou a contar também por EIXO
+# cosmético (`hub_stats`), que é o insumo do percentual do Mapa de
+# Habilidades. Documento gravado pela v2 não tem o campo, e servi-lo daria
+# mapa zerado a todo aluno com cache quente.
+_CACHE_DERIVADO_VERSAO = "v3"
 
 
 async def _agregado_com_cache(escopo: str, user_id: str, ler_do_firestore) -> dict[str, Any]:
@@ -194,6 +202,14 @@ def _read_firestore_answered(user_id: str) -> dict[str, Any]:
     mesmo princípio acima (agregação determinística, sem atribuição causal).
     Alimenta o mapa de habilidades cosmético (ver cosmetic_skills_map.py),
     nunca a camada de crença real.
+
+    `hub_stats`: a mesma contagem colapsada nos 6 eixos cosméticos, com uma
+    diferença que importa — cada questão conta UMA vez por eixo. Um item
+    anotado com dois domínios do mesmo eixo (o eixo 5 agrupa três) aparece
+    duas vezes em `domain_stats` e uma só aqui; é esta a contagem que vira o
+    percentual do mapa, e somar domínios lá dava um "40 acertos" que se
+    atingia com menos da metade das questões. Chave em string porque este
+    agregado é gravado no cache do Mongo.
     """
     client = fs.get_firestore()
     index = _build_item_index()
@@ -203,6 +219,7 @@ def _read_firestore_answered(user_id: str) -> dict[str, Any]:
     answered_doms: set[str] = set()
     matched_items: set[str] = set()
     domain_stats: dict[str, dict[str, int]] = defaultdict(lambda: {"respondidas": 0, "acertos": 0})
+    hub_stats: dict[str, dict[str, int]] = defaultdict(lambda: {"respondidas": 0, "acertos": 0})
     total_events = 0
     unmatched = 0
 
@@ -232,20 +249,28 @@ def _read_firestore_answered(user_id: str) -> dict[str, Any]:
             cid = cmp.get("id") if isinstance(cmp, dict) else cmp
             if cid:
                 answered_comps.add(cid)
-        for dom in ec.get("dominios", []) or []:
-            did = dom.get("id") if isinstance(dom, dict) else dom
-            if did:
-                answered_doms.add(did)
-                stats = domain_stats[did]
-                stats["respondidas"] += 1
-                if acertou:
-                    stats["acertos"] += 1
+        doms_do_item = {
+            (dom.get("id") if isinstance(dom, dict) else dom)
+            for dom in ec.get("dominios", []) or []
+        } - {None, ""}
+        for did in doms_do_item:
+            answered_doms.add(did)
+            stats = domain_stats[did]
+            stats["respondidas"] += 1
+            if acertou:
+                stats["acertos"] += 1
+        for hub_id in {DOMAIN_TO_HUB[d] for d in doms_do_item if d in DOMAIN_TO_HUB}:
+            stats = hub_stats[str(hub_id)]
+            stats["respondidas"] += 1
+            if acertou:
+                stats["acertos"] += 1
 
     return {
         "processes": sorted(answered_procs),
         "competencias": sorted(answered_comps),
         "dominios": sorted(answered_doms),
         "domain_stats": dict(domain_stats),
+        "hub_stats": dict(hub_stats),
         "answered_items": len(matched_items),
         "total_events": total_events,
         "unmatched_events": unmatched,
@@ -267,6 +292,7 @@ async def compute_cognitive_profile(user_id: str) -> dict[str, Any]:
             "processes": [], "error_types": [], "misconceptions": [],
             "answered_items": 0, "total_events": 0, "coverage": 0,
             "domain_stats": {},
+            "hub_stats": {},
             "ontology_version": ontology_version(),
             "ontology_tree": build_ontology_tree(set()),
         }
@@ -289,6 +315,7 @@ async def compute_cognitive_profile(user_id: str) -> dict[str, Any]:
         "total_events": agg["total_events"],
         "unmatched_events": agg["unmatched_events"],
         "domain_stats": agg["domain_stats"],
+        "hub_stats": agg.get("hub_stats") or {},
         "ontology_tree": build_ontology_tree(answered_processes),
     }
 

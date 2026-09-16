@@ -348,3 +348,35 @@ class TestExplicacao:
             asyncio.run(mr.gerar_explicacao(mr.ExplicacaoPayload(item_id="IT-2"), user=_ALUNO))
         assert exc.value.status_code == 409
         assert carteira.debitos == []
+
+
+class TestAcaoDeNavegacao:
+    """A Mentis como camada de navegação: ela pode LEVAR o aluno a uma tela.
+
+    O que estes testes travam é o que impede um botão quebrado de chegar ao
+    aluno: o modelo escolhe uma CHAVE de uma lista fechada, nunca uma URL.
+    """
+
+    def test_destino_do_catalogo_vira_rota_e_rotulo(self):
+        acao = mr._validar_acao({"tipo": "ir", "destino": "mapa_treino"})
+        assert acao == {
+            "tipo": "ir",
+            "destino": "mapa_treino",
+            "rota": "/treino",
+            "rotulo": "Abrir o Mapa de Treino",
+        }
+
+    def test_destino_inventado_e_descartado(self):
+        assert mr._validar_acao({"tipo": "ir", "destino": "tela_que_nao_existe"}) is None
+
+    def test_url_no_lugar_da_chave_e_descartada(self):
+        """O modelo não escreve rota. Se tentar, a ação morre aqui — nunca
+        vira um botão que leva o aluno para fora do produto."""
+        assert mr._validar_acao({"tipo": "ir", "destino": "https://exemplo.com"}) is None
+        assert mr._validar_acao({"tipo": "ir", "destino": "/admin/users"}) is None
+
+    def test_todo_destino_do_catalogo_e_uma_rota_interna(self):
+        for chave, alvo in mr.DESTINOS.items():
+            assert alvo["rota"].startswith("/"), chave
+            assert not alvo["rota"].startswith("//"), chave
+            assert alvo["rotulo"], chave

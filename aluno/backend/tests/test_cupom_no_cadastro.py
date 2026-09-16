@@ -48,8 +48,15 @@ def db(fake_db, monkeypatch):
 
 
 def _cadastrar(db, email: str, promo_code: str | None = None) -> dict:
+    # `whatsapp` passou a ser obrigatório no cadastro em 2026-09-15 (é por ele
+    # que a equipe avisa da aula ao vivo de quinta) — ver
+    # `tests/test_whatsapp_cadastro.py`. Aqui é só um valor válido de fundo:
+    # o que estes testes observam continua sendo o cupom.
     _run(auth.signup(
-        SignupRequest(email=email, name="Aluno Teste", password="senha-forte-1", promo_code=promo_code),
+        SignupRequest(
+            email=email, name="Aluno Teste", password="senha-forte-1",
+            whatsapp="(11) 91234-5678", promo_code=promo_code,
+        ),
         Response(),
     ))
     return _run(db.users.find_one({"email": email}))

@@ -13,6 +13,7 @@ export default function Login() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
   const [promoCode, setPromoCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [busyGoogle, setBusyGoogle] = useState(false);
@@ -21,7 +22,10 @@ export default function Login() {
   const comGoogle = async () => {
     setBusyGoogle(true);
     try {
-      await loginGoogle(mode === "signup" ? promoCode : undefined);
+      await loginGoogle(
+        mode === "signup" ? promoCode : undefined,
+        mode === "signup" ? whatsapp : undefined,
+      );
       nav("/dashboard");
     } catch (e) {
       // Fechar o popup não é erro: `mensagemDeErroGoogle` devolve null nesse
@@ -36,10 +40,14 @@ export default function Login() {
 
   const submit = async (e) => {
     e.preventDefault();
+    if (mode === "signup" && !whatsapp.trim()) {
+      toast.error("Informe seu WhatsApp — é por ele que a gente te avisa da aula ao vivo.");
+      return;
+    }
     setBusy(true);
     try {
       if (mode === "login") await login(email, password);
-      else await signup(name, email, password, promoCode);
+      else await signup(name, email, password, whatsapp, promoCode);
       toast.success("Bem-vindo ao Sapiens.");
       nav("/dashboard", { replace: true });
     } catch (err) {
@@ -85,8 +93,43 @@ export default function Login() {
               Google), mas embaixo do botão ninguém que entra pelo Google
               chegava a vê-lo — e o código trocaria o bônus padrão de 100
               Sparks pelo valor programado. */}
+          {/* WhatsApp: pedido ANTES do botão do Google, pelo mesmo motivo do
+              cupom — ele vale para os DOIS caminhos de cadastro, e embaixo do
+              formulário de e-mail quem entra pelo Google nunca chegaria a
+              vê-lo. É o único canal em que a equipe alcança o aluno de
+              verdade, e é por ele que o link da aula ao vivo de quinta chega
+              a quem pagou.
+
+              A obrigatoriedade é checada à mão em `submit` (o campo mora fora
+              do `<form>`, então o `required` do HTML não o alcançaria) e o
+              backend recusa o cadastro por e-mail sem número, de qualquer
+              forma. Pelo Google ele é opcional: o botão também cria conta a
+              partir da tela de LOGIN, onde não há formulário nenhum. */}
           {mode === "signup" && (
             <div className="mt-8">
+              <label className="text-xs font-medium text-zinc-500 mb-1.5 block" htmlFor="login-whatsapp">
+                Seu WhatsApp
+              </label>
+              <input
+                id="login-whatsapp"
+                type="tel" inputMode="tel"
+                value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)}
+                placeholder="(11) 91234-5678"
+                className="w-full border border-zinc-200 rounded-xl px-4 py-3 text-sm focus:border-sapiens-accent outline-none"
+                data-testid="login-whatsapp"
+              />
+              <p className="mt-1.5 text-xs text-zinc-400 leading-relaxed">
+                É por aqui que enviamos o link da{" "}
+                <strong className="font-medium text-zinc-500">
+                  aula ao vivo de quinta-feira com o 1º colocado de Medicina da USP
+                </strong>{" "}
+                e os avisos de turma.
+              </p>
+            </div>
+          )}
+
+          {mode === "signup" && (
+            <div className="mt-5">
               <label className="text-xs font-medium text-zinc-500 mb-1.5 block" htmlFor="login-promo-code">
                 Tem um código de promoção?
               </label>

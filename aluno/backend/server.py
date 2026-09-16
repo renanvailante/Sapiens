@@ -45,6 +45,7 @@ import motor_routes as motor_module
 import perfil_cognitivo_service
 import mentis_routes as mentis_module
 import aulas_particulares_routes as aulas_particulares_module
+import cursos_routes as cursos_module
 import sparks_payments_service
 import sparks_routes as sparks_module
 import redacao_routes as redacao_module
@@ -57,6 +58,7 @@ import revisao_routes as revisao_module
 import curadoria_routes as curadoria_module
 import dados_pessoais_routes as dados_pessoais_module
 import cronograma_routes as cronograma_module
+import onboarding_routes as onboarding_module
 import engajamento_service
 import engajamento_routes as engajamento_module
 import comunidade
@@ -80,6 +82,7 @@ promo_codes_module.set_db(db)
 firestore_module.set_db(db)
 mentis_module.set_db(db)
 aulas_particulares_module.set_db(db)
+cursos_module.set_db(db)
 sparks_module.set_db(db)
 redacao_module.set_db(db)
 treino_module.set_db(db)
@@ -88,6 +91,7 @@ question_reports_module.set_db(db)
 sugestoes_module.set_db(db)
 dados_pessoais_module.set_db(db)
 cronograma_module.set_db(db)
+onboarding_module.set_db(db)
 # Engajamento e comunidade vivem INTEIROS no Mongo (XP, missões, liga, mural);
 # o Firestore só entra para pagar Sparks. Ver o cabeçalho de
 # `engajamento_service.py` — uma liga semanal em Firestore é a cota do dia.
@@ -321,6 +325,8 @@ api_router.include_router(diagnostico_module.router)
 api_router.include_router(motor_module.router)
 api_router.include_router(mentis_module.router)
 api_router.include_router(aulas_particulares_module.router)
+api_router.include_router(cursos_module.router)
+api_router.include_router(cursos_module.router_admin)
 api_router.include_router(sparks_module.router)
 api_router.include_router(redacao_module.router)
 api_router.include_router(treino_module.router)
@@ -332,6 +338,7 @@ api_router.include_router(revisao_module.router)
 api_router.include_router(curadoria_module.router)
 api_router.include_router(dados_pessoais_module.router)
 api_router.include_router(cronograma_module.router)
+api_router.include_router(onboarding_module.router)
 api_router.include_router(engajamento_module.router)
 api_router.include_router(comunidade_module.router)
 app.include_router(api_router)

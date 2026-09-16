@@ -7,6 +7,7 @@ import { useContextoMentisAtual } from "../lib/mentisContexto";
 import Mentis, { MentisPensando } from "./Mentis";
 import Baloes, { BALOES_INICIAIS } from "./MentisBaloes";
 import MentisAcao from "./MentisAcao";
+import MentisAtalhos from "./MentisAtalhos";
 
 const CUSTO_MENSAGEM_PADRAO = 10;
 const MAX_CHARS = 600;
@@ -62,6 +63,10 @@ export default function MentisWidget() {
   // próprios no rodapé: um ícone flutuante por cima dela cobre o conteúdo e
   // não tem o que oferecer que a tela já não ofereça.
   if (location.pathname === "/feed") return null;
+  // `/bem-vindo` é a única tela em que a Mentis já está presente NO conteúdo,
+  // conduzindo o onboarding. O ícone flutuante ali seria ela oferecendo abrir
+  // uma conversa consigo mesma, por cima da conversa em curso.
+  if (location.pathname === "/bem-vindo") return null;
 
   const abrirSessao = async () => {
     setAbrindo(true);
@@ -163,7 +168,10 @@ export default function MentisWidget() {
           {!carregado ? (
             <div className="flex flex-1 items-center justify-center text-xs text-white/45">Procurando a Mentis…</div>
           ) : !ativa ? (
-            <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
+            // `overflow-y-auto`: com os atalhos, este painel passou a poder
+            // ser mais alto que os 32rem do widget num aparelho baixo — sem a
+            // rolagem, o botão de abrir sessão sairia por baixo sem volta.
+            <div className="flex flex-1 flex-col items-center justify-center gap-3 overflow-y-auto px-6 py-4 text-center">
               <Mentis className="w-14 h-14" estado="neutra" />
               <p className="text-xs leading-relaxed text-white/55">
                 Abra uma sessão para conversar — ela já entra sabendo onde você mais escorrega.
@@ -184,6 +192,11 @@ export default function MentisWidget() {
               >
                 Ver tela completa
               </button>
+              {/* Levar o aluno a uma tela não exige sessão paga: quem só quer
+                  chegar em algum lugar chega daqui mesmo, de graça. */}
+              <div className="mt-3 w-full text-left">
+                <MentisAtalhos compacto limite={6} />
+              </div>
             </div>
           ) : (
             <>
@@ -217,6 +230,11 @@ export default function MentisWidget() {
                 )}
                 {baloesAtuais.length > 0 && (
                   <Baloes itens={baloesAtuais} aoClicar={clicarBalao} enviando={enviando} semSaldo={semSaldoMensagem} />
+                )}
+                {mostrarBaloesIniciais && (
+                  <div className="pt-1">
+                    <MentisAtalhos compacto limite={6} />
+                  </div>
                 )}
                 <div ref={fimRef} />
               </div>

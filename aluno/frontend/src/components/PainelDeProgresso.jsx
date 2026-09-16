@@ -41,7 +41,7 @@ function Ofensiva({ dados, aoComprarCongelador, comprando }) {
   const { dias, recorde, estudou_hoje, em_risco, congeladores, custo_congelador, semana } = dados;
 
   return (
-    <div className="card-sapiens rounded-2xl p-5" data-testid="progresso-ofensiva">
+    <div className="card-sapiens rounded-2xl p-5" data-testid="progresso-ofensiva" data-tour="tour-ofensiva">
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="font-mono-alt text-[10px] uppercase tracking-[0.3em] text-zinc-400">
@@ -158,6 +158,7 @@ function Liga({ dados }) {
       to="/liga"
       className="lift card-sapiens block rounded-2xl p-5"
       data-testid="progresso-liga"
+      data-tour="tour-liga"
     >
       <div className="font-mono-alt text-[10px] uppercase tracking-[0.3em] text-zinc-400">
         Liga da semana
@@ -180,7 +181,7 @@ function Liga({ dados }) {
 
 function Missoes({ missoes, aoResgatar, resgatando }) {
   return (
-    <section className="mt-4" data-testid="progresso-missoes">
+    <section className="mt-4" data-testid="progresso-missoes" data-tour="tour-missoes">
       <div className="mb-3 flex items-baseline justify-between gap-3">
         <h3 className="font-display text-lg font-bold tracking-tight text-white">Missões de hoje</h3>
         <span className="text-xs text-white/40">Trocam à meia-noite</span>

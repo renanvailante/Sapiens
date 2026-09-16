@@ -4,6 +4,7 @@ import { api, errMsg } from "../lib/api";
 import Nav from "../components/Nav";
 import Mentis, { MentisPensando } from "../components/Mentis";
 import Baloes, { BALOES_INICIAIS } from "../components/MentisBaloes";
+import MentisAtalhos from "../components/MentisAtalhos";
 import MentisAcao from "../components/MentisAcao";
 import { useContextoMentisAtual } from "../lib/mentisContexto";
 import { Send, Zap, Clock, Target, TrendingUp, AlertCircle } from "lucide-react";
@@ -394,6 +395,13 @@ export default function MentisChat() {
                   enviando={enviando}
                   semSaldo={semSaldoMensagem}
                 />
+              )}
+              {/* Navegar não custa Spark. Os atalhos ficam na abertura, onde
+                  o aluno novo pergunta "onde fica X" — e pagaria por isso. */}
+              {mostrarBaloesIniciais && (
+                <div className="pt-2">
+                  <MentisAtalhos />
+                </div>
               )}
               <div ref={fimRef} />
             </div>

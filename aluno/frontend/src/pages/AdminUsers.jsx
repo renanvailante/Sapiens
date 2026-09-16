@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { useAuth } from "../lib/auth";
 import {
   ShieldCheck, ShieldOff, Zap, ListChecks, Ticket, Search, Receipt,
-  X, Loader2, ArrowRight, AlertTriangle,
+  X, Loader2, ArrowRight, AlertTriangle, MessageCircleMore, Copy, Check, Radio,
 } from "lucide-react";
 
 // Tela de contas do admin. Três coisas ao mesmo tempo, de propósito — é a
@@ -187,6 +187,24 @@ function FichaDoAluno({ userId, onFechar }) {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <BlocoFicha titulo="Conta">
+                <LinhaFicha
+                  rotulo="WhatsApp"
+                  valor={
+                    conta.whatsapp_link ? (
+                      <a
+                        href={conta.whatsapp_link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 font-mono-alt font-semibold text-emerald-700 hover:underline"
+                        data-testid="admin-user-ficha-whatsapp"
+                      >
+                        <MessageCircleMore className="w-3.5 h-3.5" /> {conta.whatsapp_fmt}
+                      </a>
+                    ) : (
+                      <span className="text-zinc-400">não informado</span>
+                    )
+                  }
+                />
                 <LinhaFicha rotulo="Entra por" valor={conta.provider} />
                 <LinhaFicha rotulo="E-mail verificado" valor={conta.email_verificado ? "Sim" : "Não"} />
                 <LinhaFicha rotulo="Acesso" valor={conta.is_admin ? "Administrador" : "Aluno"} />
@@ -237,6 +255,7 @@ function FichaDoAluno({ userId, onFechar }) {
                 <LinhaFicha rotulo="Reportes de questão" valor={numero(atividade.reportes_de_questao)} />
                 <LinhaFicha rotulo="Reclamações e sugestões" valor={numero(atividade.sugestoes)} />
                 <LinhaFicha rotulo="Pedidos de aula particular" valor={numero(atividade.aulas_particulares)} />
+                <LinhaFicha rotulo="Aulas ao vivo pagas" valor={numero(atividade.aulas_ao_vivo)} />
               </BlocoFicha>
 
               <BlocoFicha titulo="Financeiro">
@@ -313,6 +332,7 @@ export default function AdminUsers() {
   const [users, setUsers] = useState([]);
   const [busca, setBusca] = useState("");
   const [aberto, setAberto] = useState(null);
+  const [copiado, setCopiado] = useState(false);
 
   const load = () => api.get("/admin/users").then(({ data }) => setUsers(data));
   useEffect(() => { load(); }, []);
@@ -322,14 +342,38 @@ export default function AdminUsers() {
   const visiveis = useMemo(() => {
     const termo = busca.trim().toLowerCase();
     if (!termo) return users;
+    // O número entra na busca nos DOIS formatos: o admin tanto cola
+    // "11912345678" (como veio de um print) quanto digita "(11) 9".
     return users.filter((u) =>
-      [u.name, u.email, u.user_id, u.promo_code].some((c) => (c || "").toLowerCase().includes(termo)),
+      [u.name, u.email, u.user_id, u.promo_code, u.whatsapp_fmt, u.whatsapp_e164]
+        .some((c) => (c || "").toLowerCase().includes(termo)),
     );
   }, [users, busca]);
 
   const totalSparks = users.reduce((s, u) => s + (u.sparks_balance || 0), 0);
   const totalQuestoes = users.reduce((s, u) => s + (u.questoes_respondidas || 0), 0);
   const comCupom = users.filter((u) => u.promo_code).length;
+  const comWhatsapp = users.filter((u) => u.whatsapp_e164).length;
+
+  /** Os números de quem está na lista FILTRADA, um por linha — para colar
+   *  numa lista de transmissão sem catar contato a contato. Filtrada, e não
+   *  a base inteira, porque é assim que se manda mensagem para um recorte
+   *  ("quem veio pelo cupom X"). */
+  const copiarNumeros = async () => {
+    const numeros = visiveis.map((u) => u.whatsapp_e164).filter(Boolean);
+    if (numeros.length === 0) {
+      toast.error("Nenhum aluno desta lista informou WhatsApp.");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(numeros.join("\n"));
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2000);
+      toast.success(`${numeros.length} número(s) copiado(s).`);
+    } catch {
+      toast.error("O navegador bloqueou a cópia.");
+    }
+  };
 
   const toggle = async (u) => {
     try {
@@ -350,8 +394,9 @@ export default function AdminUsers() {
           Alunos e permissões
         </h1>
         <p className="mt-3 text-white/60 max-w-xl">
-          Cada aluno com o saldo de Sparks, quantas questões já respondeu e o cupom que usou no
-          cadastro. Clique num aluno para abrir a ficha completa.
+          Cada aluno com o WhatsApp (clique no número para abrir a conversa), o saldo de
+          Sparks, quantas questões já respondeu e o cupom que usou no cadastro. Clique no
+          aluno para abrir a ficha completa.
         </p>
 
         <div className="mt-6 flex flex-wrap items-center gap-2">
@@ -369,6 +414,21 @@ export default function AdminUsers() {
           >
             <Ticket className="w-4 h-4" /> Uso dos cupons
           </Link>
+          <Link
+            to="/admin/cursos"
+            className="pill inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium border border-white/15 text-white/70 hover:text-white"
+            data-testid="admin-users-ver-live"
+          >
+            <Radio className="w-4 h-4" /> Aula ao vivo
+          </Link>
+          <button
+            onClick={copiarNumeros}
+            className="pill inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium border border-emerald-400/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20"
+            data-testid="admin-users-copiar-numeros"
+          >
+            {copiado ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+            Copiar WhatsApps da lista
+          </button>
         </div>
 
         <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -392,6 +452,13 @@ export default function AdminUsers() {
             <div className="font-mono-alt text-[10px] uppercase tracking-[0.25em] text-zinc-500">Vieram com cupom</div>
             <div className="mt-1 font-display text-2xl font-extrabold tracking-tighter text-zinc-950">{comCupom}</div>
           </div>
+          <div className="card-sapiens rounded-2xl p-4">
+            <div className="font-mono-alt text-[10px] uppercase tracking-[0.25em] text-zinc-500">Com WhatsApp</div>
+            <div className="mt-1 font-display text-2xl font-extrabold tracking-tighter text-emerald-700">
+              {comWhatsapp}
+              <span className="text-base font-bold text-zinc-400">/{users.length}</span>
+            </div>
+          </div>
         </div>
 
         {indisponivel && (
@@ -407,7 +474,7 @@ export default function AdminUsers() {
           <input
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
-            placeholder="Buscar por nome, e-mail, id ou cupom…"
+            placeholder="Buscar por nome, e-mail, WhatsApp, id ou cupom…"
             className="w-full card-sapiens rounded-2xl pl-11 pr-4 py-3 text-sm outline-none focus:border-sapiens-accent"
             data-testid="admin-users-busca"
           />
@@ -437,6 +504,28 @@ export default function AdminUsers() {
               <div className="flex-1 min-w-[10rem]">
                 <div className="font-display font-semibold text-zinc-900 truncate">{u.name}</div>
                 <div className="text-sm text-zinc-500 truncate">{u.email}</div>
+                {/* O WhatsApp fica na identidade do aluno, embaixo do e-mail,
+                    e não numa coluna no fim da linha: a tarefa mais comum
+                    desta tela passou a ser "falar com esta pessoa", e o
+                    `stopPropagation` existe para o clique abrir a conversa em
+                    vez da ficha. */}
+                {u.whatsapp_link ? (
+                  <a
+                    href={u.whatsapp_link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="mt-1 inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 font-mono-alt text-[11px] text-emerald-700 hover:bg-emerald-100"
+                    data-testid={`admin-user-whatsapp-${u.user_id}`}
+                    title="Abrir conversa no WhatsApp"
+                  >
+                    <MessageCircleMore className="w-3 h-3" /> {u.whatsapp_fmt}
+                  </a>
+                ) : (
+                  <span className="mt-1 inline-block font-mono-alt text-[11px] text-zinc-300">
+                    sem WhatsApp
+                  </span>
+                )}
               </div>
 
               <div className="flex items-center gap-4 shrink-0">

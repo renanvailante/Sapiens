@@ -54,6 +54,11 @@ LIMITES: dict[str, tuple[int, int]] = {
     # propósito. Cinco por hora atende qualquer pedido legítimo (normalmente
     # um) e impede que a rota vire uma alavanca de custo.
     "dados_pessoais": (5, 3600),
+    # Aba de Cursos: comprar o acesso à aula ao vivo. O dinheiro já é o freio
+    # (200 Sparks por edição, cobrados uma vez), então isto existe só para um
+    # script não martelar a rota de compra — que toca Firestore em cada
+    # tentativa, mesmo quando não cobra.
+    "cursos": (30, 3600),
     # Reclamações e sugestões: dez por hora é mais do que qualquer aluno
     # honesto escreve, e impede que o canal vire depósito de spam.
     "sugestoes": (10, 3600),

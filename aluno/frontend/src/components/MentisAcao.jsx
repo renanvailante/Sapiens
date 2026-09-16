@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { CalendarDays, Loader2, ArrowRight } from "lucide-react";
 import { api, errMsg } from "../lib/api";
 import MentisAcaoQuestoes from "./MentisAcaoQuestoes";
+import MentisAcaoIr from "./MentisAcaoIr";
 
 /**
  * O botão que acompanha uma resposta da Mentis quando ela decide que o próximo
@@ -57,5 +58,8 @@ function AcaoCronograma() {
 export default function MentisAcao({ acao }) {
   if (!acao) return null;
   if (acao.tipo === "montar_cronograma") return <AcaoCronograma />;
+  // "ir" é a ação que faz da Mentis uma camada de navegação, e não só um
+  // chat: ela cita uma tela, e o botão leva até lá. Grátis, sempre.
+  if (acao.tipo === "ir") return <MentisAcaoIr acao={acao} />;
   return <MentisAcaoQuestoes acao={acao} />;
 }

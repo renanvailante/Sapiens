@@ -10,6 +10,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
 import FirestoreStudentProvisioner from "./components/FirestoreStudentProvisioner";
 import MentisWidget from "./components/MentisWidget";
+import { InstalacaoProvider } from "./components/InstalarApp";
 
 // Entrada e prática vêm no bundle principal: são o caminho que todo aluno
 // percorre, e adiar o carregamento delas trocaria peso por um flash de
@@ -36,6 +37,10 @@ const PerfilCognitivo = lazy(() => import("./pages/PerfilCognitivo"));
 const TreinoHabilidades = lazy(() => import("./pages/TreinoHabilidades"));
 const MinhasQuestoes = lazy(() => import("./pages/MinhasQuestoes"));
 const MentisChat = lazy(() => import("./pages/MentisChat"));
+const BemVindo = lazy(() => import("./pages/BemVindo"));
+const Conquistas = lazy(() => import("./pages/Conquistas"));
+const Aulas = lazy(() => import("./pages/Aulas"));
+const Cursos = lazy(() => import("./pages/Cursos"));
 const SparksStore = lazy(() => import("./pages/SparksStore"));
 const Feed = lazy(() => import("./pages/Feed"));
 const Comunidade = lazy(() => import("./pages/Comunidade"));
@@ -55,6 +60,7 @@ const AdminUsers = lazy(() => import("./pages/AdminUsers"));
 const AdminFeed = lazy(() => import("./pages/AdminFeed"));
 const AdminAnnotations = lazy(() => import("./pages/AdminAnnotations"));
 const AdminAulasParticulares = lazy(() => import("./pages/AdminAulasParticulares"));
+const AdminCursos = lazy(() => import("./pages/AdminCursos"));
 const AdminReportesQuestoes = lazy(() => import("./pages/AdminReportesQuestoes"));
 const AdminSugestoes = lazy(() => import("./pages/AdminSugestoes"));
 const AdminCuradoria = lazy(() => import("./pages/AdminCuradoria"));
@@ -94,6 +100,19 @@ function AppRouter() {
 
       <Route path="/questoes" element={<ProtectedRoute><Pagina titulo="Banco de questões"><Questoes /></Pagina></ProtectedRoute>} />
       <Route path="/dashboard" element={<ProtectedRoute><Pagina titulo="Painel"><Dashboard /></Pagina></ProtectedRoute>} />
+      {/* Primeiro acesso: vídeo + as três perguntas da Mentis. O Painel manda
+          para cá quem ainda tem `flags.onboarded === false`. */}
+      <Route path="/bem-vindo" element={<ProtectedRoute><Pagina titulo="Bem-vindo ao Sapiens"><BemVindo /></Pagina></ProtectedRoute>} />
+      <Route path="/conquistas" element={<ProtectedRoute><Pagina titulo="Conquistas"><Conquistas /></Pagina></ProtectedRoute>} />
+      {/* Aula particular com alunos de Medicina da USP. Não é um formulário
+          novo: é o mesmo modal da barra, agora com endereço próprio — sem
+          rota, a Mentis não tinha como levar ninguém até ele. */}
+      <Route path="/aulas" element={<ProtectedRoute><Pagina titulo="Aulas com alunos de Medicina da USP"><Aulas /></Pagina></ProtectedRoute>} />
+      {/* Cursos + a aula ao vivo de quinta com o 1º colocado de Medicina da
+          USP. `/live` é como o aluno chama a coisa quando o link chega pelo
+          WhatsApp — o redirect evita que o palpite caia em "não encontrada". */}
+      <Route path="/cursos" element={<ProtectedRoute><Pagina titulo="Cursos e aula ao vivo de quinta"><Cursos /></Pagina></ProtectedRoute>} />
+      <Route path="/live" element={<Navigate to="/cursos#live" replace />} />
       <Route path="/exams" element={<ProtectedRoute><Pagina titulo="Praticar questões"><ExamSelect /></Pagina></ProtectedRoute>} />
       <Route path="/exam/:examId" element={<ProtectedRoute><Pagina titulo="Registrar respostas"><AnswerInput /></Pagina></ProtectedRoute>} />
       <Route path="/analysis/:analysisId" element={<ProtectedRoute><Pagina titulo="Diagnóstico"><Diagnostic /></Pagina></ProtectedRoute>} />
@@ -136,6 +155,7 @@ function AppRouter() {
       <Route path="/admin/feed" element={<AdminRoute><Pagina titulo="Admin · Feed"><AdminFeed /></Pagina></AdminRoute>} />
       <Route path="/admin/annotations" element={<AdminRoute><Pagina titulo="Admin · Anotações"><AdminAnnotations /></Pagina></AdminRoute>} />
       <Route path="/admin/aulas-particulares" element={<AdminRoute><Pagina titulo="Admin · Aulas particulares"><AdminAulasParticulares /></Pagina></AdminRoute>} />
+      <Route path="/admin/cursos" element={<AdminRoute><Pagina titulo="Admin · Cursos e live"><AdminCursos /></Pagina></AdminRoute>} />
       <Route path="/admin/reportes-questoes" element={<AdminRoute><Pagina titulo="Admin · Sugestões de correção"><AdminReportesQuestoes /></Pagina></AdminRoute>} />
       <Route path="/admin/sugestoes" element={<AdminRoute><Pagina titulo="Admin · Reclamações e sugestões"><AdminSugestoes /></Pagina></AdminRoute>} />
       <Route path="/admin/curadoria" element={<AdminRoute><Pagina titulo="Admin · Curadoria"><AdminCuradoria /></Pagina></AdminRoute>} />
@@ -158,6 +178,9 @@ export default function App() {
       <BrowserRouter>
         <AuthProvider>
           <MentisContextoProvider>
+            {/* Guarda o evento de instalação do navegador, que é disparado uma
+                única vez e cedo — ver `components/InstalarApp.jsx`. */}
+            <InstalacaoProvider>
             <FirestoreStudentProvisioner />
             <ErrorBoundary>
               <Suspense fallback={<Carregando />}>
@@ -170,6 +193,7 @@ export default function App() {
             {/* `theme="dark"`: o Sonner nasce claro e um toast branco era a única
                 coisa do produto que continuava em tema claro sobre o ambiente novo. */}
             <Toaster position="top-center" richColors closeButton theme="dark" />
+            </InstalacaoProvider>
           </MentisContextoProvider>
         </AuthProvider>
       </BrowserRouter>
