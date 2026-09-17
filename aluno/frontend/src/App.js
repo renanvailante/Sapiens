@@ -1,6 +1,6 @@
 import "./App.css";
 import { Suspense, lazy } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Toaster } from "sonner";
 import { AuthProvider } from "./lib/auth";
 import { MentisContextoProvider } from "./lib/mentisContexto";
@@ -8,8 +8,11 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import TituloDaPagina from "./components/TituloDaPagina";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
+import PromoterRoute from "./components/PromoterRoute";
 import FirestoreStudentProvisioner from "./components/FirestoreStudentProvisioner";
 import MentisWidget from "./components/MentisWidget";
+import BarraInferior from "./components/BarraInferior";
+import BrandMark from "./components/BrandMark";
 import { InstalacaoProvider } from "./components/InstalarApp";
 
 // Entrada e prática vêm no bundle principal: são o caminho que todo aluno
@@ -41,7 +44,11 @@ const BemVindo = lazy(() => import("./pages/BemVindo"));
 const Conquistas = lazy(() => import("./pages/Conquistas"));
 const Mentoria = lazy(() => import("./pages/Mentoria"));
 const Cursos = lazy(() => import("./pages/Cursos"));
+const AulaAoVivo = lazy(() => import("./pages/AulaAoVivo"));
+const CursoTrilha = lazy(() => import("./pages/CursoTrilha"));
+const CursoEstacao = lazy(() => import("./pages/CursoEstacao"));
 const SparksStore = lazy(() => import("./pages/SparksStore"));
+const Indicar = lazy(() => import("./pages/Indicar"));
 const Feed = lazy(() => import("./pages/Feed"));
 const Comunidade = lazy(() => import("./pages/Comunidade"));
 const ComunidadeDuvida = lazy(() => import("./pages/ComunidadeDuvida"));
@@ -65,16 +72,44 @@ const AdminReportesQuestoes = lazy(() => import("./pages/AdminReportesQuestoes")
 const AdminSugestoes = lazy(() => import("./pages/AdminSugestoes"));
 const AdminCuradoria = lazy(() => import("./pages/AdminCuradoria"));
 const AdminPromoCodes = lazy(() => import("./pages/AdminPromoCodes"));
+const AdminIndicacoes = lazy(() => import("./pages/AdminIndicacoes"));
 const StudentHistory = lazy(() => import("./pages/StudentHistory"));
 const AdminTransacoes = lazy(() => import("./pages/AdminTransacoes"));
 const AdminComunidade = lazy(() => import("./pages/AdminComunidade"));
+const PromoterDashboard = lazy(() => import("./pages/PromoterDashboard"));
 
+/** A espera entre uma rota preguiçosa e a tela dela.
+ *
+ *  Era um anel girando de 32px, sem nada em volta — indistinguível da espera
+ *  de qualquer site, e a única tela do produto em que a marca não aparecia. A
+ *  marca com o halo aceso, pulsando devagar, diz duas coisas que o anel não
+ *  dizia: que é o Sapiens que está carregando, e que há algo acontecendo. */
 function Carregando() {
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="w-8 h-8 rounded-full border-2 border-white/15 border-t-sapiens-accent animate-spin" />
+    <div className="flex min-h-screen items-center justify-center" data-testid="app-carregando">
+      <div className="mentis-halo">
+        <BrandMark className="h-14 w-14" halo />
+      </div>
     </div>
   );
+}
+
+/** Uma rota nova não deve aparecer estalada no lugar.
+ *
+ *  A `key` é o caminho: trocar de rota remonta o envelope, e remontar
+ *  reinicia a animação de entrada (uma animação CSS só dispara ao montar).
+ *  É por isso que isto é um envelope com chave e não uma classe no `<main>`
+ *  de cada página — 37 telas teriam de lembrar de pôr a classe, e as que
+ *  esquecessem entrariam sem ritmo no meio das que não esquecem.
+ *
+ *  Por que CSS e não `framer-motion` (que já está no pacote): a saída animada
+ *  exige manter a tela ANTIGA montada enquanto a nova entra, e as telas do
+ *  Sapiens buscam dados na montagem. Duas montadas ao mesmo tempo é o dobro
+ *  das chamadas em cada navegação — e a disciplina de leitura do Firestore do
+ *  produto não paga esse preço por uma transição. */
+function Transicao({ children }) {
+  const { pathname } = useLocation();
+  return <div key={pathname} className="pagina-entra">{children}</div>;
 }
 
 /** Uma rota = um título de aba. Antes toda página se chamava "Sapiens", o que
@@ -110,11 +145,18 @@ function AppRouter() {
           existindo como redirect porque o endereço antigo circulou. */}
       <Route path="/mentoria" element={<ProtectedRoute><Pagina titulo="Mentoria com o 1º colocado de Medicina da USP"><Mentoria /></Pagina></ProtectedRoute>} />
       <Route path="/aulas" element={<Navigate to="/mentoria" replace />} />
-      {/* Cursos + a aula ao vivo de quinta com o 1º colocado de Medicina da
-          USP. `/live` é como o aluno chama a coisa quando o link chega pelo
-          WhatsApp — o redirect evita que o palpite caia em "não encontrada". */}
-      <Route path="/cursos" element={<ProtectedRoute><Pagina titulo="Cursos e aula ao vivo de quinta"><Cursos /></Pagina></ProtectedRoute>} />
-      <Route path="/live" element={<Navigate to="/cursos#live" replace />} />
+      {/* A AULA AO VIVO DE QUINTA tem tela própria desde 2026-09-16. Ela
+          morava no topo de `/cursos`, dividindo a página com um catálogo que
+          ainda não existe — a coisa mais concreta do produto atrás do nome de
+          outra. `/live` e `/cursos#live` continuam funcionando porque os dois
+          endereços circularam no WhatsApp. */}
+      <Route path="/aula-ao-vivo" element={<ProtectedRoute><Pagina titulo="Aula ao vivo de quinta"><AulaAoVivo /></Pagina></ProtectedRoute>} />
+      <Route path="/live" element={<Navigate to="/aula-ao-vivo" replace />} />
+      <Route path="/cursos" element={<ProtectedRoute><Pagina titulo="Cursos"><Cursos /></Pagina></ProtectedRoute>} />
+      {/* O curso por dentro: o mapa das trilhas e a sala de aula de uma estação.
+          Só chega aqui quem tem acesso — a porta é do servidor, não da rota. */}
+      <Route path="/cursos/:cursoId" element={<ProtectedRoute><Pagina titulo="Curso"><CursoTrilha /></Pagina></ProtectedRoute>} />
+      <Route path="/cursos/:cursoId/estacao/:estacaoId" element={<ProtectedRoute><Pagina titulo="Estação"><CursoEstacao /></Pagina></ProtectedRoute>} />
       <Route path="/exams" element={<ProtectedRoute><Pagina titulo="Praticar questões"><ExamSelect /></Pagina></ProtectedRoute>} />
       <Route path="/exam/:examId" element={<ProtectedRoute><Pagina titulo="Registrar respostas"><AnswerInput /></Pagina></ProtectedRoute>} />
       <Route path="/analysis/:analysisId" element={<ProtectedRoute><Pagina titulo="Diagnóstico"><Diagnostic /></Pagina></ProtectedRoute>} />
@@ -141,6 +183,7 @@ function AppRouter() {
       <Route path="/minhas-questoes" element={<ProtectedRoute><Pagina titulo="Minhas questões"><MinhasQuestoes /></Pagina></ProtectedRoute>} />
       <Route path="/mentis" element={<ProtectedRoute><Pagina titulo="Mentis"><MentisChat /></Pagina></ProtectedRoute>} />
       <Route path="/sparks" element={<ProtectedRoute><Pagina titulo="Sparks"><SparksStore /></Pagina></ProtectedRoute>} />
+      <Route path="/indicar" element={<ProtectedRoute><Pagina titulo="Indique um amigo"><Indicar /></Pagina></ProtectedRoute>} />
       <Route path="/feed" element={<ProtectedRoute><Pagina titulo="Feed"><Feed /></Pagina></ProtectedRoute>} />
       <Route path="/comunidade" element={<ProtectedRoute><Pagina titulo="Comunidade"><Comunidade /></Pagina></ProtectedRoute>} />
       <Route path="/comunidade/:duvidaId" element={<ProtectedRoute><Pagina titulo="Dúvida da comunidade"><ComunidadeDuvida /></Pagina></ProtectedRoute>} />
@@ -163,10 +206,12 @@ function AppRouter() {
       <Route path="/admin/sugestoes" element={<AdminRoute><Pagina titulo="Admin · Reclamações e sugestões"><AdminSugestoes /></Pagina></AdminRoute>} />
       <Route path="/admin/curadoria" element={<AdminRoute><Pagina titulo="Admin · Curadoria"><AdminCuradoria /></Pagina></AdminRoute>} />
       <Route path="/admin/promo-codes" element={<AdminRoute><Pagina titulo="Admin · Códigos de promoção"><AdminPromoCodes /></Pagina></AdminRoute>} />
+      <Route path="/admin/indicacoes" element={<AdminRoute><Pagina titulo="Admin · Indicações"><AdminIndicacoes /></Pagina></AdminRoute>} />
       <Route path="/admin/users" element={<AdminRoute><Pagina titulo="Admin · Usuários"><AdminUsers /></Pagina></AdminRoute>} />
       <Route path="/admin/transacoes" element={<AdminRoute><Pagina titulo="Admin · Transações"><AdminTransacoes /></Pagina></AdminRoute>} />
       <Route path="/admin/comunidade" element={<AdminRoute><Pagina titulo="Admin · Comunidade"><AdminComunidade /></Pagina></AdminRoute>} />
       <Route path="/admin/history" element={<AdminRoute><Pagina titulo="Admin · Histórico"><StudentHistory /></Pagina></AdminRoute>} />
+      <Route path="/promoter" element={<PromoterRoute><Pagina titulo="Painel do promoter"><PromoterDashboard /></Pagina></PromoterRoute>} />
 
       {/* Antes caía na landing: uma URL errada levava a pessoa para a página de
           marketing sem dizer que a página não existe, inclusive já logada. */}
@@ -187,12 +232,20 @@ export default function App() {
             <FirestoreStudentProvisioner />
             <ErrorBoundary>
               <Suspense fallback={<Carregando />}>
-                <AppRouter />
+                <Transicao>
+                  <AppRouter />
+                </Transicao>
               </Suspense>
             </ErrorBoundary>
             {/* Ícone sempre visível, em toda página logada — ver
                 `MentisWidget.jsx` para por que ele se esconde em /mentis. */}
             <MentisWidget />
+            {/* A navegação do celular. Mora aqui, e não dentro de cada tela,
+                porque as 37 páginas do produto montam a própria `<Nav />` e
+                acrescentar uma linha em cada uma garantiria que a próxima
+                tela nova nasceria sem barra. Ela mesma decide onde não
+                aparecer (ver `BarraInferior.jsx`). */}
+            <BarraInferior />
             {/* `theme="dark"`: o Sonner nasce claro e um toast branco era a única
                 coisa do produto que continuava em tema claro sobre o ambiente novo. */}
             <Toaster position="top-center" richColors closeButton theme="dark" />

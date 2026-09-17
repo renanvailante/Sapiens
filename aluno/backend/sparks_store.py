@@ -52,21 +52,52 @@ PACKAGES: dict[str, SparksPackage] = {
         # Sparks (R$54,90) é o maior de todos (3), maior até que o de 4.000.
         SparksPackage("spark_200", "200 Sparks", 200, 990, highlight="Menor custo", destaque_tamanho=0),
         SparksPackage("spark_600", "600 Sparks", 600, 2490, destaque_tamanho=1),
-        SparksPackage("spark_1500", "1.500 Sparks", 1500, 5490, highlight="Mais vendido", destaque_tamanho=3),
+        SparksPackage(
+            "spark_1500", "1.500 Sparks", 1500, 5490,
+            highlight="Mais vendido", destaque_tamanho=3,
+            # R$54,90 é SALDO, e só saldo. Até 2026-09-16 este pacote incluía
+            # as aulas ao vivo de quinta; o produto decidiu que a aula volta a
+            # custar 200 Sparks por edição para todo mundo, e que o ÚNICO
+            # pacote que a dispensa é o de 4.000 Sparks.
+            #
+            # Tirar daqui muda só quem compra DAQUI PARA A FRENTE: quem já
+            # pagou os R$54,90 tem a flag `lives_inclusas` gravada no próprio
+            # documento (`students/{uid}`) e continua entrando sem pagar. A
+            # promessa feita a quem comprou não se desfaz com uma linha de
+            # catálogo — ela só deixa de ser feita de novo.
+            direitos=(),
+            beneficios=(),
+        ),
         SparksPackage(
             "spark_4000", "4.000 Sparks", 4000, 11990,
             highlight="Melhor valor", destaque_tamanho=2,
-            # R$119,90 é o único pacote que compra DIREITO, e não só saldo:
+            # R$119,90 é o pacote que compra mais DIREITO, e não só saldo:
+            #  * `cursos_inclusos` — os quatro cursos do catálogo, sem pagar
+            #    os 500 Sparks de cada um (ver `cursos_routes.comprar_curso`);
+            #  * `lives_inclusas` — desde 2026-09-16 é o ÚNICO pacote que
+            #    dispensa os 200 Sparks da aula ao vivo de quinta. Toda
+            #    quinta, sem cobrança por edição (ver
+            #    `cursos_routes._montar_live`). A escada de direito continua
+            #    valendo, e agora ela é trivial: nenhum pacote mais barato
+            #    concede direito nenhum (ver o teste da escada em
+            #    `tests/test_direitos_do_pacote.py`);
             #  * `mentis_ilimitada` — abrir o chat, cada mensagem, a
             #    explicação de questão e a intervenção da causa raiz param de
-            #    cobrar Spark (ver o atalho em `mentis_routes._cobrar`);
-            #    Este é o único direito com PRAZO: vence em
-            #    `PRAZO_DOS_DIREITOS_DIAS["mentis_ilimitada"]` dias, contados
-            #    da aprovação do pagamento.
+            #    cobrar Spark (ver o atalho em `mentis_routes._cobrar`).
+            #    ATENÇÃO (2026-09-16): a loja passou a anunciar este direito
+            #    como "por um mês", mas o backend continua concedendo uma
+            #    FLAG PERMANENTE (`firestore_service.marcar_mentis_ilimitada`,
+            #    sem data de validade). Hoje entregamos MAIS do que
+            #    anunciamos — o lado seguro da divergência, mas ainda uma
+            #    divergência. Fechar isso exige guardar o vencimento por
+            #    aluno e checá-lo em `mentis_routes`; enquanto não existir,
+            #    NÃO escreva em lugar nenhum que o direito expira de fato.
             #  * `comunidade_vip` — a sala fechada do mural, onde a equipe e o
             #    1º colocado respondem (ver `comunidade.SALA_VIP`).
-            direitos=("mentis_ilimitada", "comunidade_vip"),
+            direitos=("cursos_inclusos", "lives_inclusas", "mentis_ilimitada", "comunidade_vip"),
             beneficios=(
+                "Todos os cursos inclusos",
+                "Todas as aulas ao vivo de quinta inclusas",
                 "Mentis ILIMITADA por um mês",
                 "Comunidade VIP — sala fechada",
             ),
@@ -94,23 +125,6 @@ def list_packages() -> list[SparksPackage]:
     return list(PACKAGES.values())
 
 
-# Direitos que VENCEM, e em quantos dias. O que não está aqui é permanente.
-#
-# Mora no catálogo, coladinho no texto que a loja anuncia, porque os dois têm
-# de dizer a mesma coisa: "Mentis ILIMITADA por um mês" (em `beneficios`) e os
-# 30 dias saem do MESMO arquivo. Separá-los é o defeito que este módulo existe
-# para evitar — foi assim que a loja chegou a anunciar "para sempre" enquanto
-# ninguém sabia dizer o que o servidor concedia.
-PRAZO_DOS_DIREITOS_DIAS: dict[str, int] = {
-    "mentis_ilimitada": 30,
-}
-
-
-def prazo_do_direito_dias(direito: str) -> int | None:
-    """Em quantos dias este direito vence, ou `None` se for para sempre."""
-    return PRAZO_DOS_DIREITOS_DIAS.get(direito)
-
-
 def is_valid_frequency(days: int) -> bool:
     return days in AUTO_RECHARGE_FREQUENCIES_DAYS
 
@@ -118,7 +132,20 @@ def is_valid_frequency(days: int) -> bool:
 # A lista fechada de direitos que um pacote pode conceder. Só o que está
 # aqui vira campo no documento do aluno — um pacote não pode inventar um
 # direito novo sem que exista a porta correspondente no backend.
-DIREITOS: tuple[str, ...] = ("mentis_ilimitada", "comunidade_vip")
+#
+#  * `cursos_inclusos`  -> os quatro cursos do catálogo, sem os 500 Sparks de
+#                          cada (porta: `cursos_routes`);
+#  * `lives_inclusas`   -> toda edição da aula ao vivo de quinta, sem os 200
+#                          Sparks por edição (porta: `cursos_routes`). Só o
+#                          pacote de 4.000 Sparks o vende;
+#  * `mentis_ilimitada` -> a Mentis para de cobrar (porta: `mentis_routes`);
+#  * `comunidade_vip`   -> a sala fechada do mural (porta: `comunidade_routes`).
+DIREITOS: tuple[str, ...] = (
+    "cursos_inclusos",
+    "lives_inclusas",
+    "mentis_ilimitada",
+    "comunidade_vip",
+)
 
 
 def direitos_do_pacote(package_id: str) -> tuple[str, ...]:
@@ -132,3 +159,20 @@ def direitos_do_pacote(package_id: str) -> tuple[str, ...]:
 
 def concede_mentis_ilimitada(package_id: str) -> bool:
     return "mentis_ilimitada" in direitos_do_pacote(package_id)
+
+
+def pacote_com_direito(direito: str) -> SparksPackage | None:
+    """O pacote VISÍVEL MAIS BARATO que vende este direito — para a tela que
+    precisa dizer "isto vem no pacote X" sem escrever um `package_id` no meio
+    do texto. Se o produto mudar qual pacote dá o quê, a frase acompanha.
+
+    Mais barato, e não "o primeiro que aparecer": um direito pode ser vendido
+    por mais de um pacote (as lives estavam no de 1.500 e no de 4.000 até
+    2026-09-16), e o que a oferta precisa dizer é a porta de entrada mais
+    barata, não a mais cara. `PACKAGES` está em ordem crescente de preço, que
+    é a ordem da loja.
+    """
+    for p in PACKAGES.values():
+        if not p.oculto and direito in direitos_do_pacote(p.package_id):
+            return p
+    return None

@@ -3,10 +3,10 @@ import {
   Compass, Medal, Trophy, PlayCircle, PenLine, Brain, Zap, GraduationCap,
   CalendarDays, Sparkles, Users, CalendarClock, History, LayoutGrid, Trash2,
   MessageSquareWarning, ShieldCheck, LogOut, Download, MessageCircle, HelpCircle,
-  Radio,
+  Radio, Gift, Megaphone,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle, SheetDescription } from "./ui/sheet";
-import BrandMark from "./BrandMark";
+import Logo from "./Logo";
 import BotaoInstalar from "./InstalarApp";
 
 /**
@@ -45,14 +45,15 @@ const GRUPOS = [
       { rota: "/liga", icone: Medal, nome: "Liga da semana", nota: "Sua posição entre os alunos" },
       { rota: "/history", icone: History, nome: "Histórico", nota: "Tudo o que você já resolveu" },
       { rota: "/sparks", icone: Zap, nome: "Sparks", nota: "Saldo, preços e pacotes" },
+      { rota: "/indicar", icone: Gift, nome: "Indique um amigo", nota: "Metade dos Sparks da primeira compra dele" },
     ],
   },
   {
     titulo: "Gente",
     itens: [
       { rota: "/mentis", icone: MessageCircle, nome: "Mentis", nota: "Ela leu o seu histórico inteiro" },
-      { rota: "/cursos", icone: Radio, nome: "Aula ao vivo · quinta", nota: "Com o 1º colocado de Medicina da USP", destaque: true, aoVivo: true },
-      { rota: "/cursos", icone: GraduationCap, nome: "Cursos", nota: "Matemática, redação, TRI e leitura", chave: "cursos-catalogo" },
+      { rota: "/aula-ao-vivo", icone: Radio, nome: "Aula ao vivo · quinta", nota: "200 Sparks · com o 1º colocado de Medicina da USP", destaque: true, aoVivo: true },
+      { rota: "/cursos", icone: GraduationCap, nome: "Cursos", nota: "Matemática, redação, TRI e leitura" },
       { rota: "/mentoria", icone: Medal, nome: "Mentoria", nota: "Lista de espera · com o 1º colocado de Medicina da USP", destaque: true },
       { rota: "/comunidade", icone: Users, nome: "Comunidade", nota: "Pergunte, responda, ganhe Sparks" },
       { rota: "/sugestoes", icone: MessageSquareWarning, nome: "Fale com a equipe", nota: "Achou um erro? Tem uma ideia?" },
@@ -103,7 +104,17 @@ function Tile({ item, aoIr }) {
   );
 }
 
-export default function LancadorDeFerramentas({ aberto, aoFechar, user, aoSair }) {
+/**
+ * `lado` decide de onde o painel entra, e a decisão é de quem abre, não daqui:
+ *
+ * · `"left"` — a barra de cima do desktop, onde o botão da grade fica à
+ *   esquerda e o painel sai debaixo dele.
+ * · `"bottom"` — o "Mais" da barra inferior do celular. Um painel que entra
+ *   pela lateral a partir de um botão no rodapé é movimento que não sai de
+ *   onde o dedo tocou, e é a diferença entre um menu que parece abrir e um
+ *   que parece aparecer.
+ */
+export default function LancadorDeFerramentas({ aberto, aoFechar, user, aoSair, lado = "left" }) {
   const nav = useNavigate();
   const { pathname } = useLocation();
 
@@ -117,18 +128,30 @@ export default function LancadorDeFerramentas({ aberto, aoFechar, user, aoSair }
   return (
     <Sheet open={aberto} onOpenChange={(v) => { if (!v) aoFechar(); }}>
       <SheetContent
-        side="left"
-        className="flex w-[92vw] max-w-md flex-col border-r border-white/10 p-0"
+        side={lado}
+        className={
+          lado === "bottom"
+            // `dvh` e não `vh`: com a barra de endereço do Safari na tela, `vh`
+            // mede a janela SEM ela e o rodapé do painel (o botão de sair) fica
+            // por baixo do navegador.
+            ? "flex max-h-[86dvh] flex-col rounded-t-[26px] border-t border-white/12 p-0"
+            : "flex w-[92vw] max-w-md flex-col border-r border-white/10 p-0"
+        }
         style={{ background: "rgba(9,17,31,0.97)", backdropFilter: "blur(16px)" }}
         data-testid="lancador"
       >
+        {/* A alça. Só na variante de baixo, e só porque ela diz, sem texto,
+            que o painel se fecha puxando para baixo. */}
+        {lado === "bottom" && (
+          <div className="mx-auto mt-3 h-1 w-10 shrink-0 rounded-full bg-white/20" />
+        )}
         <SheetTitle className="sr-only">Ferramentas do Sapiens</SheetTitle>
         <SheetDescription className="sr-only">
           Todas as telas do Sapiens, agrupadas pelo que você quer fazer.
         </SheetDescription>
 
-        <div className="flex items-center gap-2 px-5 pb-3 pt-6 font-display text-2xl font-extrabold tracking-tighter text-white">
-          <BrandMark className="h-6 w-6" /> Sapiens
+        <div className="px-5 pb-3 pt-6">
+          <Logo tamanho="m" testid="lancador-marca" />
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 pb-4">
@@ -183,6 +206,16 @@ export default function LancadorDeFerramentas({ aberto, aoFechar, user, aoSair }
                 data-testid="lancador-admin"
               >
                 <ShieldCheck className="h-3 w-3" /> Admin
+              </button>
+            )}
+            {user?.is_promoter && (
+              <button
+                type="button"
+                onClick={() => ir("/promoter")}
+                className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/25 bg-emerald-500/10 px-3 py-1.5 text-[11px] text-emerald-300"
+                data-testid="lancador-promoter"
+              >
+                <Megaphone className="h-3 w-3" /> Promoter
               </button>
             )}
           </div>

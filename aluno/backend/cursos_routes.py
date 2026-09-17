@@ -35,6 +35,22 @@ forma de o combinado não virar uma promessa esquecida.
 **3. O painel do admin** (`/admin/cursos`): publicar o link e o tema da
 edição, ver quem já pagou — com o WhatsApp de cada um, que é como a equipe
 efetivamente fala com o aluno — e ver o interesse acumulado por curso.
+
+**Os dois direitos de pacote** (`sparks_store.DIREITOS`) entram aqui como um
+atalho ANTES da carteira, nunca como um preço diferente:
+
+* `lives_inclusas` (desde 2026-09-16, SÓ o pacote de 4.000 Sparks) — toda
+  edição de quinta, sem os 200 por edição. Todo mundo mais paga os 200 toda
+  quinta, inclusive quem comprou o pacote de 1.500. Quem tem o direito é
+  INSCRITO na edição ao abrir a página, com `custo_sparks: 0` e
+  `por_direito: True`, porque é de `cursos_live_acessos` que sai a lista de
+  quem recebe o link no WhatsApp.
+* `cursos_inclusos` (pacote de 4.000 Sparks) — os quatro cursos, sem os 500
+  de cada. Aqui NÃO se escreve documento de compra: o direito é o registro, e
+  vale para os cursos que ainda entrarem no catálogo.
+
+Nos dois casos o preço de tabela continua o mesmo para quem não tem o direito
+— o pacote não muda o preço da live nem do curso, ele passa na frente dele.
 """
 from __future__ import annotations
 
@@ -46,6 +62,8 @@ from pydantic import BaseModel, Field
 from pymongo.errors import DuplicateKeyError
 
 import cursos
+import cursos_conteudo
+import cursos_progresso
 import firestore_service as fs
 import rate_limit
 import whatsapp as wa
@@ -63,6 +81,10 @@ _db = None
 def set_db(db):
     global _db
     _db = db
+    # A vitrine passou a mostrar progresso ("continue de onde parou"), então
+    # ela também precisa do banco de progresso. Dois módulos ligando o mesmo
+    # banco é barato; um módulo com `_db` nulo em produção não é.
+    cursos_progresso.set_db(db)
 
 
 def _agora_iso() -> str:
@@ -120,11 +142,56 @@ async def _acesso_do_aluno(uid: str, edicao: str) -> dict | None:
     return await _db.cursos_live_acessos.find_one({"_id": _id_acesso(uid, edicao)}, {"_id": 0})
 
 
-async def _montar_live(user: User, saldo: int | None) -> dict:
+async def _inscrever_por_direito(uid: str, edicao: str) -> dict | None:
+    """Põe na lista da edição, SEM cobrar, quem tem as lives inclusas.
+
+    Por que escrever na leitura da página: o que o admin manda pelo WhatsApp
+    na quinta-feira sai de `cursos_live_acessos` (ver `painel`). Se o direito
+    liberasse o link só na tela e não deixasse registro, o aluno do pacote de
+    4.000 estaria "incluso" para o produto e invisível para a equipe — sem
+    lembrete e sem link no WhatsApp, que é justamente como a aula chega.
+
+    `insert_one` e não `$setOnInsert`: a unicidade de `_id` do Mongo é a mesma
+    guarda do resto do módulo, e uma inscrição paga NUNCA é sobrescrita por
+    esta — a segunda chamada só levanta `DuplicateKeyError` e sai. Acontece no
+    máximo uma vez por aluno por edição.
+    """
+    doc = {
+        "_id": _id_acesso(uid, edicao),
+        "user_id": uid,
+        "edicao": edicao,
+        # Zero, e um carimbo dizendo por quê: a receita em Sparks da edição
+        # (`painel`) não pode contar como venda o que veio junto do pacote.
+        "custo_sparks": 0,
+        "por_direito": True,
+        "criado_em": _agora_iso(),
+    }
+    try:
+        await _db.cursos_live_acessos.insert_one(dict(doc))
+    except DuplicateKeyError:
+        return await _acesso_do_aluno(uid, edicao)
+    except Exception:  # noqa: BLE001
+        # A inscrição é BOOKKEEPING — quem manda no acesso é o direito, e ele
+        # já está pago. Um Mongo instável aqui pode custar o lembrete no
+        # WhatsApp; não pode custar a aula.
+        logger.exception("Não inscrevi %s na live %s (direito de pacote).", uid, edicao)
+        return None
+    logger.info("Live %s inclusa no pacote de %s (0 Sparks).", edicao, uid)
+    doc.pop("_id")
+    return doc
+
+
+async def _montar_live(user: User, saldo: int | None, direitos: dict[str, bool]) -> dict:
     live = cursos.proxima_live()
     config = await _config_da_edicao(live["edicao"])
     acesso = await _acesso_do_aluno(user.user_id, live["edicao"])
-    tem_acesso = acesso is not None
+    incluso = bool(direitos.get("lives_inclusas"))
+    if acesso is None and incluso:
+        acesso = await _inscrever_por_direito(user.user_id, live["edicao"])
+    # `or incluso`: o direito é a autorização, a inscrição é só o registro que
+    # a equipe usa para mandar o link. Se a escrita falhar, o aluno que pagou
+    # o pacote continua entrando na sala.
+    tem_acesso = acesso is not None or incluso
 
     return {
         **live,
@@ -135,6 +202,10 @@ async def _montar_live(user: User, saldo: int | None) -> dict:
         "link_publicado": bool(config.get("link")),
         "tenho_acesso": tem_acesso,
         "acesso_em": (acesso or {}).get("criado_em"),
+        # O que a tela precisa para não dizer "vaga garantida" a quem nunca
+        # vai pagar por uma: para este aluno a live não custa, nesta semana
+        # nem nas próximas.
+        "incluso_no_plano": incluso,
         "sparks_balance": saldo,
     }
 
@@ -147,15 +218,11 @@ async def listar(user: User = Depends(require_user)):
     de "comprar Sparks"), e uma segunda chamada só para o saldo faria a página
     piscar entre os dois estados.
     """
-    try:
-        saldo = fs.read_sparks_balance(user.user_id)
-    except Exception:  # noqa: BLE001
-        # Firestore fora do ar não pode derrubar a página inteira: a lista de
-        # cursos e o horário da live não dependem dele (ver o incidente de
-        # cota de 2026-09-04). A tela mostra o preço e pede para tentar de novo
-        # no clique.
-        logger.warning("Saldo indisponível na aba Cursos para %s.", user.user_id)
-        saldo = None
+    # UMA leitura do Firestore para a página inteira: saldo e direitos moram
+    # no mesmo `students/{uid}` (ver o incidente de cota de 2026-09-04). Se
+    # ela falhar, o saldo volta `None` e os direitos voltam todos `False` — a
+    # tela mostra o preço e tenta de novo no clique, em vez de a página cair.
+    saldo, direitos = fs.ler_saldo_e_direitos(user.user_id)
 
     interesses = await _db.cursos_interesse.find(
         {"user_id": user.user_id}, {"_id": 0, "curso_id": 1}
@@ -166,17 +233,73 @@ async def listar(user: User = Depends(require_user)):
         {"user_id": user.user_id}, {"_id": 0, "curso_id": 1}
     ).to_list(50)
     meus = {c["curso_id"] for c in comprados}
+    # O pacote de 4.000 Sparks inclui os QUATRO cursos. Não existe documento
+    # de compra por curso para quem chegou por aí: o direito é o registro, e
+    # ele vale para os cursos que ainda entrarem no catálogo também.
+    todos_inclusos = bool(direitos.get("cursos_inclusos"))
+
+    # Quais cursos já têm aula publicada. Custa ZERO: a biblioteca de conteúdo
+    # é carregada uma vez no boot e vive em memória (ver `cursos_conteudo`). É
+    # o que separa, no card, "comprei a pré-venda" de "posso estudar agora".
+    biblioteca = cursos_conteudo.biblioteca()
+
+    # O progresso do aluno em TODOS os cursos, numa consulta só. É o que
+    # transforma a aba numa home de aprendizagem ("continue de onde parou")
+    # em vez de uma vitrine — e é uma ida ao Mongo, não uma por card.
+    progresso = await cursos_progresso.progresso_de_todos_os_cursos(user.user_id)
+
+    def _montar(c: dict) -> dict:
+        curso_id = c["curso_id"]
+        conteudo = biblioteca.curso(curso_id)
+        tenho_acesso = todos_inclusos or curso_id in meus
+        item = {
+            **c,
+            "tenho_interesse": curso_id in marcados,
+            "tenho_acesso": tenho_acesso,
+            "incluso_no_plano": todos_inclusos,
+            "tem_conteudo": bool(conteudo and conteudo.estacoes),
+        }
+        if conteudo and conteudo.estacoes:
+            item["estacoes"] = len(conteudo.estacoes)
+            item["trilhas"] = [
+                {"trilha_id": t.trilha_id, "titulo": t.titulo, "estacoes": len(t.estacoes)}
+                for t in conteudo.trilhas
+            ]
+            # O progresso só existe para quem pode estudar: mandar "0%" para
+            # quem ainda não comprou seria anunciar um começo que não houve.
+            if tenho_acesso:
+                item["progresso"] = cursos_progresso.resumo_do_curso(
+                    conteudo, progresso.get(curso_id) or {},
+                )
+        return item
 
     return {
-        "cursos": [
-            {
-                **c,
-                "tenho_interesse": c["curso_id"] in marcados,
-                "tenho_acesso": c["curso_id"] in meus,
-            }
-            for c in cursos.listar_cursos()
-        ],
-        "live": await _montar_live(user, saldo),
+        "areas": cursos.listar_areas(),
+        "cursos": [_montar(c) for c in cursos.listar_cursos()],
+        "live": await _montar_live(user, saldo, direitos),
+        "direitos": direitos,
+        "whatsapp": user.whatsapp,
+    }
+
+
+@router.get("/live")
+async def ver_live(user: User = Depends(require_user)):
+    """Só a aula ao vivo de quinta — a ferramenta que tem tela própria.
+
+    Existe separado de `GET /cursos` porque a tela da aula não mostra o
+    catálogo, e carregar os quatro cursos, o interesse e as compras de cada um
+    para desenhar um botão de "garantir vaga" seria pagar quatro leituras de
+    Mongo por abertura de uma página que não usa nenhuma delas.
+
+    O que ele NÃO economiza é a leitura do Firestore: saldo e direitos saem do
+    mesmo `students/{uid}` numa chamada só (ver a disciplina de leitura de
+    2026-09-04), e os dois são exatamente o que decide o que esta tela mostra
+    — o preço ou a confirmação de que a quinta já está paga.
+    """
+    saldo, direitos = fs.ler_saldo_e_direitos(user.user_id)
+    return {
+        "live": await _montar_live(user, saldo, direitos),
+        "direitos": direitos,
         "whatsapp": user.whatsapp,
     }
 
@@ -253,6 +376,13 @@ async def comprar_acesso_live(
     if await _acesso_do_aluno(user.user_id, edicao):
         return await _resposta_de_acesso(user, edicao, cobrado=False)
 
+    # Lives inclusas no pacote: a vaga é garantida sem passar pela carteira.
+    # A checagem vem ANTES do débito e não depois, senão o aluno que já pagou
+    # por elas pagaria de novo se clicasse no botão.
+    if fs.tem_lives_inclusas(user.user_id):
+        await _inscrever_por_direito(user.user_id, edicao)
+        return await _resposta_de_acesso(user, edicao, cobrado=False, incluso=True)
+
     try:
         saldo = await _reivindicar_e_cobrar(
             user,
@@ -269,7 +399,9 @@ async def comprar_acesso_live(
     return await _resposta_de_acesso(user, edicao, cobrado=True, saldo=saldo)
 
 
-async def _resposta_de_acesso(user: User, edicao: str, *, cobrado: bool, saldo: int | None = None):
+async def _resposta_de_acesso(
+    user: User, edicao: str, *, cobrado: bool, saldo: int | None = None, incluso: bool = False,
+):
     if saldo is None:
         try:
             saldo = fs.read_sparks_balance(user.user_id)
@@ -281,6 +413,7 @@ async def _resposta_de_acesso(user: User, edicao: str, *, cobrado: bool, saldo: 
         "edicao": edicao,
         "cobrado": cobrado,
         "custo_sparks": cursos.LIVE_CUSTO_SPARKS if cobrado else 0,
+        "incluso_no_plano": incluso,
         "sparks_balance": saldo,
         "link": config.get("link"),
         "tema": config.get("tema"),
@@ -314,6 +447,14 @@ async def comprar_curso(
     if await _db.cursos_acessos.find_one({"_id": doc_id}, {"_id": 1}):
         return await _resposta_do_curso(user, curso, cobrado=False)
 
+    # O pacote de 4.000 Sparks inclui o catálogo inteiro. Aqui, ao contrário
+    # da live, NÃO se cria documento de compra: não existe edição semanal para
+    # a equipe organizar, e um registro por curso por aluno diria "pagou 0" no
+    # painel de pré-venda — onde o número que importa é quanta gente pôs
+    # dinheiro num curso que ainda não existe. O direito é o registro.
+    if fs.tem_cursos_inclusos(user.user_id):
+        return await _resposta_do_curso(user, curso, cobrado=False, incluso=True)
+
     try:
         saldo = await _reivindicar_e_cobrar(
             user, "cursos_acessos", doc_id,
@@ -325,7 +466,9 @@ async def comprar_curso(
     return await _resposta_do_curso(user, curso, cobrado=True, saldo=saldo)
 
 
-async def _resposta_do_curso(user: User, curso, *, cobrado: bool, saldo: int | None = None):
+async def _resposta_do_curso(
+    user: User, curso, *, cobrado: bool, saldo: int | None = None, incluso: bool = False,
+):
     if saldo is None:
         try:
             saldo = fs.read_sparks_balance(user.user_id)
@@ -337,6 +480,7 @@ async def _resposta_do_curso(user: User, curso, *, cobrado: bool, saldo: int | N
         "titulo": curso.titulo,
         "cobrado": cobrado,
         "custo_sparks": cursos.CURSO_CUSTO_SPARKS if cobrado else 0,
+        "incluso_no_plano": incluso,
         "sparks_balance": saldo,
         "tenho_acesso": True,
         "vitalicio": True,
@@ -441,6 +585,11 @@ async def painel(admin: User = Depends(require_admin)):
         },
         "inscritos": [_com_contato(a, contatos) for a in acessos],
         "inscritos_count": len(acessos),
+        # Quantos entraram pelo pacote (4.000 Sparks) em vez de pagar os 200
+        # da edição. Os dois grupos precisam do link no WhatsApp — por isso
+        # estão na MESMA lista — mas só um deles é venda desta quinta, e a
+        # receita abaixo já os conta como zero.
+        "inscritos_inclusos": sum(1 for a in acessos if a.get("por_direito")),
         "receita_sparks": sum(int(a.get("custo_sparks") or 0) for a in acessos),
         "historico": sorted(
             ({"edicao": e, "inscritos": n} for e, n in por_edicao.items()),
@@ -496,6 +645,34 @@ def _com_contato(registro: dict, contatos: dict[str, dict]) -> dict:
         "whatsapp": wa.formatar_br(e164) or conta.get("whatsapp"),
         "whatsapp_e164": e164,
         "whatsapp_link": wa.link_conversa(e164),
+    }
+
+
+@router_admin.get("/live")
+async def estado_da_live(admin: User = Depends(require_admin)):
+    """O estado da edição desta quinta, sem a lista de inscritos junto.
+
+    É o que o cartão de publicar o link usa — ele mora na PRIMEIRA tela do
+    admin (`/admin`), porque publicar o Meet da quinta é a única tarefa
+    semanal e recorrente do painel inteiro, e uma tarefa recorrente atrás de
+    dois cliques é uma tarefa que um dia não é feita.
+
+    `GET /admin/cursos` continua existindo e continua sendo a tela completa:
+    quem pagou, o WhatsApp de cada um, o histórico e os cursos. Este aqui
+    responde só "qual é a edição, tem link, e tem gente esperando por ele" —
+    e por isso não carrega três coleções para desenhar um campo de texto.
+    """
+    live = cursos.proxima_live()
+    config = await _config_da_edicao(live["edicao"])
+    inscritos = await _db.cursos_live_acessos.count_documents({"edicao": live["edicao"]})
+    return {
+        **live,
+        "tema": config.get("tema"),
+        "link": config.get("link"),
+        "link_publicado": bool(config.get("link")),
+        "publicado_em": config.get("atualizado_em"),
+        "publicado_por": config.get("atualizado_por"),
+        "inscritos_count": inscritos,
     }
 
 

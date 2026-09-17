@@ -1,9 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import Nav from "../components/Nav";
+import Tela from "../components/Tela";
+import { Bloco } from "../components/Esqueleto";
 import { api, errMsg } from "../lib/api";
+import { formatBRL } from "../lib/utils";
+import { economiaDoPacote } from "../lib/venda";
+import { quintasAteAProva } from "../lib/enem";
 import { toast } from "sonner";
-import { Zap, Check, Loader2, History, ShoppingBag, Network, RefreshCw, XCircle, AlertTriangle, Infinity as InfinityIcon, Copy, QrCode, ExternalLink } from "lucide-react";
+import { Zap, Check, Loader2, History, ShoppingBag, Network, RefreshCw, XCircle, AlertTriangle, Infinity as InfinityIcon, Copy, QrCode, ExternalLink, Gift } from "lucide-react";
 
 const MP_SDK_URL = "https://sdk.mercadopago.com/js/v2";
 
@@ -24,10 +28,6 @@ function loadMercadoPagoSdk() {
     document.head.appendChild(script);
   });
   return _mpSdkPromise;
-}
-
-function formatBRL(cents) {
-  return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
 // A tela de pagamento PADRÃO da loja: Pix.
@@ -68,7 +68,7 @@ function PainelPix({ pkg, estado, pix, erro, onFechar, onCartao, onTentarDeNovo 
     <div className="card-sapiens rounded-2xl p-6" data-testid="sparks-painel-pix">
       <div className="flex items-center justify-between gap-4 mb-4">
         <div>
-          <div className="font-mono-alt text-[10px] uppercase tracking-[0.3em] text-zinc-400">Pagamento por Pix · Mercado Pago</div>
+          <div className="secao-olho">Pagamento por Pix · Mercado Pago</div>
           <div className="font-display font-bold text-lg text-zinc-950">{pkg.label} · {formatBRL(pkg.price_cents)}</div>
         </div>
         <button onClick={onFechar} className="text-xs text-zinc-400 hover:text-zinc-700">Fechar</button>
@@ -267,7 +267,7 @@ function PaymentBrick({ publicKey, pkg, onSuccess, onCancel }) {
     <div className="card-sapiens rounded-2xl p-6" data-testid="sparks-payment-brick">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <div className="font-mono-alt text-[10px] uppercase tracking-[0.3em] text-zinc-400">Cartão · Mercado Pago</div>
+          <div className="secao-olho">Cartão · Mercado Pago</div>
           <div className="font-display font-bold text-lg text-zinc-950">{pkg.label} · {formatBRL(pkg.price_cents)}</div>
         </div>
         <button onClick={onCancel} className="text-xs text-zinc-400 hover:text-zinc-700">Cancelar</button>
@@ -379,7 +379,7 @@ function AutoRechargeBrick({ publicKey, pkg, frequencyDays, baseline, onSuccess,
     <div className="card-sapiens rounded-2xl p-6" data-testid="sparks-auto-recharge-brick">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <div className="font-mono-alt text-[10px] uppercase tracking-[0.3em] text-zinc-400">Cartão para a recarga automática</div>
+          <div className="secao-olho">Cartão para a recarga automática</div>
           <div className="font-display font-bold text-lg text-zinc-950">
             {pkg.label} · a cada {frequencyDays} dias
           </div>
@@ -421,10 +421,11 @@ export default function SparksStore() {
   // as duas informações aparecem juntas na tela e buscá-las em duas chamadas
   // faria a loja piscar entre "compre" e "você já tem".
   const [mentisIlimitada, setMentisIlimitada] = useState(false);
-  // `null` quer dizer "sem data para escrever", e vale tanto para quem não
-  // tem o direito quanto para quem o tem PARA SEMPRE (comprou antes de
-  // 2026-09-16). A faixa abaixo trata os dois do mesmo jeito.
-  const [mentisIlimitadaAte, setMentisIlimitadaAte] = useState(null);
+  // O preço AVULSO do que os direitos incluem, vindo do catálogo do servidor
+  // (`sparks_store` + `cursos`). É com ele que a loja escreve o que o pacote
+  // substitui — 200 e 500 nunca são escritos aqui.
+  const [precosAvulsos, setPrecosAvulsos] = useState(null);
+  const [direitos, setDireitos] = useState({});
   const [packages, setPackages] = useState([]);
   const [publicKey, setPublicKey] = useState(null);
   const [mpDisponivel, setMpDisponivel] = useState(true);
@@ -462,8 +463,9 @@ export default function SparksStore() {
     ]).then(([saldo, catalogo, pk, purch, rds, cost, recarga]) => {
       setSparks(saldo?.sparks_balance ?? null);
       setMentisIlimitada(Boolean(saldo?.mentis_ilimitada));
-      setMentisIlimitadaAte(saldo?.mentis_ilimitada_ate || null);
       setPackages(catalogo.packages || []);
+      setPrecosAvulsos(catalogo.precos_avulsos || null);
+      setDireitos(saldo?.direitos || {});
       setFrequencies(catalogo.auto_recharge_frequencies_days || []);
       setDefaultBaseline(catalogo.default_baseline ?? 50);
       setActivateBaseline(catalogo.default_baseline ?? 50);
@@ -480,7 +482,25 @@ export default function SparksStore() {
   // O pacote que concede o direito, escolhido pelo CATÁLOGO e não por um
   // `package_id` escrito na tela: o dia em que o produto mudar o pacote que
   // dá Mentis ilimitada, esta tela acompanha sozinha.
-  const pacoteIlimitado = packages.find((p) => (p.beneficios || []).length > 0 && !p.oculto);
+  //
+  // Procura pelo DIREITO e não por "tem benefício": o catálogo já teve dois
+  // cards com benefício (o de 1.500 incluiu as aulas ao vivo até 2026-09-16)
+  // e vai ter de novo — "o primeiro que tiver benefício" acertaria hoje por
+  // acidente e erraria na próxima mudança de catálogo.
+  const pacoteIlimitado = packages.find(
+    (p) => !p.oculto && (p.direitos || []).includes("mentis_ilimitada"),
+  );
+
+  // O que o aluno gastaria comprando avulso o que este pacote já inclui. É
+  // multiplicação conferível (ver `lib/venda.js`), não "economize até X": as
+  // quintas que ainda cabem antes da prova vezes o preço da edição, mais os
+  // cursos vezes o preço do curso. Some sozinha para quem já tem os direitos.
+  const contaDoPacote = economiaDoPacote({
+    pacote: pacoteIlimitado,
+    quintasRestantes: quintasAteAProva(),
+    precos: precosAvulsos,
+    direitos,
+  });
 
   const baseline = autoRecharge?.baseline ?? defaultBaseline;
   // `Number(x) || padrao` devolvia o padrão quando o aluno digitava 0, porque
@@ -661,24 +681,36 @@ export default function SparksStore() {
   ].sort((a, b) => (b.quando || "").localeCompare(a.quando || "")).slice(0, 30);
 
   if (loading) {
-    return <div><Nav /><div className="max-w-4xl mx-auto px-6 md:px-10 py-12 text-white/60">Carregando loja de Sparks...</div></div>;
+    return (
+      <Tela olho="Sparks" titulo="Quanto custa usar a inteligência do Sapiens." testid="sparks">
+        <div className="space-y-3">
+          <Bloco className="rounded-3xl" altura={112} />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Bloco className="rounded-3xl" altura={190} />
+            <Bloco className="rounded-3xl" altura={190} />
+          </div>
+        </div>
+      </Tela>
+    );
   }
 
   return (
-    <div className="min-h-screen">
-      <Nav />
-      <div className="max-w-4xl mx-auto px-6 md:px-10 py-12">
-        <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-white/50 mb-3">Sparks</div>
-        <h1 className="font-display text-4xl md:text-5xl font-extrabold tracking-tighter text-white" data-testid="sparks-title">
-          Quanto custa usar a inteligência do Sapiens.
-        </h1>
-        <p className="mt-3 text-white/60 max-w-lg">Sparks alimentam os recursos que usam IA. Ganhe praticando, ou compre quando precisar de mais.</p>
-
-        <div className="mt-8 card-sapiens rounded-2xl p-6 flex items-center justify-between gap-4">
+    <Tela
+      olho="Sparks"
+      titulo="Quanto custa usar a inteligência do Sapiens."
+      subtitulo="Sparks alimentam os recursos que usam IA. Ganhe praticando, ou compre quando precisar de mais."
+      voltar="/dashboard"
+      testid="sparks"
+    >
+      <>
+        {/* O SALDO. Primeira coisa da loja, e a única peça dela com o aro
+            aceso: é o número que decide se o resto da página interessa. */}
+        <div className="superficie superficie-viva flex items-center justify-between gap-4 p-6">
           <div>
-            <div className="font-mono-alt text-[10px] uppercase tracking-[0.3em] text-zinc-400">Seu saldo</div>
-            <div className="mt-2 font-display text-3xl font-bold tracking-tight flex items-center gap-2 text-zinc-950" data-testid="sparks-store-balance">
-              <Zap className="w-6 h-6 text-amber-500" fill="currentColor" /> {sparks ?? "—"}
+            <div className="secao-olho">Seu saldo</div>
+            <div className="mt-2 flex items-center gap-2" data-testid="sparks-store-balance">
+              <Zap className="h-7 w-7 text-amber-400" fill="currentColor" />
+              <span className="medida-n text-4xl">{sparks ?? "—"}</span>
             </div>
             {aguardandoPagamento && (
               <div className="mt-2 inline-flex items-center gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-3 py-1.5" data-testid="sparks-aguardando">
@@ -688,18 +720,41 @@ export default function SparksStore() {
             )}
           </div>
           {mapCost != null && (
-            <div className="text-right text-xs text-zinc-500" data-testid="sparks-cost-example">
-              <div className="flex items-center gap-1.5 justify-end"><Network className="w-3.5 h-3.5" /> Gerar/atualizar mapa cognitivo</div>
-              <div className="font-mono-alt font-bold text-zinc-800">{mapCost} Sparks</div>
+            <div className="text-right text-xs text-white/50" data-testid="sparks-cost-example">
+              <div className="flex items-center justify-end gap-1.5"><Network className="h-3.5 w-3.5" /> Gerar/atualizar mapa cognitivo</div>
+              <div className="font-mono-alt font-bold text-white/80">{mapCost} Sparks</div>
             </div>
           )}
         </div>
 
         {saldoBaixo && (
-          <div className="mt-3 flex items-center gap-2 text-sm text-amber-400" data-testid="sparks-low-balance-warning">
+          <div className="mt-3 flex items-center gap-2 text-sm text-amber-300" data-testid="sparks-low-balance-warning">
             <AlertTriangle className="w-4 h-4" /> Seu saldo está abaixo do aviso configurado ({baseline} Sparks).
           </div>
         )}
+
+        {/* O jeito de conseguir Sparks que não passa por pagar — e por isso
+            ele fica ANTES da grade de pacotes, não depois. A condição ("na
+            primeira compra dele") vem na mesma frase da promessa: sem ela, a
+            linha vira propaganda, e quem indicar dez amigos que não compram
+            descobre a regra do jeito errado. */}
+        <Link
+          to="/indicar"
+          className="superficie lift mt-3 flex items-center gap-4 p-5"
+          data-testid="sparks-indicar"
+        >
+          <Gift className="h-6 w-6 shrink-0 text-sapiens-accent" />
+          <div className="min-w-0 flex-1">
+            <div className="font-display text-base font-bold tracking-tight text-white">
+              Indique um amigo e ganhe Sparks
+            </div>
+            <div className="text-sm text-white/55">
+              Ele cria a conta com o seu código; na primeira compra dele, metade dos Sparks
+              daquele pacote cai no seu saldo.
+            </div>
+          </div>
+          <span className="shrink-0 text-xs font-semibold text-white/45">Ver meu código</span>
+        </Link>
 
         {/* O ARGUMENTO PRINCIPAL DA LOJA, antes da grade de pacotes: o de
             R$119,90 não é "mais Sparks", é a Mentis parar de cobrar para
@@ -714,19 +769,16 @@ export default function SparksStore() {
             <InfinityIcon className="h-7 w-7 shrink-0 text-violet-300" />
             <div className="min-w-0 flex-1">
               <div className="font-display text-lg font-bold tracking-tight text-violet-100">
-                Mentis ilimitada e Comunidade VIP: são seus.
+                Mentis ilimitada, cursos, lives e Comunidade VIP: são seus.
               </div>
               <div className="text-sm text-violet-200/70">
-                Chat, explicação de questão e intervenção da causa raiz não gastam Spark
-                {/* Quem comprou antes de 2026-09-16 pagou por "para sempre" e
-                    continua com isso — para essas pessoas não há data, e
-                    dizer-lhes que vence seria tirar o que elas compraram.
-                    Para quem comprou depois, escrever "para sempre" seria a
-                    mentira simétrica. A data manda nas duas. */}
-                {mentisIlimitadaAte
-                  ? ` até ${new Date(mentisIlimitadaAte).toLocaleDateString("pt-BR")}`
-                  : " — para sempre"}
-                . Seu saldo serve para o resto do produto.{" "}
+                Chat, explicação de questão e intervenção da causa raiz não gastam Spark —
+                para sempre. Os quatro cursos e as aulas ao vivo de quinta também já estão
+                inclusos. Seu saldo serve para o resto do produto.{" "}
+                <Link to="/cursos" className="font-semibold text-violet-100 underline">
+                  Ver os cursos
+                </Link>{" "}
+                ·{" "}
                 <Link to="/comunidade?sala=vip" className="font-semibold text-violet-100 underline">
                   Abrir a sala VIP
                 </Link>
@@ -746,20 +798,43 @@ export default function SparksStore() {
                 {formatBRL(pacoteIlimitado.price_cents)} · {pacoteIlimitado.sparks_amount} Sparks
               </div>
               <div className="mt-0.5 font-display text-xl font-extrabold tracking-tight text-white md:text-2xl">
-                A Mentis para de cobrar. E a sala VIP abre.
+                A Mentis para de cobrar. E os cursos já vêm inclusos.
               </div>
               <div className="mt-1 text-sm leading-relaxed text-white/60">
                 Uma compra e o chat, as explicações de questão e as intervenções da causa raiz
-                deixam de gastar Spark por um mês, sem limite de
-                mensagens. Junto vem a <strong className="font-semibold text-white/85">Comunidade
-                VIP</strong>, a sala fechada do mural, e os {pacoteIlimitado.sparks_amount} Sparks,
-                que não expiram.
+                deixam de gastar Spark por um mês, sem limite de mensagens. Junto vêm{" "}
+                <strong className="font-semibold text-white/85">todos os cursos</strong> e{" "}
+                <strong className="font-semibold text-white/85">todas as aulas ao vivo de
+                quinta</strong> com o 1º colocado de Medicina da USP, a{" "}
+                <strong className="font-semibold text-white/85">Comunidade VIP</strong> (a sala
+                fechada do mural) e os {pacoteIlimitado.sparks_amount} Sparks, que não expiram.
               </div>
             </div>
             <span className="pill btn-sapiens inline-flex shrink-0 items-center gap-2 rounded-full px-6 py-3.5 text-sm font-semibold">
               Quero a Mentis ilimitada
             </span>
           </button>
+        ) : null}
+
+        {/* A CONTA, separada do argumento: é a única frase da loja que pede
+            para ser conferida, e ela não depende de adjetivo nenhum para
+            funcionar. Só aparece para quem ainda não tem os direitos. */}
+        {contaDoPacote && !mentisIlimitada ? (
+          <div
+            className="mt-3 rounded-2xl border border-white/10 bg-white/[0.035] p-4 text-sm text-white/60"
+            data-testid="sparks-conta-do-pacote"
+          >
+            <span className="secao-olho">
+              A conta
+            </span>
+            <div className="mt-1.5 leading-relaxed">
+              Comprando avulso: {contaDoPacote.partes.join(" + ")} ={" "}
+              <strong className="font-semibold text-white/90">{contaDoPacote.total} Sparks</strong>.
+              O pacote de {pacoteIlimitado ? formatBRL(pacoteIlimitado.price_cents) : "cima"} inclui
+              tudo isso <em className="not-italic text-white/80">e</em> credita{" "}
+              {contaDoPacote.sparksDoPacote} Sparks no seu saldo.
+            </div>
+          </div>
         ) : null}
 
         <div className="mt-10 flex flex-wrap items-center gap-3">
@@ -815,12 +890,6 @@ export default function SparksStore() {
                   data-testid={`sparks-package-${p.package_id}`}
                 >
                   <div className={`flex items-center gap-2 font-display font-extrabold text-zinc-950 ${NIVEL.amount}`}>
-                    {/* `shrink-0` não é enfeite: num flex, o SVG encolhe ANTES do texto,
-                        e o card de 1.500 Sparks é o que junta o número maior
-                        (`text-5xl`) com a coluna mais estreita da grade — ali o
-                        relâmpago era espremido a 0px de largura e sumia da tela,
-                        só nesse card. Medido com o CSS compilado, a 1440px:
-                        0.0px sem a classe, 30.8px com ela. */}
                     <Zap className={`shrink-0 ${nivel >= 2 ? "w-7 h-7" : "w-5 h-5"} text-amber-500`} fill="currentColor" /> {p.sparks_amount}
                   </div>
                   <div className="mt-1 text-sm text-zinc-500">{p.label}</div>
@@ -1021,7 +1090,7 @@ export default function SparksStore() {
             </div>
           ) : null;
         })()}
-      </div>
-    </div>
+      </>
+    </Tela>
   );
 }

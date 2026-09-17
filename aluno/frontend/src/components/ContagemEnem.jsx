@@ -21,8 +21,16 @@ import { proximaProva, tempoRestante, quintasAteAProva } from "../lib/enem";
  * Some sozinha quando os dois domingos passam (ver `lib/enem.js`).
  *
  * `variante`:
- *   - "faixa"   — a barra larga do topo do Painel e das telas de venda;
+ *   - "faixa"   — a barra larga das telas de venda (cursos, mentoria, landing);
+ *   - "medida"  — um azulejo da tira de progresso do Painel;
  *   - "linha"   — uma linha discreta, para o rodapé de outra seção.
+ *
+ * A "medida" entrou em 2026-09-16, quando a faixa saiu do TOPO do Painel. A
+ * faixa é uma peça de venda — três CTAs e dois parágrafos — e ela abria a
+ * tela do aluno antes de qualquer coisa que ele pudesse FAZER. O relógio
+ * continua sendo a primeira dobra; o que mudou é que ali ele é um dado ao
+ * lado da ofensiva e do nível, e o argumento completo vive onde a compra
+ * acontece. O número é o mesmo nos dois lugares: o mesmo `tempoRestante`.
  */
 
 function Bloco({ valor, rotulo, grande }) {
@@ -67,6 +75,40 @@ export default function ContagemEnem({ variante = "faixa", comCta = true, testid
   const quintas = quintasAteAProva();
   const dia = prova.fase === 1 ? "primeiro" : "segundo";
   const dataFmt = prova.inicio.toLocaleDateString("pt-BR", { day: "2-digit", month: "long" });
+
+  if (variante === "medida") {
+    return (
+      <Link
+        to="/aula-ao-vivo"
+        className="superficie lift flex flex-col justify-between p-4"
+        data-testid={`${testid}-medida`}
+        title={`${dia} dia do ENEM · ${dataFmt}`}
+      >
+        <div className="secao-olho flex items-center gap-1.5 text-amber-300/85">
+          <CalendarDays className="h-3 w-3" /> ENEM
+        </div>
+        <div>
+          <div className="mt-2 flex items-baseline gap-1.5">
+            <span className="medida-n text-3xl text-amber-100">{tempo.dias}</span>
+            <span className="text-sm text-white/45">{tempo.dias === 1 ? "dia" : "dias"}</span>
+          </div>
+          {/* O relógio vivo em letra pequena: é ele que faz a contagem parecer
+              um relógio e não um número que alguém digitou. */}
+          <div className="font-mono-alt text-[11px] tabular-nums text-white/35">
+            {String(tempo.horas).padStart(2, "0")}:{String(tempo.minutos).padStart(2, "0")}
+            :{String(tempo.segundos).padStart(2, "0")}
+          </div>
+        </div>
+        <div className="medida-rotulo text-amber-200/70">
+          {quintas === 0
+            ? "sem aula antes da prova"
+            : quintas === 1
+            ? "1 aula ao vivo até lá"
+            : `${quintas} aulas ao vivo até lá`}
+        </div>
+      </Link>
+    );
+  }
 
   if (variante === "linha") {
     return (
@@ -136,14 +178,14 @@ export default function ContagemEnem({ variante = "faixa", comCta = true, testid
       {comCta && quintas > 0 && (
         <div className="mt-5 flex flex-wrap items-center gap-2.5 border-t border-white/10 pt-4">
           <Link
-            to="/cursos"
+            to="/aula-ao-vivo"
             className="pill btn-calor inline-flex items-center gap-2 rounded-full px-5 py-3 text-xs"
             data-testid={`${testid}-cta-live`}
           >
             <Radio className="h-3.5 w-3.5" /> Garantir a aula desta quinta
           </Link>
           <Link
-            to="/cursos#cursos"
+            to="/cursos"
             className="pill btn-vidro inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 text-xs"
             data-testid={`${testid}-cta-cursos`}
           >

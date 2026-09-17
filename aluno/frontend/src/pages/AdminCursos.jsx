@@ -2,11 +2,12 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import {
-  Radio, Video, Save, AlertTriangle, MessageCircleMore, Copy, Check, Users,
-  Zap, Bell, ArrowRight,
+  AlertTriangle, MessageCircleMore, Copy, Check, Users,
+  Zap, Bell, ArrowRight, BookOpen, RefreshCw,
 } from "lucide-react";
 import { api, errMsg } from "../lib/api";
 import Nav from "../components/Nav";
+import PublicarLinkDaLive from "../components/PublicarLinkDaLive";
 
 /**
  * Admin · Aula ao vivo e cursos.
@@ -22,15 +23,6 @@ import Nav from "../components/Nav";
  * fila de quem só quer ser avisado vem ao lado, como evidência de qual dos
  * quatro construir primeiro.
  */
-
-function formatarData(iso) {
-  if (!iso) return "—";
-  try {
-    return new Date(iso).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
-  } catch {
-    return iso;
-  }
-}
 
 function LinhaDeContato({ pessoa, testid }) {
   return (
@@ -61,44 +53,171 @@ function LinhaDeContato({ pessoa, testid }) {
   );
 }
 
+/**
+ * O PAINEL DE QUEM PRODUZ O CONTEÚDO.
+ *
+ * Responde três perguntas que a equipe de conteúdo faz toda semana, e que
+ * nenhum outro lugar do produto responde:
+ *
+ * 1. **O que já está publicado?** Estações, exercícios, vídeos.
+ * 2. **A progressão existe de verdade?** A distribuição por nível é o número
+ *    que denuncia um curso inteiro escrito no nível 2 — que passa em todas as
+ *    outras validações e não ensina ninguém a subir.
+ * 3. **O que quebrou?** Curso com qualquer problema de validação sai do ar
+ *    inteiro, e é aqui que aparece o motivo exato, arquivo por arquivo.
+ *
+ * "Recarregar do disco" existe para o ciclo de produção: publicar uma estação,
+ * conferir, corrigir. Sem ele, cada vírgula num JSON custaria um deploy para
+ * ser conferida.
+ */
+function PainelDeConteudo() {
+  const [inventario, setInventario] = useState(null);
+  const [recarregando, setRecarregando] = useState(false);
+
+  const carregar = useCallback(() => {
+    api
+      .get("/admin/cursos/conteudo")
+      .then(({ data }) => setInventario(data))
+      .catch((e) => toast.error(errMsg(e, "Não foi possível ler o inventário de conteúdo.")));
+  }, []);
+
+  useEffect(() => { carregar(); }, [carregar]);
+
+  const recarregar = async () => {
+    setRecarregando(true);
+    try {
+      const { data } = await api.post("/admin/cursos/conteudo/recarregar");
+      setInventario(data);
+      toast.success(
+        data.problemas_totais
+          ? `Recarregado com ${data.problemas_totais} problema(s).`
+          : "Conteúdo recarregado do disco.",
+      );
+    } catch (e) {
+      toast.error(errMsg(e, "Não foi possível recarregar."));
+    } finally {
+      setRecarregando(false);
+    }
+  };
+
+  if (!inventario) return null;
+
+  return (
+    <section className="mt-10" data-testid="admin-cursos-conteudo">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="flex items-center gap-2 font-display text-xl font-bold tracking-tight text-white">
+            <BookOpen className="h-4 w-4 text-[#7FD8FF]" /> Conteúdo publicado
+          </h2>
+          <p className="mt-1 font-mono-alt text-[10px] uppercase tracking-[0.2em] text-white/30">
+            schema {inventario.schema_version} · {inventario.raiz}
+          </p>
+        </div>
+        <button
+          onClick={recarregar}
+          disabled={recarregando}
+          className="pill inline-flex items-center gap-1.5 rounded-full border border-white/15 px-4 py-2.5 text-xs font-medium text-white/70 hover:text-white disabled:opacity-50"
+          data-testid="admin-cursos-recarregar"
+        >
+          <RefreshCw className={`h-3.5 w-3.5 ${recarregando ? "animate-spin" : ""}`} />
+          Recarregar do disco
+        </button>
+      </div>
+
+      <div className="space-y-2">
+        {inventario.cursos.map((c) => (
+          <div key={c.curso_id} className="card-sapiens rounded-2xl p-4" data-testid={`conteudo-${c.curso_id}`}>
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="min-w-0 flex-1">
+                <div className="truncate font-display font-semibold text-zinc-900">{c.curso_id}</div>
+                <div className="font-mono-alt text-[10px] uppercase tracking-[0.2em] text-zinc-400">
+                  {c.publicado ? `versão ${c.versao} · ${c.trilhas?.length || 0} trilha(s)` : "sem conteúdo"}
+                </div>
+              </div>
+              {c.publicado ? (
+                <>
+                  <Medida n={c.estacoes} rotulo="estações" />
+                  <Medida n={c.exercicios} rotulo="exercícios" />
+                  <Medida n={c.desafios} rotulo="desafios" />
+                  {c.videos_pendentes > 0 && (
+                    <Medida n={c.videos_pendentes} rotulo="vídeos a gravar" alerta />
+                  )}
+                </>
+              ) : (
+                <span className="font-mono-alt text-[10px] uppercase tracking-[0.2em] text-amber-600">
+                  {c.problemas?.length ? "fora do ar" : "em produção"}
+                </span>
+              )}
+            </div>
+
+            {/* A progressão, em barras. Um curso todo num nível só salta aos
+                olhos aqui e em nenhum outro lugar. */}
+            {c.publicado && c.exercicios > 0 && (
+              <div className="mt-3 flex items-end gap-1.5" title="Exercícios por nível">
+                {Object.entries(c.exercicios_por_nivel).map(([nivel, quantos]) => (
+                  <div key={nivel} className="flex-1 text-center">
+                    <div
+                      className="mx-auto w-full rounded-t bg-gradient-to-t from-sky-400 to-violet-400"
+                      style={{ height: `${Math.max(3, (quantos / c.exercicios) * 46)}px` }}
+                    />
+                    <div className="mt-1 font-mono-alt text-[9px] text-zinc-400">
+                      N{nivel} · {quantos}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {c.problemas?.length > 0 && (
+              <ul className="mt-3 space-y-1.5 border-t border-rose-200 pt-3" data-testid={`problemas-${c.curso_id}`}>
+                {c.problemas.map((p, i) => (
+                  <li key={i} className="flex gap-2 text-xs text-rose-700">
+                    <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                    <span>
+                      <code className="font-mono-alt text-rose-900">{p.arquivo}</code> — {p.mensagem}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function Medida({ n, rotulo, alerta = false }) {
+  return (
+    <div className="shrink-0 text-right">
+      <div
+        className={`font-display text-xl font-extrabold leading-none tracking-tighter ${
+          alerta ? "text-amber-600" : "text-zinc-950"
+        }`}
+      >
+        {n}
+      </div>
+      <div className="font-mono-alt text-[9px] uppercase tracking-[0.2em] text-zinc-400">{rotulo}</div>
+    </div>
+  );
+}
+
 export default function AdminCursos() {
   const [dados, setDados] = useState(null);
-  const [link, setLink] = useState("");
-  const [tema, setTema] = useState("");
-  const [salvando, setSalvando] = useState(false);
   const [copiado, setCopiado] = useState(false);
   const [aberto, setAberto] = useState(null);
 
   const carregar = useCallback(() => {
     api
       .get("/admin/cursos")
-      .then(({ data }) => {
-        setDados(data);
-        setLink(data.live?.link || "");
-        setTema(data.live?.tema || "");
-      })
+      .then(({ data }) => setDados(data))
       .catch((e) => toast.error(errMsg(e, "Não foi possível carregar o painel de cursos.")));
   }, []);
 
   useEffect(() => { carregar(); }, [carregar]);
 
-  const publicar = async (e) => {
-    e.preventDefault();
-    setSalvando(true);
-    try {
-      await api.put("/admin/cursos/live", { link: link.trim(), tema: tema.trim() });
-      toast.success("Edição publicada. Quem pagou já vê o link.");
-      carregar();
-    } catch (err) {
-      toast.error(errMsg(err, "Não foi possível publicar."));
-    } finally {
-      setSalvando(false);
-    }
-  };
-
   const live = dados?.live || {};
   const inscritos = dados?.inscritos || [];
-  const semLinkComGentePaga = !live.link_publicado && inscritos.length > 0;
 
   /** Todos os números da edição, um por linha — para colar numa lista de
    *  transmissão sem catar um a um. */
@@ -121,7 +240,7 @@ export default function AdminCursos() {
   return (
     <div className="min-h-screen">
       <Nav />
-      <div className="mx-auto max-w-5xl px-6 py-12 md:px-10">
+      <div className="mx-auto max-w-5xl px-5 py-7 md:px-10 md:py-10">
         <div className="mb-3 font-mono-alt text-xs uppercase tracking-[0.35em] text-white/50">
           Admin · Cursos e live
         </div>
@@ -134,6 +253,14 @@ export default function AdminCursos() {
         <p className="mt-3 max-w-2xl text-white/60">
           Publique o link do Meet e o tema da edição, e fale com quem já pagou. O link só
           chega ao navegador de quem comprou o acesso.
+        </p>
+        {/* A regra de cobrança escrita onde ela é executada: quem publica o
+            link é quem responde ao aluno que perguntar por que pagou de novo. */}
+        <p className="mt-2 max-w-2xl text-sm text-white/40">
+          A aula custa 200 Sparks <strong className="font-semibold text-white/60">por
+          edição</strong> — toda quinta de novo. A única exceção é quem comprou o pacote de
+          4.000 Sparks: esses entram em todas sem pagar, e aparecem na lista abaixo com 0
+          Sparks.
         </p>
 
         {/* Estado da edição */}
@@ -168,91 +295,13 @@ export default function AdminCursos() {
           </div>
         </div>
 
-        {semLinkComGentePaga && (
-          <div
-            className="mt-4 flex items-start gap-2 rounded-2xl border border-rose-400/30 bg-rose-500/10 p-4 text-sm text-rose-100"
-            data-testid="admin-cursos-alerta"
-          >
-            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-            <span>
-              <strong>{inscritos.length} aluno(s) já pagaram</strong> a edição de {live.edicao} e
-              ainda não existe link publicado. Eles compraram a vaga — o link precisa sair antes
-              de {formatarData(live.inicio)}.
-            </span>
-          </div>
-        )}
-
-        {/* Publicação */}
-        <form onSubmit={publicar} className="card-sapiens mt-6 rounded-2xl p-6" data-testid="admin-cursos-form">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-sapiens-accent to-sapiens-navy text-white">
-              <Radio className="h-5 w-5" strokeWidth={1.7} />
-            </div>
-            <div>
-              <div className="font-display text-lg font-bold tracking-tight text-zinc-950">
-                Publicar a edição de {live.edicao || "—"}
-              </div>
-              <div className="text-sm text-zinc-500">
-                {live.inicio ? formatarData(live.inicio) : "—"} · {live.apresentador}
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-5 space-y-3">
-            <div>
-              <label className="mb-1.5 block text-xs font-medium text-zinc-500" htmlFor="admin-cursos-link">
-                Link do Google Meet
-              </label>
-              <input
-                id="admin-cursos-link"
-                value={link}
-                onChange={(e) => setLink(e.target.value)}
-                placeholder="https://meet.google.com/abc-defg-hij"
-                className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-sm outline-none focus:border-sapiens-accent"
-                data-testid="admin-cursos-link"
-              />
-            </div>
-            <div>
-              <label className="mb-1.5 block text-xs font-medium text-zinc-500" htmlFor="admin-cursos-tema">
-                Tema desta quinta
-              </label>
-              <input
-                id="admin-cursos-tema"
-                value={tema}
-                onChange={(e) => setTema(e.target.value)}
-                placeholder="Ex.: Funções — as 6 questões que mais caem"
-                className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-sm outline-none focus:border-sapiens-accent"
-                data-testid="admin-cursos-tema"
-              />
-            </div>
-          </div>
-
-          <div className="mt-4 flex flex-wrap items-center gap-3">
-            <button
-              type="submit"
-              disabled={salvando}
-              className="btn-sapiens inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold disabled:opacity-50"
-              data-testid="admin-cursos-salvar"
-            >
-              <Save className="h-4 w-4" /> {salvando ? "Publicando…" : "Publicar"}
-            </button>
-            {live.link && (
-              <a
-                href={live.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="pill inline-flex items-center gap-2 rounded-xl border border-zinc-200 px-4 py-3 text-sm text-zinc-700 hover:bg-white/10"
-              >
-                <Video className="h-4 w-4" /> Abrir a sala
-              </a>
-            )}
-            {live.publicado_em && (
-              <span className="text-xs text-zinc-500">
-                Última publicação: {formatarData(live.publicado_em)} por {live.publicado_por}
-              </span>
-            )}
-          </div>
-        </form>
+        {/* O campo do link, o mesmo componente que abre a primeira tela do
+            admin. Duas cópias do mesmo formulário divergiriam na validação, e
+            o aviso de "tem gente paga sem link" só vale se for o mesmo nos
+            dois lugares. Publicar aqui recarrega o painel abaixo. */}
+        <div className="mt-6">
+          <PublicarLinkDaLive testid="admin-cursos-form" />
+        </div>
 
         {/* Inscritos da edição */}
         <section className="mt-8" data-testid="admin-cursos-inscritos">
@@ -301,6 +350,8 @@ export default function AdminCursos() {
             </div>
           )}
         </section>
+
+        <PainelDeConteudo />
 
         {/* Pré-venda dos cursos: quem já pagou, e quem só quer ser avisado */}
         <section className="mt-10" data-testid="admin-cursos-interesse">

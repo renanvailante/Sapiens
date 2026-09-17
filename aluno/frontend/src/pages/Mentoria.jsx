@@ -159,7 +159,7 @@ export default function Mentoria() {
             A PONTE PARA A LIVE — a mesma pessoa, toda quinta
             -------------------------------------------------------------- */}
         <Link
-          to="/cursos"
+          to="/aula-ao-vivo"
           className="lift mt-8 flex flex-wrap items-center gap-4 rounded-2xl border border-rose-400/25 bg-gradient-to-r from-rose-500/[0.12] via-amber-400/[0.07] to-transparent p-5 hover:border-rose-400/50"
           data-testid="mentoria-para-live"
         >
@@ -175,7 +175,7 @@ export default function Mentoria() {
               Não quer esperar? Ele dá aula ao vivo toda quinta.
             </div>
             <div className="text-xs text-white/45">
-              Mesma pessoa, 90 minutos, com perguntas abertas no fim — por 200 Sparks.
+              Mesma pessoa, 60 minutos, com perguntas abertas no fim — por 200 Sparks.
             </div>
           </div>
           <ArrowRight className="h-4 w-4 shrink-0 text-white/30" />

@@ -35,6 +35,29 @@ EM_BREVE = "em_breve"
 DISPONIVEL = "disponivel"
 
 
+# As ÁREAS do catálogo. Existem para o dia — que é o dia seguinte ao primeiro
+# curso dar certo — em que o catálogo tiver Física, Química e Biologia: uma
+# lista plana de dezoito cursos não é navegável, e a tela não pode descobrir a
+# área pelo título do curso. `ordem` é a ordem visual, e ela não é alfabética
+# de propósito: é a ordem de peso no ENEM (ver `prioridade_enem`).
+@dataclass(frozen=True)
+class Area:
+    area_id: str
+    titulo: str
+    chamada: str
+    ordem: int
+
+
+AREAS: tuple[Area, ...] = (
+    Area("matematica", "Matemática", "A conta que a prova assume que você já faz.", 1),
+    Area("redacao", "Redação", "As cinco competências, uma de cada vez.", 2),
+    Area("linguagens", "Linguagens", "Ler o que está escrito, não o que você supôs.", 3),
+    Area("metodo", "Método e prova", "Como o ENEM pensa — e como se estuda para ele.", 4),
+)
+
+AREAS_POR_ID: dict[str, Area] = {a.area_id: a for a in AREAS}
+
+
 @dataclass(frozen=True)
 class Curso:
     curso_id: str
@@ -44,6 +67,11 @@ class Curso:
     modulos: tuple[str, ...]
     carga: str            # duração prometida, em texto
     nivel: str
+    # Onde o curso mora no catálogo: `area` é o topo da hierarquia
+    # (Área → Categoria → Trilha → Curso → Estação) e `categoria` é o
+    # agrupamento dentro dela. A tela NUNCA deduz nenhum dos dois do título.
+    area: str = "metodo"
+    categoria: str = "Geral"
     status: str = EM_BREVE
 
 
@@ -67,6 +95,8 @@ CURSOS: tuple[Curso, ...] = (
         ),
         carga="24 aulas",
         nivel="Do zero",
+        area="matematica",
+        categoria="Fundamentos",
     ),
     Curso(
         curso_id="redacao-0-1000",
@@ -87,6 +117,8 @@ CURSOS: tuple[Curso, ...] = (
         ),
         carga="18 aulas + simulados",
         nivel="Todos os níveis",
+        area="redacao",
+        categoria="Redação nota mil",
     ),
     Curso(
         curso_id="hackeando-a-tri",
@@ -107,6 +139,8 @@ CURSOS: tuple[Curso, ...] = (
         ),
         carga="12 aulas",
         nivel="Intermediário",
+        area="metodo",
+        categoria="Como a prova funciona",
     ),
     Curso(
         curso_id="compreensao-interpretacao-texto",
@@ -126,6 +160,8 @@ CURSOS: tuple[Curso, ...] = (
         ),
         carga="16 aulas",
         nivel="Todos os níveis",
+        area="linguagens",
+        categoria="Leitura e interpretação",
     ),
 )
 
@@ -140,6 +176,23 @@ CURSO_CUSTO_SPARKS = 500
 
 def listar_cursos() -> list[dict]:
     return [{**asdict(c), "custo_sparks": CURSO_CUSTO_SPARKS} for c in CURSOS]
+
+
+def listar_areas() -> list[dict]:
+    """As áreas com os cursos de cada uma, já na ordem visual.
+
+    Montado aqui e não na tela: a hierarquia do catálogo é decisão de produto,
+    e um `groupBy` no React seria uma segunda fonte de verdade que diverge no
+    dia em que uma área nova entrar sem curso nenhum.
+    """
+    return [
+        {
+            **asdict(a),
+            "cursos": [c.curso_id for c in CURSOS if c.area == a.area_id],
+            "categorias": sorted({c.categoria for c in CURSOS if c.area == a.area_id}),
+        }
+        for a in sorted(AREAS, key=lambda a: a.ordem)
+    ]
 
 
 def get_curso(curso_id: str) -> Curso | None:
@@ -158,7 +211,7 @@ LIVE_CUSTO_SPARKS = 200
 LIVE_DIA_SEMANA = 3          # 0 = segunda ... 3 = quinta
 LIVE_HORA = 20               # 20h de Brasília
 LIVE_MINUTO = 0
-LIVE_DURACAO_MINUTOS = 90
+LIVE_DURACAO_MINUTOS = 60
 
 LIVE_TITULO = "Aula ao vivo de quinta"
 LIVE_APRESENTADOR = "1º colocado de Medicina da USP"

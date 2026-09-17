@@ -2,133 +2,65 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import {
-  Radio, Zap, Clock, Video, Copy, Check, CalendarPlus, Bell,
-  BellRing, Lock, ArrowRight, Sparkles, Trophy, Target, MessageCircleMore,
-  PlayCircle, ShieldCheck, Infinity as Infinito, Medal,
+  Bell, BellRing, Lock, ArrowRight, PlayCircle,
+  Infinity as Infinito, PackageCheck,
 } from "lucide-react";
 import { api, errMsg } from "../lib/api";
+import { formatBRL } from "../lib/utils";
+import { economiaDoPacote } from "../lib/venda";
 import Nav, { avisarSparksMudou } from "../components/Nav";
-import PedirWhatsApp from "../components/PedirWhatsApp";
 import MentorUSP from "../components/MentorUSP";
 import ContagemEnem from "../components/ContagemEnem";
+import ContinuarAprendendo from "../components/curso/ContinuarAprendendo";
+import { porArea } from "../lib/recomendacao";
 import { useDeclararContextoMentis } from "../lib/mentisContexto";
 import { marcarAcessoDaLive } from "../lib/live";
 import { quintasAteAProva } from "../lib/enem";
 
 /**
- * `/cursos` — a aba de Cursos e, principalmente, a AULA AO VIVO DE QUINTA.
+ * `/cursos` — o CATÁLOGO de cursos gravados.
  *
- * A página tem duas metades e uma hierarquia deliberada:
+ * Até 2026-09-16 esta página era duas: a aula ao vivo de quinta ocupava a
+ * metade de cima e os cursos vinham depois dela. A aula saiu inteira para
+ * `/aula-ao-vivo`, com endereço e entrada própria no lançador — ela acontece
+ * toda semana, tem hora marcada e é a coisa mais concreta do produto, e
+ * estava atrás de um nome que promete outra coisa. Aqui ficou só a ponte, no
+ * topo: quem veio procurando a aula acha o caminho sem rolar a página.
  *
- * **Em cima, a live.** É a única coisa aqui que existe hoje, acontece toda
- * semana e é paga (200 Sparks por edição). Quem dá a aula é o 1º colocado de
- * Medicina da USP — é esse o argumento, e ele aparece antes de qualquer outra
- * coisa da página, inclusive antes do preço.
+ * **Os quatro cursos** estão todos "em breve" e são vendidos assim mesmo, em
+ * pré-venda declarada: cobra-se uma vez e o acesso é vitalício. Quem prefere
+ * esperar tem o caminho de graça ao lado ("só me avise").
  *
- * **Embaixo, os quatro cursos**, todos "em breve". Nenhum deles cobra nada:
- * a única ação possível é entrar na lista de avisados, e o card diz isso com
- * todas as letras em vez de fingir um botão de compra desabilitado.
+ * Tudo vem de `GET /cursos` numa chamada só — catálogo, o que este aluno já
+ * comprou, o saldo dele e o bloco da live que a ponte usa.
  *
- * Tudo vem de `GET /cursos` numa chamada só — catálogo, horário da próxima
- * edição, se este aluno já pagou e o saldo dele. O link do Meet só chega ao
- * navegador de quem comprou (ver `cursos_routes._montar_live`).
+ * **O pacote de 4.000 Sparks inclui os quatro cursos** e chega como
+ * `incluso_no_plano` em cada item — a tela nunca decide isso por
+ * `package_id`. O catálogo da loja (`GET /sparks/packages`) vem junto só para
+ * escrever QUAL pacote dá o quê e por quanto: preço em reais é decisão de
+ * produto e mora no servidor, nunca aqui.
  */
 
-const DIAS = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
-
-/** "quinta, 17 de setembro, às 20h" — a frase que a pessoa lê e já sabe se
- *  consegue estar lá. Data crua ISO não responde isso. */
-function quandoPorExtenso(iso) {
-  if (!iso) return "";
-  const d = new Date(iso);
-  const dia = DIAS[d.getDay()];
-  const data = d.toLocaleDateString("pt-BR", { day: "numeric", month: "long" });
-  const hora = d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-  return `${dia}, ${data}, às ${hora}`;
-}
-
-/** Contagem regressiva viva. É o que transforma "toda quinta" em "faltam 2
- *  dias" — a diferença entre uma informação e um motivo para agir agora. */
-function useContagem(alvoIso) {
-  // `alvoIso` chega `undefined` no primeiro render (a página ainda não
-  // carregou): sem a guarda, `new Date(undefined)` vira `NaN` e a contagem
-  // pisca "NaN" antes do primeiro tick.
-  const [restante, setRestante] = useState(0);
-  useEffect(() => {
-    if (!alvoIso) return undefined;
-    const tick = () => setRestante(Math.max(0, new Date(alvoIso) - Date.now()));
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, [alvoIso]);
-
-  const s = Math.floor(restante / 1000);
-  return {
-    dias: Math.floor(s / 86400),
-    horas: Math.floor((s % 86400) / 3600),
-    minutos: Math.floor((s % 3600) / 60),
-    segundos: s % 60,
-    acabou: s <= 0,
-  };
-}
-
-function Bloco({ valor, rotulo }) {
-  return (
-    <div className="min-w-[3.25rem] rounded-2xl border border-white/10 bg-black/30 px-3 py-2 text-center">
-      <div className="font-display text-2xl font-extrabold tracking-tighter text-white tabular-nums">
-        {String(valor).padStart(2, "0")}
-      </div>
-      <div className="font-mono-alt text-[9px] uppercase tracking-[0.2em] text-white/35">{rotulo}</div>
-    </div>
-  );
-}
-
-/** Link do Google Agenda para a edição — sem backend e sem autorização: é
- *  só uma URL montada com a data que já temos. */
-function linkDaAgenda(live) {
-  if (!live?.inicio) return null;
-  const fmt = (iso) => new Date(iso).toISOString().replace(/[-:]|\.\d{3}/g, "");
-  const params = new URLSearchParams({
-    action: "TEMPLATE",
-    text: `Sapiens · Aula ao vivo com o ${live.apresentador}`,
-    dates: `${fmt(live.inicio)}/${fmt(live.fim)}`,
-    details: live.tema
-      ? `Tema desta edição: ${live.tema}. O link da sala fica na aba Cursos do Sapiens.`
-      : "O link da sala fica na aba Cursos do Sapiens.",
-  });
-  return `https://calendar.google.com/calendar/render?${params}`;
-}
-
-const O_QUE_ACONTECE = [
-  {
-    icone: Target,
-    titulo: "Questão por questão, ao vivo",
-    texto: "Ele resolve na sua frente as questões que mais derrubam gente — e diz o que pensou antes de escrever a primeira linha.",
-  },
-  {
-    icone: Trophy,
-    titulo: "A rotina de quem passou em 1º",
-    texto: "Quanto tempo, em que ordem, o que ele cortou e o que manteve. Sem fórmula mágica: o cronograma real de uma aprovação.",
-  },
-  {
-    icone: MessageCircleMore,
-    titulo: "Perguntas abertas no fim",
-    texto: "Os últimos minutos são seus. Traga a dúvida que está te travando há semanas.",
-  },
-  {
-    icone: Sparkles,
-    titulo: "Toda semana, tema novo",
-    texto: "Uma edição por quinta-feira. Quem entra uma vez volta na seguinte — e o assunto nunca repete.",
-  },
-];
 
 export default function Cursos() {
   const [dados, setDados] = useState(null);
   const [erro, setErro] = useState(null);
-  const [comprando, setComprando] = useState(false);
-  const [copiado, setCopiado] = useState(false);
   const [marcando, setMarcando] = useState(null);
   const [comprandoCurso, setComprandoCurso] = useState(null);
+  const [pacotes, setPacotes] = useState([]);
+  const [precos, setPrecos] = useState(null);
+
+  // O catálogo da loja, só para a frase "isto já vem no pacote X, por Y".
+  // Não depende do Firestore e não muda durante a sessão: uma vez, e se
+  // falhar a página inteira continua de pé sem a oferta.
+  useEffect(() => {
+    api.get("/sparks/packages")
+      .then(({ data }) => {
+        setPacotes(data.packages || []);
+        setPrecos(data.precos_avulsos || null);
+      })
+      .catch(() => setPacotes([]));
+  }, []);
 
   const carregar = useCallback(() => {
     api
@@ -147,42 +79,18 @@ export default function Cursos() {
   useEffect(() => { carregar(); }, [carregar]);
 
   const live = dados?.live;
-  const contagem = useContagem(live?.inicio);
-  const saldo = live?.sparks_balance;
-  const custo = live?.custo_sparks ?? 200;
-  const podePagar = saldo == null || saldo >= custo;
+
+  // Quem vende cada direito sai do CATÁLOGO, nunca de um `package_id` escrito
+  // aqui: se o produto mudar o pacote que inclui as lives, esta tela
+  // acompanha sozinha.
+  const pacoteDe = (direito) =>
+    pacotes.find((p) => !p.oculto && (p.direitos || []).includes(direito));
+  const pacoteDosCursos = pacoteDe("cursos_inclusos");
+  const cursosInclusos = Boolean(dados?.cursos?.[0]?.incluso_no_plano);
 
   useDeclararContextoMentis(
-    "Na aba Cursos, olhando a aula ao vivo de quinta-feira com o 1º colocado de Medicina da USP.",
+    "Na aba Cursos, olhando o catálogo de cursos gravados.",
   );
-
-  const comprar = async () => {
-    setComprando(true);
-    try {
-      const { data } = await api.post("/cursos/live/acesso", {});
-      avisarSparksMudou();
-      toast.success(
-        data.cobrado
-          ? "Vaga garantida! Te esperamos na quinta."
-          : "Você já tem acesso a esta edição.",
-      );
-      carregar();
-    } catch (e) {
-      toast.error(errMsg(e, "Não foi possível garantir sua vaga."));
-    } finally {
-      setComprando(false);
-    }
-  };
-
-  const copiarLink = async () => {
-    try {
-      await navigator.clipboard.writeText(live.link);
-      setCopiado(true);
-      setTimeout(() => setCopiado(false), 2000);
-    } catch {
-      toast.error("Não consegui copiar. Toque no link e copie à mão.");
-    }
-  };
 
   /** Pré-venda: cobra uma vez, o acesso é vitalício, e o aluno confirma
    *  sabendo que as aulas ainda não existem. */
@@ -194,7 +102,9 @@ export default function Cursos() {
       toast.success(
         data.cobrado
           ? `"${curso.titulo}" é seu para sempre. Avisamos assim que abrir.`
-          : "Você já tem acesso vitalício a este curso.",
+          : data.incluso_no_plano
+            ? `"${curso.titulo}" já vem no seu pacote. Avisamos assim que abrir.`
+            : "Você já tem acesso vitalício a este curso.",
       );
       carregar();
     } catch (e) {
@@ -221,10 +131,168 @@ export default function Cursos() {
     }
   };
 
-  const agenda = useMemo(() => linkDaAgenda(live), [live]);
   // Aritmética, não retórica: cada quinta até a prova é uma aula que existe
   // ou não existe. Ver `lib/enem.js`.
   const quintasRestantes = quintasAteAProva();
+
+  // A conta do pacote de cima: o que sairia comprando avulso o que ele já
+  // inclui. Só aparece para quem ainda não tem os direitos.
+  const conta = useMemo(
+    () =>
+      economiaDoPacote({
+        pacote: pacoteDosCursos,
+        quintasRestantes,
+        precos,
+        direitos: dados?.direitos || {},
+      }),
+    [pacoteDosCursos, quintasRestantes, precos, dados],
+  );
+
+  // Os cursos agrupados por área, na ordem que o servidor manda.
+  const grupos = useMemo(
+    () => porArea(dados?.areas || [], dados?.cursos || []),
+    [dados],
+  );
+
+  /** O card de um curso. Função e não componente de módulo porque ele depende
+   *  de quatro estados desta tela (comprando, marcando, a conta do pacote) —
+   *  passar os quatro por props seria mudar a assinatura toda vez que a
+   *  vitrine ganha um estado. */
+  const cartaoDoCurso = (c) => (
+    <article
+      key={c.curso_id}
+      className="macio flex flex-col border border-white/10 bg-white/[0.035] p-5"
+      data-testid={`curso-${c.curso_id}`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <h3 className="font-display text-lg font-bold leading-tight tracking-tight text-white">
+          {c.titulo}
+        </h3>
+        {/* O selo segue o CONTEÚDO, não uma data no calendário: um
+            curso é "em breve" enquanto não tem estação publicada, e
+            vira "no ar" no instante em que a primeira entra. Quem
+            responde isso é o servidor (`tem_conteudo`). */}
+        {c.tem_conteudo ? (
+          <span
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-emerald-300/30 bg-emerald-400/10 px-2.5 py-1 font-mono-alt text-[9px] font-bold uppercase tracking-[0.2em] text-emerald-200"
+            data-testid={`curso-${c.curso_id}-selo`}
+          >
+            <PlayCircle className="h-2.5 w-2.5" /> No ar
+          </span>
+        ) : (
+          <span
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-amber-300/30 bg-amber-400/10 px-2.5 py-1 font-mono-alt text-[9px] font-bold uppercase tracking-[0.2em] text-amber-200"
+            data-testid={`curso-${c.curso_id}-selo`}
+          >
+            <Lock className="h-2.5 w-2.5" /> Em breve
+          </span>
+        )}
+      </div>
+
+      <div className="mt-1.5 text-sm font-medium text-[#7FD8FF]">{c.chamada}</div>
+      <p className="mt-2 text-xs leading-relaxed text-white/45">{c.descricao}</p>
+
+      <ul className="mt-3 space-y-1">
+        {c.modulos.map((m) => (
+          <li key={m} className="flex items-start gap-2 text-xs text-white/55">
+            <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-[#4FD9FF]/60" />
+            {m}
+          </li>
+        ))}
+      </ul>
+
+      <div className="mt-4 border-t border-white/8 pt-3.5">
+        <div className="font-mono-alt text-[10px] uppercase tracking-[0.15em] text-white/30">
+          {c.carga} · {c.nivel}
+        </div>
+
+        {c.tenho_acesso && c.tem_conteudo ? (
+          // Comprou E existe aula: o card diz "entra" e diz quanto ele já
+          // andou — é o que o separa de um card de vitrine. Qualquer texto
+          // a mais fica entre o aluno e a aula pela qual ele já pagou.
+          <>
+            {c.progresso?.comecou && (
+              <div className="mt-3" data-testid={`curso-${c.curso_id}-progresso`}>
+                <div className="flex items-center justify-between gap-2 text-[11px] text-white/45">
+                  <span className="truncate">
+                    {c.progresso.proxima
+                      ? `Próxima: ${c.progresso.proxima.titulo}`
+                      : `${c.progresso.concluidas}/${c.progresso.estacoes} estações`}
+                  </span>
+                  <span className="shrink-0 font-mono-alt tabular-nums">
+                    {c.progresso.percentual}%
+                  </span>
+                </div>
+                <div
+                  className="barra mt-1.5"
+                  data-cheia={c.progresso.percentual >= 100}
+                  aria-hidden="true"
+                >
+                  <i style={{ width: `${c.progresso.percentual}%` }} />
+                </div>
+              </div>
+            )}
+            <Link
+              to={`/cursos/${c.curso_id}`}
+              className="pill btn-sapiens mt-3 inline-flex items-center gap-2 rounded-full px-5 py-3 text-xs font-semibold"
+              data-testid={`curso-${c.curso_id}-estudar`}
+            >
+              <PlayCircle className="h-3.5 w-3.5" />
+              {c.progresso?.comecou ? "Continuar" : "Começar agora"}
+            </Link>
+          </>
+        ) : c.tenho_acesso ? (
+          <div
+            className="mt-3 flex items-center gap-2 rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-3.5 py-3"
+            data-testid={`curso-${c.curso_id}-meu`}
+          >
+            {c.incluso_no_plano ? (
+              <PackageCheck className="h-4 w-4 shrink-0 text-emerald-300" />
+            ) : (
+              <Infinito className="h-4 w-4 shrink-0 text-emerald-300" />
+            )}
+            <span className="text-xs text-emerald-100/80">
+              <strong className="font-semibold text-emerald-200">
+                {c.incluso_no_plano ? "Incluso no seu pacote." : "Seu para sempre."}
+              </strong>{" "}
+              Avisamos no WhatsApp assim que as aulas entrarem no ar — sem pagar de novo.
+            </span>
+          </div>
+        ) : (
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => comprarCurso(c)}
+              disabled={comprandoCurso === c.curso_id}
+              className="pill btn-sapiens inline-flex items-center gap-2 rounded-full px-5 py-3 text-xs font-medium disabled:opacity-50"
+              data-testid={`curso-${c.curso_id}-comprar`}
+            >
+              <Infinito className="h-3.5 w-3.5" />
+              {comprandoCurso === c.curso_id
+                ? "Garantindo…"
+                : `Acesso vitalício · ${c.custo_sparks} Sparks`}
+            </button>
+            <button
+              onClick={() => alternarInteresse(c)}
+              disabled={marcando === c.curso_id}
+              className={[
+                "pill inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 text-xs font-medium disabled:opacity-50",
+                c.tenho_interesse
+                  ? "border border-emerald-400/30 bg-emerald-500/15 text-emerald-200"
+                  : "btn-vidro",
+              ].join(" ")}
+              data-testid={`curso-${c.curso_id}-avisar`}
+            >
+              {c.tenho_interesse ? (
+                <><BellRing className="h-3.5 w-3.5" /> Na lista</>
+              ) : (
+                <><Bell className="h-3.5 w-3.5" /> Só me avise</>
+              )}
+            </button>
+          </div>
+        )}
+      </div>
+    </article>
+  );
 
   return (
     <div className="min-h-screen">
@@ -242,211 +310,51 @@ export default function Cursos() {
           <ContagemEnem comCta={false} testid="cursos-contagem-enem" />
         </div>
 
+        {/* ONDE VOCÊ PAROU — antes do catálogo, e antes da ponte da live.
+            Quem já está estudando abre esta aba para voltar ao estudo, não
+            para ver a vitrine de novo. O componente some sozinho para quem
+            ainda não tem curso no ar, e aí a página começa pela ponte da
+            aula ao vivo, como antes. */}
+        <ContinuarAprendendo cursos={dados?.cursos || []} />
+
         {/* ---------------------------------------------------------------
-            A LIVE. Primeira coisa da página, e a única que existe hoje.
-            --------------------------------------------------------------- */}
-        <section
-          id="live"
-          className="mapa-vitrine relative scroll-mt-24 overflow-hidden rounded-3xl p-6 md:p-8"
-          data-testid="cursos-live"
+            A AULA AO VIVO — que desde 2026-09-16 tem tela própria.
+            ---------------------------------------------------------------
+            Ela era a metade de cima desta página. Saiu inteira para
+            `/aula-ao-vivo`: a compra, o link do Meet e a contagem regressiva
+            moram num lugar só, e esta página voltou a ser o que o nome dela
+            promete. O que fica aqui é a ponte — a aula é semanal e cara de
+            perder, e quem abre "Cursos" procurando por ela precisa encontrar
+            o caminho na primeira dobra. */}
+        <Link
+          to="/aula-ao-vivo"
+          className="lift flex flex-wrap items-center gap-4 rounded-3xl border border-rose-400/25 bg-gradient-to-r from-rose-500/[0.12] via-amber-400/[0.07] to-transparent p-5 hover:border-rose-400/50"
+          data-testid="cursos-ponte-live"
         >
-          <div className="relative grid gap-7 md:grid-cols-[1fr_auto] md:items-center">
-            <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-2 rounded-full border border-rose-400/40 bg-rose-500/15 px-3 py-1.5 font-mono-alt text-[10px] font-bold uppercase tracking-[0.2em] text-rose-200">
-                <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-75" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-rose-400" />
-                </span>
-                {live?.ao_vivo_agora ? "Acontecendo agora" : "Ao vivo · toda quinta"}
-              </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] text-white/60">
-                <Clock className="h-3 w-3" /> {live ? quandoPorExtenso(live.inicio) : "—"}
-              </span>
-              {live?.duracao_minutos && (
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] text-white/60">
-                  <Video className="h-3 w-3" /> {live.duracao_minutos} min · Google Meet
-                </span>
-              )}
+          <span className="relative shrink-0">
+            <MentorUSP tamanho="p" comSelo={false} testid="cursos-ponte-live-mentor" />
+            <span className="absolute -right-1 -top-1 flex h-3 w-3">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-500 opacity-80" />
+              <span className="relative inline-flex h-3 w-3 rounded-full bg-rose-500" />
+            </span>
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="font-mono-alt text-[10px] uppercase tracking-[0.25em] text-rose-200/90">
+              {live?.ao_vivo_agora ? "Acontecendo agora" : "Ao vivo · toda quinta"}
             </div>
-
-            <h1 className="mt-5 max-w-3xl font-display text-4xl font-extrabold leading-[1.02] tracking-tighter text-white md:text-6xl">
-              {/* Cor sólida, e NÃO `.shimmer`: medido no navegador em
-                  2026-09-15, o gradiente animado sobre `background-clip: text`
-                  apaga a barriga do "P" em tamanho de display — a manchete
-                  lia "USF" na maior parte dos quadros. A palavra mais
-                  importante do anúncio não pode depender da fase de uma
-                  animação para ser legível. */}
-              Toda quinta, ao vivo, com o{" "}
-              <span className="text-[#7FD8FF]">1º colocado de Medicina da USP</span>.
-            </h1>
-            <p className="mt-4 max-w-2xl text-base leading-relaxed text-white/65 md:text-lg">
-              Não é aula gravada, não é resumo, não é PDF. É a pessoa que tirou o primeiro
-              lugar no vestibular mais disputado do país resolvendo questão na sua frente e
-              respondendo as suas perguntas — 90 minutos, uma vez por semana.
-            </p>
-            {quintasRestantes > 0 && (
-              <p className="mt-3 max-w-2xl text-sm font-medium text-amber-200/90" data-testid="cursos-quintas-restantes">
-                Até a prova cabem {quintasRestantes === 1 ? "só mais 1 aula" : `só mais ${quintasRestantes} aulas`}.
-                A de quinta que passar não volta.
-              </p>
-            )}
-
-            {live?.tema && (
-              <div
-                className="mt-5 inline-flex max-w-full items-center gap-2 rounded-2xl border border-[#4FD9FF]/25 bg-[#4FD9FF]/[0.08] px-4 py-3"
-                data-testid="cursos-live-tema"
-              >
-                <PlayCircle className="h-4 w-4 shrink-0 text-[#7FD8FF]" />
-                <span className="min-w-0 text-sm text-white/85">
-                  <span className="font-mono-alt text-[10px] uppercase tracking-[0.2em] text-[#7FD8FF]">
-                    Tema desta quinta ·{" "}
-                  </span>
-                  {live.tema}
-                </span>
-              </div>
-            )}
-
-            {/* Contagem regressiva — o "faltam 2 dias" que transforma
-                informação em urgência honesta. */}
-            {live && !live.ao_vivo_agora && !contagem.acabou && (
-              <div className="mt-6 flex flex-wrap items-center gap-2" data-testid="cursos-contagem">
-                <span className="font-mono-alt text-[10px] uppercase tracking-[0.25em] text-white/35">
-                  Começa em
-                </span>
-                <div className="flex gap-2">
-                  <Bloco valor={contagem.dias} rotulo="dias" />
-                  <Bloco valor={contagem.horas} rotulo="horas" />
-                  <Bloco valor={contagem.minutos} rotulo="min" />
-                  <Bloco valor={contagem.segundos} rotulo="seg" />
-                </div>
-              </div>
-            )}
-
-            {/* ---- A porta: comprar, ou entrar se já comprou ---- */}
-            <div className="mt-7">
-              {live?.tenho_acesso ? (
-                <div
-                  className="rounded-2xl border border-emerald-400/30 bg-emerald-500/10 p-5"
-                  data-testid="cursos-live-acesso"
-                >
-                  <div className="flex items-center gap-2 font-display text-lg font-bold tracking-tight text-emerald-200">
-                    <ShieldCheck className="h-5 w-5" /> Sua vaga está garantida.
-                  </div>
-                  {live.link ? (
-                    <>
-                      <p className="mt-1 text-sm text-emerald-100/70">
-                        {live.ao_vivo_agora
-                          ? "A sala está aberta agora. Entra!"
-                          : "A sala abre 30 minutos antes. Guarde o link — ele é só desta edição."}
-                      </p>
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        <a
-                          href={live.link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="pill btn-calor inline-flex items-center gap-2 rounded-full px-6 py-3.5 text-sm"
-                          data-testid="cursos-live-entrar"
-                        >
-                          <Video className="h-4 w-4" /> Entrar na sala
-                        </a>
-                        <button
-                          onClick={copiarLink}
-                          className="pill btn-vidro inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm"
-                          data-testid="cursos-live-copiar"
-                        >
-                          {copiado ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                          {copiado ? "Copiado" : "Copiar link"}
-                        </button>
-                        {agenda && (
-                          <a
-                            href={agenda}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="pill btn-vidro inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm"
-                            data-testid="cursos-live-agenda"
-                          >
-                            <CalendarPlus className="h-4 w-4" /> Pôr na agenda
-                          </a>
-                        )}
-                      </div>
-                    </>
-                  ) : (
-                    <p className="mt-1 text-sm text-emerald-100/70" data-testid="cursos-live-sem-link">
-                      O link da sala é criado na véspera e aparece aqui automaticamente —
-                      e também chega no seu WhatsApp. Você não precisa pagar de novo.
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <div className="flex flex-wrap items-center gap-3">
-                  <button
-                    onClick={comprar}
-                    disabled={comprando || !podePagar}
-                    className="pill btn-calor inline-flex items-center gap-2 rounded-full px-7 py-4 text-sm disabled:opacity-60"
-                    data-testid="cursos-live-comprar"
-                  >
-                    <Radio className="h-4 w-4" />
-                    {comprando ? "Garantindo…" : `Garantir minha vaga · ${custo} Sparks`}
-                  </button>
-                  {!podePagar && (
-                    <Link
-                      to="/sparks"
-                      className="pill btn-vidro inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm"
-                      data-testid="cursos-live-sem-saldo"
-                    >
-                      <Zap className="h-4 w-4 text-amber-400" /> Você tem {saldo} — comprar Sparks
-                    </Link>
-                  )}
-                  <span className="text-xs text-white/40">
-                    Pagamento por edição. Vale só para a aula desta quinta.
-                  </span>
-                </div>
-              )}
+            <div className="mt-0.5 font-display text-lg font-bold tracking-tight text-white">
+              A aula ao vivo com o 1º colocado de Medicina da USP.
             </div>
-            </div>
-
-            {/* O rosto de quem dá a aula, do lado do preço. No celular ele
-                vai para o fim do bloco em vez de empurrar a manchete para
-                baixo da dobra. */}
-            <div className="order-first flex justify-center md:order-none md:justify-end">
-              <MentorUSP tamanho="m" testid="cursos-live-mentor" />
+            <div className="text-xs text-white/50">
+              {live?.tenho_acesso
+                ? live.incluso_no_plano
+                  ? "Inclusa no seu pacote — esta quinta e as próximas. Toque para entrar na sala."
+                  : "Sua vaga desta quinta está garantida. Toque para pegar o link da sala."
+                : `${live?.duracao_minutos ?? 60} minutos, uma vez por semana · ${live?.custo_sparks ?? 200} Sparks por edição`}
             </div>
           </div>
-        </section>
-
-        {/* Quem não tem WhatsApp na conta: é por ele que o link e o lembrete
-            chegam. Logo abaixo da compra, que é o momento em que a pessoa
-            mais quer ser avisada. */}
-        <div className="mt-4">
-          <PedirWhatsApp
-            titulo="Receba o link da live no WhatsApp"
-            motivo="A gente avisa uma hora antes da aula começar. Sem spam, sem lista de transmissão de propaganda."
-            testid="cursos-pedir-whatsapp"
-          />
-        </div>
-
-        {/* ---- O que acontece na aula ---- */}
-        <section className="mt-10" data-testid="cursos-live-o-que-acontece">
-          <h2 className="font-display text-xl font-bold tracking-tight text-white">
-            O que acontece nos 90 minutos
-          </h2>
-          <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
-            {O_QUE_ACONTECE.map((x) => (
-              <div key={x.titulo} className="macio border border-white/10 bg-white/[0.035] p-4">
-                <div className="flex items-start gap-3">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-[#7FD8FF]">
-                    <x.icone className="h-4 w-4" strokeWidth={1.8} />
-                  </span>
-                  <div className="min-w-0">
-                    <div className="text-sm font-semibold text-white">{x.titulo}</div>
-                    <div className="mt-1 text-xs leading-relaxed text-white/45">{x.texto}</div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
+          <ArrowRight className="h-4 w-4 shrink-0 text-white/30" />
+        </Link>
 
         {/* ---------------------------------------------------------------
             OS CURSOS — todos em breve, nenhum cobra nada
@@ -456,7 +364,7 @@ export default function Cursos() {
             <h2 className="font-display text-2xl font-extrabold tracking-tighter text-white md:text-3xl">
               Cursos completos
             </h2>
-            <span className="font-mono-alt text-[10px] uppercase tracking-[0.25em] text-white/35">
+            <span className="secao-olho">
               Em produção · entre na lista
             </span>
           </div>
@@ -469,6 +377,56 @@ export default function Cursos() {
             quem garante agora paga uma vez e fica com o curso para sempre, sem pagar de
             novo quando ele entrar no ar.
           </p>
+          {/* O pacote que leva os quatro de uma vez. Só para quem ainda não
+              tem: repetir a oferta a quem já comprou é o jeito mais rápido de
+              fazer a pessoa duvidar do que comprou (mesma regra da loja). */}
+          {pacoteDosCursos && !cursosInclusos && (
+            <Link
+              to="/sparks"
+              className="lift mt-4 flex flex-wrap items-center gap-3 rounded-2xl border border-violet-400/30 bg-violet-500/[0.10] p-4 hover:border-violet-400/60"
+              data-testid="cursos-oferta-pacote"
+            >
+              <PackageCheck className="h-6 w-6 shrink-0 text-violet-300" />
+              <div className="min-w-0 flex-1">
+                <div className="font-display text-sm font-bold tracking-tight text-violet-100">
+                  Os quatro saem juntos no pacote de {pacoteDosCursos.sparks_amount} Sparks.
+                </div>
+                <div className="text-xs text-violet-200/70">
+                  {conta ? (
+                    <>
+                      Avulso isto seria{" "}
+                      <strong className="font-semibold text-violet-100">
+                        {conta.partes.join(" + ")} = {conta.total} Sparks
+                      </strong>
+                      . O pacote de {formatBRL(pacoteDosCursos.price_cents)} inclui os dois — e
+                      ainda credita {conta.sparksDoPacote} Sparks no seu saldo.
+                    </>
+                  ) : (
+                    <>
+                      {formatBRL(pacoteDosCursos.price_cents)} uma vez: os{" "}
+                      {dados?.cursos?.length || 4} cursos inclusos, para sempre — em vez de{" "}
+                      {dados?.cursos?.[0]?.custo_sparks || 500} Sparks por curso. Os{" "}
+                      {pacoteDosCursos.sparks_amount} Sparks entram no seu saldo do mesmo jeito.
+                    </>
+                  )}
+                </div>
+              </div>
+              <ArrowRight className="h-4 w-4 shrink-0 text-violet-300/60" />
+            </Link>
+          )}
+          {cursosInclusos && (
+            <div
+              className="mt-4 flex flex-wrap items-center gap-3 rounded-2xl border border-emerald-400/30 bg-emerald-500/10 p-4"
+              data-testid="cursos-todos-inclusos"
+            >
+              <PackageCheck className="h-6 w-6 shrink-0 text-emerald-300" />
+              <div className="min-w-0 flex-1 text-sm text-emerald-100/85">
+                <strong className="font-semibold text-emerald-200">Os quatro já são seus.</strong>{" "}
+                Vieram no seu pacote de Sparks — inclusive os que ainda entrarem no catálogo.
+                Avisamos no WhatsApp assim que cada um abrir.
+              </div>
+            </div>
+          )}
           <div className="mt-4 flex flex-wrap items-center gap-2.5 rounded-2xl border border-white/10 bg-white/[0.035] p-4">
             <MentorUSP tamanho="p" comSelo={false} testid="cursos-catalogo-mentor" />
             <div className="min-w-0 flex-1 text-sm text-white/60">
@@ -478,89 +436,28 @@ export default function Cursos() {
             </div>
           </div>
 
-          <div className="mt-5 grid gap-3 md:grid-cols-2">
-            {(dados?.cursos || []).map((c) => (
-              <article
-                key={c.curso_id}
-                className="macio flex flex-col border border-white/10 bg-white/[0.035] p-5"
-                data-testid={`curso-${c.curso_id}`}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <h3 className="font-display text-lg font-bold leading-tight tracking-tight text-white">
-                    {c.titulo}
-                  </h3>
-                  <span
-                    className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-amber-300/30 bg-amber-400/10 px-2.5 py-1 font-mono-alt text-[9px] font-bold uppercase tracking-[0.2em] text-amber-200"
-                    data-testid={`curso-${c.curso_id}-selo`}
-                  >
-                    <Lock className="h-2.5 w-2.5" /> Em breve
-                  </span>
+          {/* O catálogo por ÁREA, e não uma grade plana.
+
+              Com quatro cursos a diferença é pequena; com dezoito, uma lista
+              plana deixa de ser navegável. A hierarquia (Área → Categoria →
+              Curso) vem pronta do servidor em `areas` — a tela não deduz a
+              área pelo título, e área sem curso não aparece. */}
+          {grupos.map((area) => (
+            <div key={area.area_id} id={`area-${area.area_id}`} className="mt-8 scroll-mt-24">
+              <div className="secao-cabeca">
+                <div className="min-w-0">
+                  <h3 className="secao-titulo">{area.titulo}</h3>
+                  <p className="mt-0.5 text-[13px] text-white/40">{area.chamada}</p>
                 </div>
-
-                <div className="mt-1.5 text-sm font-medium text-[#7FD8FF]">{c.chamada}</div>
-                <p className="mt-2 text-xs leading-relaxed text-white/45">{c.descricao}</p>
-
-                <ul className="mt-3 space-y-1">
-                  {c.modulos.map((m) => (
-                    <li key={m} className="flex items-start gap-2 text-xs text-white/55">
-                      <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-[#4FD9FF]/60" />
-                      {m}
-                    </li>
-                  ))}
-                </ul>
-
-                <div className="mt-4 border-t border-white/8 pt-3.5">
-                  <div className="font-mono-alt text-[10px] uppercase tracking-[0.15em] text-white/30">
-                    {c.carga} · {c.nivel}
-                  </div>
-
-                  {c.tenho_acesso ? (
-                    <div
-                      className="mt-3 flex items-center gap-2 rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-3.5 py-3"
-                      data-testid={`curso-${c.curso_id}-meu`}
-                    >
-                      <Infinito className="h-4 w-4 shrink-0 text-emerald-300" />
-                      <span className="text-xs text-emerald-100/80">
-                        <strong className="font-semibold text-emerald-200">Seu para sempre.</strong>{" "}
-                        Avisamos no WhatsApp assim que as aulas entrarem no ar — sem pagar de novo.
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="mt-3 flex flex-wrap items-center gap-2">
-                      <button
-                        onClick={() => comprarCurso(c)}
-                        disabled={comprandoCurso === c.curso_id}
-                        className="pill btn-sapiens inline-flex items-center gap-2 rounded-full px-5 py-3 text-xs font-medium disabled:opacity-50"
-                        data-testid={`curso-${c.curso_id}-comprar`}
-                      >
-                        <Infinito className="h-3.5 w-3.5" />
-                        {comprandoCurso === c.curso_id
-                          ? "Garantindo…"
-                          : `Acesso vitalício · ${c.custo_sparks} Sparks`}
-                      </button>
-                      <button
-                        onClick={() => alternarInteresse(c)}
-                        disabled={marcando === c.curso_id}
-                        className={[
-                          "pill inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 text-xs font-medium disabled:opacity-50",
-                          c.tenho_interesse
-                            ? "border border-emerald-400/30 bg-emerald-500/15 text-emerald-200"
-                            : "btn-vidro",
-                        ].join(" ")}
-                        data-testid={`curso-${c.curso_id}-avisar`}
-                      >
-                        {c.tenho_interesse ? (
-                          <><BellRing className="h-3.5 w-3.5" /> Na lista</>
-                        ) : (
-                          <><Bell className="h-3.5 w-3.5" /> Só me avise</>
-                        )}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </article>
-            ))}
-          </div>
+                <span className="shrink-0 font-mono-alt text-[11px] text-white/35">
+                  {area.itens.length} curso{area.itens.length === 1 ? "" : "s"}
+                </span>
+              </div>
+              <div className="grid gap-3 md:grid-cols-2">
+                {area.itens.map((c) => cartaoDoCurso(c))}
+              </div>
+            </div>
+          ))}
         </section>
 
         {/* ---- A mentoria: a mesma pessoa, um a um, com fila ---- */}

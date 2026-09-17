@@ -6,52 +6,62 @@ import CardDeMelhora from "../components/CardDeMelhora";
 import { ResumoDaFila } from "../components/FilaDeRevisao";
 import Nav, { EVENTO_SPARKS } from "../components/Nav";
 import PainelDeProgresso from "../components/PainelDeProgresso";
+import ProximoPasso from "../components/ProximoPasso";
+import EsqueletoDoPainel from "../components/Esqueleto";
 import OnboardingTour from "../components/OnboardingTour";
 import PainelDeConquistas from "../components/PainelDeConquistas";
 import BotaoInstalar from "../components/InstalarApp";
-import TrilhaDeMissoes from "../components/TrilhaDeMissoes";
 import Mentis from "../components/Mentis";
 import { COMPETENCIAS_REDACAO } from "../constants/redacao";
 import { computeStreak, computeWeek, diaLocal } from "../lib/atividade";
 import { avaliarConquistas } from "../lib/conquistas";
 import { faixaDeDominio } from "../lib/dominio";
 import { proximaQuinta, temAcessoLocal } from "../lib/live";
+import { argumentoDaLive } from "../lib/venda";
+import { quintasAteAProva } from "../lib/enem";
 import PedirWhatsApp from "../components/PedirWhatsApp";
 import MentorUSP from "../components/MentorUSP";
-import ContagemEnem from "../components/ContagemEnem";
 import { useDeclararContextoMentis } from "../lib/mentisContexto";
 import {
-  ArrowRight, Sparkles, Compass, Target, Trophy, CloudOff, RotateCw, PlayCircle,
-  MessageSquareWarning, Users, GraduationCap, PenLine, Brain, Zap, CalendarDays,
-  HelpCircle, Download, ChevronRight, Radio, Video, Medal,
+  ArrowRight, Sparkles, Trophy, CloudOff, RotateCw,
+  MessageSquareWarning, Users, PenLine, Brain, Zap, CalendarDays,
+  HelpCircle, Download, ChevronRight, Radio, Video, Medal, Target,
 } from "lucide-react";
 import { useAuth } from "../lib/auth";
 
 /**
- * O Painel — reescrito em 2026-09-15.
+ * O Painel — reescrito em 2026-09-16.
  *
- * O que ele era: catorze seções empilhadas, cada uma com um parágrafo
- * explicando a própria filosofia, dez CTAs concorrentes na mesma dobra, e a
- * peça de maior impacto visual do produto (o Mapa de Treino) reduzida a um
- * card de texto no meio da página, abaixo de quatro banners.
+ * A passada de 15/09 já tinha resolvido o problema de EXCESSO: catorze seções
+ * com um parágrafo de manifesto cada viraram sete, e a vitrine do Mapa subiu
+ * para o topo. O que ela não resolveu foi a ORDEM da pergunta.
  *
- * O que ele é agora, nesta ordem e por este motivo:
+ * A tela abria com um relógio regressivo de venda, depois a vitrine do Mapa,
+ * depois o anúncio da aula ao vivo, depois um pedido de WhatsApp — quatro
+ * blocos grandes antes do primeiro lugar onde o aluno podia FAZER alguma
+ * coisa. Ele abria o app para estudar e a primeira metade da rolagem era o
+ * produto falando de si mesmo.
  *
- *   1. **O Mapa** — em cinco segundos o aluno vê o que o Sapiens é. É a única
- *      superfície que mostra o produto em vez de descrevê-lo.
- *   2. **Ofensiva, nível, liga e missões do dia** — o que mudou desde ontem.
- *   3. **Conquistas** — agora clicáveis: progresso, condição e caminho.
- *   4. **Onde focar** — as dificuldades com destino, numa seção só (antes
- *      eram duas, "Onde focar agora" e "O que travou você", com cards do
- *      mesmo formato e a mesma promessa).
- *   5. **Hoje** — o que tem hora marcada: cronograma e revisões.
- *   6. **Ferramentas** — o resto do produto em grade, visível. Antes morava
- *      atrás de um menu "…" de dez linhas.
+ * A ordem de hoje, e o motivo de cada degrau:
  *
- * Saíram: o parágrafo de manifesto de cada seção, o card "Próxima ação" (que
- * repetia o conselho que os cards de foco já davam), a tira de estatísticas
- * (o saldo já vive na barra; o total de questões vive no mapa) e os três
- * banners de largura total que competiam entre si.
+ *   1. **O próximo passo.** Uma ação, escolhida do que o aluno tem em mão
+ *      (revisão vencida > bloco de hoje > missão atual > praticar). A vitrine
+ *      do Mapa não sumiu: ela é o fundo desta peça, com a trilha à direita e
+ *      os números do mapa embaixo. Mostrar o produto e dizer o que fazer
+ *      deixaram de competir.
+ *   2. **A tira de progresso.** Ofensiva, nível, liga e o relógio do ENEM em
+ *      quatro azulejos baixos — o "como vai indo" numa varredura, e não em
+ *      quatro blocos de altura inteira.
+ *   3. **Missões de hoje**, com a pronta acesa e o resgate comemorado no
+ *      próprio card.
+ *   4. **A aula ao vivo** — o único compromisso com hora marcada do produto.
+ *   5. **Onde focar**, **Hoje**, **Domínio**, **Conquistas** — o
+ *      acompanhamento, depois da ação.
+ *   6. **A Mentis** e as **Ferramentas**.
+ *
+ * E a espera deixou de ser a frase "Preparando seu painel...": a tela nasce
+ * com a própria silhueta (`components/Esqueleto.jsx`), então o conteúdo não
+ * empurra nada quando chega.
  */
 
 // `by_area` (do fluxo de gabarito/Analysis) usa códigos ENEM curtos; o filtro
@@ -65,12 +75,6 @@ const AREA_CODE_TO_LABEL = {
   LC: "Linguagens e Códigos",
   "LC-Idioma": "Linguagens e Códigos",
 };
-
-// Total de habilidades do mapa de treino (`HAB-01`..`HAB-56`). Usado só para
-// desenhar "quantos pontos de 56" — o mapa de verdade é servido por
-// `/treino/mapa`, e esta tela não o carrega de propósito: seriam dezenas de
-// kB e uma cena 3D para um card de resumo.
-const TOTAL_HABILIDADES = 56;
 
 /** O dia de HOJE no cronograma. Só o dia, não a semana: o Painel responde "o
  *  que eu faço agora", e sete colunas aqui competiriam com a tela que já faz
@@ -86,11 +90,11 @@ function HojeNoCronograma({ semana }) {
     return (
       <Link
         to="/cronograma"
-        className="lift flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.04] p-5 hover:border-white/25"
+        className="superficie lift flex items-center gap-4 p-5"
         data-testid="dash-cronograma-convite"
       >
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-[#7FD8FF]">
-          <CalendarDays className="h-4.5 w-4.5" />
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-[#7FD8FF]">
+          <CalendarDays className="h-5 w-5" strokeWidth={1.8} />
         </span>
         <span className="min-w-0 flex-1">
           <span className="block font-display text-base font-bold tracking-tight text-white">
@@ -107,9 +111,9 @@ function HojeNoCronograma({ semana }) {
 
   return (
     <section data-testid="dash-cronograma">
-      <div className="mb-3 flex items-baseline justify-between gap-3">
-        <h2 className="font-display text-lg font-bold tracking-tight text-white">Hoje</h2>
-        <Link to="/cronograma" className="-my-2 inline-flex items-center gap-1 py-2 text-xs text-[#7FD8FF] hover:underline">
+      <div className="secao-cabeca">
+        <h2 className="secao-titulo">Hoje</h2>
+        <Link to="/cronograma" className="-my-2 inline-flex items-center gap-1 py-2 text-xs font-semibold text-[#7FD8FF] hover:underline">
           {semana.total_concluidos}/{semana.total_blocos} na semana <ArrowRight className="h-3 w-3" />
         </Link>
       </div>
@@ -117,26 +121,26 @@ function HojeNoCronograma({ semana }) {
         {compromissos.map((c) => (
           <div
             key={c.id}
-            className="rounded-2xl border border-white/8 bg-white/[0.03] p-4 opacity-70"
+            className="superficie p-4 opacity-60"
             data-testid={`dash-cronograma-compromisso-${c.id}`}
           >
-            <span className="font-mono-alt text-[10px] uppercase tracking-[0.22em] text-white/35">
+            <span className="secao-olho">
               {c.dia_inteiro ? "dia todo" : `${c.inicio}–${c.fim}`}
             </span>
-            <p className="mt-1 text-sm text-white/70">{c.titulo}</p>
+            <p className="mt-1.5 text-sm text-white/70">{c.titulo}</p>
           </div>
         ))}
         {blocos.map((b) => (
           <Link
             key={b.id}
             to={b.rota || "/cronograma"}
-            className={`lift rounded-2xl border border-white/10 bg-white/[0.04] p-4 hover:border-white/25 ${b.concluido ? "opacity-50" : ""}`}
+            className={`superficie lift p-4 ${b.concluido ? "opacity-50" : ""}`}
             data-testid={`dash-cronograma-bloco-${b.id}`}
           >
-            <span className="font-mono-alt text-[10px] uppercase tracking-[0.22em] text-[#7FD8FF]/70">
+            <span className="secao-olho">
               {b.inicio}–{b.fim} · {b.frente_nome || b.tipo}
             </span>
-            <p className={`mt-1 text-sm font-medium text-white ${b.concluido ? "line-through" : ""}`}>
+            <p className={`mt-1.5 text-sm font-semibold text-white ${b.concluido ? "line-through" : ""}`}>
               {b.titulo}
             </p>
           </Link>
@@ -146,27 +150,30 @@ function HojeNoCronograma({ semana }) {
   );
 }
 
-/** Um azulejo da grade de ferramentas. `selo` mostra um número real quando
- *  existe (nota da redação, questões geradas) — nunca um enfeite. */
 /**
  * O anúncio da aula ao vivo de quinta — a faixa mais chamativa do Painel
- * depois do Mapa, e de propósito: é o único compromisso com HORA MARCADA que
- * o produto tem com o aluno, e quem não souber que ela existe não entra.
+ * depois do próximo passo, e de propósito: é o único compromisso com HORA
+ * MARCADA que o produto tem com o aluno, e quem não souber que ela existe não
+ * entra.
  *
  * Não faz chamada nenhuma (ver `lib/live.js`): a data sai do relógio e o
- * estado real mora em `/cursos`, que é para onde o clique leva.
+ * estado real mora em `/aula-ao-vivo`, que é para onde o clique leva.
  */
-function ChamadaDaLive() {
+function ChamadaDaLive({ inclusa = false, argumento = null }) {
   const { edicao, inicio, aoVivoAgora } = proximaQuinta();
-  const jaTenho = temAcessoLocal(edicao);
+  // `inclusa` vem do direito do pacote de Sparks, que chega de carona na
+  // leitura de saldo que o Painel já faz — nenhuma requisição a mais. Sem
+  // ele, quem comprou o pacote que inclui as lives leria "· 200 Sparks" para
+  // uma aula que ele nunca mais vai pagar.
+  const jaTenho = inclusa || temAcessoLocal(edicao);
   const dias = Math.max(0, Math.ceil((inicio - Date.now()) / 86400000));
   const quando = inicio.toLocaleDateString("pt-BR", { day: "numeric", month: "long" });
   const hora = inicio.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
   return (
     <Link
-      to="/cursos"
-      className="lift mt-6 flex flex-wrap items-center gap-4 rounded-2xl border border-rose-400/25 bg-gradient-to-r from-rose-500/[0.12] via-amber-400/[0.07] to-transparent p-5 hover:border-rose-400/50"
+      to="/aula-ao-vivo"
+      className="lift flex flex-wrap items-center gap-4 rounded-[26px] border border-rose-400/25 bg-gradient-to-r from-rose-500/[0.12] via-amber-400/[0.07] to-transparent p-5 transition-colors hover:border-rose-400/50"
       data-testid="dash-live"
       data-tour="dash-live"
     >
@@ -179,30 +186,51 @@ function ChamadaDaLive() {
         </span>
       </span>
       <div className="min-w-0 flex-1">
-        <div className="font-mono-alt text-[10px] uppercase tracking-[0.25em] text-rose-300/80">
+        <div className="secao-olho text-rose-300/85">
           {aoVivoAgora ? "Acontecendo agora" : "Ao vivo · toda quinta"}
         </div>
-        <div className="mt-0.5 font-display text-base font-bold leading-tight tracking-tight text-white md:text-lg">
+        <div className="mt-1 font-display text-base font-bold leading-tight tracking-tight text-white md:text-lg">
           Aula ao vivo com o 1º colocado de Medicina da USP
         </div>
         <div className="mt-0.5 text-xs text-white/50">
           {aoVivoAgora
             ? "A sala está aberta. Entre agora."
             : `${quando}, às ${hora} · ${dias === 0 ? "é hoje" : dias === 1 ? "amanhã" : `faltam ${dias} dias`}`}
-          {!jaTenho && " · 200 Sparks"}
+          {inclusa ? " · inclusa no seu pacote" : !jaTenho ? " · 200 Sparks" : ""}
         </div>
+        {/* O motivo de ESTE aluno entrar — feito do que ele mesmo respondeu
+            (ver `lib/venda.js`). Custa zero: os sinais já estão carregados
+            nesta página. Para quem já tem a vaga, o mesmo argumento deixa de
+            vender e passa a convocar. */}
+        {argumento && (
+          <div
+            className="mt-2 border-l-2 border-rose-400/40 pl-2.5 text-xs leading-relaxed text-white/70"
+            data-testid="dash-live-argumento"
+          >
+            <span className="font-semibold text-white/90">{argumento.titulo}.</span>{" "}
+            {argumento.texto}
+          </div>
+        )}
       </div>
       <span
-        className={`pill inline-flex shrink-0 items-center gap-2 rounded-full px-5 py-3 text-xs font-semibold ${
+        className={`pill inline-flex shrink-0 items-center gap-2 rounded-full px-5 py-3 text-xs font-bold ${
           jaTenho ? "btn-vidro" : "btn-calor"
         }`}
       >
-        {jaTenho ? <><Video className="h-4 w-4" /> Sua vaga está garantida</> : <>Garantir minha vaga <ArrowRight className="h-3.5 w-3.5" /></>}
+        {inclusa ? (
+          <><Video className="h-4 w-4" /> Entrar na aula</>
+        ) : jaTenho ? (
+          <><Video className="h-4 w-4" /> Sua vaga está garantida</>
+        ) : (
+          <>Garantir minha vaga <ArrowRight className="h-3.5 w-3.5" /></>
+        )}
       </span>
     </Link>
   );
 }
 
+/** Um azulejo da grade de ferramentas. `selo` mostra um número real quando
+ *  existe (nota da redação, questões geradas) — nunca um enfeite. */
 function Ferramenta({ to, icone: Icone, nome, selo, destaque, testid, onClick, tour }) {
   const Conteudo = (
     <>
@@ -214,17 +242,15 @@ function Ferramenta({ to, icone: Icone, nome, selo, destaque, testid, onClick, t
         <Icone className="h-5 w-5" strokeWidth={1.8} />
       </span>
       <span className="min-w-0 flex-1 text-left">
-        <span className={`block text-sm font-medium ${destaque ? "text-amber-100" : "text-white"}`}>{nome}</span>
-        {selo && <span className="mt-0.5 block text-[11px] text-white/40">{selo}</span>}
+        <span className={`block text-sm font-semibold ${destaque ? "text-amber-100" : "text-white"}`}>{nome}</span>
+        {selo && <span className="mt-0.5 block text-[11px] leading-snug text-white/40">{selo}</span>}
       </span>
       <ChevronRight className="h-4 w-4 shrink-0 text-white/20" />
     </>
   );
   const classe = [
-    "macio flex items-center gap-3 border p-4",
-    destaque
-      ? "border-amber-300/25 bg-amber-300/[0.07] hover:border-amber-300/50"
-      : "border-white/10 bg-white/[0.035] hover:border-white/25 hover:bg-white/[0.07]",
+    "superficie lift flex items-center gap-3 p-4",
+    destaque ? "border-amber-300/25 bg-amber-300/[0.07]" : "",
   ].join(" ");
 
   if (onClick) {
@@ -249,6 +275,9 @@ export default function Dashboard() {
   const { user } = useAuth();
   const [analyses, setAnalyses] = useState([]);
   const [sparks, setSparks] = useState(null);
+  // Direitos permanentes do pacote de Sparks (`sparks_store.DIREITOS`). Vêm
+  // na MESMA resposta do saldo — o `students/{uid}` é um documento só.
+  const [direitos, setDireitos] = useState({});
   const [activityDates, setActivityDates] = useState([]);
   const [hubs, setHubs] = useState([]);
   const [totalRespondidas, setTotalRespondidas] = useState(0);
@@ -259,6 +288,11 @@ export default function Dashboard() {
   const [revisoes, setRevisoes] = useState(null);
   const [cronograma, setCronograma] = useState(null);
   const [onboarding, setOnboarding] = useState(null);
+  // O estado de engajamento (ofensiva, nível, liga, missões) passou a ser
+  // carregado AQUI em 2026-09-16, e não mais dentro de `PainelDeProgresso`:
+  // o "próximo passo" precisa saber se a ofensiva está em risco, e duas
+  // chamadas ao mesmo endereço na mesma tela é desperdício puro.
+  const [engajamento, setEngajamento] = useState(null);
   const [loaded, setLoaded] = useState(false);
   const [falhou, setFalhou] = useState(false);
   const [showTour, setShowTour] = useState(false);
@@ -278,7 +312,7 @@ export default function Dashboard() {
     setFalhou(false);
     Promise.allSettled([
       api.get("/analyses").then(({ data }) => data),
-      api.get("/firestore/students/me/sparks").then(({ data }) => data.sparks_balance),
+      api.get("/firestore/students/me/sparks").then(({ data }) => data),
       api.get("/firestore/students/me/activity").then(({ data }) => data.dates || []),
       api.get("/skills-map").then(({ data }) => data.hubs || []),
       api.get("/firestore/students/me/respondidas").then(({ data }) => (data.item_ids || []).length),
@@ -296,12 +330,14 @@ export default function Dashboard() {
       // O que o aluno declarou no primeiro acesso: 1 `find_one` por chave
       // primária no Mongo. É daqui que sai a meta que o cabeçalho mostra.
       api.get("/onboarding").then(({ data }) => data),
+      api.get("/engajamento/me").then(({ data }) => data),
     ]).then((resultados) => {
-      const [a, s, dates, h, respondidas, r, f, habs, reds, fila, semana, onb] = resultados;
+      const [a, s, dates, h, respondidas, r, f, habs, reds, fila, semana, onb, eng] = resultados;
       const valor = (res, vazio) => (res.status === "fulfilled" ? res.value : vazio);
 
       setAnalyses(valor(a, []));
-      setSparks(valor(s, null));
+      setSparks(valor(s, null)?.sparks_balance ?? null);
+      setDireitos(valor(s, null)?.direitos || {});
       setActivityDates(valor(dates, []));
       setHubs(valor(h, []));
       setTotalRespondidas(valor(respondidas, 0));
@@ -312,12 +348,20 @@ export default function Dashboard() {
       setRevisoes(valor(fila, null));
       setCronograma(valor(semana, null));
       setOnboarding(valor(onb, null));
+      setEngajamento(valor(eng, null));
       setFalhou(resultados.some((res) => res.status === "rejected"));
       setLoaded(true);
     });
   }, []);
 
   useEffect(() => { carregar(); }, [carregar]);
+
+  /** Relê só o engajamento. Resgatar uma missão muda ofensiva, XP, liga e a
+   *  própria missão — mas nada do resto da página. Recarregar o Painel
+   *  inteiro seria pagar treze chamadas por uma. */
+  const recarregarEngajamento = useCallback(() => {
+    api.get("/engajamento/me").then(({ data }) => setEngajamento(data)).catch(() => {});
+  }, []);
 
   // Uma vez por SESSÃO do navegador, não uma vez na vida: quem entra na
   // plataforma vê o guia; quem recarrega a página no meio do estudo, não — a
@@ -394,11 +438,14 @@ export default function Dashboard() {
 
   // O saldo muda DENTRO desta página (resgatar missão credita sem trocar de
   // rota). Só o saldo é relido — recarregar o painel a cada moeda seria pagar
-  // dez chamadas por uma.
+  // treze chamadas por uma.
   useEffect(() => {
     const relerSaldo = () =>
       api.get("/firestore/students/me/sparks")
-        .then(({ data }) => setSparks(data.sparks_balance))
+        .then(({ data }) => {
+          setSparks(data.sparks_balance);
+          setDireitos(data.direitos || {});
+        })
         .catch(() => {});
     window.addEventListener(EVENTO_SPARKS, relerSaldo);
     return () => window.removeEventListener(EVENTO_SPARKS, relerSaldo);
@@ -425,12 +472,6 @@ export default function Dashboard() {
     return [...comps].sort((a, b) => (a.nivel_pontos ?? 0) - (b.nivel_pontos ?? 0))[0];
   }, [ultimaRedacao]);
   const melhorRedacao = redacoes.reduce((m, r) => Math.max(m, r.avaliacao?.nota_total ?? 0), 0);
-
-  // A ordem das missões (o que já foi praticado e não domina primeiro, depois
-  // o que ainda nem foi tocado) mora em `TrilhaDeMissoes` — é ela que desenha
-  // o caminho, e duas cópias da mesma ordem em telas diferentes divergem.
-  const pontosTocados = habilidades.filter((h) => h.respondidas > 0).length;
-  const pontosDominados = habilidades.filter((h) => h.classificacao === "forte").length;
 
   // "Onde focar": área mais fraca do último gabarito, habilidades fracas do
   // treino, competência fraca da redação e — logo depois — as dificuldades
@@ -487,6 +528,21 @@ export default function Dashboard() {
     focos.length ? `No Painel. Ponto de atenção em destaque: "${focos[0].titulo}".` : "No Painel do Sapiens.",
   );
 
+  // O argumento da aula ao vivo, feito dos sinais que esta página JÁ tem na
+  // mão — zero requisição a mais, que é a condição para o anúncio do Painel
+  // existir (ver `lib/live.js`).
+  const argumentoDaAula = useMemo(
+    () =>
+      argumentoDaLive({
+        fracos,
+        focos,
+        quintasRestantes: quintasAteAProva(),
+        diasAtivosNaSemana: weekActiveDays,
+        ofensiva: streak,
+      }),
+    [fracos, focos, weekActiveDays, streak],
+  );
+
   const conquistas = avaliarConquistas({
     totalRespondidas, streak, hubs, analyses, rounds, weekActiveDays,
     redacoesCorrigidas: redacoes.filter((r) => r.avaliacao).length,
@@ -498,7 +554,9 @@ export default function Dashboard() {
     return (
       <div className="min-h-screen">
         <Nav />
-        <div className="mx-auto max-w-5xl px-6 py-10 text-white/60 md:px-10">Preparando seu painel...</div>
+        <div className="mx-auto max-w-5xl px-5 py-8 md:px-10 md:py-10">
+          <EsqueletoDoPainel />
+        </div>
       </div>
     );
   }
@@ -506,24 +564,21 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen">
       <Nav />
-      <div className="mx-auto max-w-5xl px-6 py-8 md:px-10 md:py-10">
+      <div className="mx-auto max-w-5xl px-5 py-7 md:px-10 md:py-10">
         {/* CABEÇALHO — nome, meta declarada e a porta do guia. Nada mais. */}
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-3">
-            <h1
-              className="font-display text-3xl font-extrabold tracking-tighter text-white md:text-4xl"
-              data-testid="dash-title"
-            >
+          <div className="flex min-w-0 flex-wrap items-center gap-2.5">
+            <h1 className="titulo-tela" data-testid="dash-title">
               Olá, {user?.name?.split(" ")[0] || "aluno"}.
             </h1>
             {onboarding?.meta && (
               <span
-                className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/60"
+                className="chip"
                 data-testid="dash-meta"
                 title="Sua meta declarada no primeiro acesso"
               >
                 <Target className="h-3.5 w-3.5 text-[#7FD8FF]" />
-                Meta: {onboarding.meta.acertos_min}–{onboarding.meta.acertos_max} acertos
+                {onboarding.meta.acertos_min}–{onboarding.meta.acertos_max} acertos
               </span>
             )}
           </div>
@@ -532,7 +587,7 @@ export default function Dashboard() {
             // `ml-auto`: a 375px o cabeçalho quebra em duas linhas e, sem
             // isto, o botão do guia caía alinhado à ESQUERDA embaixo do nome,
             // parecendo um segundo título.
-            className="pill ml-auto inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/8 px-3.5 py-2 text-xs text-white/55 hover:bg-white/15 hover:text-white"
+            className="chip pill ml-auto shrink-0"
             data-testid="dash-rever-tour"
           >
             <HelpCircle className="h-3.5 w-3.5" /> Guia
@@ -541,7 +596,7 @@ export default function Dashboard() {
 
         {falhou && (
           <div
-            className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-amber-300/30 bg-amber-500/10 px-5 py-4"
+            className="superficie mb-4 flex flex-wrap items-center gap-3 border-amber-300/30 bg-amber-400/[0.08] px-5 py-4"
             data-testid="dash-erro-parcial"
           >
             <CloudOff className="h-5 w-5 shrink-0 text-amber-300" />
@@ -558,337 +613,291 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* ---------------------------------------------------------------
-            0. O RELÓGIO. Antes do mapa, porque é o que decide a prioridade
-            de tudo o que vem depois — e porque some sozinho quando as duas
-            datas do ENEM passam.
-            --------------------------------------------------------------- */}
-        <div className="mb-6" data-tour="dash-enem">
-          <ContagemEnem testid="dash-contagem-enem" />
-        </div>
-
-        {/* ---------------------------------------------------------------
-            1. O MAPA. A vitrine do produto, e a primeira coisa na página.
-            --------------------------------------------------------------- */}
-        <section className="mapa-vitrine relative overflow-hidden rounded-3xl p-6 md:p-8" data-testid="dash-hero" data-tour="dash-mapa">
-          <div className="relative grid gap-6 md:grid-cols-[1.35fr_1fr] md:items-center">
-            <div>
-              <div className="font-mono-alt text-[10px] uppercase tracking-[0.3em] text-[#7FD8FF]/80">
-                Mapa de Treino
-              </div>
-              <h2 className="mt-2 font-display text-3xl font-extrabold leading-[1.05] tracking-tighter text-white md:text-4xl">
-                {pontosTocados > 0
-                  ? "Seu território continua se revelando."
-                  : "Um mapa de 56 pontos. Você começa com um."}
-              </h2>
-              <div className="mt-5 flex flex-wrap items-center gap-3">
-                <button
-                  onClick={() => nav("/treino")}
-                  className="pill btn-sapiens inline-flex items-center gap-2 rounded-full px-6 py-3.5 text-sm font-medium"
-                  data-testid="dash-cta-mapa"
-                >
-                  <Compass className="h-4 w-4" /> Abrir o mapa
-                </button>
-                <button
-                  onClick={() => nav("/exams")}
-                  className="pill btn-vidro inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm"
-                  data-testid="dash-cta-provas"
-                  data-tour="dash-provas"
-                >
-                  <PlayCircle className="h-4 w-4" /> Provas do ENEM
-                </button>
-              </div>
-
-              {/* Os números que provam o mapa, sem uma frase para explicá-los. */}
-              <div className="mt-6 flex flex-wrap gap-x-7 gap-y-3">
-                {[
-                  { n: pontosTocados, de: TOTAL_HABILIDADES, rotulo: "pontos explorados" },
-                  { n: pontosDominados, rotulo: "dominados" },
-                  { n: totalRespondidas, rotulo: "questões" },
-                ].map((x) => (
-                  <div key={x.rotulo}>
-                    <div className="font-display text-2xl font-extrabold tracking-tight text-white">
-                      {x.n}
-                      {x.de != null && <span className="text-base text-white/30">/{x.de}</span>}
-                    </div>
-                    <div className="text-[10px] uppercase tracking-wide text-white/35">{x.rotulo}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* A trilha. O caminho de entrada no mapa — e a peça que faz o
-                Painel PARECER o produto em vez de descrevê-lo. */}
-            <div className="rounded-[26px] border border-white/10 bg-black/25 p-4 pb-9">
-              <div className="mb-3 text-center font-mono-alt text-[10px] uppercase tracking-[0.25em] text-white/35">
-                Seu caminho
-              </div>
-              <TrilhaDeMissoes habilidades={habilidades} limite={4} testid="dash-trilha" />
-            </div>
-          </div>
-        </section>
-
-        {/* A AULA AO VIVO DE QUINTA — logo abaixo do Mapa, que é a primeira
-            dobra. É o único compromisso com hora marcada do produto. */}
-        <ChamadaDaLive />
-
-        {/* Quem ainda não tem WhatsApp na conta (conta antiga, ou entrou pelo
-            Google): é por ele que o link da live chega. Some sozinho depois
-            de respondido. */}
-        <div className="mt-4">
-          <PedirWhatsApp compacto testid="dash-pedir-whatsapp" />
-        </div>
-
-        {/* DOMÍNIO POR FRENTE — com NOME, não só porcentagem (ver
-            `lib/dominio.js`: a régua da escola não é esta, e o aluno não
-            deveria ter de inventar uma). Some inteira enquanto não há medida,
-            em vez de mostrar quatro barras zeradas. */}
-        {hasMasteryData && (
-          <section className="mt-6" data-testid="dash-mastery" data-tour="dash-mastery">
-            <div className="mb-3 flex items-baseline justify-between gap-3">
-              <h2 className="font-display text-lg font-bold tracking-tight text-white">Seu domínio</h2>
-              <Link to="/cognitive-profile" className="-my-2 inline-flex items-center gap-1 py-2 text-xs text-[#7FD8FF] hover:underline">
-                Detalhes <ArrowRight className="h-3 w-3" />
-              </Link>
-            </div>
-            <div className="grid gap-2.5 sm:grid-cols-2">
-              {rankedHubs.map((h) => {
-                const faixa = faixaDeDominio(h.mastery);
-                return (
-                  <div
-                    key={h.hub}
-                    className="macio border border-white/10 bg-white/[0.035] p-4"
-                    data-testid={`dash-mastery-${h.hub}`}
-                  >
-                    <div className="mb-2 flex items-baseline justify-between gap-2">
-                      <span className="truncate text-sm text-white/80">{h.label}</span>
-                      <span
-                        className="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold"
-                        style={{ color: faixa.cor, background: `${faixa.cor}1F` }}
-                      >
-                        {faixa.nome}
-                      </span>
-                    </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-white/10">
-                      <div
-                        className="h-full rounded-full transition-[width] duration-500"
-                        style={{ width: `${faixa.valor}%`, background: `linear-gradient(90deg, ${faixa.cor}, #8B7BFF)` }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-        )}
-
-        {/* ---------------------------------------------------------------
-            2. OFENSIVA · NÍVEL · LIGA · MISSÕES DO DIA
-            `id="missoes"`: a Mentis e o guia levam direto até aqui.
-            --------------------------------------------------------------- */}
-        <div className="mt-8 scroll-mt-24" id="missoes" data-tour="dash-missoes">
-          <PainelDeProgresso />
-        </div>
-
-        {/* ---------------------------------------------------------------
-            3. CONQUISTAS — clicáveis
-            --------------------------------------------------------------- */}
-        <section className="mt-8" data-testid="dash-achievements" data-tour="dash-conquistas">
-          <div className="mb-3 flex items-baseline justify-between gap-3">
-            <h2 className="flex items-center gap-2 font-display text-lg font-bold tracking-tight text-white">
-              <Trophy className="h-4 w-4 text-[#7FD8FF]" /> Conquistas
-            </h2>
-            <Link to="/conquistas" className="-my-2 inline-flex items-center gap-1 py-2 text-xs text-[#7FD8FF] hover:underline">
-              {feitas}/{conquistas.length} <ArrowRight className="h-3 w-3" />
-            </Link>
-          </div>
-          <PainelDeConquistas
-            contexto={{
-              totalRespondidas, streak, hubs, analyses, rounds, weekActiveDays,
-              redacoesCorrigidas: redacoes.filter((r) => r.avaliacao).length,
-              melhorRedacao,
-            }}
-            limite={8}
-            testid="dash-conquistas-grade"
+        {/* `cascata`: os blocos entram em sequência, 45ms de passo, com teto
+            no sexto. É o que dá ritmo à chegada da tela sem transformar a
+            rolagem numa espera. */}
+        <div className="cascata space-y-7">
+          {/* -------------------------------------------------------------
+              1. O PRÓXIMO PASSO. Uma ação, sobre a vitrine do Mapa.
+              ------------------------------------------------------------- */}
+          <ProximoPasso
+            habilidades={habilidades}
+            revisoes={revisoes}
+            cronograma={cronograma}
+            totalRespondidas={totalRespondidas}
+            ofensiva={engajamento?.ofensiva?.dias ?? 0}
+            estudouHoje={engajamento?.ofensiva?.estudou_hoje ?? true}
           />
-        </section>
 
-        {/* ---------------------------------------------------------------
-            4. ONDE FOCAR — uma seção só, cada card com destino próprio
-            --------------------------------------------------------------- */}
-        {(focos.length > 0 || fracos.length > 0) && (
-          <section className="mt-8" data-testid="dash-focos" data-tour="dash-foco">
-            <div className="mb-3 flex items-baseline justify-between gap-3">
-              <h2 className="font-display text-lg font-bold tracking-tight text-white">Onde focar</h2>
-              <Link to="/cognitive-profile" className="-my-2 inline-flex items-center gap-1 py-2 text-xs text-[#7FD8FF] hover:underline">
-                Ver tudo <ArrowRight className="h-3 w-3" />
+          {/* -------------------------------------------------------------
+              2. A TIRA DE PROGRESSO E AS MISSÕES DO DIA
+              `id="missoes"`: a Mentis e o guia levam direto até aqui.
+              ------------------------------------------------------------- */}
+          <div className="scroll-mt-24" id="missoes" data-tour="dash-missoes">
+            <PainelDeProgresso dados={engajamento} aoMudar={recarregarEngajamento} />
+          </div>
+
+          {/* -------------------------------------------------------------
+              3. A AULA AO VIVO DE QUINTA — o único compromisso com hora
+              marcada que o produto tem.
+              ------------------------------------------------------------- */}
+          <div className="space-y-3">
+            <ChamadaDaLive
+              inclusa={Boolean(direitos.lives_inclusas)}
+              argumento={argumentoDaAula}
+            />
+            {/* Quem ainda não tem WhatsApp na conta (conta antiga, ou entrou
+                pelo Google): é por ele que o link da live chega. Some sozinho
+                depois de respondido. */}
+            <PedirWhatsApp compacto testid="dash-pedir-whatsapp" />
+          </div>
+
+          {/* -------------------------------------------------------------
+              4. ONDE FOCAR — cada card com destino próprio
+              ------------------------------------------------------------- */}
+          {(focos.length > 0 || fracos.length > 0) && (
+            <section data-testid="dash-focos" data-tour="dash-foco">
+              <div className="secao-cabeca">
+                <h2 className="secao-titulo">Onde focar</h2>
+                <Link to="/cognitive-profile" className="-my-2 inline-flex items-center gap-1 py-2 text-xs font-semibold text-[#7FD8FF] hover:underline">
+                  Ver tudo <ArrowRight className="h-3 w-3" />
+                </Link>
+              </div>
+              <div className="grid gap-3 md:grid-cols-2">
+                {focos.map((f) => (
+                  <CardDeMelhora
+                    key={f.key}
+                    titulo={f.titulo}
+                    descricao={f.descricao}
+                    medida={f.medida}
+                    medidaLabel={f.medidaLabel}
+                    treino={f.treino}
+                    assunto={f.titulo}
+                    evidencia={f.evidencia}
+                    onSaldo={setSparks}
+                    testid={`dash-foco-${f.key}`}
+                  />
+                ))}
+                {/* Dificuldades com CAUSA identificada. Mesmo formato de card,
+                    mesma seção: a diferença (modo de errar x matéria) aparece
+                    no rótulo do topo, não numa segunda seção com outro título. */}
+                {fracos.slice(0, 2).map((f) => {
+                  const hab = (f.habilidades || [])[0];
+                  return (
+                    <CardDeMelhora
+                      key={f.processo_id}
+                      rotuloTopo="Causa identificada"
+                      titulo={f.erro_dominante.nome}
+                      descricao={f.processo_nome}
+                      medida={f.percentual_acerto != null ? `${Math.round(f.percentual_acerto)}%` : null}
+                      medidaLabel="de acerto"
+                      treino={hab ? { href: `/treino?hab=${hab.id}`, rotulo: "Treinar isto" } : null}
+                      assunto={f.processo_nome}
+                      evidencia={`padrão de erro "${f.erro_dominante.nome}" identificado nas minhas respostas`}
+                      onSaldo={setSparks}
+                      testid={`dash-intervencao-${f.processo_id}`}
+                    >
+                      <IntervencaoMentis
+                        erroId={f.erro_dominante.id}
+                        processoId={f.processo_id}
+                        causaNome={f.erro_dominante.nome}
+                        processoNome={f.processo_nome}
+                        sparks={sparks}
+                        onSparks={setSparks}
+                        testid={`dash-intervencao-${f.processo_id}-tratamento`}
+                      />
+                    </CardDeMelhora>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
+          {/* -------------------------------------------------------------
+              5. HOJE — o que tem hora marcada
+              ------------------------------------------------------------- */}
+          <div className="space-y-3" data-tour="dash-hoje">
+            <HojeNoCronograma semana={cronograma} />
+            {revisoes?.resumo?.questoes > 0 && (
+              <Link to="/revisoes" className="block" data-testid="dash-revisoes">
+                <ResumoDaFila resumo={revisoes.resumo} />
+              </Link>
+            )}
+          </div>
+
+          {/* -------------------------------------------------------------
+              6. DOMÍNIO POR FRENTE — com NOME, não só porcentagem (ver
+              `lib/dominio.js`: a régua da escola não é esta, e o aluno não
+              deveria ter de inventar uma). Some inteira enquanto não há
+              medida, em vez de mostrar quatro barras zeradas.
+              ------------------------------------------------------------- */}
+          {hasMasteryData && (
+            <section data-testid="dash-mastery" data-tour="dash-mastery">
+              <div className="secao-cabeca">
+                <h2 className="secao-titulo">Seu domínio</h2>
+                <Link to="/cognitive-profile" className="-my-2 inline-flex items-center gap-1 py-2 text-xs font-semibold text-[#7FD8FF] hover:underline">
+                  Detalhes <ArrowRight className="h-3 w-3" />
+                </Link>
+              </div>
+              <div className="grid gap-2.5 sm:grid-cols-2">
+                {rankedHubs.map((h) => {
+                  const faixa = faixaDeDominio(h.mastery);
+                  return (
+                    <div
+                      key={h.hub}
+                      className="superficie p-4"
+                      data-testid={`dash-mastery-${h.hub}`}
+                    >
+                      <div className="mb-2.5 flex items-baseline justify-between gap-2">
+                        <span className="truncate text-sm font-medium text-white/85">{h.label}</span>
+                        <span
+                          className="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold"
+                          style={{ color: faixa.cor, background: `${faixa.cor}1F` }}
+                        >
+                          {faixa.nome}
+                        </span>
+                      </div>
+                      <div className="barra" data-cheia={faixa.valor >= 100}>
+                        <i
+                          style={{
+                            width: `${faixa.valor}%`,
+                            background: `linear-gradient(90deg, ${faixa.cor}, #8B7BFF)`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
+          {/* -------------------------------------------------------------
+              7. CONQUISTAS — clicáveis
+              ------------------------------------------------------------- */}
+          <section data-testid="dash-achievements" data-tour="dash-conquistas">
+            <div className="secao-cabeca">
+              <h2 className="secao-titulo">
+                <Trophy className="h-4 w-4 text-[#7FD8FF]" /> Conquistas
+              </h2>
+              <Link to="/conquistas" className="-my-2 inline-flex items-center gap-1 py-2 text-xs font-semibold text-[#7FD8FF] hover:underline">
+                {feitas}/{conquistas.length} <ArrowRight className="h-3 w-3" />
               </Link>
             </div>
-            <div className="grid gap-3 md:grid-cols-2">
-              {focos.map((f) => (
-                <CardDeMelhora
-                  key={f.key}
-                  titulo={f.titulo}
-                  descricao={f.descricao}
-                  medida={f.medida}
-                  medidaLabel={f.medidaLabel}
-                  treino={f.treino}
-                  assunto={f.titulo}
-                  evidencia={f.evidencia}
-                  onSaldo={setSparks}
-                  testid={`dash-foco-${f.key}`}
-                />
-              ))}
-              {/* Dificuldades com CAUSA identificada. Mesmo formato de card,
-                  mesma seção: a diferença (modo de errar x matéria) aparece
-                  no rótulo do topo, não numa segunda seção com outro título. */}
-              {fracos.slice(0, 2).map((f) => {
-                const hab = (f.habilidades || [])[0];
-                return (
-                  <CardDeMelhora
-                    key={f.processo_id}
-                    rotuloTopo="Causa identificada"
-                    titulo={f.erro_dominante.nome}
-                    descricao={f.processo_nome}
-                    medida={f.percentual_acerto != null ? `${Math.round(f.percentual_acerto)}%` : null}
-                    medidaLabel="de acerto"
-                    treino={hab ? { href: `/treino?hab=${hab.id}`, rotulo: "Treinar isto" } : null}
-                    assunto={f.processo_nome}
-                    evidencia={`padrão de erro "${f.erro_dominante.nome}" identificado nas minhas respostas`}
-                    onSaldo={setSparks}
-                    testid={`dash-intervencao-${f.processo_id}`}
-                  >
-                    <IntervencaoMentis
-                      erroId={f.erro_dominante.id}
-                      processoId={f.processo_id}
-                      causaNome={f.erro_dominante.nome}
-                      processoNome={f.processo_nome}
-                      sparks={sparks}
-                      onSparks={setSparks}
-                      testid={`dash-intervencao-${f.processo_id}-tratamento`}
-                    />
-                  </CardDeMelhora>
-                );
-              })}
+            <PainelDeConquistas
+              contexto={{
+                totalRespondidas, streak, hubs, analyses, rounds, weekActiveDays,
+                redacoesCorrigidas: redacoes.filter((r) => r.avaliacao).length,
+                melhorRedacao,
+              }}
+              limite={8}
+              testid="dash-conquistas-grade"
+            />
+          </section>
+
+          {/* -------------------------------------------------------------
+              8. A MENTIS — uma linha, não um banner de três
+              ------------------------------------------------------------- */}
+          <Link
+            to="/mentis"
+            className="superficie superficie-viva lift flex items-center gap-4 p-4"
+            data-testid="dash-mentis"
+            data-tour="dash-mentis"
+          >
+            <Mentis className="h-11 w-11 shrink-0" estado="neutra" />
+            <div className="min-w-0 flex-1">
+              <div className="font-display text-base font-bold tracking-tight text-white">
+                Pergunte à Mentis por que você erra.
+              </div>
+              <div className="text-xs text-white/50">Ela lê o seu histórico inteiro antes da primeira palavra.</div>
+            </div>
+            <ArrowRight className="h-4 w-4 shrink-0 text-white/40" />
+          </Link>
+
+          {/* -------------------------------------------------------------
+              9. FERRAMENTAS — o resto do produto, visível
+              ------------------------------------------------------------- */}
+          <section data-testid="dash-ferramentas">
+            <div className="secao-cabeca">
+              <h2 className="secao-titulo">Ferramentas</h2>
+            </div>
+            <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+              <Ferramenta
+                to="/redacao"
+                icone={PenLine}
+                nome="Redação"
+                selo={ultimaRedacao ? `Sua melhor: ${melhorRedacao}/1000` : "Nota nas 5 competências"}
+                testid="dash-redacao"
+                tour="dash-redacao"
+              />
+              <Ferramenta
+                to="/minhas-questoes"
+                icone={Sparkles}
+                nome="Questões geradas"
+                selo="A Mentis cria sobre a sua lacuna"
+                testid="dash-minhas-questoes"
+                tour="dash-gerar"
+              />
+              <Ferramenta
+                to="/cognitive-profile"
+                icone={Brain}
+                nome="Meu desempenho"
+                selo="Por que você erra, não quanto"
+                testid="dash-desempenho"
+                tour="dash-desempenho"
+              />
+              <Ferramenta
+                to="/sparks"
+                icone={Zap}
+                nome="Sparks"
+                selo={sparks != null ? `Saldo: ${sparks}` : "Saldo e pacotes"}
+                testid="dash-sparks"
+                tour="dash-sparks"
+              />
+              <Ferramenta
+                to="/comunidade"
+                icone={Users}
+                nome="Comunidade"
+                selo="Responder rende Sparks"
+                testid="dash-comunidade"
+                tour="dash-comunidade"
+              />
+              <Ferramenta
+                to="/aula-ao-vivo"
+                icone={Radio}
+                nome="Aula ao vivo de quinta"
+                selo="Com o 1º colocado de Medicina da USP · 200 Sparks"
+                destaque
+                testid="dash-cursos"
+                tour="dash-cursos"
+              />
+              <Ferramenta
+                to="/mentoria"
+                icone={Medal}
+                nome="Mentoria"
+                selo="Lista de espera · 1º colocado de Medicina da USP"
+                destaque
+                testid="dash-aulas-particulares-cta"
+                tour="dash-aulas"
+              />
+            </div>
+
+            <div className="mt-3 flex flex-wrap items-center gap-2" data-tour="dash-extras">
+              {/* Some sozinho quando o Sapiens já está instalado. */}
+              <BotaoInstalar className="chip pill" testid="dash-instalar">
+                <Download className="h-3.5 w-3.5" /> Instalar o Sapiens no aparelho
+              </BotaoInstalar>
+              <Link
+                to="/sugestoes"
+                state={{ de: "/dashboard" }}
+                className="chip pill"
+                data-testid="dash-sugestoes"
+              >
+                <MessageSquareWarning className="h-3.5 w-3.5" /> Achou um erro? Tem uma ideia?
+              </Link>
             </div>
           </section>
-        )}
-
-        {/* ---------------------------------------------------------------
-            5. HOJE — o que tem hora marcada
-            --------------------------------------------------------------- */}
-        <div className="mt-8 space-y-3" data-tour="dash-hoje">
-          <HojeNoCronograma semana={cronograma} />
-          {revisoes?.resumo?.questoes > 0 && (
-            <Link to="/revisoes" className="block" data-testid="dash-revisoes">
-              <ResumoDaFila resumo={revisoes.resumo} />
-            </Link>
-          )}
         </div>
-
-        {/* ---------------------------------------------------------------
-            6. A MENTIS — uma linha, não um banner de três
-            --------------------------------------------------------------- */}
-        <Link
-          to="/mentis"
-          className="lift mt-8 flex items-center gap-4 rounded-2xl border border-[#4FD9FF]/20 bg-[#4FD9FF]/[0.06] p-4 hover:border-[#4FD9FF]/45"
-          data-testid="dash-mentis"
-          data-tour="dash-mentis"
-        >
-          <Mentis className="h-11 w-11 shrink-0" estado="neutra" />
-          <div className="min-w-0 flex-1">
-            <div className="font-display text-base font-bold tracking-tight text-white">
-              Pergunte à Mentis por que você erra.
-            </div>
-            <div className="text-xs text-white/45">Ela lê o seu histórico inteiro antes da primeira palavra.</div>
-          </div>
-          <ArrowRight className="h-4 w-4 shrink-0 text-white/30" />
-        </Link>
-
-        {/* ---------------------------------------------------------------
-            7. FERRAMENTAS — o resto do produto, visível
-            --------------------------------------------------------------- */}
-        <section className="mt-8" data-testid="dash-ferramentas">
-          <h2 className="mb-3 font-display text-lg font-bold tracking-tight text-white">Ferramentas</h2>
-          <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
-            <Ferramenta
-              to="/redacao"
-              icone={PenLine}
-              nome="Redação"
-              selo={ultimaRedacao ? `Sua melhor: ${melhorRedacao}/1000` : "Nota nas 5 competências"}
-              testid="dash-redacao"
-              tour="dash-redacao"
-            />
-            <Ferramenta
-              to="/minhas-questoes"
-              icone={Sparkles}
-              nome="Questões geradas"
-              selo="A Mentis cria sobre a sua lacuna"
-              testid="dash-minhas-questoes"
-              tour="dash-gerar"
-            />
-            <Ferramenta
-              to="/cognitive-profile"
-              icone={Brain}
-              nome="Meu desempenho"
-              selo="Por que você erra, não quanto"
-              testid="dash-desempenho"
-              tour="dash-desempenho"
-            />
-            <Ferramenta
-              to="/sparks"
-              icone={Zap}
-              nome="Sparks"
-              selo={sparks != null ? `Saldo: ${sparks}` : "Saldo e pacotes"}
-              testid="dash-sparks"
-              tour="dash-sparks"
-            />
-            <Ferramenta
-              to="/comunidade"
-              icone={Users}
-              nome="Comunidade"
-              selo="Responder rende Sparks"
-              testid="dash-comunidade"
-              tour="dash-comunidade"
-            />
-            <Ferramenta
-              to="/cursos"
-              icone={Radio}
-              nome="Aula ao vivo de quinta"
-              selo="Com o 1º colocado de Medicina da USP · 200 Sparks"
-              destaque
-              testid="dash-cursos"
-              tour="dash-cursos"
-            />
-            <Ferramenta
-              to="/mentoria"
-              icone={Medal}
-              nome="Mentoria"
-              selo="Lista de espera · 1º colocado de Medicina da USP"
-              destaque
-              testid="dash-aulas-particulares-cta"
-              tour="dash-aulas"
-            />
-          </div>
-
-          <div className="mt-3 flex flex-wrap items-center gap-2" data-tour="dash-extras">
-            {/* Some sozinho quando o Sapiens já está instalado. */}
-            <BotaoInstalar
-              className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-2 text-xs text-white/50 transition-colors hover:text-white"
-              testid="dash-instalar"
-            >
-              <Download className="h-3.5 w-3.5" /> Instalar o Sapiens no aparelho
-            </BotaoInstalar>
-            <Link
-              to="/sugestoes"
-              state={{ de: "/dashboard" }}
-              className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-2 text-xs text-white/50 transition-colors hover:text-white"
-              data-testid="dash-sugestoes"
-            >
-              <MessageSquareWarning className="h-3.5 w-3.5" /> Achou um erro? Tem uma ideia?
-            </Link>
-          </div>
-        </section>
       </div>
 
       {loaded && showTour && <OnboardingTour onDone={() => setShowTour(false)} />}

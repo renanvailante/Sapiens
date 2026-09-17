@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { api, errMsg} from "../lib/api";
 import Nav from "../components/Nav";
+import PublicarLinkDaLive from "../components/PublicarLinkDaLive";
 import { FileText, Zap, Brain, Users, ClipboardList, ArrowRight, ShieldCheck, RefreshCw, Database, GraduationCap, Flag, Ticket, Gift, MessageSquareWarning, Receipt, Radio } from "lucide-react";
 
 function StatCard({ label, value, hint }) {
@@ -16,6 +17,8 @@ function StatCard({ label, value, hint }) {
 }
 
 const SECTIONS = [
+  { to: "/admin/cursos", icon: Radio, title: "Aula ao vivo de quinta",
+    desc: "O link do Meet e o tema da edição, quem pagou os 200 Sparks (com o WhatsApp de cada um) e a fila de espera dos cursos." },
   { to: "/admin/answer-keys", icon: FileText, title: "Gabaritos ENEM",
     desc: "Importar gabaritos oficiais colados do INEP (inglês + espanhol)." },
   { to: "/admin/feed", icon: Zap, title: "Feed",
@@ -24,8 +27,6 @@ const SECTIONS = [
     desc: "Ingerir JSONs anotados por IA especializada — versionados, verbatim." },
   { to: "/admin/curadoria", icon: ShieldCheck, title: "Curadoria",
     desc: "Oferta de itens por processo, revisão humana do elo raiz e o Sapiens Lab. É o que destrava o portão de crença." },
-  { to: "/admin/cursos", icon: Radio, title: "Aula ao vivo e cursos",
-    desc: "Publicar o link do Meet e o tema da quinta, ver quem pagou (com o WhatsApp de cada um) e a fila de espera dos cursos." },
   { to: "/admin/mentoria", icon: GraduationCap, title: "Lista de espera da mentoria",
     desc: "Quem está esperando a mentoria com o 1º colocado de Medicina da USP. Fale pelo WhatsApp e mova a pessoa na fila." },
   { to: "/admin/reportes-questoes", icon: Flag, title: "Sugestões de correção",
@@ -34,6 +35,8 @@ const SECTIONS = [
     desc: "O que os alunos dizem sobre o produto. Responder devolve o texto para a tela deles." },
   { to: "/admin/promo-codes", icon: Ticket, title: "Códigos de promoção",
     desc: "Criar e gerenciar códigos que dão Sparks de bônus no cadastro." },
+  { to: "/admin/indicacoes", icon: Gift, title: "Indicações",
+    desc: "Quem trouxe quem pelo código pessoal do aluno, quantos já compraram e quanto isso pagou em Sparks." },
   { to: "/admin/history", icon: ClipboardList, title: "Histórico do Aluno",
     desc: "Response Event Store — histórico append-only por aluno com filtros." },
   { to: "/admin/users", icon: Users, title: "Alunos & permissões",
@@ -89,17 +92,25 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen">
       <Nav />
-      <div className="max-w-6xl mx-auto px-6 md:px-10 py-12">
+      <div className="max-w-6xl mx-auto px-5 py-7 md:px-10 md:py-10">
         <div className="flex items-center gap-3 mb-3">
           <ShieldCheck className="w-4 h-4 text-sapiens-accent" />
-          <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-white/50">Área administrativa</div>
+          <div className="secao-olho">Área administrativa</div>
         </div>
-        <h1 className="font-display text-4xl md:text-5xl font-extrabold tracking-tighter text-white" data-testid="admin-title">
+        <h1 className="titulo-tela" data-testid="admin-title">
           Painel de administração
         </h1>
         <p className="mt-3 text-white/60 max-w-2xl">
           Aqui vive tudo que só admins podem ver: importação de gabaritos, gestão do feed, anotações cognitivas, histórico consolidado dos alunos e permissões.
         </p>
+
+        {/* A TAREFA DA SEMANA, antes de qualquer número.
+            Publicar o link do Meet da quinta é a única coisa deste painel que
+            tem prazo: se não sair, aluno que pagou 200 Sparks fica sem sala.
+            Tudo o mais aqui é consulta, e consulta pode esperar o scroll. */}
+        <div className="mt-8">
+          <PublicarLinkDaLive compacto testid="admin-publicar-live" />
+        </div>
 
         {/* Summary */}
         <div className="mt-10 grid grid-cols-2 md:grid-cols-4 gap-3">

@@ -21,7 +21,7 @@
 
 const DIA_SEMANA = 4;         // 0 = domingo ... 4 = quinta (Date.getDay)
 const HORA = 20;              // 20h
-const DURACAO_MINUTOS = 90;
+const DURACAO_MINUTOS = 60;   // espelha LIVE_DURACAO_MINUTOS do backend
 const ABRE_MINUTOS_ANTES = 30;
 
 const CHAVE_ACESSO = "sapiens:live-acesso";
