@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { MENTOR } from "../lib/mentor";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../lib/api";
 import IntervencaoMentis from "../components/IntervencaoMentis";
@@ -19,7 +20,6 @@ import { faixaDeDominio } from "../lib/dominio";
 import { proximaQuinta, temAcessoLocal } from "../lib/live";
 import { argumentoDaLive } from "../lib/venda";
 import { quintasAteAProva } from "../lib/enem";
-import PedirWhatsApp from "../components/PedirWhatsApp";
 import MentorUSP from "../components/MentorUSP";
 import { useDeclararContextoMentis } from "../lib/mentisContexto";
 import {
@@ -190,7 +190,7 @@ function ChamadaDaLive({ inclusa = false, argumento = null }) {
           {aoVivoAgora ? "Acontecendo agora" : "Ao vivo · toda quinta"}
         </div>
         <div className="mt-1 font-display text-base font-bold leading-tight tracking-tight text-white md:text-lg">
-          Aula ao vivo com o 1º colocado de Medicina da USP
+          Aula ao vivo com {MENTOR.nome}
         </div>
         <div className="mt-0.5 text-xs text-white/50">
           {aoVivoAgora
@@ -224,6 +224,56 @@ function ChamadaDaLive({ inclusa = false, argumento = null }) {
         ) : (
           <>Garantir minha vaga <ArrowRight className="h-3.5 w-3.5" /></>
         )}
+      </span>
+    </Link>
+  );
+}
+
+/**
+ * A MENTORIA no Painel.
+ *
+ * Ela existia aqui como um azulejo entre dez outros, lá embaixo, do mesmo
+ * tamanho de "Minhas questões" — e é o ativo mais valioso do produto. Um
+ * atendimento um a um com o primeiro colocado de Medicina da USP não compete
+ * em pé de igualdade com um atalho de utilidade: ou tem peso próprio na
+ * página, ou não é visto.
+ *
+ * O que dá peso aqui é o mesmo que dá peso na `/mentoria`: o ROSTO em tamanho
+ * grande e a credencial por extenso. O resto da peça é curto de propósito —
+ * quem quiser o argumento inteiro abre a página, que é onde ele mora.
+ *
+ * A escassez é dita porque é verdadeira (uma pessoa, agenda finita), nunca
+ * como contador de vagas inventado. Mesma linha ética de `lib/venda.js`.
+ */
+function ChamadaDaMentoria() {
+  return (
+    <Link
+      to="/mentoria"
+      className="lift group relative flex flex-wrap items-center gap-5 overflow-hidden rounded-[26px] border border-amber-300/35 bg-gradient-to-r from-amber-400/[0.14] via-[#4FD9FF]/[0.07] to-transparent p-5 transition-colors hover:border-amber-300/70 md:p-6"
+      data-testid="dash-mentoria"
+      data-tour="dash-mentoria"
+    >
+      <MentorUSP tamanho="m" comSelo={false} testid="dash-mentoria-mentor" />
+
+      <div className="min-w-0 flex-1">
+        <div className="secao-olho inline-flex items-center gap-1.5 text-amber-200/90">
+          <Medal className="h-3.5 w-3.5" /> O mais valioso que o Sapiens tem
+        </div>
+        <div className="mt-1.5 font-display text-xl font-bold leading-snug tracking-tight text-white md:text-2xl">
+          Mentoria um a um com {MENTOR.nome}
+        </div>
+        <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-white/80">
+          {MENTOR.titulo}. Ele olha a <strong className="font-semibold text-white">sua</strong> semana,
+          diz o que cortar e o que você está estudando à toa.
+        </p>
+        <p className="mt-1.5 text-sm text-amber-100/80">
+          É uma pessoa só, com agenda finita — por isso é lista de espera, não agendamento.
+        </p>
+      </div>
+
+      <span className="pill btn-calor inline-flex shrink-0 items-center gap-2 rounded-full px-6 py-3.5 text-sm font-bold">
+        Entrar na lista
+        <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
       </span>
     </Link>
   );
@@ -267,9 +317,15 @@ function Ferramenta({ to, icone: Icone, nome, selo, destaque, testid, onClick, t
   );
 }
 
-// Marca de "o guia já abriu nesta sessão do navegador". Ver
-// `abrirGuiaDaSessao`, dentro do componente.
-const GUIA_DA_SESSAO = "sapiens:guia-da-sessao";
+// Marca LOCAL de "este aluno já viu o guia". Ver `abrirGuiaSeNunca`.
+//
+// A fonte da verdade é o servidor (`flags.guia_visto`); isto aqui é só o
+// atalho que evita o guia piscar meio segundo enquanto a resposta vem, e que
+// faz o comportamento certo sobreviver a uma falha de rede.
+//
+// **Por aluno, e não por navegador**: sem o `user_id` na chave, dois irmãos
+// no mesmo computador dividiriam a marca, e o segundo nunca veria o guia.
+const chaveDoGuia = (userId) => `sapiens:guia-visto:${userId || "anonimo"}`;
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -363,24 +419,33 @@ export default function Dashboard() {
     api.get("/engajamento/me").then(({ data }) => setEngajamento(data)).catch(() => {});
   }, []);
 
-  // Uma vez por SESSÃO do navegador, não uma vez na vida: quem entra na
-  // plataforma vê o guia; quem recarrega a página no meio do estudo, não — a
-  // marca sobrevive ao F5 da mesma aba e morre quando a aba fecha. Entrar de
-  // novo (login novo, aba nova) mostra o guia de novo, que é o pedido.
+  // UMA VEZ NA VIDA — revisto em 2026-09-17.
   //
-  // `sessionStorage` e não `localStorage` de propósito: em `localStorage` a
-  // marca duraria para sempre e o guia voltaria a ser uma vez na vida.
-  const marcarGuiaDaSessao = useCallback(() => {
-    try { sessionStorage.setItem(GUIA_DA_SESSAO, "1"); } catch { /* armazenamento bloqueado */ }
-  }, []);
+  // Era uma vez por sessão do navegador: quem entrava na plataforma via o
+  // guia de novo, todo dia, vinte e um balões. Um tutorial que reaparece a
+  // cada entrada deixa de ser ajuda e vira pedágio, e a única coisa que ele
+  // ensina a partir da segunda vez é onde fica o "Pular".
+  //
+  // Agora a marca é PERMANENTE e mora em dois lugares, de propósito:
+  //
+  // · `flags.guia_visto` no servidor é a fonte da verdade. É ela que faz o
+  //   guia não voltar depois de um logout, de uma troca de aparelho ou de uma
+  //   janela anônima — que é exatamente o que o `sessionStorage` anterior não
+  //   conseguia, porque morria junto com a aba.
+  // · `localStorage`, por aluno, é o atalho: evita o balão piscar enquanto a
+  //   resposta do servidor não chega, e mantém o comportamento certo se a
+  //   rede falhar.
+  //
+  // Quem quiser rever tem duas portas explícitas, e as duas continuam de pé:
+  // o botão "Guia" no topo do Painel e o "Rever o guia" no menu.
+  const marcarGuiaVisto = useCallback(() => {
+    try { localStorage.setItem(chaveDoGuia(user?.user_id), "1"); } catch { /* bloqueado */ }
+  }, [user]);
 
-  const abrirGuiaDaSessao = useCallback(() => {
-    try {
-      if (sessionStorage.getItem(GUIA_DA_SESSAO)) return;
-    } catch { /* armazenamento bloqueado: mostra o guia, é o comportamento pedido */ }
-    marcarGuiaDaSessao();
-    setShowTour(true);
-  }, [marcarGuiaDaSessao]);
+  const jaViuOGuia = useCallback(() => {
+    try { return Boolean(localStorage.getItem(chaveDoGuia(user?.user_id))); }
+    catch { return false; }
+  }, [user]);
 
   // O guia da Mentis. Três portas: `?guia=1` (com que `/bem-vindo` termina),
   // os botões "Guia" / "Rever o guia", e a ABERTURA AUTOMÁTICA a cada entrada
@@ -392,15 +457,18 @@ export default function Dashboard() {
   // efeito de montagem não veria esse clique nunca.
   useEffect(() => {
     if (!params.get("guia")) return;
-    marcarGuiaDaSessao();
+    // Pedido explícito ("Rever o guia"): abre mesmo já tendo sido visto, e
+    // sem mexer na marca — rever não é ver pela primeira vez.
     setShowTour(true);
     const limpo = new URLSearchParams(params);
     limpo.delete("guia");
     setParams(limpo, { replace: true });
-  }, [params, setParams, marcarGuiaDaSessao]);
+  }, [params, setParams]);
 
   useEffect(() => {
     if (params.get("guia")) return; // tratado no efeito acima
+    if (jaViuOGuia()) return;       // atalho local: nem chega a perguntar
+
     // `sessionStorage`: a marca que `/bem-vindo` deixa ao ser pulado ou
     // concluído. Sem ela, um PUT que falhou (rede oscilando) deixava
     // `flags.onboarded` em `false` no servidor e esta linha mandava o aluno
@@ -409,21 +477,29 @@ export default function Dashboard() {
     try {
       jaPassouPeloBemVindo = Boolean(sessionStorage.getItem("sapiens:onboarding-visto"));
     } catch { /* navegador com armazenamento bloqueado: segue o fluxo normal */ }
-    if (jaPassouPeloBemVindo) {
-      abrirGuiaDaSessao();
-      return;
-    }
+
     api.get("/firestore/students/me/behavior")
       .then(({ data }) => {
+        const flags = data?.flags || {};
+        // Já viu em outro aparelho ou antes de um logout: alinha a marca
+        // local e não mostra nada.
+        if (flags.guia_visto === true) {
+          marcarGuiaVisto();
+          return;
+        }
         // Primeiro acesso de todos: `/bem-vindo` vem antes, e ele termina
         // mandando para cá com `?guia=1`. Abrir o tour aqui só faria o balão
         // piscar meio segundo antes do redirecionamento.
-        if (data?.flags?.onboarded === false) nav("/bem-vindo", { replace: true });
-        else abrirGuiaDaSessao();
+        if (flags.onboarded === false && !jaPassouPeloBemVindo) {
+          nav("/bem-vindo", { replace: true });
+          return;
+        }
+        setShowTour(true);
       })
-      // Falha de rede não pode custar o guia: ele não depende de nada do
-      // servidor para ser exibido.
-      .catch(() => abrirGuiaDaSessao());
+      // Falha de rede não pode custar o PRIMEIRO guia: ele não depende de
+      // nada do servidor para ser exibido, e quem já o viu está protegido
+      // pela marca local lida lá em cima.
+      .catch(() => setShowTour(true));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -638,18 +714,20 @@ export default function Dashboard() {
           </div>
 
           {/* -------------------------------------------------------------
-              3. A AULA AO VIVO DE QUINTA — o único compromisso com hora
-              marcada que o produto tem.
+              3. A PESSOA. Duas peças, nesta ordem, e a ordem é o argumento:
+              a MENTORIA (um a um, o ativo mais valioso do produto) e depois
+              a AULA AO VIVO (um para muitos, toda quinta).
+
+              As duas são o mesmo mentor em graus diferentes de proximidade,
+              então ficam juntas: separá-las fazia a mentoria competir com
+              atalhos de utilidade lá embaixo, onde ela perdia sempre.
               ------------------------------------------------------------- */}
           <div className="space-y-3">
+            <ChamadaDaMentoria />
             <ChamadaDaLive
               inclusa={Boolean(direitos.lives_inclusas)}
               argumento={argumentoDaAula}
             />
-            {/* Quem ainda não tem WhatsApp na conta (conta antiga, ou entrou
-                pelo Google): é por ele que o link da live chega. Some sozinho
-                depois de respondido. */}
-            <PedirWhatsApp compacto testid="dash-pedir-whatsapp" />
           </div>
 
           {/* -------------------------------------------------------------
@@ -866,7 +944,7 @@ export default function Dashboard() {
                 to="/aula-ao-vivo"
                 icone={Radio}
                 nome="Aula ao vivo de quinta"
-                selo="Com o 1º colocado de Medicina da USP · 200 Sparks"
+                selo={`Com ${MENTOR.nome} · 200 Sparks`}
                 destaque
                 testid="dash-cursos"
                 tour="dash-cursos"
@@ -875,7 +953,7 @@ export default function Dashboard() {
                 to="/mentoria"
                 icone={Medal}
                 nome="Mentoria"
-                selo="Lista de espera · 1º colocado de Medicina da USP"
+                selo={`Lista de espera · ${MENTOR.nome}`}
                 destaque
                 testid="dash-aulas-particulares-cta"
                 tour="dash-aulas"
@@ -900,7 +978,11 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {loaded && showTour && <OnboardingTour onDone={() => setShowTour(false)} />}
+      {loaded && showTour && (
+        <OnboardingTour
+          onDone={() => { setShowTour(false); marcarGuiaVisto(); }}
+        />
+      )}
     </div>
   );
 }

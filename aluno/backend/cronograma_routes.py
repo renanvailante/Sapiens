@@ -9,13 +9,20 @@ Três portas de entrada para os compromissos e uma só saída:
     (`/cronograma/compromissos/texto`) — custa `TEXTO_COST` Sparks, porque é
     a única das três que chama o modelo.
 
-E a semana de estudo em volta deles (`POST /cronograma/gerar`), que é
-**grátis por padrão**. Isto não é generosidade: a montagem é determinística
-(`cronograma.alocar` sobre `prioridade_enem.ranking`), então cobrar por ela
-seria cobrar por uma conta que o servidor faz em milissegundos. A Mentis entra
-por cima, opcional, por `MENTIS_COST` Sparks — e o que ela acrescenta é TEXTO:
-o horário e a prioridade de cada bloco já estavam decididos antes de ela ser
-chamada, e continuam iguais depois.
+E a semana de estudo em volta deles (`POST /cronograma/gerar`), cujo preço
+depende do que se está pedindo (ver `_custo_da_montagem`):
+
+  * **montar uma semana pela primeira vez — grátis.** A alocação é
+    determinística (`cronograma.alocar` sobre `prioridade_enem.ranking`), e
+    cobrar por ela seria cobrar por uma conta feita em milissegundos;
+  * **REMONTAR uma semana que já tem plano — `REMONTAGEM_COST` Sparks**, não
+    pelo custo de máquina, mas porque a remontagem apaga os blocos marcados
+    como feitos;
+  * **com a Mentis — `MENTIS_COST` Sparks**, e o que ela acrescenta é TEXTO:
+    o horário e a prioridade de cada bloco já estavam decididos antes de ela
+    ser chamada, e continuam iguais depois.
+
+Os preços nunca se somam: uma ação é uma cobrança.
 
 Por isso a falha da Mentis aqui não devolve erro: devolve os Sparks **e a
 semana montada mesmo assim**. Um aluno que pediu o cronograma nunca fica sem
@@ -39,6 +46,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
+from pymongo.errors import DuplicateKeyError
 
 import ai_service
 import annotation_service
@@ -72,10 +80,24 @@ def set_db(db):
 # aritmética, e aritmética não vira produto pago neste app.
 
 TEXTO_COST = 10    # "me diz seus compromissos" — 1 chamada curta de extração
-MENTIS_COST = 30   # a Mentis reescrevendo os blocos já alocados
+MENTIS_COST = 50   # a Mentis reescrevendo os blocos já alocados
+# REMONTAR uma semana que JÁ tem cronograma. A primeira montagem continua de
+# graça — é aritmética, e aritmética não vira produto pago aqui.
+#
+# O que a remontagem custa não é CPU: é que ela DESCARTA o plano da semana e
+# os blocos marcados como feitos (ver o final de `gerar_cronograma`). Um botão
+# gratuito que apaga o progresso da semana convida a ser apertado de novo a
+# cada dúvida, e o aluno perde o registro do que já fez. Um preço pequeno é o
+# atrito que faz a pessoa reler a semana montada antes de jogá-la fora.
+REMONTAGEM_COST = 10
 
-_TIMEOUT_TEXTO = 30.0
-_TIMEOUT_PLANO = 45.0
+_TIMEOUT_TEXTO = 10.0
+_MAX_TOKENS_TEXTO = 700
+# Orçamento TOTAL desde 17/09. O plano reescreve o texto de cada bloco da
+# semana, então é o chamador de texto que mais escreve — 15 s e um teto de
+# saída proporcional a isso, ainda longe do minuto que o aluno via antes.
+_TIMEOUT_PLANO = 15.0
+_MAX_TOKENS_PLANO = 1600
 _TEXTO_MAX_CHARS = 800
 _ICS_MAX_BYTES = 1_000_000
 _FUSO_PADRAO = "America/Sao_Paulo"
@@ -123,6 +145,53 @@ def _safe_reembolso(uid: str, custo: int):
     except Exception:  # noqa: BLE001
         logger.exception("REEMBOLSO FALHOU (cronograma): %d Sparks devidos a %s.", custo, uid)
         return None
+
+
+def _custo_da_montagem(*, com_mentis: bool, remontagem: bool) -> int:
+    """O preço de UMA montagem de semana. Nunca soma dois preços.
+
+    A ordem importa: com a Mentis, o preço é o dela e a remontagem vem junto —
+    quem apertou um botão paga uma vez. Somar `MENTIS_COST + REMONTAGEM_COST`
+    faria o mesmo botão custar 50 na primeira semana e 60 na segunda, sem que
+    nada na tela explicasse a diferença.
+    """
+    if com_mentis:
+        return MENTIS_COST
+    return REMONTAGEM_COST if remontagem else 0
+
+
+def _saldo_seguro(uid: str) -> int | None:
+    try:
+        return fs.read_sparks_balance(uid)
+    except Exception:  # noqa: BLE001
+        logger.exception("cronograma: leitura de saldo falhou — resposta segue sem saldo")
+        return None
+
+
+async def _liberar_montagem(claim_id: str | None) -> None:
+    """Falhou antes de entregar: a chave volta a ficar livre. Sempre DEPOIS do
+    reembolso, quando houver — uma chave liberada pode ser cobrada de novo."""
+    if not claim_id:
+        return
+    try:
+        await _db.cronograma_cobrancas.delete_one({"_id": claim_id})
+    except Exception:  # noqa: BLE001
+        logger.exception("cronograma: não consegui liberar a reivindicação %s.", claim_id)
+
+
+async def _concluir_montagem(claim_id: str | None) -> None:
+    """Entregue: a chave fica marcada e o mesmo toque repetido não cobra de
+    novo. Falhar aqui não pode derrubar uma semana já gravada — o pior caso
+    é um retry montar de novo, que é o comportamento de antes desta mudança."""
+    if not claim_id:
+        return
+    try:
+        await _db.cronograma_cobrancas.update_one(
+            {"_id": claim_id},
+            {"$set": {"status": "concluida", "atualizado_em": _agora_iso()}},
+        )
+    except Exception:  # noqa: BLE001
+        logger.exception("cronograma: não consegui concluir a reivindicação %s.", claim_id)
 
 
 def _cobrar(uid: str, custo: int) -> int:
@@ -337,6 +406,7 @@ def _montar_semana(doc: dict, semana_iso: str) -> dict[str, Any]:
         "total_concluidos": sum(1 for b in blocos if b["concluido"]),
         "custo_texto": TEXTO_COST,
         "custo_mentis": MENTIS_COST,
+        "custo_remontagem": REMONTAGEM_COST,
     }
 
 
@@ -523,7 +593,8 @@ async def compromissos_por_texto(
     inicio = time.monotonic()
     try:
         resultado = await ai_service.generate_json_resiliente(
-            TEXTO_SYSTEM, contexto, thinking_level="MINIMAL", timeout=_TIMEOUT_TEXTO
+            TEXTO_SYSTEM, contexto, thinking_level="MINIMAL", timeout=_TIMEOUT_TEXTO,
+            max_output_tokens=_MAX_TOKENS_TEXTO,
         )
         novos = cg.validar_compromissos_do_modelo(resultado, semana_iso=semana_iso, origem=origem)
         await llm_telemetry.persist(
@@ -737,8 +808,41 @@ mesmo índice. Sem markdown, sem texto fora do JSON."""
 
 class GerarPayload(BaseModel):
     semana: Optional[str] = None
-    # False (padrão) monta a semana sem tocar no modelo e sem custar nada.
+    # False (padrão) monta a semana sem tocar no modelo.
     com_mentis: bool = False
+    # Chave de idempotência por TENTATIVA de montagem, gerada pelo cliente.
+    #
+    # Sem ela, o duplo toque no "Montar com a Mentis" — que no celular é o
+    # gesto mais comum de todos — cobrava DUAS vezes e montava a semana duas
+    # vezes. `Optional` porque um cliente antigo (aba aberta durante o deploy)
+    # continua funcionando: ele só não ganha a proteção.
+    idempotency_key: Optional[str] = Field(default=None, min_length=8, max_length=100)
+
+
+async def _reivindicar_montagem(uid: str, chave: Optional[str]) -> tuple[str | None, dict | None]:
+    """Vira o dono desta montagem, ou devolve a reivindicação de quem já é.
+
+    Mesmo contrato de `redacao_routes._reivindicar`, com a coleção própria: um
+    `insert_one` com `_id` determinístico é a única primitiva do Mongo que
+    decide um empate entre dois cliques sem uma transação.
+
+    `(claim_id, None)` = sou o dono, siga. `(claim_id, doc)` = já existe —
+    quem chamou decide (devolver o resultado ou 409).
+    """
+    if not chave:
+        return None, None
+    claim_id = f"{uid}:cronograma:{chave}"
+    try:
+        await _db.cronograma_cobrancas.insert_one({
+            "_id": claim_id,
+            "user_id": uid,
+            "status": "processando",
+            "criado_em": _agora_iso(),
+        })
+        return claim_id, None
+    except DuplicateKeyError:
+        doc = await _db.cronograma_cobrancas.find_one({"_id": claim_id})
+        return claim_id, (doc or {})
 
 
 @router.post("/cronograma/gerar")
@@ -749,14 +853,47 @@ async def gerar_cronograma(
 ):
     """Monta a semana de estudo em volta dos compromissos.
 
-    **Grátis por padrão.** `com_mentis=true` cobra `MENTIS_COST` Sparks para a
-    Mentis escrever o conteúdo de cada bloco — e se ela falhar, os Sparks
-    voltam e a semana determinística é entregue do mesmo jeito. Pedir
-    cronograma nunca termina em mão vazia.
+    **O que custa o quê** (revisto em 2026-09-17):
+
+    * **Primeira montagem de uma semana: grátis.** A alocação é determinística
+      (`cronograma.alocar` sobre `prioridade_enem.ranking`) e cobrar por ela
+      seria cobrar por uma conta que o servidor faz em milissegundos.
+    * **Remontar uma semana que já tem plano: `REMONTAGEM_COST`.** Ver a nota
+      da constante: a remontagem DESCARTA os blocos marcados como feitos, e um
+      botão gratuito que apaga o progresso da semana é apertado sem pensar.
+    * **Com a Mentis: `MENTIS_COST`.** Ela reescreve o conteúdo de cada bloco
+      — o horário e a prioridade já estavam decididos antes.
+
+    **Uma ação, UMA cobrança.** Remontar COM a Mentis paga `MENTIS_COST` e
+    nada mais: os dois preços nunca se somam, porque a pessoa apertou um botão
+    só. `_custo_da_montagem` é quem decide isso, num lugar só.
+
+    Se a Mentis falhar, os Sparks dela voltam e a semana determinística é
+    entregue do mesmo jeito — pedir cronograma nunca termina em mão vazia.
     """
     fs.ensure_student_profile(user.user_id, user.name, user.email)
     doc = await _ler_doc(user.user_id)
     semana_iso = _semana_pedida(payload.semana, doc)
+
+    # Reivindica ANTES de qualquer débito: dois cliques na mesma tentativa
+    # viram uma cobrança e uma montagem.
+    claim_id, existente = await _reivindicar_montagem(user.user_id, payload.idempotency_key)
+    if existente is not None:
+        if existente.get("status") == "concluida":
+            # Retry do mesmo toque: devolve a semana já montada, sem cobrar.
+            atual = await _ler_doc(user.user_id)
+            return {
+                "semana": _montar_semana(atual, semana_iso),
+                "prioridades": await _prioridades(user.user_id),
+                "sparks_balance": _saldo_seguro(user.user_id),
+                "cobrado": 0,
+                "aviso": None,
+                "sem_horario_livre": not (atual.get("plano") or {}).get("blocos"),
+            }
+        raise HTTPException(
+            status_code=409,
+            detail="Sua semana já está sendo montada. Aguarde alguns segundos.",
+        )
 
     prioridades = await _prioridades(user.user_id)
     revisoes, fracas = await asyncio.gather(
@@ -773,12 +910,30 @@ async def gerar_cronograma(
     recado = None
     com_mentis = False
     saldo = None
-    cobrado = 0
     aviso = None
 
+    # UMA cobrança por ação. `_custo_da_montagem` é a única linha do arquivo
+    # que decide preço, e o frontend nunca manda valor nenhum.
+    #
+    # "Já tem plano" é medido pela semana PEDIDA, e não por existir qualquer
+    # plano: montar a semana que vem pela primeira vez é uma primeira
+    # montagem, mesmo que a semana atual já esteja montada.
+    ja_tem_plano = (doc.get("plano") or {}).get("semana") == semana_iso
+    cobrado = _custo_da_montagem(
+        com_mentis=payload.com_mentis and bool(blocos),
+        # `and bool(blocos)`: sem horário livre não sai bloco nenhum, e cobrar
+        # pela remontagem de uma semana vazia seria cobrar por nada. A tela
+        # nesse caso já manda o aluno ajustar a janela de estudo.
+        remontagem=ja_tem_plano and bool(blocos),
+    )
+    if cobrado:
+        try:
+            saldo = _cobrar(user.user_id, cobrado)
+        except HTTPException:
+            await _liberar_montagem(claim_id)
+            raise
+
     if payload.com_mentis and blocos:
-        saldo = _cobrar(user.user_id, MENTIS_COST)
-        cobrado = MENTIS_COST
         inicio = time.monotonic()
         try:
             resultado = await ai_service.generate_json_resiliente(
@@ -786,6 +941,7 @@ async def gerar_cronograma(
                 cg.resumo_para_modelo(blocos, prioridades, compromissos),
                 thinking_level="MINIMAL",
                 timeout=_TIMEOUT_PLANO,
+                max_output_tokens=_MAX_TOKENS_PLANO,
             )
             blocos, reescritos = cg.aplicar_enriquecimento(blocos, resultado)
             if not reescritos:
@@ -807,7 +963,11 @@ async def gerar_cronograma(
                 duration_ms=(time.monotonic() - inicio) * 1000,
             )
         except Exception:  # noqa: BLE001
-            saldo = _safe_reembolso(user.user_id, MENTIS_COST)
+            # Devolve o que foi COBRADO, e não `MENTIS_COST` cravado: numa
+            # remontagem com a Mentis o valor debitado foi o dela, e num
+            # cenário futuro em que os preços mudem, um número escrito à mão
+            # aqui devolveria a quantia errada em silêncio.
+            devolvido, saldo = cobrado, _safe_reembolso(user.user_id, cobrado)
             cobrado = 0
             aviso = (
                 "A Mentis não conseguiu comentar sua semana agora e seus Sparks foram devolvidos — "
@@ -815,7 +975,7 @@ async def gerar_cronograma(
             )
             logger.exception(
                 "cronograma: enriquecimento falhou para %s — %d Sparks devolvidos.",
-                user.user_id, MENTIS_COST,
+                user.user_id, devolvido,
             )
 
     plano = {
@@ -832,6 +992,7 @@ async def gerar_cronograma(
     # mais. Semanas anteriores continuam intactas.
     concluidos = {k: v for k, v in (doc.get("concluidos") or {}).items() if k != semana_iso}
     await _gravar(user.user_id, {"plano": plano, "concluidos": concluidos})
+    await _concluir_montagem(claim_id)
 
     return {
         "semana": _montar_semana({**doc, "plano": plano, "concluidos": concluidos}, semana_iso),

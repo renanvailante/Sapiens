@@ -44,16 +44,41 @@
     --bio-violeta: #8B7BFF;
     --bio-azul-fundo: #1F4F95;
 
-    /* ---- Tinta ---- */
+    /* ---- Tinta ----
+       Três degraus, e a distância entre eles é o que faz hierarquia sem
+       precisar de tamanho nem de peso. `--bio-fraco` subiu de #7389A8 para
+       #8CA2C0 em 2026-09-16: no degrau antigo uma legenda sobre o abismo
+       ficava em 3.9:1, abaixo do mínimo de texto pequeno, e a tela inteira
+       parecia estar com o brilho baixo. */
     --bio-texto: #E8F2FF;
-    --bio-suave: #A7BCD9;       /* texto secundário */
-    --bio-fraco: #7389A8;       /* legendas, metadados */
+    --bio-suave: #AFC4E0;       /* texto secundário */
+    --bio-fraco: #8CA2C0;       /* legendas, metadados */
+    --bio-apagado: #6D82A2;     /* o que existe mas não é para ser lido agora */
 
-    /* ---- Vidro ---- */
-    --bio-vidro: rgba(13, 24, 44, 0.58);
-    --bio-vidro-alto: rgba(17, 31, 55, 0.72);
-    --bio-linha: rgba(150, 200, 255, 0.14);
-    --bio-linha-forte: rgba(150, 200, 255, 0.26);
+    /* ---- Vidro ----
+       Medido em 2026-09-17 contra `--bio-abismo`, que é o fundo real de
+       quase toda a tela. O texto sempre passou com folga (17.9 / 11.4 / 7.8 /
+       5.2 : 1); quem nunca passou foi a BORDA, e é a borda que diz onde um
+       balão começa e o fundo acaba:
+
+           --bio-linha        .14 -> 1.25:1
+           --bio-linha-forte  .26 -> 1.70:1
+           fundo do .chip     .05 -> 1.08:1
+
+       O mínimo da WCAG para limite de componente (1.4.11) é 3:1, e 1.25 não
+       é "sutil", é ausente: num celular no sol os cards desapareciam no
+       fundo e a tela virava texto solto flutuando. Os valores abaixo são os
+       menores que cruzam 3:1 — .46 dá 3.09 e .62 dá 4.82.
+
+       O preenchimento continua sendo vidro escuro de propósito (um fundo com
+       3:1 contra a página viraria cinza e mataria a profundidade); quem
+       carrega o limite é a borda, que é exatamente o que a norma pede. O
+       vidro subiu só o suficiente para o balão ler como superfície, não como
+       recorte. */
+    --bio-vidro: rgba(21, 35, 60, 0.80);
+    --bio-vidro-alto: rgba(29, 47, 80, 0.88);
+    --bio-linha: rgba(150, 200, 255, 0.46);
+    --bio-linha-forte: rgba(150, 200, 255, 0.62);
     --bio-brilho: rgba(79, 217, 255, 0.35);
 
     /* ---- Tokens shadcn/ui: agora TODOS escuros ----
@@ -102,6 +127,36 @@
        como sombra de outro material. */
     --btn-pe: #1F4F95;
     --btn-pe-calor: #A8641A;
+
+    /* ---- Ritmo e elevação (2026-09-16) ----
+       Antes cada tela escolhia o próprio raio e a própria sombra na hora de
+       escrever a classe, e o produto tinha sete raios diferentes em pé. Uma
+       escala nomeada faz duas coisas: a superfície nova nasce igual às
+       outras, e mudar a régua inteira passa a ser mudar quatro linhas. */
+    --r-p: 14px;
+    --r-m: 18px;
+    --r-g: 24px;
+    --r-gg: 30px;
+
+    --elev-1: 0 2px 10px -4px rgba(0, 0, 0, 0.7);
+    --elev-2: 0 18px 44px -26px rgba(0, 0, 0, 0.9);
+    --elev-3: 0 30px 70px -32px rgba(0, 0, 0, 0.95);
+
+    /* ---- Movimento ----
+       Uma curva só para tudo o que é interface reagindo ao dedo
+       (`--mov-saida`), e uma com um respiro no fim para o que ENTRA na tela
+       (`--mov-entrada`). Misturar easings é o que faz uma interface parecer
+       montada por três pessoas diferentes. */
+    --mov-saida: cubic-bezier(0.22, 1, 0.36, 1);
+    --mov-entrada: cubic-bezier(0.16, 1, 0.3, 1);
+    --mov-rapido: 140ms;
+    --mov-medio: 260ms;
+    --mov-lento: 480ms;
+
+    /* Altura da barra inferior do celular. Vive num token porque três coisas
+       precisam do mesmo número: a própria barra, a faixa morta do corpo e o
+       ícone flutuante da Mentis, que não pode pousar em cima dela. */
+    --barra-inferior-h: 4.25rem;
 }
 
 * {
@@ -113,8 +168,43 @@
    auroras frias em movimento muito lento, uma malha de 1px quase invisível
    (o "tech" de organic tech), e a vinheta que fecha as bordas para o centro
    ficar sendo o lugar onde se olha. */
-html, body, #root {
+/* ---------------------------------------------------------------------------
+   O ABISMO MORA NO `html`, E SÓ NELE — 2026-09-16
+   ---------------------------------------------------------------------------
+
+   As duas camadas de ambiente logo abaixo (`body::before`, as auroras;
+   `body::after`, a malha e a vinheta) existiam desde 03/09 e NUNCA apareceram
+   na tela. O produto inteiro rodava sobre um preto chapado, e o sistema visual
+   descrevia um ambiente que nenhum aluno viu.
+
+   O motivo é a ordem de pintura do contexto de empilhamento raiz (CSS 2.1,
+   apêndice E), que é contraintuitiva exatamente neste ponto:
+
+     1. fundo do elemento raiz (`html`)
+     2. descendentes com `z-index` NEGATIVO  <- as auroras estão aqui
+     3. fundo dos descendentes em fluxo normal  <- `body` e `#root` estão aqui
+     4. conteúdo
+
+   Ou seja: o fundo do `body` é pintado DEPOIS de um filho com `z-index: -2`,
+   não antes. Enquanto `body` (e `#root`) tiveram `background-color`, eles
+   cobriram as próprias auroras — um fundo opaco no passo 3 apaga tudo o que
+   foi desenhado no passo 2.
+
+   A correção é pôr a cor só no `html`, que é pintado no passo 1. Não há
+   lampejo branco entre a primeira pintura e a montagem do React: a cor do
+   elemento raiz é a cor da tela desde o primeiro quadro.
+
+   REGRA, para quem mexer aqui depois: nada entre `html` e o conteúdo pode
+   ganhar `background-color` opaco. Se uma tela precisar de fundo próprio, ela
+   pinta a PRÓPRIA superfície (um `.card-sapiens`, uma `.superficie`), nunca o
+   `body` nem o `#root`.
+   --------------------------------------------------------------------------- */
+html {
     background-color: var(--bio-abismo);
+    min-height: 100%;
+}
+
+body, #root {
     color: var(--bio-texto);
     font-family: 'Manrope', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
@@ -219,13 +309,28 @@ body::after {
 }
 
 /* Barra de navegação — o mesmo vidro, mais denso, porque fica sobre conteúdo
-   em rolagem e precisa manter o texto legível o tempo todo. */
+   em rolagem e precisa manter o texto legível o tempo todo.
+
+   `padding-top: env(safe-area-inset-top)` é o par do `viewport-fit=cover` e do
+   `apple-mobile-web-app-status-bar-style: black-translucent` que o
+   `index.html` declara desde 2026-09-17: no app INSTALADO num iPhone com
+   entalhe, o conteúdo começa no topo absoluto da tela, e sem este respiro a
+   marca do Sapiens ficava por baixo do relógio do sistema. No navegador e no
+   desktop o `env()` vale 0px e nada muda. */
 .glass {
+    padding-top: env(safe-area-inset-top, 0px);
     background: linear-gradient(180deg, rgba(8, 16, 30, 0.86) 0%, rgba(6, 12, 24, 0.72) 100%);
     backdrop-filter: saturate(150%) blur(18px);
     -webkit-backdrop-filter: saturate(150%) blur(18px);
     border-bottom: 1px solid var(--bio-linha);
     box-shadow: 0 1px 0 rgba(120, 190, 255, 0.06), 0 18px 40px -30px rgba(0, 0, 0, 0.9);
+}
+
+/* Telas sem `Nav` (a landing, o login, `/bem-vindo`) precisam do mesmo
+   respiro, senão o topo delas encosta no relógio do iPhone instalado. */
+.exam-shell,
+.topo-seguro {
+    padding-top: env(safe-area-inset-top, 0px);
 }
 
 /* Ambiente de marca (login, prova) — mesma família, mais saturada. */
@@ -313,6 +418,31 @@ body::after {
     box-shadow: 0 0 24px -10px var(--bio-brilho);
 }
 
+/* Botão secundário DE VERDADE — o degrau que faltava entre o fantasma
+   (`btn-vidro`) e o principal (`btn-sapiens`).
+
+   Existiam só dois níveis, e a distância entre eles era grande demais: ao
+   lado de um botão aceso, o vidro a 4,5% de branco simplesmente não era
+   visto. Foi assim que a porta do mapa de treino ficou escondida no Painel —
+   estava lá, com nome e ícone, e ninguém achava.
+
+   Este degrau tem borda ciano legível e preenchimento próprio: perde para o
+   principal (é o que mantém uma ação por tela), mas ganha do fundo, que é o
+   que um secundário precisa fazer para existir. */
+.btn-contorno {
+    background: rgba(79, 217, 255, 0.14);
+    border: 1px solid rgba(127, 216, 255, 0.55);
+    color: #CFEEFF;
+    transition: border-color .18s ease-out, background-color .18s ease-out,
+                box-shadow .18s ease-out, color .18s ease-out;
+}
+.btn-contorno:hover:not(:disabled) {
+    border-color: rgba(127, 216, 255, 0.9);
+    background: rgba(79, 217, 255, 0.22);
+    color: #EAF8FF;
+    box-shadow: 0 0 28px -10px var(--bio-brilho);
+}
+
 /* CTA quente (aulas particulares). Único âmbar do produto: contraponto
    humano no meio da luz fria. Vira vidro âmbar, não placa amarela chapada. */
 .cta-calor {
@@ -397,8 +527,37 @@ body::after {
     0% { background-position: -200% 0; }
     100% { background-position: 200% 0; }
 }
+/* O degradê que atravessa uma palavra. Reabilitado para o herói da landing em
+   2026-09-17, depois de corrigido o defeito que o tinha tirado de lá.
+
+   **O que estava errado.** O degradê antigo era
+   `bio-azul -> bio-ciano -> branco -> bio-azul`, e `--bio-azul` (#4A85E3) é
+   escuro perto do #03060d do fundo. Em corpo de display uma parada de degradê
+   cobre uma LETRA INTEIRA, então a letra que calhava de cair no azul escuro
+   quase sumia — foi assim que "USP" passou a ler "USF" (medido no navegador
+   em 2026-09-15) e o efeito foi banido do produto.
+
+   **O que mudou.** O piso do degradê subiu: nenhuma parada é mais escura que
+   o #7FD8FF que o herói já usa nas palavras de destaque. O branco virou uma
+   faixa ESTREITA que passa por cima, em vez de metade da rampa. A palavra
+   nunca escurece — o que se move é um brilho sobre ela, e não um buraco.
+
+   As duas pontas são a mesma cor de propósito: o fundo é repetido (`repeat`,
+   o padrão) para cobrir a janela enquanto a posição varia de -200% a 200%, e
+   uma emenda entre cores diferentes apareceria como um corte vertical
+   atravessando a palavra a cada volta.
+
+   Só para PALAVRA, nunca para bloco de texto: `color: transparent` significa
+   que um navegador sem `background-clip: text` mostraria nada. */
 .shimmer {
-    background: linear-gradient(90deg, var(--bio-azul) 0%, var(--bio-ciano) 45%, #ffffff 55%, var(--bio-azul) 100%);
+    background: linear-gradient(
+        90deg,
+        #7FD8FF 0%,
+        #A8E6FF 38%,
+        #FFFFFF 50%,
+        #A8E6FF 62%,
+        #7FD8FF 100%
+    );
     background-size: 200% 100%;
     -webkit-background-clip: text;
     background-clip: text;
@@ -422,6 +581,82 @@ body::after {
     100% { transform: scale(1); }
 }
 .select-pop { animation: select-pop .26s ease-out; }
+
+/* O selo de "+1 Spark" / "+10 XP" da devolutiva. Entra subindo e cresce um
+   quinto antes de assentar: é a única animação do produto que celebra alguma
+   coisa, e ela dura menos de meio segundo justamente para não virar um
+   confete que atrasa a próxima questão. */
+@keyframes premio-pop {
+    0%   { transform: translateY(6px) scale(0.85); opacity: 0; }
+    55%  { transform: translateY(0) scale(1.12); opacity: 1; }
+    100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+.premio-pop { animation: premio-pop .42s cubic-bezier(.2, .9, .3, 1.2) both; }
+
+/* ---------------- O caminho do curso ----------------
+   A mesma régua dos nós da trilha de missões (peça como objeto, pé sólido,
+   afunda quando é tocada), com dois estados que só existem em curso:
+
+   · `.no-pulado` — o aluno PROVOU que já sabia e a estação saiu do caminho.
+     Contorno em vez de preenchimento: passou por aqui sem estudar, e o
+     desenho não pode dizer a mesma coisa que dizem as que ele estudou.
+   · `.no-dominado-curso` — concluída acertando tudo de primeira. É o único
+     estado do produto com brilho dourado, e ele significa uma coisa só. */
+.no-pulado {
+    background: rgba(139, 123, 255, 0.10);
+    color: #C9C2FF;
+    border: 2px dashed rgba(167, 152, 255, 0.55);
+    box-shadow: 0 4px 0 0 rgba(20, 22, 56, 0.85);
+}
+.no-pulado:active { box-shadow: 0 2px 0 0 rgba(20, 22, 56, 0.85); }
+
+.no-dominado-curso {
+    background: linear-gradient(160deg, #FFE79A 0%, #F0B23C 100%);
+    color: #2B1A02;
+    border: 1px solid rgba(255, 240, 200, 0.7);
+    box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.5), 0 5px 0 0 #9A6A12,
+                0 0 22px -8px rgba(240, 178, 60, 0.9);
+}
+.no-dominado-curso:active { box-shadow: inset 0 2px 0 rgba(255,255,255,.4), 0 2px 0 0 #9A6A12; }
+
+/* A linha que liga os nós. `--andado` é a fração já vencida do caminho: a
+   parte percorrida acende, o resto fica em névoa. */
+.caminho-traco { stroke: rgba(120, 170, 235, 0.18); }
+.caminho-andado { stroke: url(#caminho-gradiente); }
+
+/* A folha que sobe do rodapé no celular — o cartão da estação tocada.
+   No desktop ela é uma coluna ao lado do caminho e `.superficie` basta. No
+   celular ela flutua POR CIMA do caminho, e aí a superfície translúcida do
+   produto (3,5% de branco) deixa os nós e os títulos atravessarem o cartão:
+   o texto fica ilegível em cima do próprio desenho. Aqui, e só aqui, a
+   superfície vira opaca.
+
+   O rodapé é `barra-inferior-h` acima do zero porque a barra de navegação do
+   celular mora lá embaixo: um cartão em `bottom: 0` nasce atrás dela, com o
+   botão de abrir a estação escondido. */
+@media (max-width: 767px) {
+    .folha-inferior {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: calc(var(--barra-inferior-h) + env(safe-area-inset-bottom, 0px));
+        z-index: 40;
+        padding: 0 1rem 0.75rem;
+    }
+    .folha-inferior .superficie {
+        /* Uma prova de vinte questões não cabe numa folha que cresce para
+           cima sem limite: ela passaria do topo da tela e o começo ficaria
+           inalcançável. A folha para na altura da tela e rola por dentro. */
+        max-height: calc(100vh - var(--barra-inferior-h) - 5rem);
+        max-height: calc(100dvh - var(--barra-inferior-h) - 5rem);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        background: rgba(9, 16, 29, 0.97);
+        -webkit-backdrop-filter: blur(14px);
+        backdrop-filter: blur(14px);
+        box-shadow: 0 -20px 44px -22px rgba(0, 0, 0, 0.95), var(--elev-1);
+    }
+}
 
 ::selection { background: rgba(79, 217, 255, 0.30); color: #fff; }
 
@@ -804,12 +1039,19 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .leitura-clara .bg-zinc-50  { background-color: #FAFAFA; }
 .leitura-clara .bg-zinc-100 { background-color: #F4F4F5; }
 .leitura-clara .bg-zinc-200 { background-color: #E4E4E7; }
-.leitura-clara .text-zinc-950, .leitura-clara .text-zinc-900 { color: #09090B; }
-.leitura-clara .text-zinc-800 { color: #27272A; }
-.leitura-clara .text-zinc-700 { color: #3F3F46; }
-.leitura-clara .text-zinc-600 { color: #52525B; }
-.leitura-clara .text-zinc-500 { color: #71717A; }
-.leitura-clara .text-zinc-400 { color: #A1A1AA; }
+/* As duas formas — DENTRO da folha e NA PRÓPRIA folha.
+   A forma `.leitura-clara.text-zinc-800` (sem espaço) não é cosmética: os
+   blocos de conteúdo do curso põem as duas classes no MESMO elemento
+   (`<section className="leitura-clara … text-zinc-800">`), e aí o descendente
+   não casa. Sem ela, quem vencia era `:root .text-zinc-800` lá de cima — texto
+   claro sobre papel branco, que é o conteúdo do curso inteiro ilegível. */
+.leitura-clara .text-zinc-950, .leitura-clara .text-zinc-900,
+.leitura-clara.text-zinc-950, .leitura-clara.text-zinc-900 { color: #09090B; }
+.leitura-clara .text-zinc-800, .leitura-clara.text-zinc-800 { color: #27272A; }
+.leitura-clara .text-zinc-700, .leitura-clara.text-zinc-700 { color: #3F3F46; }
+.leitura-clara .text-zinc-600, .leitura-clara.text-zinc-600 { color: #52525B; }
+.leitura-clara .text-zinc-500, .leitura-clara.text-zinc-500 { color: #71717A; }
+.leitura-clara .text-zinc-400, .leitura-clara.text-zinc-400 { color: #A1A1AA; }
 .leitura-clara .border-zinc-100 { border-color: #F4F4F5; }
 .leitura-clara .border-zinc-200 { border-color: #E4E4E7; }
 .leitura-clara .border-zinc-300 { border-color: #D4D4D8; }
@@ -826,6 +1068,20 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .leitura-clara .bg-rose-50 { background-color: #FFF1F2; border-color: #FECDD3; }
 .leitura-clara .bg-emerald-50 { background-color: #ECFDF5; border-color: #A7F3D0; }
 .leitura-clara .bg-amber-50 { background-color: #FFFBEB; border-color: #FDE68A; }
+
+/* As faixas `-900` e os selos de recompensa da devolutiva do curso.
+   O tema escuro traduz `text-amber-900` para um creme claro (linha ~868), que
+   sobre o papel `bg-amber-50` da devolutiva fica ilegível — o texto some
+   justamente na hora em que o aluno acabou de errar e precisa ler por quê. */
+.leitura-clara .text-amber-900 { color: #78350F; }
+.leitura-clara .text-emerald-900 { color: #064E3B; }
+.leitura-clara .text-rose-900 { color: #881337; }
+.leitura-clara .text-sky-900 { color: #0C4A6E; }
+.leitura-clara .text-amber-800 { color: #92400E; }
+.leitura-clara .text-violet-800 { color: #5B21B6; }
+.leitura-clara .bg-amber-100 { background-color: #FEF3C7; }
+.leitura-clara .bg-violet-100 { background-color: #EDE9FE; }
+.leitura-clara .bg-emerald-100 { background-color: #D1FAE5; }
 .leitura-clara input, .leitura-clara textarea, .leitura-clara select {
     background-color: #FFFFFF;
     border-color: #E4E4E7;
@@ -837,7 +1093,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
    que só exista no movimento, então desligar não esconde nada. */
 @media (prefers-reduced-motion: reduce) {
     body::before { animation: none; }
-    .select-pop, .reveal, .reveal-delay-1, .reveal-delay-2, .reveal-delay-3, .reveal-delay-4,
+    .select-pop, .premio-pop, .reveal, .reveal-delay-1, .reveal-delay-2, .reveal-delay-3, .reveal-delay-4,
     .shimmer, .mentis-halo, .mentis-orbita, .mentis-olho, .mentis-ponto,
     .tour-bubble::before, .tour-cursor, .no-atual {
         animation: none !important;
@@ -868,16 +1124,21 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
         font-size: 16px;
     }
 
-    /* 3. ZONA MORTA DO ÍCONE DA MENTIS. Ele é `fixed` no canto inferior
+    /* 3. ZONA MORTA DO RODAPÉ. O ícone da Mentis é `fixed` no canto inferior
        direito: passar por cima do conteúdo enquanto se rola é comportamento
        normal de botão flutuante, mas no FIM da página não há para onde rolar
        e o que estiver ali fica coberto para sempre. Medição de 12/09 em
        375px: ele cobria o card de Sparks e dois cards de erro no Painel, o
        "Marcar como feito" do Cronograma, o "Comprar" da loja e a área de
-       escrita da Redação. Esta faixa garante que o último controle de
-       qualquer página role até acima dele. */
+       escrita da Redação.
+
+       Desde 16/09 a faixa também paga a BARRA INFERIOR, que é opaca e cobre
+       o mesmo rodapé em toda página logada. A conta é explícita — altura da
+       barra + o recorte do aparelho + a folga do ícone da Mentis — em vez de
+       um `5.5rem` que era a medida de um problema só e ficaria errado no
+       instante em que a barra existisse. */
     body {
-        padding-bottom: 5.5rem;
+        padding-bottom: calc(var(--barra-inferior-h) + env(safe-area-inset-bottom, 0px) + 4.5rem);
     }
 }
 
@@ -892,4 +1153,730 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
     overflow-y: hidden;
     padding-top: 2px;
     padding-bottom: 2px;
+}
+
+/* =========================================================================
+   CAMADA DE PRODUTO — 2026-09-16
+   =========================================================================
+
+   O sistema acima resolve MATERIAL (do que a tela é feita). Esta camada
+   resolve RITMO: como a página entra, como o aluno sabe onde está, como o
+   progresso aparece antes de ser lido e como o produto comemora sem mentir.
+
+   A régua nova é uma pergunta só, emprestada do que Khan Academy, Alura e
+   Descomplica fazem bem: **em cinco segundos, o aluno sabe o que fazer, por
+   que fazer e onde está?** Tudo aqui existe para responder isso sem texto.
+
+   Três coisas que esta camada NÃO faz, porque seriam o caminho fácil:
+
+   · Não inventa progresso. Anel, barra e contador só desenham número que veio
+     de medida real — a mesma regra que os nós da trilha já seguiam.
+   · Não celebra o que não foi conquistado. `.recompensa` dispara em resgate e
+     em conquista, nunca em carregar uma tela.
+   · Não move nada que carregue informação. Todo movimento daqui é ambiente ou
+     confirmação, e o bloco de movimento reduzido no fim do arquivo desliga
+     tudo sem esconder nada.
+   ========================================================================= */
+
+/* ---------------- Ritmo: a página entrando ----------------
+   Uma rota nova não deve aparecer estalada no lugar. 14px de subida e 260ms
+   bastam para o olho ler "isto é outra tela" — acima disso vira espera, e
+   espera numa navegação interna é o defeito mais caro de SPA bonita. */
+@keyframes pagina-entra {
+    from { opacity: 0; transform: translate3d(0, 14px, 0); }
+    to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+/* `backwards`, nunca `both`.
+   Com `both` o elemento GUARDA o `transform: translate3d(0,0,0)` do quadro
+   final para sempre — e um ancestral com transform passa a ser o bloco
+   contentor de todo `position: fixed` abaixo dele. O envelope de rota abraça
+   as 37 telas, então "fixo na janela" virava "fixo no topo do documento" no
+   produto inteiro: modal aberto com a página rolada nascia fora da tela, e o
+   mapa 3D do Treino — cujo `fixed inset-0` era o único filho do envelope —
+   resolvia `inset: 0` contra uma caixa de ALTURA ZERO, entregava 0×0 ao
+   canvas e não desenhava nada.
+   `backwards` mantém o quadro inicial antes de começar (que é o que a entrada
+   precisa) e devolve `transform: none` ao terminar. O quadro final já era
+   idêntico ao estado natural, então nada muda na aparência.
+
+   Sobra uma janela de `--mov-medio` (260ms) em que o transform ainda existe e
+   `fixed` segue preso ao envelope. Ela é inofensiva de propósito: modal e
+   tour abrem por clique, muito depois; e o canvas do mapa 3D nasce 0×0 e é
+   redimensionado pelo `ResizeObserver` do react-three-fiber no instante em
+   que a animação solta o transform — o que se vê nesses 260ms é a própria
+   tela surgindo. */
+.pagina-entra {
+    animation: pagina-entra var(--mov-medio) var(--mov-entrada) backwards;
+}
+
+/* Cascata: os filhos diretos entram em sequência. O passo é de 45ms e o
+   sexto filho é o último a receber atraso — a partir daí tudo entra junto.
+   Cascata sem teto faz o rodapé de uma lista longa chegar segundos depois,
+   e aí o movimento deixou de ser ritmo e virou atraso. */
+.cascata > * {
+    animation: pagina-entra 420ms var(--mov-entrada) both;
+}
+.cascata > *:nth-child(1) { animation-delay: 0ms; }
+.cascata > *:nth-child(2) { animation-delay: 45ms; }
+.cascata > *:nth-child(3) { animation-delay: 90ms; }
+.cascata > *:nth-child(4) { animation-delay: 135ms; }
+.cascata > *:nth-child(5) { animation-delay: 180ms; }
+.cascata > *:nth-child(n+6) { animation-delay: 225ms; }
+
+/* ---------------- Esqueleto de carregamento ----------------
+   Substitui "Preparando seu painel..." — uma frase centralizada numa tela
+   vazia, que não diz quanto falta nem o que vem. O esqueleto diz as duas:
+   mostra a FORMA da tela antes do conteúdo, e o salto de layout some porque
+   o lugar de cada bloco já estava reservado.
+
+   O brilho corre na diagonal e é lento de propósito (1.8s): esqueleto rápido
+   pisca e cansa mais do que a espera que ele cobre. */
+@keyframes esqueleto-luz {
+    from { transform: translate3d(-100%, 0, 0); }
+    to   { transform: translate3d(100%, 0, 0); }
+}
+.esqueleto {
+    position: relative;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.045);
+    border-radius: var(--r-p);
+}
+.esqueleto::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        100deg,
+        transparent 20%,
+        rgba(150, 205, 255, 0.10) 48%,
+        transparent 76%
+    );
+    animation: esqueleto-luz 1.8s ease-in-out infinite;
+}
+
+/* ---------------- A barra inferior do celular ----------------
+   O buraco mais caro que o produto tinha: abaixo de 1024px NÃO HAVIA
+   navegação. Tudo — painel, treino, redação, mural, Mentis — vivia atrás de
+   um botão de menu que abre um painel modal. Uma ferramenta atrás de um modal
+   não existe para quem não sabe que ela existe, e a maioria dos alunos entra
+   pelo celular.
+
+   Cinco alvos permanentes, sempre na mesma ordem e sempre no alcance do
+   polegar. O do meio é ELEVADO e é a ação — praticar — porque a barra também
+   responde "o que eu faço agora", e não só "para onde eu vou".
+
+   `env(safe-area-inset-bottom)` não é detalhe: sem ele, no iPhone a barra
+   fica por baixo do risco de gesto do sistema e o último 20px de alvo é
+   comido pelo aparelho. */
+.barra-inferior {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 45;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-around;
+    gap: 2px;
+    height: calc(var(--barra-inferior-h) + env(safe-area-inset-bottom, 0px));
+    padding: 6px 6px env(safe-area-inset-bottom, 0px);
+    background: linear-gradient(180deg, rgba(8, 16, 30, 0.90) 0%, rgba(4, 9, 18, 0.97) 100%);
+    backdrop-filter: saturate(150%) blur(20px);
+    -webkit-backdrop-filter: saturate(150%) blur(20px);
+    border-top: 1px solid var(--bio-linha);
+    box-shadow: 0 -1px 0 rgba(120, 190, 255, 0.07), 0 -20px 50px -30px rgba(0, 0, 0, 1);
+}
+
+.aba-inferior {
+    position: relative;
+    display: flex;
+    flex: 1 1 0;
+    min-width: 0;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    /* 52px de altura e largura inteira do quinto: o invariante de celular do
+       produto é alvo de toque >= 32px, e aqui sobra de propósito — é a barra
+       que o polegar mais usa e errar o alvo dela custa uma navegação. */
+    min-height: 52px;
+    padding: 6px 2px;
+    border-radius: var(--r-p);
+    color: var(--bio-apagado);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    line-height: 1;
+    transition: color var(--mov-rapido) var(--mov-saida),
+                background-color var(--mov-rapido) var(--mov-saida);
+}
+.aba-inferior:active { background-color: rgba(255, 255, 255, 0.06); }
+.aba-inferior span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* O ativo. Três sinais somados, porque um só falha para alguém: a cor sobe,
+   o rótulo engrossa e nasce um traço aceso EM CIMA da aba. O traço é o que
+   sobrevive a daltonismo e a tela no sol. */
+.aba-inferior[data-ativa="true"] {
+    color: var(--bio-texto);
+    background-color: rgba(79, 217, 255, 0.10);
+}
+.aba-inferior[data-ativa="true"]::before {
+    content: "";
+    position: absolute;
+    top: -6px;
+    left: 50%;
+    width: 26px;
+    height: 3px;
+    transform: translateX(-50%);
+    border-radius: 0 0 4px 4px;
+    background: linear-gradient(90deg, var(--bio-ciano), var(--bio-violeta));
+    box-shadow: 0 0 14px -2px var(--bio-ciano);
+}
+.aba-inferior[data-ativa="true"] svg { filter: drop-shadow(0 0 8px rgba(79, 217, 255, 0.55)); }
+
+/* A ação do meio. Sobe acima da barra e é o único objeto aceso ali —
+   regra 1 do sistema aplicada à navegação: brilho marca o que pede ação. */
+.aba-acao {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 54px;
+    height: 54px;
+    margin-top: -22px;
+    border-radius: 999px;
+    color: #041020;
+    background: linear-gradient(140deg, #8DE8FF 0%, #3E86E8 55%, #6A6BF0 100%);
+    border: 1px solid rgba(190, 240, 255, 0.5);
+    box-shadow:
+        inset 0 2px 0 rgba(255, 255, 255, 0.45),
+        0 4px 0 0 var(--btn-pe),
+        0 10px 26px -8px rgba(79, 217, 255, 0.7);
+    transition: transform var(--mov-rapido) var(--mov-saida),
+                box-shadow var(--mov-rapido) var(--mov-saida);
+}
+.aba-acao:active {
+    transform: translateY(2px);
+    box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.35), 0 2px 0 0 var(--btn-pe);
+}
+.aba-acao-rotulo {
+    display: block;
+    margin-top: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--bio-suave);
+}
+
+/* ---------------- Onde eu estou, no desktop ----------------
+   A barra de cima nunca marcou a rota atual: seis links iguais, e o aluno
+   descobria onde estava lendo o título da página. O ativo aqui ganha vidro
+   por baixo e um sublinhado aceso — o mesmo par de sinais da barra do
+   celular, para os dois lerem como o mesmo sistema. */
+.nav-elo {
+    position: relative;
+    color: var(--bio-fraco);
+    transition: color var(--mov-rapido) var(--mov-saida),
+                background-color var(--mov-rapido) var(--mov-saida);
+}
+.nav-elo:hover { color: var(--bio-texto); background-color: rgba(255, 255, 255, 0.06); }
+.nav-elo[data-ativa="true"] {
+    color: var(--bio-texto);
+    background-color: rgba(79, 217, 255, 0.12);
+}
+.nav-elo[data-ativa="true"]::after {
+    content: "";
+    position: absolute;
+    left: 28%;
+    right: 28%;
+    bottom: -1px;
+    height: 2px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--bio-ciano), var(--bio-violeta));
+    box-shadow: 0 0 12px -1px var(--bio-ciano);
+}
+
+/* ---------------- Superfície padrão de conteúdo ----------------
+   `.card-sapiens` continua sendo o painel de vidro caro (blur de 18px,
+   três sombras). Ele é pesado para o que o produto mais tem: dezenas de
+   blocos pequenos numa mesma rolagem. `.superficie` é a versão barata —
+   sem backdrop-filter, que é o que custa no celular quando há vinte deles em
+   pé — e é a que telas novas devem usar por padrão. */
+.superficie {
+    position: relative;
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid var(--bio-linha);
+    border-radius: var(--r-g);
+    box-shadow: var(--elev-1);
+    transition: transform var(--mov-medio) var(--mov-saida),
+                border-color var(--mov-medio) var(--mov-saida),
+                background-color var(--mov-medio) var(--mov-saida),
+                box-shadow var(--mov-medio) var(--mov-saida);
+}
+a.superficie:hover, button.superficie:hover, .superficie.lift:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.06);
+    border-color: var(--bio-linha-forte);
+    box-shadow: var(--elev-2), 0 0 30px -18px var(--bio-brilho);
+}
+a.superficie:active, button.superficie:active { transform: translateY(0); }
+
+/* A variante que PEDE ação: aro aceso e um halo contido. Existe para um
+   bloco por tela, no máximo — dois já destroem a hierarquia que ela cria. */
+.superficie-viva {
+    background:
+        linear-gradient(165deg, rgba(79, 217, 255, 0.11) 0%, rgba(139, 123, 255, 0.07) 55%, transparent 100%),
+        rgba(255, 255, 255, 0.035);
+    border-color: rgba(79, 217, 255, 0.34);
+    box-shadow: var(--elev-2), 0 0 44px -26px var(--bio-ciano);
+}
+a.superficie-viva:hover, button.superficie-viva:hover {
+    border-color: rgba(79, 217, 255, 0.6);
+    box-shadow: var(--elev-3), 0 0 54px -20px var(--bio-ciano);
+}
+
+/* ---------------- Cabeçalho de seção ----------------
+   Toda seção do produto repetia a mesma construção à mão (título display +
+   link à direita + margem de 12px), com três variações de tamanho pelo
+   caminho. Aqui ela é uma peça só, e a régua fica igual em tudo. */
+.secao-cabeca {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+.secao-titulo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Manrope', system-ui, sans-serif;
+    font-size: 1.0625rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--bio-texto);
+}
+.secao-olho {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.28em;
+    color: rgba(127, 216, 255, 0.75);
+}
+
+/* O respiro entre o olho e o título que ele apresenta. Era um `mb-3` escrito
+   à mão em cada tela — e por isso valia 12px em umas e nada em outras. Aqui
+   é uma regra só, e ela só dispara quando o olho REALMENTE antecede um
+   título: dentro de um azulejo de medida, ou numa linha com chips ao lado, o
+   olho continua sem margem, que é o que aquele uso pede. */
+.secao-olho + .titulo-tela,
+.secao-olho + .titulo-heroi,
+.secao-olho + h1,
+.secao-olho + h2 {
+    margin-top: 8px;
+}
+
+/* ---------------- Medidas ----------------
+   Número grande com rótulo pequeno embaixo. Tabular de propósito: um
+   contador que troca de largura a cada dígito faz a linha inteira dançar. */
+.medida-n {
+    font-family: 'Manrope', system-ui, sans-serif;
+    font-variant-numeric: tabular-nums;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    color: var(--bio-texto);
+}
+.medida-rotulo {
+    margin-top: 5px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--bio-apagado);
+}
+
+/* Chip de metadado. Um só desenho para tudo o que é "um dado pequeno ao lado
+   de um título": saldo, meta, prazo, custo. */
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--bio-linha);
+    /* .05 dava 1.08:1 contra a página — o chip só existia por causa do texto
+       dentro dele. A borda agora cruza 3:1 sozinha; este fundo é o que faz a
+       pílula ler como pílula antes de alguém ler a palavra. */
+    background: rgba(255, 255, 255, 0.10);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--bio-suave);
+    white-space: nowrap;
+    transition: border-color var(--mov-rapido) var(--mov-saida),
+                background-color var(--mov-rapido) var(--mov-saida),
+                color var(--mov-rapido) var(--mov-saida);
+}
+a.chip:hover, button.chip:hover {
+    border-color: var(--bio-linha-forte);
+    background: rgba(255, 255, 255, 0.16);
+    color: var(--bio-texto);
+}
+
+/* ---------------- Anel de progresso ----------------
+   O traço se desenha ao chegar, a partir do zero. É a única animação do
+   produto que mostra um número CRESCENDO, e ela só é honesta porque termina
+   exatamente no valor medido — a duração é fixa, o destino é o dado. */
+.anel-traco {
+    transition: stroke-dashoffset 900ms var(--mov-entrada);
+}
+
+/* ---------------- Recompensa ----------------
+   Dispara em RESGATE de missão e em conquista desbloqueada. Não é confete:
+   é o objeto conquistado pulsando uma vez com um anel de luz que se abre e
+   some. Meio segundo, e a tela volta ao normal — a régua da Mentis ("mentor,
+   não mascote") vale para a comemoração também. */
+@keyframes recompensa-pulso {
+    0%   { transform: scale(1); }
+    35%  { transform: scale(1.09); }
+    100% { transform: scale(1); }
+}
+@keyframes recompensa-anel {
+    0%   { opacity: 0.85; transform: scale(0.85); }
+    100% { opacity: 0;    transform: scale(1.7); }
+}
+.recompensa { animation: recompensa-pulso 620ms var(--mov-saida); }
+.recompensa::after {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    border: 2px solid var(--bio-ciano);
+    pointer-events: none;
+    animation: recompensa-anel 620ms var(--mov-saida) forwards;
+}
+
+/* O número que sobe e some — "+40 Sparks" saindo de onde o ganho aconteceu.
+   Vale mais que um toast porque o ganho aparece NO objeto que o gerou, e não
+   num canto da tela que o olho tem de ir procurar. */
+@keyframes ganho-sobe {
+    0%   { opacity: 0; transform: translate3d(-50%, 6px, 0) scale(0.9); }
+    25%  { opacity: 1; transform: translate3d(-50%, -4px, 0) scale(1); }
+    75%  { opacity: 1; transform: translate3d(-50%, -18px, 0) scale(1); }
+    100% { opacity: 0; transform: translate3d(-50%, -30px, 0) scale(0.96); }
+}
+.ganho {
+    position: absolute;
+    left: 50%;
+    bottom: 100%;
+    z-index: 5;
+    pointer-events: none;
+    white-space: nowrap;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    color: #FFD98A;
+    text-shadow: 0 0 16px rgba(255, 196, 92, 0.65);
+    animation: ganho-sobe 1500ms var(--mov-saida) forwards;
+}
+
+/* ---------------- Barra de progresso ----------------
+   Uma só, com a luz da família. `--valor` em vez de `width` inline em três
+   telas diferentes, cada uma com um degradê próprio. */
+.barra {
+    position: relative;
+    height: 8px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+.barra > i {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--bio-ciano), var(--bio-violeta));
+    box-shadow: 0 0 14px -4px var(--bio-ciano);
+    transition: width 700ms var(--mov-entrada);
+}
+/* Cheia: a luz corre dentro dela uma vez por ciclo. Só quando está em 100% —
+   barra pela metade brilhando o tempo todo é enfeite. */
+.barra[data-cheia="true"] > i::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.5) 50%, transparent 70%);
+    animation: esqueleto-luz 2.4s ease-in-out infinite;
+}
+
+/* ---------------- Tipografia de tela ----------------
+   O título de página cresce com a janela sem quebrar em 320px: `clamp` em
+   vez de três degraus de `md:`/`lg:` que erram justamente nas larguras
+   intermediárias (os notebooks de 13", de novo). */
+.titulo-tela {
+    font-family: 'Manrope', system-ui, sans-serif;
+    font-size: clamp(1.75rem, 1.1rem + 2.6vw, 2.6rem);
+    font-weight: 800;
+    letter-spacing: -0.035em;
+    line-height: 1.02;
+    color: var(--bio-texto);
+}
+.titulo-heroi {
+    font-family: 'Manrope', system-ui, sans-serif;
+    font-size: clamp(1.9rem, 1.1rem + 3.4vw, 3.1rem);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1.03;
+    color: var(--bio-texto);
+}
+
+
+/* ---------------- Português tem altura ----------------
+   Bug real, e não questão de gosto: "Redação", "Questões", "Não encontrada"
+   e "Início" apareciam com o til e a cedilha CORTADOS. A causa é sempre a
+   mesma combinação, repetida em vários lugares do arquivo: `line-height: 1`
+   (ou 1.02/1.03) num elemento cujo pai tem `overflow: hidden`.
+
+   `line-height: 1` reserva exatamente o corpo da fonte. Em inglês isso passa
+   despercebido, porque as maiúsculas acentuadas quase não existem; em
+   português o til de "ã/õ" sobe ACIMA da caixa e a cedilha de "ç" desce
+   ABAIXO dela, e o que passa do limite o `overflow: hidden` apara. Quanto
+   maior o texto, mais visível — daí os títulos serem os piores casos.
+
+   A cura não é trocar a fonte nem a codificação (a origem está toda em UTF-8
+   e em NFC, conferido): é devolver a altura. 1.15 é o mínimo que acomoda til
+   e cedilha em Manrope em todos os pesos; os títulos ficam em 1.1 porque
+   `clamp` já os deixa grandes e o espaço extra aparece muito na composição.
+
+   Ao acrescentar título novo neste arquivo: `line-height` abaixo de 1.1 em
+   texto que pode conter acento é regressão. */
+.aba-inferior { line-height: 1.15; }
+.aba-inferior span {
+    /* O recorte continua sendo horizontal (o rótulo que não cabe vira "…"),
+       mas deixa de ser vertical: sem isto, a caixa do `overflow` é justa e
+       apara a cedilha de "Redação" junto com o excesso de largura. */
+    padding-block: 1px;
+    line-height: 1.15;
+}
+.aba-acao-rotulo { line-height: 1.15; }
+.titulo-tela { line-height: 1.1; }
+.titulo-heroi { line-height: 1.1; }
+
+/* E o mesmo pelo lado do Tailwind. `leading-none` é `line-height: 1` — o
+   mesmo corte, espalhado por quinze componentes, e um décimo sexto nasce
+   toda vez que alguém quer um número colado no rótulo. Traduzido aqui uma
+   vez, como esta folha já faz com os utilitários claros, em vez de caçado
+   arquivo por arquivo.
+
+   1.1 e não 1.15: `leading-none` costuma estar em número grande ou em ícone
+   com rótulo, onde a folga precisa ser a mínima que ainda mostra o acento.
+   Quem precisa mesmo de zero folga (só dígito, sem letra acentuada) pede
+   `leading-[1]` com colchete, que é explícito e continua passando. */
+:root .leading-none { line-height: 1.1; }
+
+/* ---------------- Ajuste da camada de tradução ----------------
+   Os tons mais fracos do Tailwind (`text-white/30`..`/45`) espalhados pelas
+   telas antigas: sobre o abismo eles caem abaixo do mínimo de texto pequeno
+   e são exatamente onde moram rótulo de eixo, unidade e legenda — o texto
+   que mais precisa ser lido rápido. Traduzidos aqui uma vez, como o resto do
+   arquivo já fazia com os utilitários claros. */
+:root .text-white\/25 { color: var(--bio-apagado); }
+:root .text-white\/30 { color: var(--bio-apagado); }
+:root .text-white\/35 { color: var(--bio-fraco); }
+:root .text-white\/40 { color: var(--bio-fraco); }
+:root .text-white\/45 { color: var(--bio-fraco); }
+:root .text-white\/50 { color: var(--bio-suave); }
+:root .text-white\/55 { color: var(--bio-suave); }
+:root .text-white\/60 { color: var(--bio-suave); }
+:root .text-white\/65 { color: var(--bio-suave); }
+/* Dentro da folha de leitura clara, branco fraco é ilegível de vez — lá
+   estes utilitários voltam a ser tinta escura. */
+.leitura-clara .text-white\/40, .leitura-clara .text-white\/45,
+.leitura-clara .text-white\/50, .leitura-clara .text-white\/60 { color: #52525B; }
+
+/* ---------------- Movimento reduzido, parte 2 ----------------
+   Mesma regra do bloco original: nada aqui carrega informação que só exista
+   no movimento. O anel de progresso perde a animação mas mantém o traço no
+   valor final; o esqueleto vira um bloco parado; a recompensa vira uma
+   mudança de estado sem pulso. */
+@media (prefers-reduced-motion: reduce) {
+    .pagina-entra, .cascata > *, .recompensa, .recompensa::after, .ganho {
+        animation: none !important;
+    }
+    .esqueleto::after, .barra[data-cheia="true"] > i::after { animation: none; }
+    .anel-traco, .barra > i { transition: none; }
+    .aba-acao:active, .superficie:hover, a.superficie:hover, button.superficie:hover {
+        transform: none !important;
+    }
+}
+
+/* ---------------- O ícone flutuante da Mentis ----------------
+   Ele era `bottom-5` em toda largura. Com a barra inferior existindo, 20px de
+   rodapé é DENTRO da barra: o ícone pousava em cima das abas e cobria dois
+   dos cinco alvos. Aqui ele sobe exatamente a altura da barra (mais o recorte
+   do aparelho), e volta a 20px a partir de `lg`, onde barra inferior não há.
+
+   O número vem do mesmo token que a barra usa. Duas medidas iguais escritas
+   em dois lugares divergem na primeira vez que uma das duas muda. */
+.flutuante-mentis {
+    position: fixed;
+    right: 1rem;
+    bottom: calc(var(--barra-inferior-h) + env(safe-area-inset-bottom, 0px) + 0.75rem);
+    z-index: 50;
+}
+@media (min-width: 1024px) {
+    .flutuante-mentis { right: 1.25rem; bottom: 1.25rem; }
+}
+
+/* =========================================================================
+   A QUESTÃO — 2026-09-16
+   =========================================================================
+
+   Tudo aqui vive DENTRO de `.leitura-clara`, a folha clara que é a exceção
+   nomeada do sistema. Por isso as cores são escritas em claro, à mão: a
+   camada de tradução de utilitários não alcança uma classe própria, e dentro
+   da folha o claro é o certo.
+
+   A alternativa é um OBJETO, não um retângulo de conteúdo — mesma régua dos
+   nós da trilha e dos azulejos macios. Borda de 1.5px, raio grande e um PÉ
+   sólido embaixo que some quando o dedo pressiona. É a diferença entre uma
+   lista de opções e cinco coisas que dá para pegar com a mão, e é o único
+   momento do produto em que o aluno toca a interface quarenta e cinco vezes
+   seguidas: se há um lugar onde o toque tem de responder, é este.
+   ========================================================================= */
+.alternativa {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+    text-align: left;
+    border-radius: 16px;
+    border: 1.5px solid #DFE7F2;
+    background: #FFFFFF;
+    box-shadow: 0 2px 0 0 #DCE5F0;
+    transition: border-color var(--mov-rapido) var(--mov-saida),
+                background-color var(--mov-rapido) var(--mov-saida),
+                box-shadow var(--mov-rapido) var(--mov-saida),
+                transform var(--mov-rapido) var(--mov-saida);
+}
+.alternativa:hover:not(:disabled) {
+    border-color: #4A85E3;
+    box-shadow: 0 2px 0 0 #C4D9F4;
+}
+.alternativa:active:not(:disabled) {
+    transform: translateY(2px);
+    box-shadow: 0 0 0 0 #C4D9F4;
+}
+.alternativa:disabled { cursor: default; }
+
+/* Os três estados que a resposta produz. O PÉ acompanha a cor da borda: um pé
+   cinza embaixo de uma borda verde lê como sombra de outro material — a
+   mesma nota que o botão primário já carrega. */
+.alternativa[data-estado="escolhida"] {
+    border-color: #2E7FD6;
+    background: #EAF3FE;
+    box-shadow: 0 2px 0 0 #B9D6F6;
+}
+.alternativa[data-estado="certa"] {
+    border-color: #10B981;
+    background: #ECFDF5;
+    box-shadow: 0 2px 0 0 #A7F3D0;
+}
+.alternativa[data-estado="errada"] {
+    border-color: #F43F5E;
+    background: #FFF1F2;
+    box-shadow: 0 2px 0 0 #FECDD3;
+}
+
+/* A marca da letra. Vira ícone quando a resposta chega. */
+.alternativa-letra {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    margin-top: 1px;
+    flex-shrink: 0;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 800;
+    background: #EEF2F8;
+    color: #52607A;
+    transition: background-color var(--mov-rapido) var(--mov-saida),
+                color var(--mov-rapido) var(--mov-saida);
+}
+.alternativa[data-estado="escolhida"] .alternativa-letra { background: #2E7FD6; color: #fff; }
+.alternativa[data-estado="certa"] .alternativa-letra { background: #10B981; color: #fff; }
+.alternativa[data-estado="errada"] .alternativa-letra { background: #F43F5E; color: #fff; }
+
+/* ---------------- O veredito ----------------
+   A faixa que diz se acertou. Antes era um retângulo pastel com uma linha de
+   texto em negrito; agora tem um selo à esquerda, e no ACERTO ela pulsa uma
+   vez com o anel de recompensa (`.recompensa`, no bloco de produto acima).
+
+   Por que só no acerto: comemorar o erro seria falso, e o erro nesta tela já
+   tem tratamento próprio — a causa raiz e a Mentis aparecem logo abaixo. O
+   veredito de erro é informativo e fica parado, que é o tom certo. */
+.veredito {
+    position: relative;
+    display: flex;
+    gap: 12px;
+    padding: 16px;
+    border-radius: 16px;
+    border: 1.5px solid transparent;
+}
+.veredito[data-acertou="true"] { background: #ECFDF5; border-color: #A7F3D0; }
+.veredito[data-acertou="false"] { background: #FFF1F2; border-color: #FECDD3; }
+.veredito-selo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+    border-radius: 999px;
+    color: #fff;
+}
+.veredito[data-acertou="true"] .veredito-selo { background: #10B981; }
+.veredito[data-acertou="false"] .veredito-selo { background: #F43F5E; }
+
+/* ---------------------------------------------------------------------------
+   O SUBTÍTULO QUE ABRE NO HOVER — menu de ferramentas
+   ---------------------------------------------------------------------------
+   Cada ferramenta ocupa uma linha estreita com ícone e nome; a explicação só
+   aparece quando o ponteiro pousa sobre ela. Impressa o tempo todo, ela
+   transforma vinte ferramentas em vinte parágrafos para atravessar antes de
+   achar o nome que se procura — e quem abre aquele painel veio buscar um nome.
+
+   `grid-template-rows: 0fr -> 1fr` é a única forma confiável de ANIMAR até
+   `height: auto` em CSS: o filho precisa ser `min-height: 0; overflow: hidden`
+   (está no JSX), senão o conteúdo vaza durante a transição.
+
+   `@media (hover: hover)` é o que mantém isto fora do celular: em tela de
+   toque não existe "passar o mouse", e sem a consulta o primeiro toque
+   abriria o subtítulo em vez de navegar. */
+.linha-nota {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    transition: grid-template-rows 160ms ease, opacity 160ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .group:hover > * > .linha-nota,
+    .group:focus-visible > * > .linha-nota {
+        grid-template-rows: 1fr;
+        opacity: 1;
+    }
+}
+
+/* Quem prefere menos movimento recebe o mesmo conteúdo, sem a animação. */
+@media (prefers-reduced-motion: reduce) {
+    .linha-nota {
+        transition: none;
+    }
 }

@@ -109,12 +109,26 @@ class TestDiagnoseSessaoThinkingLevel:
     def _run(coro):
         return asyncio.new_event_loop().run_until_complete(coro)
 
-    def test_thinking_level_low_chega_no_generate_content(self, monkeypatch):
+    def test_thinking_level_minimal_chega_no_generate_content(self, monkeypatch):
+        """MINIMAL, não LOW. A medição de 03/09 registrada em `ai_service`
+        cronometrou LOW em 83,4 s contra 4,3 s de MINIMAL no mesmo modelo, e
+        este resumo dispara ao fim de cada rodada — era ele que fazia a Mentis
+        parecer travada. O teste existe para que ninguém volte a subir o nível
+        aqui sem medir o que isso faz com a espera do aluno."""
         fake = _FakeClient()
         monkeypatch.setattr(ai_service, "_client", lambda: fake)
         self._run(ai_service.diagnose_sessao([{"acertou": True, "processos": [], "dominios": [], "competencias": []}] * 10))
         config = fake.aio.models.calls[0]["config"]
-        assert config.thinking_config.thinking_level == types.ThinkingLevel.LOW
+        assert config.thinking_config.thinking_level == types.ThinkingLevel.MINIMAL
+
+    def test_resposta_tem_teto_de_tokens_de_saida(self, monkeypatch):
+        """O teto de saída é o que de fato limita a espera: numa resposta em
+        streaming o tempo de parede acompanha o número de tokens escritos."""
+        fake = _FakeClient()
+        monkeypatch.setattr(ai_service, "_client", lambda: fake)
+        self._run(ai_service.diagnose_sessao([{"acertou": True, "processos": [], "dominios": [], "competencias": []}] * 10))
+        config = fake.aio.models.calls[0]["config"]
+        assert config.max_output_tokens == 900
 
     def test_falha_do_gemini_degrada_para_fallback_sem_propagar(self, monkeypatch):
         class _Boom:

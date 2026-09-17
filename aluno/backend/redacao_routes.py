@@ -48,7 +48,7 @@ import llm_telemetry
 import rate_limit
 from auth import require_user
 from models import AvaliacaoRedacao, Redacao, RedacaoSubmitRequest, User
-from redacao import service
+from redacao import service, temas
 from redacao.canon import CanonIndisponivelError
 from redacao.tipos import RedacaoEntrada
 
@@ -68,6 +68,17 @@ def set_db(db):
 
 CORRECAO_COST = 120   # nota das 5 competências + nota geral — sem API paga
 FEEDBACK_COST = 90    # devolutiva longa da Mentis — 1 chamada ao Gemini
+# Digitalizar a foto de uma redação manuscrita: 1 chamada de VISÃO ao Gemini,
+# que é a mais cara deste app por requisição. O preço é baixo de propósito —
+# ela não entrega avaliação nenhuma, só poupa o aluno de digitar 30 linhas —
+# mas não é zero, porque uma rota de visão sem preço é um endpoint que
+# qualquer um pode chamar em laço com a conta do produto.
+DIGITALIZACAO_COST = 25
+
+# Teto do que o navegador pode mandar em `imagem_base64`. Uma foto de celular
+# em JPEG cabe folgada em 8 MB; acima disso é imagem crua ou PNG de tela
+# inteira, e o custo da chamada de visão cresce junto.
+DIGITALIZACAO_MAX_BYTES = 8_000_000
 
 # Abaixo disto não há redação para corrigir, e cobrar seria cobrar por nada.
 # Espelha o mínimo da tela (`MIN_CARACTERES` em `pages/Redacao.jsx`); o
@@ -80,7 +91,12 @@ MIN_CARACTERES = 200
 # não deixar a chave do aluno queimada para sempre.
 _RECLAMACAO_TTL_SEGUNDOS = 120
 
-_TIMEOUT_FEEDBACK = 60.0
+# Orçamento TOTAL desde 17/09 (antes: 60 s por tentativa, 120 s no pior
+# caso). A devolutiva de redação é longa de propósito — cinco competências
+# comentadas —, então tem mais tempo e mais tokens que os 10 s padrão, mas
+# ainda assim um teto, que é o que faltava.
+_TIMEOUT_FEEDBACK = 20.0
+_MAX_TOKENS_FEEDBACK = 2000
 
 
 def _agora() -> datetime:
@@ -205,7 +221,133 @@ async def precos(_: User = Depends(require_user)):
     return {
         "custo_correcao": CORRECAO_COST,
         "custo_feedback": FEEDBACK_COST,
+        "custo_digitalizacao": DIGITALIZACAO_COST,
         "min_caracteres": MIN_CARACTERES,
+    }
+
+
+@router.get("/temas")
+async def listar_temas(_: User = Depends(require_user)):
+    """A coletânea de temas — proposta + textos motivadores.
+
+    Custo ZERO: é constante de módulo, lida da memória do processo. Nenhuma
+    ida ao Mongo, nenhuma ao Firestore (ver a disciplina de leitura de
+    2026-09-04). Exige sessão porque é conteúdo do produto, não página
+    pública.
+    """
+    return {"eixos": temas.listar_eixos(), "temas": temas.listar()}
+
+
+class DigitalizarRequest(BaseModel):
+    """A foto de uma redação manuscrita, em base64 ou data URL.
+
+    `idempotency_key` protege o duplo toque no botão e o retry de rede pelo
+    mesmo caminho da correção: enquanto ela não mudar, a mesma foto é UMA
+    cobrança. O celular do aluno é justamente onde o toque duplo acontece.
+    """
+
+    imagem_base64: str = Field(..., min_length=64)
+    idempotency_key: str = Field(..., min_length=8, max_length=100)
+
+
+@router.post("/digitalizar")
+async def digitalizar(
+    payload: DigitalizarRequest,
+    user: User = Depends(require_user),
+    _: None = Depends(rate_limit.por_usuario("redacao_ocr")),
+):
+    """Foto da redação manuscrita -> texto editável, por `DIGITALIZACAO_COST`.
+
+    **Não corrige e não salva redação nenhuma.** Devolve o texto reconhecido
+    para o campo da tela, onde o aluno revisa antes de pedir a correção — que
+    continua sendo uma compra separada. Misturar as duas seria cobrar 145
+    Sparks por um botão que diz 120.
+
+    Devolve os Sparks em TODOS os caminhos que não entregam texto: erro do
+    modelo, foto ilegível e transcrição vazia. Uma foto tremida é erro do
+    aluno, mas cobrar por ela é erro do produto.
+    """
+    if len(payload.imagem_base64) > DIGITALIZACAO_MAX_BYTES:
+        raise HTTPException(
+            status_code=413,
+            detail="Imagem grande demais. Tire a foto em qualidade normal, sem ampliar.",
+        )
+
+    claim_id = f"{user.user_id}:ocr:{payload.idempotency_key}"
+    claim, sou_o_dono = await _reivindicar(
+        _db.redacao_cobrancas, claim_id, {"user_id": user.user_id, "tipo": "digitalizacao"},
+    )
+    if not sou_o_dono:
+        if claim.get("status") == "concluida" and isinstance(claim.get("texto"), str):
+            return {
+                "texto": claim["texto"],
+                "linhas": claim.get("linhas"),
+                "sparks_balance": _saldo(user.user_id),
+                "cobrado": 0,
+            }
+        raise HTTPException(
+            status_code=409,
+            detail="Esta foto já está sendo lida. Aguarde alguns segundos.",
+        )
+
+    if claim.get("cobrado"):
+        saldo = _saldo(user.user_id)
+    else:
+        try:
+            saldo = _cobrar(user.user_id, DIGITALIZACAO_COST)
+        except HTTPException:
+            await _liberar(_db.redacao_cobrancas, claim_id)
+            raise
+        await _marcar_cobrado(_db.redacao_cobrancas, claim_id, saldo)
+
+    inicio = time.monotonic()
+    try:
+        lido = await ai_service.ocr_redacao(payload.imagem_base64)
+    except Exception as exc:  # noqa: BLE001
+        saldo = _safe_reembolso(user.user_id, DIGITALIZACAO_COST)
+        await _liberar(_db.redacao_cobrancas, claim_id)
+        logger.exception(
+            "Digitalização falhou para %s — %d Sparks devolvidos.",
+            user.user_id, DIGITALIZACAO_COST,
+        )
+        raise HTTPException(
+            status_code=503,
+            detail="Não consegui ler a foto agora. Seus Sparks foram devolvidos.",
+        ) from exc
+
+    texto = (lido.get("texto") or "").strip()
+    if not lido.get("legivel") or not texto:
+        saldo = _safe_reembolso(user.user_id, DIGITALIZACAO_COST)
+        await _liberar(_db.redacao_cobrancas, claim_id)
+        raise HTTPException(
+            status_code=422,
+            detail=lido.get("observacao")
+            or "Não consegui ler esta foto. Tente com mais luz, de cima e com a folha inteira no enquadramento.",
+        )
+
+    await _db.redacao_cobrancas.update_one(
+        {"_id": claim_id},
+        {"$set": {
+            "status": "concluida",
+            "texto": texto,
+            "linhas": lido.get("linhas"),
+            "atualizado_em": _iso(_agora()),
+        }},
+    )
+    await llm_telemetry.persist(
+        _db.redacao_llm_chamadas,
+        contexto=f"digitalizacao chars={len(texto)}",
+        motivo="OCR de redação manuscrita pedido pelo aluno",
+        modelo="gemini (visão)",
+        thinking_level="—",
+        resultado_estado="ok",
+        duration_ms=(time.monotonic() - inicio) * 1000,
+    )
+    return {
+        "texto": texto,
+        "linhas": lido.get("linhas"),
+        "sparks_balance": saldo,
+        "cobrado": DIGITALIZACAO_COST,
     }
 
 
@@ -489,6 +631,7 @@ async def gerar_feedback(
         # problema nenhum — a nota já está decidida, ele só a explica.
         bruto = await ai_service.generate_json_resiliente(
             _FEEDBACK_SYSTEM, prompt, thinking_level="MINIMAL", timeout=_TIMEOUT_FEEDBACK,
+            max_output_tokens=_MAX_TOKENS_FEEDBACK,
         )
         feedback = _validar_feedback(bruto)
         await llm_telemetry.persist(

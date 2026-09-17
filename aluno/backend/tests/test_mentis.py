@@ -289,11 +289,23 @@ class TestExplicacao:
         mr.set_db(fake_db)
         fake_db.questoes_public.docs.append(dict(self._ITEM))
 
-    def test_usa_raciocinio_minimo_e_teto_de_tempo_proprio(self, monkeypatch, fake_db):
-        """A regressão que deixou o botão quebrado em produção: com
-        `thinking=MEDIUM` sob o teto global de 30s o modelo NUNCA respondia a
-        tempo. Medição de 2026-09-03 no mesmo item: MINIMAL 4,3s / LOW 83,4s /
-        MEDIUM 503 aos 37s."""
+    def test_usa_raciocinio_minimo_e_orcamento_curto_com_teto_de_saida(self, monkeypatch, fake_db):
+        """Duas regressões, uma em cima da outra.
+
+        A de 03/09: com `thinking=MEDIUM` sob o teto global de 30 s o modelo
+        NUNCA respondia a tempo. Medição no mesmo item: MINIMAL 4,3 s /
+        LOW 83,4 s / MEDIUM 503 aos 37 s. A correção de então foi MINIMAL
+        mais um teto de tempo PRÓPRIO e generoso (60 s).
+
+        A de 17/09: aquele teto generoso era por TENTATIVA, e
+        `generate_json_resiliente` faz duas — o pior caso virou 120 s de tela
+        parada, que é a "Mentis demorando quase 1 minuto". A correção agora é
+        pelo outro lado: `timeout` passa a ser o orçamento TOTAL e curto, e o
+        que o torna realista é `max_output_tokens`, porque numa resposta em
+        streaming o tempo acompanha o que o modelo escreve.
+
+        Por isso o teto de tempo agora é asseverado para BAIXO, não para
+        cima: subir este número de novo é reintroduzir a espera."""
         self._com_item(fake_db)
         _SparksFalso().instalar(monkeypatch)
         visto = {}
@@ -305,7 +317,8 @@ class TestExplicacao:
         monkeypatch.setattr(mr.ai_service, "generate_json_resiliente", _resposta)
         out = asyncio.run(mr.gerar_explicacao(mr.ExplicacaoPayload(item_id="IT-1"), user=_ALUNO))
         assert visto["thinking_level"] == "MINIMAL"
-        assert visto["timeout"] > 30  # maior que o teto global, que era o gargalo
+        assert visto["timeout"] <= 15  # orçamento TOTAL do aluno, não por tentativa
+        assert visto["max_output_tokens"] > 0  # sem teto de saída, não há teto de espera
         assert out["paragrafos"] == ["um", "dois", "três"] and out["cache"] is False
 
     def test_segundo_aluno_le_do_cache_sem_nova_chamada(self, monkeypatch, fake_db):

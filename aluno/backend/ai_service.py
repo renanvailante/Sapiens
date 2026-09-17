@@ -28,6 +28,7 @@ import logging
 import asyncio
 import os
 import re
+import time
 from typing import Any
 
 from dotenv import load_dotenv
@@ -93,6 +94,25 @@ _THINKING_VALIDOS = {"MINIMAL", "LOW", "MEDIUM", "HIGH"}
 GEMINI_TIMEOUT_SEGUNDOS = float(os.environ.get("GEMINI_TIMEOUT_SEGUNDOS", "30") or 30)
 GEMINI_TIMEOUT_VISION_SEGUNDOS = float(os.environ.get("GEMINI_TIMEOUT_VISION_SEGUNDOS", "60") or 60)
 
+# Orçamento de uma chamada INTERATIVA — aquela em que o aluno está parado na
+# tela olhando um "a Mentis está pensando…". Medido em 2026-09-17: o que fazia
+# a Mentis levar ~1 min não era o `thinking` (já é MINIMAL em todos os
+# chamadores desde 03/09) e sim (a) nenhum teto de tokens de SAÍDA, então o
+# modelo escrevia até cansar, e (b) o retry em modelo reserva rodando com o
+# mesmo `timeout` cheio do primário, dobrando a espera do pior caso.
+#
+# As duas coisas passam a ser orçadas juntas em `generate_json_resiliente`:
+# `ORCAMENTO_INTERATIVO_SEGUNDOS` é o teto da espera TOTAL, primário +
+# reserva, não de cada tentativa.
+ORCAMENTO_INTERATIVO_SEGUNDOS = float(
+    os.environ.get("GEMINI_ORCAMENTO_INTERATIVO", "10") or 10
+)
+
+# Fração do orçamento entregue à primeira tentativa. O resto sobra para o
+# retry em modelo estável — que só acontece quando o primário caiu por
+# infraestrutura, e nesse caso já gastou bem menos que sua fatia.
+_FATIA_PRIMARIA = 0.65
+
 
 class GeminiIndisponivelError(RuntimeError):
     """Gemini não respondeu no tempo limite, ou falhou de forma não recuperável.
@@ -110,6 +130,7 @@ async def _generate_json(
     model: str | None = None,
     thinking_level: str | None = None,
     timeout: float | None = None,
+    max_output_tokens: int | None = None,
 ) -> Any:
     """`thinking_level`, quando presente, limita o raciocínio da chamada.
 
@@ -122,6 +143,12 @@ async def _generate_json(
     `timeout` (padrão `GEMINI_TIMEOUT_SEGUNDOS`) transforma uma chamada
     pendurada em `GeminiIndisponivelError`, que cada chamador trata com o
     fallback que fizer sentido para ele — nunca deixando o aluno esperando.
+
+    `max_output_tokens` é o outro lado da mesma moeda: `timeout` corta a
+    espera DEPOIS que ela aconteceu, este teto impede que ela aconteça. Numa
+    resposta em streaming o tempo de parede é quase todo proporcional ao
+    número de tokens escritos, então uma resposta sem teto é uma espera sem
+    teto. Todo chamador interativo deve passar um.
     """
     client = _client()
     chosen = model or _model()
@@ -135,6 +162,8 @@ async def _generate_json(
     nivel = (thinking_level or "").strip().upper()
     if nivel in _THINKING_VALIDOS:
         config_kwargs["thinking_config"] = types.ThinkingConfig(thinking_level=types.ThinkingLevel(nivel))
+    if max_output_tokens:
+        config_kwargs["max_output_tokens"] = int(max_output_tokens)
     try:
         resp = await asyncio.wait_for(
             client.aio.models.generate_content(
@@ -205,9 +234,17 @@ async def generate_json_resiliente(
     timeout: float | None = None,
     modelo: str | None = None,
     modelo_fallback: str | None = None,
+    max_output_tokens: int | None = None,
 ) -> Any:
     """Como `generate_json`, mas com teto de tempo próprio e um único retry
     em modelo estável quando o modelo primário está fora do ar.
+
+    `timeout` é o orçamento da espera **total**, não de cada tentativa. Antes
+    era por tentativa, e o pior caso de um chamador com `timeout=60` era o
+    aluno esperando 120 s — primário pendurado até 60, reserva pendurada até
+    60 de novo. Agora as duas tentativas dividem o mesmo orçamento
+    (`_FATIA_PRIMARIA` para a primeira, o que sobrar para a segunda), de modo
+    que o número que o chamador escreve é o que o aluno espera no máximo.
 
     Levanta `GeminiIndisponivelError` se os dois modelos falharem por
     infraestrutura; qualquer outra exceção (JSON inválido, prompt recusado)
@@ -215,10 +252,13 @@ async def generate_json_resiliente(
     """
     primario = modelo or _model()
     reserva = modelo_fallback if modelo_fallback is not None else GEMINI_MODELO_FALLBACK
+    orcamento = timeout if timeout is not None else ORCAMENTO_INTERATIVO_SEGUNDOS
+    inicio = time.monotonic()
     try:
         return await _generate_json(
             system_instruction, user_text, model=primario,
-            thinking_level=thinking_level, timeout=timeout,
+            thinking_level=thinking_level, timeout=orcamento * _FATIA_PRIMARIA,
+            max_output_tokens=max_output_tokens,
         )
     except (GeminiIndisponivelError, genai_errors.ServerError) as exc:
         if not reserva or reserva == primario:
@@ -226,10 +266,31 @@ async def generate_json_resiliente(
         logger.warning(
             "Gemini indisponível em %s (%s) — repetindo em %s.", primario, exc, reserva
         )
+    # O que sobrou do orçamento, e nunca o orçamento inteiro de novo.
+    #
+    # Dois limites, e vale o menor. O primeiro é óbvio: o tempo que de fato
+    # sobrou. O segundo é a fatia da reserva — sem ele, um primário que falha
+    # RÁPIDO (um 503 chega em milissegundos, que é o caso comum) devolveria
+    # quase todo o orçamento para a segunda tentativa, e o total voltaria a
+    # passar do número que o chamador escreveu.
+    #
+    # Um piso de 2 s evita disparar a segunda chamada já condenada a estourar:
+    # abaixo disso é mais honesto desistir agora e deixar o chamador cair no
+    # plano B dele (cache, texto determinístico, reembolso).
+    restante = min(
+        orcamento - (time.monotonic() - inicio),
+        orcamento * (1.0 - _FATIA_PRIMARIA),
+    )
+    if restante < 2.0:
+        raise GeminiIndisponivelError(
+            f"Gemini indisponível em {primario} e sem orçamento para {reserva} "
+            f"({orcamento:.0f}s esgotados)."
+        )
     try:
         return await _generate_json(
             system_instruction, user_text, model=reserva,
-            thinking_level=thinking_level, timeout=timeout,
+            thinking_level=thinking_level, timeout=restante,
+            max_output_tokens=max_output_tokens,
         )
     except (GeminiIndisponivelError, genai_errors.ServerError) as exc:
         raise GeminiIndisponivelError(
@@ -304,7 +365,16 @@ async def diagnose(payload: dict[str, Any]) -> dict[str, Any]:
     """Narrativa diagnóstica do cartão-resposta. Degrada para texto neutro."""
     prompt = "Dados da prova:\n" + json.dumps(payload, ensure_ascii=False, indent=2)
     try:
-        result = await _generate_json(DIAGNOSTIC_SYSTEM, prompt)
+        # Sem `thinking_level` esta chamada herdava o raciocínio padrão do
+        # modelo (o mesmo que a auditoria de 22/08 viu gastar dezenas de
+        # milhares de tokens) e o teto global de 30 s, sem teto de saída
+        # nenhum: era a chamada mais lenta e mais cara do app. O diagnóstico
+        # do simulado é longo, então ganha mais orçamento que os 10 s das
+        # demais — mas ganha um orçamento.
+        result = await generate_json_resiliente(
+            DIAGNOSTIC_SYSTEM, prompt, thinking_level="MINIMAL",
+            timeout=25.0, max_output_tokens=2500,
+        )
     except Exception as exc:  # noqa: BLE001
         logger.warning("Diagnóstico indisponível: %s", exc)
         return dict(_DIAGNOSTIC_FALLBACK)
@@ -358,14 +428,24 @@ _SESSAO_FALLBACK = {
 async def diagnose_sessao(contexto: list[dict[str, Any]]) -> dict[str, Any]:
     """Narrativa de padrões de uma sessão de prática. Degrada para texto neutro.
 
-    `thinking_level="LOW"`: a entrada é pequena (10+ questões resumidas, sem
-    enunciado nem alternativas) — não é uma tarefa que precise de raciocínio
-    "alto" do modelo, e essa chamada roda toda vez que um aluno termina uma
-    sessão, não uma vez por lote como a anotação do pipeline.
+    `thinking_level="MINIMAL"`, não "LOW". A entrada é pequena (10+ questões
+    resumidas, sem enunciado nem alternativas), então o raciocínio alto nunca
+    se pagou aqui — e "LOW" era caro de um jeito que o aluno sentia: a mesma
+    medição de 03/09 anotada acima de `generate_json_resiliente` cronometrou
+    LOW em 83,4 s contra 4,3 s de MINIMAL, no mesmo modelo. Como este resumo
+    dispara sozinho a cada 10 questões, era ele o "a Mentis demora quase um
+    minuto": o aluno terminava a rodada e ficava esperando a devolutiva.
+
+    Vai por `generate_json_resiliente` (e não `_generate_json` cru) para
+    herdar o orçamento total e o retry em modelo estável, como todo o resto
+    das chamadas interativas.
     """
     prompt = "Questões respondidas nesta sessão:\n" + json.dumps(contexto, ensure_ascii=False, indent=2)
     try:
-        result = await _generate_json(SESSAO_DIAGNOSTIC_SYSTEM, prompt, thinking_level="LOW")
+        result = await generate_json_resiliente(
+            SESSAO_DIAGNOSTIC_SYSTEM, prompt, thinking_level="MINIMAL",
+            timeout=ORCAMENTO_INTERATIVO_SEGUNDOS, max_output_tokens=900,
+        )
     except Exception as exc:  # noqa: BLE001
         logger.warning("Resumo de sessão indisponível: %s", exc)
         return dict(_SESSAO_FALLBACK)
@@ -478,3 +558,60 @@ async def ocr_answer_sheet(
     if isinstance(parsed, list):
         return parsed
     return (parsed or {}).get("answers", [])
+
+
+# ---------- Visão: digitalização de uma redação manuscrita ----------
+
+REDACAO_OCR_SYSTEM = """Você transcreve redações manuscritas de estudantes brasileiros.
+
+Retorne SOMENTE um JSON no formato:
+{"texto": "...", "linhas": 0, "legivel": true, "observacao": ""}
+
+Regras, nesta ordem de prioridade:
+1. TRANSCREVA, NÃO CORRIJA. Copie exatamente o que está escrito, com os erros
+   de ortografia, acentuação, concordância e pontuação do autor. O texto será
+   avaliado por um corretor: uma palavra "consertada" por você vira um ponto
+   que o estudante não ganhou.
+2. NÃO COMPLETE nem reescreva trecho ilegível. Marque cada um como [ilegível]
+   e siga em frente.
+3. Preserve a separação de parágrafos com uma linha em branco entre eles.
+   Não preserve a quebra de linha do papel: linha de caderno não é parágrafo.
+4. "linhas" é quantas linhas escritas você conta na folha, não o número de
+   parágrafos.
+5. "legivel" é false quando a foto estiver cortada, desfocada ou escura demais
+   para uma transcrição confiável. Nesse caso "observacao" diz, em uma frase e
+   em português, o que o estudante precisa refazer na foto.
+6. Se a imagem não contiver um texto manuscrito ou impresso, devolva
+   "texto": "" e "legivel": false.
+Não adicione explicações fora do JSON."""
+
+
+async def ocr_redacao(image_base64: str) -> dict[str, Any]:
+    """Transcreve a foto de uma redação manuscrita.
+
+    Devolve `{"texto", "linhas", "legivel", "observacao"}` — sempre com essas
+    chaves, ainda que o modelo responda torto: quem chama precisa decidir entre
+    entregar o texto e devolver os Sparks, e um dicionário de forma variável
+    empurraria essa decisão para dentro de um `try` na rota.
+    """
+    data, mime = _decode_image(image_base64)
+    parsed = await _generate_json(
+        REDACAO_OCR_SYSTEM,
+        "Transcreva a redação manuscrita desta imagem.",
+        parts=[types.Part.from_bytes(data=data, mime_type=mime)],
+        model=_vision_model(),
+        timeout=GEMINI_TIMEOUT_VISION_SEGUNDOS,
+    )
+    if not isinstance(parsed, dict):
+        return {"texto": "", "linhas": None, "legivel": False, "observacao": ""}
+    texto = parsed.get("texto")
+    linhas = parsed.get("linhas")
+    return {
+        "texto": texto.strip() if isinstance(texto, str) else "",
+        "linhas": linhas if isinstance(linhas, int) and 0 <= linhas <= 100 else None,
+        # `legivel` só é False quando o modelo diz explicitamente que é: um
+        # campo ausente não pode significar "ilegível", senão uma resposta
+        # bem-sucedida sem a chave descartaria uma transcrição boa.
+        "legivel": parsed.get("legivel") is not False,
+        "observacao": (parsed.get("observacao") or "").strip()[:300],
+    }

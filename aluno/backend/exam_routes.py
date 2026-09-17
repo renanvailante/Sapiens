@@ -14,6 +14,7 @@ import rate_limit
 import settings
 from auth import require_admin, require_user
 from ai_service import GeminiIndisponivelError, diagnose, ocr_answer_sheet
+import firestore_service as fs
 from enem_seed import import_pasted_key
 from models import (
     Analysis,
@@ -65,6 +66,36 @@ async def get_exam(exam_id: str, language: str = Query("english")):
     return {"exam": exam, "language": key["language"], "numbers": numbers}
 
 
+# ---------- Custo das duas chamadas de IA desta rota ----------
+#
+# As duas eram gratuitas até 17/09. A do cartão-resposta é a mesma classe de
+# trabalho que o OCR da redação manuscrita, que já custa
+# `redacao_routes.DIGITALIZACAO_COST` (25) — cobrar uma e não a outra era só
+# inconsistência. A do diagnóstico do simulado é uma chamada longa de texto,
+# na faixa das outras devolutivas da Mentis.
+OCR_CARTAO_COST = 25
+DIAGNOSTICO_SIMULADO_COST = 40
+
+
+def _safe_reembolso(uid: str, custo: int) -> int | None:
+    try:
+        return fs.refund_sparks(uid, custo)
+    except Exception:  # noqa: BLE001
+        logger.exception("REEMBOLSO FALHOU (exams): %d Sparks devidos a %s.", custo, uid)
+        return None
+
+
+def _cobrar(uid: str, custo: int) -> int:
+    fs.ensure_sparks_balance(uid)
+    try:
+        return fs.deduct_sparks(uid, custo)
+    except fs.InsufficientSparksError as exc:
+        raise HTTPException(
+            status_code=402,
+            detail=f"Sparks insuficientes: saldo {exc.balance}, custo {exc.needed}.",
+        ) from exc
+
+
 # ---------- Vision ----------
 
 @router.post("/vision/answer-sheet")
@@ -102,9 +133,13 @@ async def vision_ocr(
     numbers = [a["number"] for a in key["answers"]]
     if not numbers:
         raise HTTPException(status_code=400, detail="Prova sem gabarito.")
+    # Cobrado só aqui: depois de 413/404/400, para nunca debitar por um pedido
+    # que ia falhar de graça, e antes da chamada, como nas demais ferramentas.
+    saldo = _cobrar(user.user_id, OCR_CARTAO_COST)
     try:
         answers = await ocr_answer_sheet(payload.image_base64, len(numbers), start_number=numbers[0])
     except GeminiIndisponivelError as exc:
+        saldo = _safe_reembolso(user.user_id, OCR_CARTAO_COST)
         # Timeout do modelo: o aluno pode tentar de novo ou digitar. Dizer isso
         # é melhor que um 500 genérico depois de uma espera longa.
         raise HTTPException(
@@ -112,6 +147,7 @@ async def vision_ocr(
             detail="A leitura do cartão demorou demais. Tente de novo ou digite as respostas.",
         ) from exc
     except Exception as e:
+        saldo = _safe_reembolso(user.user_id, OCR_CARTAO_COST)
         logger.exception("OCR do cartão-resposta falhou para %s", user.user_id)
         raise HTTPException(
             status_code=502,
@@ -119,7 +155,7 @@ async def vision_ocr(
         ) from e
     got = {a.get("number"): (a.get("letter") or "").upper() for a in answers}
     normalized = [{"number": n, "letter": got.get(n, "")} for n in numbers]
-    return {"answers": normalized}
+    return {"answers": normalized, "cobrado": OCR_CARTAO_COST, "sparks_balance": saldo}
 
 
 # ---------- Analyses (attempts) ----------
@@ -160,9 +196,14 @@ async def submit_analysis(payload: SubmitExamRequest, user: User = Depends(requi
         "idioma": payload.language, "total": total, "acertos": correct_count,
         "percentual": percent, "por_area": dict(by_area), "erros": errors,
     }
+    # O diagnóstico por IA do simulado também saía de graça. Cobrado aqui, com
+    # a mesma regra das outras ferramentas: se o modelo não entrega e a rota
+    # cai no texto de indisponibilidade abaixo, o aluno não paga por ele.
+    saldo = _cobrar(user.user_id, DIAGNOSTICO_SIMULADO_COST)
     try:
         ai_out = await diagnose(ai_payload)
     except Exception:
+        saldo = _safe_reembolso(user.user_id, DIAGNOSTICO_SIMULADO_COST)
         ai_out = {
             "headline": "Análise recebida. Diagnóstico cognitivo indisponível no momento — tente reprocessar em instantes.",
             "body": "Sua pontuação e desempenho por área foram calculados normalmente. A camada de IA responsável pela leitura de padrões cognitivos não respondeu a tempo.",

@@ -4,22 +4,27 @@ import { useAuth } from "../lib/auth";
 import Logo from "../components/Logo";
 import BrandMark from "../components/BrandMark";
 import MentorUSP from "../components/MentorUSP";
+import VideoDoMentor from "../components/VideoDoMentor";
+import { MENTOR } from "../lib/mentor";
 import ContagemEnem from "../components/ContagemEnem";
 import { OPERADOR } from "../lib/operador";
 
 /**
  * A landing — a única tela que fala com quem ainda não é aluno.
  *
- * O herói mudou em 2026-09-16: a palavra "Sapiens" em corpo 8xl com degradê
- * animado deixou de ser o primeiro plano e deu lugar à MARCA, grande e com
- * halo, acima da frase que o produto realmente vende. Dois motivos:
+ * O herói mudou em 2026-09-16: a palavra "Sapiens" em corpo 8xl deixou de ser
+ * o primeiro plano e deu lugar à MARCA, grande e com halo, acima da frase que
+ * o produto realmente vende — um nome em corpo gigante não diz o que o produto
+ * faz, e quem chega aqui por um link de WhatsApp tem cinco segundos.
  *
- * · O `.shimmer` (degradê animado sobre `background-clip: text`) come a
- *   barriga das letras em corpo de display — é o mesmo defeito que já tinha
- *   obrigado a tirá-lo do título da seção da live, onde "USP" lia "USF".
- * · Um nome em corpo gigante não diz o que o produto faz. A marca diz de que
- *   ele trata, e a frase logo abaixo diz o resto. Quem chega aqui por um link
- *   de WhatsApp tem cinco segundos, e eles são melhor gastos assim.
+ * **O degradê animado voltou em 2026-09-17**, agora sobre "conhecimento" — a
+ * palavra que a frase existe para entregar. Ele tinha sido banido porque
+ * comia a barriga das letras em corpo de display (foi o que fez "USP" ler
+ * "USF" no título da live): a rampa antiga ia até um azul escuro, e em corpo
+ * grande uma parada de degradê cobre uma letra inteira, então a letra sumia.
+ * O `.shimmer` do `index.css` foi corrigido junto — o piso subiu para o mesmo
+ * #7FD8FF das outras palavras de destaque e o branco virou uma faixa estreita
+ * que passa por cima. Ver a nota longa lá.
  */
 
 const CYCLE = ["Resolver", "Observar", "Estimar estado cognitivo", "Identificar lacunas", "Adaptar", "Evoluir"];
@@ -35,7 +40,7 @@ export default function Landing() {
   const { user } = useAuth();
 
   return (
-    <div className="min-h-screen">
+    <div className="topo-seguro min-h-screen">
       {/* Barra do topo */}
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 pt-6 md:px-10">
         <Logo tamanho="m" testid="landing-brand" />
@@ -62,19 +67,24 @@ export default function Landing() {
           className="reveal reveal-delay-2 mt-5 font-display text-[clamp(2.4rem,1.2rem+5.2vw,4.5rem)] font-extrabold leading-[1.02] tracking-[-0.045em] text-white"
           data-testid="landing-hero-title"
         >
-          Descubra por que <span className="text-[#7FD8FF]">você erra</span>.
+          Transforme seus erros em <span className="shimmer">conhecimento</span>.
         </h1>
         <p className="reveal reveal-delay-3 mx-auto mt-6 max-w-xl leading-relaxed text-white/60" data-testid="landing-hero-subtitle">
-          Não somos um corretor de provas. Somos o sistema que descobre padrões cognitivos escondidos
-          nos seus erros — e transforma cada prova em um mapa para você evoluir.
+          O Sapiens descobre padrões cognitivos escondidos nos seus erros e te conecta com
+          sua melhor versão.
         </p>
+        {/* "Começar agora" leva ao CADASTRO, e não à lista de provas: quem
+            chega aqui sem conta não tem prova nenhuma para analisar, e o botão
+            antigo ("Analisar uma prova") prometia uma ação que terminava numa
+            tela de login sem explicação. `?novo=1` abre a aba "Criar conta"
+            já selecionada — ver `pages/Login.jsx`. */}
         <div className="reveal reveal-delay-4 mt-10 flex items-center justify-center gap-3">
           <button
-            onClick={() => nav(user ? "/exams" : "/login")}
+            onClick={() => nav(user ? "/dashboard" : "/login?novo=1")}
             className="pill btn-sapiens inline-flex items-center gap-2 rounded-full px-7 py-4 text-base font-bold"
             data-testid="landing-analyze-cta"
           >
-            Analisar uma prova <ArrowRight className="h-4 w-4" />
+            {user ? "Ir para o painel" : "Começar agora"} <ArrowRight className="h-4 w-4" />
           </button>
         </div>
       </div>
@@ -106,12 +116,13 @@ export default function Landing() {
                     barriga do "P" em tamanho de display e a palavra lê "USF"
                     (medido no navegador em 2026-09-15). */}
                 Toda quinta você estuda com o{" "}
-                <span className="text-[#7FD8FF]">1º colocado de Medicina da USP</span>.
+                <span className="text-[#7FD8FF]">{MENTOR.nome}</span>, {MENTOR.titulo}.
               </h2>
               <p className="mt-4 max-w-2xl leading-relaxed text-white/65">
-                Ao vivo, 60 minutos, uma vez por semana. Ele resolve questão na sua frente,
-                conta a rotina que o levou ao primeiro lugar no vestibular mais disputado do
-                país e responde as suas perguntas no fim. Não é gravação, não é resumo em PDF.
+                Ao vivo, 60 min, uma vez por semana. {MENTOR.nome} resolve questão na
+                sua frente, conta a rotina que o levou ao primeiro lugar no vestibular mais
+                disputado do país e responde as suas perguntas no fim. Não é gravação, não é
+                resumo em PDF.
               </p>
               <div className="mt-6 flex flex-wrap items-center gap-3">
                 <button
@@ -122,21 +133,25 @@ export default function Landing() {
                   <Radio className="h-4 w-4" /> Quero entrar na próxima quinta
                 </button>
                 <span className="inline-flex items-center gap-1.5 text-xs text-white/45">
-                  <Clock className="h-3.5 w-3.5" /> 20h, horário de Brasília
+                  <Clock className="h-3.5 w-3.5" /> 20h, horário de Brasília · 60 min
                 </span>
                 <span className="inline-flex items-center gap-1.5 text-xs text-white/45">
                   <Video className="h-3.5 w-3.5" /> ao vivo no Google Meet
                 </span>
               </div>
 
+              {/* O box MENOR é a medalha, e o grande é o rosto. Duas fotos da
+                  mesma pessoa a 20cm uma da outra competem entre si; a
+                  medalha diz a mesma coisa em outro registro. */}
               <div className="mt-7 flex flex-wrap items-center gap-4 border-t border-white/10 pt-6">
-                <MentorUSP tamanho="p" comSelo={false} testid="landing-mentor-mini" />
+                <MentorUSP tamanho="p" variante="medalha" comSelo={false} testid="landing-mentor-mini" />
                 <div className="min-w-0 flex-1">
                   <div className="secao-olho flex items-center gap-1.5 text-amber-200/85">
                     <Medal className="h-3 w-3" /> A mesma pessoa, um a um
                   </div>
                   <div className="mt-1 text-sm text-white/60">
-                    A mentoria individual tem lista de espera — uma pessoa, poucas vagas.
+                    A mentoria com {MENTOR.nome} tem lista de espera — uma pessoa,
+                    poucas vagas.
                   </div>
                 </div>
                 <button
@@ -156,6 +171,29 @@ export default function Landing() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* ---------------- QUEM É O VITOR ----------------
+          O rosto já aparece acima, mas rosto não conta história. Quem chega
+          por um link de WhatsApp não tem como verificar uma credencial grande
+          dita por um site; um vídeo em que a pessoa fala é a coisa mais
+          próxima de verificação que a landing consegue oferecer.
+
+          Fachada, não iframe: o player só carrega no clique. Ver
+          `components/VideoDoMentor`. */}
+      <div className="mx-auto max-w-3xl px-5 pb-20 md:px-10">
+        <div className="mb-4 text-center">
+          <div className="secao-olho">Quem dá as aulas</div>
+          <h2 className="mt-2 font-display text-2xl font-extrabold tracking-tighter text-white md:text-3xl">
+            {MENTOR.nome} não é um professor contratado.
+          </h2>
+          <p className="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-white/55">
+            É a pessoa que passou em <strong className="font-semibold text-white/80">1º lugar
+            em Medicina na USP</strong> — e é ela que grava os cursos, dá a aula ao vivo de
+            quinta e atende a mentoria. Veja com as suas palavras dele.
+          </p>
+        </div>
+        <VideoDoMentor testid="landing-video-mentor" />
       </div>
 
       {/* ---------------- O ciclo cognitivo ---------------- */}

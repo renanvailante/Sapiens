@@ -5,6 +5,8 @@ import {
 import Nav from "../components/Nav";
 import MentorUSP from "../components/MentorUSP";
 import ListaDeEsperaMentoria from "../components/ListaDeEsperaMentoria";
+import VideoDoMentor from "../components/VideoDoMentor";
+import { MENTOR } from "../lib/mentor";
 import ContagemEnem from "../components/ContagemEnem";
 import { useDeclararContextoMentis } from "../lib/mentisContexto";
 
@@ -50,7 +52,7 @@ const O_QUE_E = [
 
 export default function Mentoria() {
   useDeclararContextoMentis(
-    "Na página da mentoria, vendo a lista de espera da mentoria com o 1º colocado de Medicina da USP.",
+    `Na página da mentoria, vendo a lista de espera da mentoria com ${MENTOR.nome}, ${MENTOR.titulo}.`,
   );
 
   return (
@@ -79,8 +81,8 @@ export default function Mentoria() {
               </span>
 
               <h1 className="mt-5 font-display text-4xl font-extrabold leading-[1.02] tracking-tighter text-white md:text-5xl">
-                Mentoria com quem passou em{" "}
-                <span className="text-[#7FD8FF]">1º lugar em Medicina na USP</span>.
+                Mentoria com o <span className="text-[#7FD8FF]">{MENTOR.nome}</span>, que passou
+                em 1º lugar em Medicina na USP.
               </h1>
 
               <p className="mt-4 max-w-2xl leading-relaxed text-white/65">
@@ -104,11 +106,17 @@ export default function Mentoria() {
                   <Users className="h-4 w-4" /> Entrar na lista de espera
                 </a>
                 <span className="inline-flex items-center gap-1.5 text-xs text-white/40">
-                  <Clock className="h-3.5 w-3.5" /> de graça, e sem compromisso
+                  <Clock className="h-3.5 w-3.5" /> 50 Sparks · respondemos em até 2 dias úteis
                 </span>
               </div>
             </div>
           </div>
+        </section>
+
+        {/* O VÍDEO. Numa página que pede 50 Sparks para entrar numa fila, saber
+            com quem se vai falar não é enfeite — é o que a decisão precisa. */}
+        <section className="mt-8" data-testid="mentoria-video">
+          <VideoDoMentor testid="mentoria-video-mentor" />
         </section>
 
         {/* --------------------------------------------------------------
@@ -141,7 +149,7 @@ export default function Mentoria() {
         <section id="lista" className="mt-10 scroll-mt-24" data-testid="mentoria-lista">
           <div className="macio border border-[#4FD9FF]/25 bg-[#4FD9FF]/[0.05] p-6 md:p-8">
             <div className="mb-6 flex items-center gap-4">
-              <MentorUSP tamanho="p" comSelo={false} testid="mentoria-foto-form" />
+              <MentorUSP tamanho="p" variante="medalha" comSelo={false} testid="mentoria-foto-form" />
               <div className="min-w-0">
                 <h2 className="font-display text-2xl font-extrabold tracking-tighter text-white">
                   Entrar na lista de espera
@@ -172,7 +180,7 @@ export default function Mentoria() {
           </span>
           <div className="min-w-0 flex-1">
             <div className="font-display text-base font-bold tracking-tight text-white">
-              Não quer esperar? Ele dá aula ao vivo toda quinta.
+              Não quer esperar? {MENTOR.nome} dá aula ao vivo toda quinta.
             </div>
             <div className="text-xs text-white/45">
               Mesma pessoa, 60 minutos, com perguntas abertas no fim — por 200 Sparks.

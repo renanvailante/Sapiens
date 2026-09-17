@@ -66,7 +66,13 @@ def set_db(db):
 
 
 CUSTO_POR_QUESTAO = th.CUSTO_POR_QUESTAO_NOVA
-_TIMEOUT_QUESTOES_IA = 45.0
+# Orçamento TOTAL (primário + reserva) desde 17/09 — ver
+# `ai_service.generate_json_resiliente`. Gerar questão é o único chamador
+# interativo que legitimamente escreve muito (enunciado + 5 alternativas +
+# justificativa, vezes a quantidade pedida), então o teto de saída escala com
+# o pedido em vez de ser fixo, e o de tempo é maior que os 10 s dos demais.
+_TIMEOUT_QUESTOES_IA = 20.0
+_MAX_TOKENS_POR_QUESTAO_IA = 700
 _ONTOLOGY_VERSION_QUESTOES_IA = "treino-questoes-ia-1.0"
 
 # Igual a `redacao_routes._RECLAMACAO_TTL_SEGUNDOS`: o pedido termina em
@@ -227,7 +233,8 @@ async def obter_mapa(user: User = Depends(require_user)):
 
 CONCEITO_EXPLICACAO_COST = 10
 _CONCEITO_CACHE_PREFIXO = "treino_conceito"
-_TIMEOUT_CONCEITO = 30.0
+_TIMEOUT_CONCEITO = 10.0
+_MAX_TOKENS_CONCEITO = 900
 
 _CONCEITO_SYSTEM = """Você é a Mentis, a entidade cognitiva do Sapiens, uma plataforma de preparação
 para o ENEM. Um aluno concluiu uma missão de treino e pediu para aprofundar um conceito
@@ -293,7 +300,8 @@ async def explicar_conceito(
     inicio = time.monotonic()
     try:
         resultado = await ai_service.generate_json_resiliente(
-            _CONCEITO_SYSTEM, prompt, thinking_level="MINIMAL", timeout=_TIMEOUT_CONCEITO
+            _CONCEITO_SYSTEM, prompt, thinking_level="MINIMAL", timeout=_TIMEOUT_CONCEITO,
+            max_output_tokens=_MAX_TOKENS_CONCEITO,
         )
         paragrafos = _validar_paragrafos_conceito(resultado)
         await llm_telemetry.persist(
@@ -589,7 +597,8 @@ async def gerar_questoes(hab_id: str, payload: GerarRequest, user: User = Depend
         inicio = time.monotonic()
         try:
             resultado = await ai_service.generate_json_resiliente(
-                _QUESTAO_IA_SYSTEM, prompt, thinking_level="MINIMAL", timeout=_TIMEOUT_QUESTOES_IA
+                _QUESTAO_IA_SYSTEM, prompt, thinking_level="MINIMAL", timeout=_TIMEOUT_QUESTOES_IA,
+                max_output_tokens=_MAX_TOKENS_POR_QUESTAO_IA * max(1, faltam),
             )
             # Trunca em `faltam`: o Gemini pode devolver mais questões válidas
             # do que o pedido (o prompt pede uma quantidade, não é um teto

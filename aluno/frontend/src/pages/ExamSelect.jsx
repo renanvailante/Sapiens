@@ -13,6 +13,9 @@ import ReportarQuestao from "../components/ReportarQuestao";
 
 const APP_VERSION = "sapiens-web-1.0";
 const MENTIS_COST = 7; // espelha EXPLICACAO_COST em mentis_routes.py — só p/ desabilitar o botão sem saldo, o servidor é quem cobra de fato
+// Espelha `RESUMO_SESSAO_COST` em firestore_routes.py. Mesma regra do de cima:
+// serve para ESCREVER o preço e desabilitar sem saldo; quem cobra é o servidor.
+const RESUMO_RODADA_COST = 15;
 
 // "AMARELO" -> "Amarelo" — só para exibição das cores de caderno do ENEM.
 const capitalizar = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : s);
@@ -40,28 +43,32 @@ function rodadaNaPosicao(posicao, total) {
 // Sem estado próprio: `respondidas` é sempre a contagem já persistida
 // (behavior events reais), nunca um valor fictício — a mesma fonte usada
 // para retomar a prova.
-function ProgressoProva({ respondidas, total, pulso, tone = "light" }) {
+/** O progresso da prova.
+ *
+ *  Passou a usar `.barra`, a barra do sistema, em 2026-09-16. Ela tinha
+ *  degradê próprio (`accentSoft -> accent`), altura própria e trilho próprio —
+ *  três decisões de cor tomadas nesta tela, sem relação com as outras cinco
+ *  barras do produto. Agora é a mesma luz de tudo, e o `data-cheia` faz o
+ *  brilho correr por dentro dela quando a prova acaba.
+ *
+ *  As duas chamadas vivem sobre superfície ESCURA (a tela da prova e o card de
+ *  conclusão), então não há variante clara; `tone` fica só porque a chamada de
+ *  conclusão ainda o passa. */
+function ProgressoProva({ respondidas, total, pulso }) {
   const pct = total > 0 ? Math.min(100, Math.round((respondidas / total) * 100)) : 0;
-  const onDark = tone === "light"; // "light" = texto claro, para uso sobre o fundo azul da prova
   return (
     <div className="mb-5" data-testid="progresso-prova">
-      <div className="mb-1.5 flex items-center justify-between">
-        <span className={`font-mono-alt text-[10px] uppercase tracking-[0.25em] ${onDark ? "text-white/70" : "text-zinc-500"}`}>Progresso da prova</span>
-        <span className={`font-mono-alt text-xs font-bold ${onDark ? "text-white" : "text-zinc-700"}`} data-testid="progresso-contador">
+      <div className="mb-2 flex items-center justify-between">
+        <span className="secao-olho">Progresso da prova</span>
+        <span className="font-mono-alt text-xs font-bold tabular-nums text-white" data-testid="progresso-contador">
           {respondidas}/{total}
         </span>
       </div>
       <div
-        className={`h-2.5 w-full rounded-full overflow-hidden transition-shadow duration-300 ${onDark ? "bg-white/15" : "bg-zinc-100"} ${
-          pulso ? `ring-2 ring-sapiens-accent ring-offset-2 ${onDark ? "ring-offset-sapiens-navy" : "ring-offset-white"}` : ""
-        }`}
+        className={`barra transition-shadow duration-300 ${pulso ? "ring-2 ring-[#4FD9FF]/70 ring-offset-2 ring-offset-[#050a14]" : ""}`}
+        data-cheia={pct >= 100}
       >
-        <div
-          className="h-full rounded-full bg-gradient-to-r from-sapiens-accentSoft to-sapiens-accent transition-all duration-700 ease-out"
-          style={{ width: `${pct}%` }}
-          data-testid="progresso-barra"
-          data-pct={pct}
-        />
+        <i style={{ width: `${pct}%` }} data-testid="progresso-barra" data-pct={pct} />
       </div>
     </div>
   );
@@ -118,11 +125,12 @@ function QuestionRunner({ filtro, onExit }) {
   const [pulso, setPulso] = useState(false); // destaque breve na barra ao responder
   const [sparks, setSparks] = useState(null);
   const [explicacao, setExplicacao] = useState(null); // { loading, paragrafos, erro } — da questão ATUAL, some ao avançar
+  const [resumoIA, setResumoIA] = useState(null); // { loading, erro } da leitura paga da Mentis sobre a rodada aberta
   const startRef = useRef(Date.now());
   const changesRef = useRef(0);
   const respostasSessaoRef = useRef([]); // [{item_id, alternativa_escolhida, acertou}], só desta sessão
   const rodadaPendenteRef = useRef(null); // devolutiva de rodada já buscada, aguardando o clique em "avançar"
-  const rodadasProcessadasRef = useRef(new Set()); // evita chamar /rodada/concluir e /sessao/diagnostico 2x pela mesma rodada nesta sessão
+  const rodadasProcessadasRef = useRef(new Set()); // evita chamar /rodada/concluir 2x pela mesma rodada nesta sessão
 
   useEffect(() => {
     let ativo = true;
@@ -259,23 +267,27 @@ function QuestionRunner({ filtro, onExit }) {
               rodada: rodadaNum,
             })
           : null;
-        const pedidoIA = janela.length >= 10
-          ? api.post("/firestore/students/me/sessao/diagnostico", { respostas: janela })
-          : null;
-
-        const [resRodada, resIA] = await Promise.allSettled([pedidoRodada, pedidoIA]);
+        // A leitura da Mentis NÃO é mais disparada aqui. Ela era: toda rodada
+        // de 10 questões chamava o Gemini sozinha, sem pedido e sem cobrança.
+        // Desde 17/09 a rota cobra (`RESUMO_SESSAO_COST`), e cobrar por uma
+        // chamada automática seria débito-surpresa no meio da prática — então
+        // ela virou um botão dentro da devolutiva, com o preço escrito.
+        //
+        // A devolutiva determinística abaixo (acertos, evolução, padrões
+        // calculados localmente, Sparks da rodada) continua automática e de
+        // graça: ela não custa uma chamada de IA e nunca custou.
+        //
+        // `janelaIA` viaja junto porque o botão precisa das MESMAS respostas
+        // desta rodada; recalcular na hora do clique daria outra janela, já
+        // que o aluno seguiu respondendo enquanto o modal não abriu.
+        const resRodada = await Promise.allSettled([pedidoRodada]).then((r) => r[0]);
 
         if (resRodada?.status === "fulfilled" && resRodada.value) {
           const rd = resRodada.value.data;
           devolutiva = { ...devolutiva, ...rd };
           if (typeof rd.sparks_balance === "number") setSparks(rd.sparks_balance);
         }
-        if (resIA?.status === "fulfilled" && resIA.value) {
-          // `padroes_de_erro` da IA é uma lista de strings; a da rodada
-          // (acima) é uma lista de objetos `{nome}` — nunca sobrescrever.
-          const { padroes_de_erro: _padroesIA, ...iaCampos } = resIA.value.data;
-          devolutiva = { ...devolutiva, ...iaCampos };
-        }
+        devolutiva.janelaIA = janela.length >= 10 ? janela : null;
 
         rodadaPendenteRef.current = devolutiva;
       }
@@ -336,7 +348,39 @@ function QuestionRunner({ filtro, onExit }) {
     }
   };
 
-  // A devolutiva (Sparks + IA) já foi buscada em `responder()`, no mesmo
+  // A leitura da Mentis sobre a rodada inteira. Paga e PEDIDA — até 17/09
+  // saía sozinha e de graça ao fim de cada rodada, que era a maior fuga de
+  // Sparks do app. O que o aluno vê sem pedir (e sem pagar) continua sendo a
+  // devolutiva determinística, que não usa IA nenhuma.
+  //
+  // O servidor devolve `degradado: true` quando o modelo respondeu o texto
+  // neutro de indisponibilidade; nesse caso ele mesmo já estornou, e aqui só
+  // resta dizer isso em vez de mostrar um resumo vazio como se fosse leitura.
+  const pedirResumoDaRodada = async () => {
+    const janela = rodadaResumo?.janelaIA;
+    if (!janela || resumoIA?.loading) return;
+    setResumoIA({ loading: true });
+    try {
+      const { data } = await api.post(
+        "/firestore/students/me/sessao/diagnostico",
+        { respostas: janela },
+      );
+      if (typeof data.sparks_balance === "number") setSparks(data.sparks_balance);
+      if (data.degradado) {
+        setResumoIA({ erro: "A Mentis não conseguiu ler esta rodada agora. Seus Sparks foram devolvidos." });
+        return;
+      }
+      // `padroes_de_erro` da IA é uma lista de strings; a da rodada é uma
+      // lista de objetos `{nome}` — nunca sobrescrever uma com a outra.
+      const { padroes_de_erro: _padroesIA, ...iaCampos } = data;
+      setRodadaResumo((r) => ({ ...r, ...iaCampos }));
+      setResumoIA(null);
+    } catch (e) {
+      setResumoIA({ erro: errMsg(e, "Não foi possível gerar a leitura agora.") });
+    }
+  };
+
+  // A devolutiva determinística já foi buscada em `responder()`, no mesmo
   // checkpoint — aqui só decide se ela está pronta pra mostrar ou se já foi
   // consumida (então é só avançar pra próxima questão).
   const avancar = () => {
@@ -351,6 +395,7 @@ function QuestionRunner({ filtro, onExit }) {
 
   const continuarAposRodada = () => {
     setRodadaResumo(null);
+    setResumoIA(null);
     avancar();
   };
 
@@ -381,20 +426,23 @@ function QuestionRunner({ filtro, onExit }) {
 
   return (
     <div>
-      <div className="mb-1 flex items-center justify-between">
-        <div className="font-mono-alt text-xs uppercase tracking-[0.25em] text-white/70">
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <div className="secao-olho">
           Questão {idx + 1} de {itens.length}
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {sparks != null && (
             <span
-              className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2.5 py-1 text-xs font-bold text-amber-700"
+              className="chip border-amber-300/25 bg-amber-400/10 px-2.5 py-1 text-amber-100"
               data-testid="sparks-balance"
             >
-              <Sparkles className="w-3.5 h-3.5" /> {sparks}
+              <Sparkles className="h-3.5 w-3.5 text-amber-300" /> {sparks}
             </span>
           )}
-          <button onClick={onExit} className="text-sm text-white/60 underline hover:text-white">Sair</button>
+          {/* Sair era um texto sublinhado em cinza. Numa tela em que tudo o
+              mais é botão, a única porta de saída não pode ser a única coisa
+              que não parece clicável. */}
+          <button onClick={onExit} className="chip pill" data-testid="questao-sair">Sair</button>
         </div>
       </div>
 
@@ -414,7 +462,7 @@ function QuestionRunner({ filtro, onExit }) {
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap gap-2">
             {tags.map((t, i) => (
-              <span key={i} className="rounded-full bg-sapiens-accentSoft px-3 py-1 text-xs font-medium text-sapiens-navy">{t}</span>
+              <span key={i} className="rounded-full bg-sapiens-accentSoft px-3 py-1 text-xs font-semibold text-sapiens-navy">{t}</span>
             ))}
           </div>
           <ReportarQuestao itemId={item.item_id} />
@@ -481,22 +529,22 @@ function QuestionRunner({ filtro, onExit }) {
             const isCorrect = result && letra === result.correta;
             const isWrongChoice = result && isSelected && !result.acertou;
             const figuraAlt = figurasPorAlternativa[letra];
-            let cls = "border-zinc-200 bg-white hover:border-sapiens-accent hover:shadow-sm";
-            if (isCorrect) cls = "border-emerald-400 bg-emerald-50";
-            else if (isWrongChoice) cls = "border-rose-400 bg-rose-50";
-            else if (isSelected) cls = "border-sapiens-accent bg-sapiens-accentSoft/60 shadow-sm";
+            // Um atributo em vez de quatro strings de classe montadas à mão: o
+            // estado da alternativa é DADO, e quem o desenha é o CSS
+            // (`.alternativa[data-estado]` no index.css). O `select-pop`
+            // continua marcando a escolha no instante do toque.
+            const estado = isCorrect ? "certa" : isWrongChoice ? "errada" : isSelected ? "escolhida" : "livre";
             return (
               <button
                 key={letra}
                 onClick={() => pick(letra)}
                 disabled={!!result || !alt.texto}
                 data-testid={`alt-${letra}`}
-                className={`flex items-start gap-3 rounded-xl border px-4 py-3 text-left transition ${cls} ${isSelected && !result ? "select-pop" : ""}`}
+                data-estado={estado}
+                className={`alternativa ${isSelected && !result ? "select-pop" : ""}`}
               >
-                <span className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold transition-colors ${
-                  isCorrect ? "bg-emerald-500 text-white" : isWrongChoice ? "bg-rose-500 text-white" : isSelected ? "bg-sapiens-accent text-white" : "bg-zinc-100 text-zinc-600"
-                }`}>
-                  {isCorrect ? <Check className="w-4 h-4" /> : isWrongChoice ? <X className="w-4 h-4" /> : letra}
+                <span className="alternativa-letra">
+                  {isCorrect ? <Check className="h-4 w-4" /> : isWrongChoice ? <X className="h-4 w-4" /> : letra}
                 </span>
                 <span className="flex flex-col gap-2">
                   {figuraAlt && (
@@ -556,14 +604,25 @@ function QuestionRunner({ filtro, onExit }) {
         )}
 
         {result && (
-          <div className={`mt-5 rounded-xl px-4 py-4 reveal ${result.acertou ? "bg-emerald-50" : "bg-rose-50"}`} data-testid="result-banner">
-            <div className={`text-sm font-bold ${result.acertou ? "text-emerald-700" : "text-rose-700"}`}>
-              {result.feedback?.titulo || (result.acertou ? "Você acertou!" : `Resposta incorreta. Correta: ${result.correta}.`)}
-              {!result.acertou && <span className="ml-1 font-normal">(correta: {result.correta})</span>}
-            </div>
-            {(result.feedback?.mensagens || []).map((m, i) => (
-              <p key={i} className={`mt-2 text-sm leading-relaxed ${result.acertou ? "text-emerald-800" : "text-rose-800"}`}>{m}</p>
-            ))}
+          <div
+            className={`veredito reveal mt-5 ${result.acertou ? "recompensa" : ""}`}
+            data-acertou={result.acertou}
+            data-testid="result-banner"
+          >
+            {/* O selo. Um ícone de 34px à esquerda diz "certo" ou "errado"
+                antes de qualquer palavra ser lida — e é ele que carrega o
+                pulso de recompensa no acerto. */}
+            <span className="veredito-selo">
+              {result.acertou ? <Check className="h-5 w-5" strokeWidth={3} /> : <X className="h-5 w-5" strokeWidth={3} />}
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className={`text-sm font-bold ${result.acertou ? "text-emerald-700" : "text-rose-700"}`}>
+                {result.feedback?.titulo || (result.acertou ? "Você acertou!" : `Resposta incorreta. Correta: ${result.correta}.`)}
+                {!result.acertou && <span className="ml-1 font-normal">(correta: {result.correta})</span>}
+              </div>
+              {(result.feedback?.mensagens || []).map((m, i) => (
+                <p key={i} className={`mt-2 text-sm leading-relaxed ${result.acertou ? "text-emerald-800" : "text-rose-800"}`}>{m}</p>
+              ))}
 
             {!explicacao?.paragrafos && (
               <button
@@ -622,6 +681,7 @@ function QuestionRunner({ filtro, onExit }) {
                 ))}
               </div>
             )}
+            </div>
           </div>
         )}
 
@@ -706,6 +766,38 @@ function QuestionRunner({ filtro, onExit }) {
                   <ul className="mt-1.5 space-y-1 text-sm text-zinc-700">
                     {rodadaResumo.padroes_de_erro.map((p, i) => <li key={i}>· {p.nome}</li>)}
                   </ul>
+                </div>
+              )}
+
+              {/* A leitura da Mentis: só aparece se o aluno pedir, e o preço
+                  está escrito no botão. O que está acima dela nesta caixa é
+                  tudo determinístico e de graça — a separação é proposital,
+                  para ninguém pagar achando que pagou pela contagem. */}
+              {!rodadaResumo.headline && rodadaResumo.janelaIA && (
+                <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3.5" data-testid="rodada-pedir-ia">
+                  <div className="text-sm font-semibold text-zinc-900">
+                    Quer a leitura da Mentis sobre estas {rodadaResumo.janelaIA.length} questões?
+                  </div>
+                  <p className="mt-1 text-xs leading-relaxed text-zinc-600">
+                    Ela procura o padrão por trás dos erros — o que se repete, e não quantos você acertou.
+                  </p>
+                  <button
+                    onClick={pedirResumoDaRodada}
+                    disabled={resumoIA?.loading || (sparks != null && sparks < RESUMO_RODADA_COST)}
+                    data-testid="rodada-pedir-ia-btn"
+                    className="pill btn-sapiens mt-3 inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {resumoIA?.loading
+                      ? "A Mentis está lendo a rodada…"
+                      : sparks != null && sparks < RESUMO_RODADA_COST
+                      ? `Saldo insuficiente (${RESUMO_RODADA_COST} Sparks)`
+                      : `Ler com a Mentis · ${RESUMO_RODADA_COST} Sparks`}
+                  </button>
+                  {resumoIA?.erro && (
+                    <p className="mt-2 text-xs font-medium text-rose-600" data-testid="rodada-pedir-ia-erro">
+                      {resumoIA.erro}
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -1062,11 +1154,11 @@ export default function ExamSelect() {
   return (
     <div className="min-h-screen">
       <Nav />
-      <div className="max-w-3xl mx-auto px-6 md:px-10 py-14">
+      <div className="max-w-3xl mx-auto px-5 py-7 md:px-10 md:py-10">
         {mode === "practice" && filtro?.area && (
           <div className="mb-6" data-testid="practice-area-header">
-            <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-white/50 mb-3">Lacuna recomendada</div>
-            <h1 className="font-display text-3xl md:text-4xl font-extrabold tracking-tighter text-white">
+            <div className="secao-olho">Lacuna recomendada</div>
+            <h1 className="titulo-tela">
               Praticando {filtro.area}
             </h1>
           </div>
@@ -1076,8 +1168,8 @@ export default function ExamSelect() {
         ) : mode === "provas" ? (
           <>
             <div className="mb-10">
-              <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-white/50 mb-3">Provas</div>
-              <h1 className="font-display text-4xl md:text-5xl font-extrabold tracking-tighter text-white">
+              <div className="secao-olho">Provas</div>
+              <h1 className="titulo-tela">
                 Escolha um caderno
               </h1>
               <p className="mt-3 text-white/60 max-w-lg">Cada caderno é uma prova real, agrupada por banca, ano e cor.</p>
@@ -1087,8 +1179,8 @@ export default function ExamSelect() {
         ) : (
           <>
             <div className="mb-10">
-              <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-white/50 mb-3">Provas</div>
-              <h1 className="font-display text-4xl md:text-5xl font-extrabold tracking-tighter text-white" data-testid="exam-select-title">
+              <div className="secao-olho">Provas</div>
+              <h1 className="titulo-tela" data-testid="exam-select-title">
                 Pratique questões
               </h1>
               <p className="mt-3 text-white/60 max-w-lg">Questões auditadas, uma de cada vez. Suas respostas são registradas para revelar seus padrões cognitivos.</p>

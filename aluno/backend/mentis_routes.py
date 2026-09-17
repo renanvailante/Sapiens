@@ -85,11 +85,23 @@ _DOSSIE_MAX_FORTES = 3
 _DOSSIE_MAX_PADROES = 3
 _EVIDENCIA_MAX_CHARS = 160
 
-# Tetos de tempo próprios. O global (`GEMINI_TIMEOUT_SEGUNDOS = 30`) foi
-# calibrado para chamadas rasas; estas duas são conversacionais e curtas, mas
-# um pico de latência do modelo não pode virar "seus Sparks foram devolvidos".
-_TIMEOUT_EXPLICACAO = 60.0
-_TIMEOUT_CHAT = 45.0
+# Tetos de tempo próprios, e desde 17/09 eles são o ORÇAMENTO TOTAL da espera
+# (primário + reserva), não o teto de cada tentativa — ver
+# `ai_service.generate_json_resiliente`. Antes, `_TIMEOUT_EXPLICACAO = 60`
+# significava que o pior caso do aluno era 120 s de tela parada; era essa a
+# "Mentis demorando quase 1 minuto".
+#
+# 10 s é o alvo, e ele só é alcançável porque vem acompanhado de um teto de
+# tokens de SAÍDA: numa resposta em streaming o tempo é proporcional ao que o
+# modelo escreve, então limitar o tamanho é o que de fato limita a espera.
+# Os tetos abaixo são generosos para o formato pedido em cada prompt (3
+# parágrafos curtos, uma resposta de chat) e apertados o bastante para o
+# modelo não divagar.
+_TIMEOUT_EXPLICACAO = 10.0
+_MAX_TOKENS_EXPLICACAO = 900
+
+_TIMEOUT_CHAT = 10.0
+_MAX_TOKENS_CHAT = 800
 
 
 def _agora() -> datetime:
@@ -230,7 +242,8 @@ async def gerar_explicacao(
         # 503 para o aluno e reembolso. MINIMAL responde completo, em
         # segundos — e é a opção mais barata em tokens.
         resultado = await ai_service.generate_json_resiliente(
-            EXPLICACAO_SYSTEM, prompt, thinking_level="MINIMAL", timeout=_TIMEOUT_EXPLICACAO
+            EXPLICACAO_SYSTEM, prompt, thinking_level="MINIMAL", timeout=_TIMEOUT_EXPLICACAO,
+            max_output_tokens=_MAX_TOKENS_EXPLICACAO,
         )
         paragrafos = _validar_paragrafos(resultado)
         await llm_telemetry.persist(
@@ -286,7 +299,8 @@ async def gerar_explicacao(
 
 INTERVENCAO_COST = 10
 _CACHE_PREFIXO_INTERVENCAO = "intervencao-v1"
-_TIMEOUT_INTERVENCAO = 25.0
+_TIMEOUT_INTERVENCAO = 10.0
+_MAX_TOKENS_INTERVENCAO = 900
 
 INTERVENCAO_SYSTEM = """Você é a Mentis, a entidade cognitiva do Sapiens. Você escreve uma
 INTERVENÇÃO PEDAGÓGICA sobre um tipo de dificuldade cognitiva.
@@ -432,7 +446,8 @@ async def abrir_intervencao(
         inicio = time.monotonic()
         try:
             resultado = await ai_service.generate_json_resiliente(
-                INTERVENCAO_SYSTEM, prompt, thinking_level="MINIMAL", timeout=_TIMEOUT_INTERVENCAO
+                INTERVENCAO_SYSTEM, prompt, thinking_level="MINIMAL", timeout=_TIMEOUT_INTERVENCAO,
+                max_output_tokens=_MAX_TOKENS_INTERVENCAO,
             )
             conteudo = _validar_intervencao(resultado)
             await llm_telemetry.persist(
@@ -1008,7 +1023,8 @@ async def enviar_mensagem(
     inicio = time.monotonic()
     try:
         resultado = await ai_service.generate_json_resiliente(
-            CHAT_SYSTEM, prompt, thinking_level="MINIMAL", timeout=_TIMEOUT_CHAT
+            CHAT_SYSTEM, prompt, thinking_level="MINIMAL", timeout=_TIMEOUT_CHAT,
+            max_output_tokens=_MAX_TOKENS_CHAT,
         )
         resposta = (resultado or {}).get("resposta") if isinstance(resultado, dict) else None
         if not isinstance(resposta, str) or not resposta.strip():

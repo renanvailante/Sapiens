@@ -61,6 +61,14 @@ class BehaviorFlags(BaseModel):
     model_config = ConfigDict(extra="forbid")
     onboarded: Optional[bool] = None
     first_exam_done: Optional[bool] = None
+    # O guia da Mentis (o tour de balões do Painel) já foi visto.
+    #
+    # É uma flag PRÓPRIA e não `onboarded` reaproveitada: `onboarded` marca
+    # ter passado por `/bem-vindo`, que é outra tela e outro momento. Quem
+    # pulou o guia no primeiro acesso tem `onboarded=true` e nunca viu o tour;
+    # quem viu o tour inteiro sem passar pelo `/bem-vindo` é o caso inverso.
+    # Uma flag para dois estados diferentes acaba mentindo sobre um deles.
+    guia_visto: Optional[bool] = None
 
 
 class BehaviorPayload(BaseModel):
@@ -297,22 +305,82 @@ class SessaoDiagnosticoPayload(BaseModel):
     respostas: list[RespostaSessao] = Field(..., min_length=10)
 
 
+# Custo do resumo de rodada. Até 17/09 esta rota chamava o Gemini de graça, e
+# era a maior fuga do app: dispara a cada 10 questões, para todo aluno ativo,
+# sem nenhuma cobrança — uma ferramenta da Mentis saindo de graça, que é
+# exatamente o que não pode acontecer.
+#
+# Cobrar sozinho não bastava: como a chamada era automática, cobrar do jeito
+# que estava viraria débito-surpresa no meio da prática. Então a rota passa a
+# ser PEDIDA (o front mostra um botão com o preço na devolutiva da rodada) e
+# a devolutiva determinística — contagem, evolução, padrões de erro
+# calculados localmente, sem IA — continua de graça, como sempre foi.
+RESUMO_SESSAO_COST = 15
+
+
+def _safe_reembolso(uid: str, custo: int) -> int | None:
+    """Devolver Sparks não pode virar um segundo erro em cima do primeiro."""
+    try:
+        return fs.refund_sparks(uid, custo)
+    except Exception:  # noqa: BLE001
+        logger.exception("REEMBOLSO FALHOU (resumo de sessão): %d Sparks devidos a %s.", custo, uid)
+        return None
+
+
+def _cobrar(uid: str, custo: int) -> int:
+    fs.ensure_sparks_balance(uid)
+    try:
+        return fs.deduct_sparks(uid, custo)
+    except fs.InsufficientSparksError as exc:
+        raise HTTPException(
+            status_code=402,
+            detail=f"Sparks insuficientes: saldo {exc.balance}, custo {exc.needed}.",
+        ) from exc
+
+
 @router.post("/students/me/sessao/diagnostico")
 async def diagnostico_sessao(
     payload: SessaoDiagnosticoPayload,
     user: User = Depends(require_user),
     _: None = Depends(rate_limit.por_usuario("llm")),
 ):
-    """Resumo em linguagem natural de uma sessão de prática (mín. 10 respostas).
+    """Resumo em linguagem natural de uma rodada de prática (mín. 10 respostas).
+
+    Custa `RESUMO_SESSAO_COST` Sparks, cobrados ANTES da chamada e devolvidos
+    se o modelo não entregar nada aproveitável — mesma ordem das outras
+    ferramentas da Mentis (`mentis_routes`, `treino_routes`).
 
     Não grava nada — o aluno já respondeu tudo isso via `/students/me/answer`
     (que já persistiu o evento de behavior de cada uma). Este endpoint só lê
     o item de cada resposta para montar o contexto e chama o Gemini UMA vez
-    por sessão, com `thinking_level=LOW` (ver `ai_service.diagnose_sessao`).
+    por rodada, com `thinking_level=MINIMAL` (ver `ai_service.diagnose_sessao`).
     """
     respostas = [r.model_dump() for r in payload.respostas]
-    contexto = await asyncio.to_thread(annotation_service.montar_contexto_sessao, respostas)
-    return await ai_service.diagnose_sessao(contexto)
+    saldo = _cobrar(user.user_id, RESUMO_SESSAO_COST)
+    try:
+        contexto = await asyncio.to_thread(annotation_service.montar_contexto_sessao, respostas)
+        resultado = await ai_service.diagnose_sessao(contexto)
+    except Exception:  # noqa: BLE001
+        saldo = _safe_reembolso(user.user_id, RESUMO_SESSAO_COST)
+        logger.exception("Resumo de rodada falhou para %s — %d Sparks devolvidos.",
+                         user.user_id, RESUMO_SESSAO_COST)
+        raise HTTPException(
+            status_code=503,
+            detail="A Mentis não conseguiu ler esta rodada agora. Seus Sparks foram devolvidos.",
+        )
+    # `diagnose_sessao` degrada para um texto neutro em vez de levantar; esse
+    # texto não vale 15 Sparks, então o reembolso é decidido pelo conteúdo, não
+    # pela ausência de exceção.
+    if not (resultado or {}).get("pontos_fortes") and not (resultado or {}).get("pontos_de_atencao") \
+            and not (resultado or {}).get("padroes_de_erro"):
+        saldo = _safe_reembolso(user.user_id, RESUMO_SESSAO_COST)
+        return {**resultado, "cobrado": 0, "sparks_balance": saldo, "degradado": True}
+    return {
+        **resultado,
+        "cobrado": RESUMO_SESSAO_COST,
+        "sparks_balance": saldo,
+        "degradado": False,
+    }
 
 
 # ---------- Rodadas (progresso/devolutiva/Sparks) ----------
@@ -455,29 +523,16 @@ async def concluir_rodada(payload: RodadaConcluirPayload, user: User = Depends(r
 
 @router.get("/students/me/sparks")
 async def meus_sparks(user: User = Depends(require_user)):
-    """Saldo + os direitos que a loja vende, e até quando valem.
+    """Saldo + o direito permanente que a loja vende.
 
     `mentis_ilimitada` vem junto porque as duas coisas aparecem no mesmo
     lugar da tela (o chip da barra, a loja, o chat) e separá-las em duas
     chamadas faria a interface piscar entre "cobra" e "não cobra".
-
-    `mentis_ilimitada_ate` é a data de vencimento, e vem `null` para dois
-    casos diferentes que a tela trata igual: quem não tem o direito, e quem o
-    tem PARA SEMPRE (comprou antes de 2026-09-16, quando a loja vendia sem
-    prazo). Nos dois, não há data para escrever.
     """
     _safe_call(fs.ensure_student_profile, user.user_id, user.name, user.email)
     saldo = _safe_call(fs.ensure_sparks_balance, user.user_id)
     direitos = _safe_call(fs.ler_direitos, user.user_id) or {}
-    vence = None
-    if direitos.get("mentis_ilimitada"):
-        vence = _safe_call(fs.vencimento_do_direito, user.user_id, "mentis_ilimitada")
-    return {
-        "sparks_balance": saldo,
-        **direitos,
-        "direitos": direitos,
-        "mentis_ilimitada_ate": vence,
-    }
+    return {"sparks_balance": saldo, **direitos, "direitos": direitos}
 
 
 @router.get("/students/me/activity")
