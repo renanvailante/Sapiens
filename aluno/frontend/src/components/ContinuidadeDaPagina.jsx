@@ -98,17 +98,25 @@ export default function ContinuidadeDaPagina() {
       // Duas casas: o suficiente para a transição parecer contínua e pouco o
       // bastante para não reescrever o estilo a cada pixel de rolagem.
       raiz.style.setProperty("--pagina-restante", valor.toFixed(2));
+    };
 
-      // A página ROLA? É outra pergunta, e não se responde com a de cima: o
-      // véu depende de quanto falta AGORA (que no fim da página é zero), o
-      // fecho depende de a página ter fim diferente do topo (que no fim da
-      // página continua sendo verdade).
-      //
-      // Estado do React, e não uma variável CSS: o traço precisa SAIR DO
+    /**
+     * A ESTRUTURA da página — e não a rolagem. Duas perguntas diferentes, em
+     * dois caminhos diferentes de propósito.
+     *
+     * "Quanto falta rolar" muda a cada quadro de rolagem. "A página rola?" e
+     * "esta rota tem barra inferior?" não mudam com a rolagem: mudam quando a
+     * rota troca, quando a janela muda de tamanho e quando o conteúdo cresce.
+     * Medir as três juntas custaria um `querySelector` por quadro de rolagem
+     * em TODA página do produto, para responder duas perguntas cuja resposta
+     * não mudou.
+     */
+    const medirEstrutura = () => {
+      // Estado do React, e não uma variável CSS: o fecho precisa SAIR DO
       // FLUXO em página curta. Escondê-lo por opacidade deixaria 65px de
       // margem fantasma no pé — e numa página quase do tamanho da janela
       // esses 65px a fariam rolar, ligando o fecho que acabou de ser
-      // escondido. `setRolavel` só dispara render quando o valor VIRA.
+      // escondido. As duas chamadas só disparam render quando o valor VIRA.
       setRolavel(raiz.scrollHeight - window.innerHeight > ROLAGEM_MINIMA_PARA_FECHO);
       setTemBarra(!!document.querySelector(".barra-inferior"));
     };
@@ -118,21 +126,26 @@ export default function ContinuidadeDaPagina() {
       quadro = requestAnimationFrame(medir);
     };
 
-    medir();
+    const agendarTudo = () => {
+      medirEstrutura();
+      agendar();
+    };
+
+    agendarTudo();
     window.addEventListener("scroll", agendar, { passive: true });
-    window.addEventListener("resize", agendar);
+    window.addEventListener("resize", agendarTudo);
 
     // O conteúdo cresce depois da primeira pintura em quase toda tela deste
     // produto (esqueleto → resposta da API). `ResizeObserver` no `body` é o
     // único jeito de saber disso sem cada tela avisar.
     const observador =
-      typeof ResizeObserver !== "undefined" ? new ResizeObserver(agendar) : null;
+      typeof ResizeObserver !== "undefined" ? new ResizeObserver(agendarTudo) : null;
     if (observador) observador.observe(document.body);
 
     return () => {
       if (quadro) cancelAnimationFrame(quadro);
       window.removeEventListener("scroll", agendar);
-      window.removeEventListener("resize", agendar);
+      window.removeEventListener("resize", agendarTudo);
       if (observador) observador.disconnect();
       raiz.style.removeProperty("--pagina-restante");
     };
