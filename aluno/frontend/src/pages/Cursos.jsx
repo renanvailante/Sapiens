@@ -15,7 +15,8 @@ import ContagemEnem from "../components/ContagemEnem";
 import ContinuarAprendendo from "../components/curso/ContinuarAprendendo";
 import CapaDoCurso from "../components/curso/CapaDoCurso";
 import LadrilhoDeCatalogo from "../components/curso/LadrilhoDeCatalogo";
-import { porArea } from "../lib/recomendacao";
+import CartaoDestaque from "../components/curso/CartaoDestaque";
+import { porArea, emAndamento } from "../lib/recomendacao";
 import { useDeclararContextoMentis } from "../lib/mentisContexto";
 import { marcarAcessoDaLive } from "../lib/live";
 import { quintasAteAProva } from "../lib/enem";
@@ -241,6 +242,11 @@ export default function Cursos({ embutido = false }) {
    * `abertoNoToque` existe porque no telefone não há cursor. A página mantém
    * UM ladrilho aberto por vez — sem isso, tocar em quatro deixaria quatro
    * cartões grandes sobrepostos, e o aluno não teria como fechar nenhum.
+   *
+   * Em `/estudar` a grade também é PLANA — sem cabeçalho de área — e leva
+   * cursos e e-books juntos (ver o `if (embutido)` mais abaixo): a
+   * hierarquia por área ajuda quem está lendo dezoito cursos, não quem quer
+   * reconhecer sete ou oito pela capa numa coluna estreita.
    */
   const ladrilhoDoCurso = (c) => (
     <LadrilhoDeCatalogo
@@ -249,7 +255,8 @@ export default function Cursos({ embutido = false }) {
       titulo={c.titulo}
       chamada={c.chamada}
       olho={`${c.carga} · ${c.nivel}`}
-      meu={c.tenho_acesso}
+      meu={c.tenho_acesso && !c.progresso?.comecou}
+      progresso={c.progresso?.comecou ? c.progresso.percentual : null}
       selo={
         <span className="ladrilho-selo">
           {c.tem_conteudo ? "No ar" : "Em breve"}
@@ -339,6 +346,149 @@ export default function Cursos({ embutido = false }) {
       )}
     </LadrilhoDeCatalogo>
   );
+
+  // ---------------------------------------------------------------
+  // A ABA ESTUDAR (embutido) — 2026-09-18.
+  // ---------------------------------------------------------------
+  // Retorna ANTES da montagem da vitrine de `/cursos`: as duas telas param de
+  // compartilhar layout aqui, porque pedem coisas diferentes. `/cursos` é
+  // para LER (ementa, narrativa de venda, área por área); `/estudar` é meia
+  // tela ao lado das provas, e o pedido era "imediatamente todos os cursos e
+  // e-books" — sem cabeçalho de venda entre o aluno e o catálogo.
+  //
+  // O relógio do ENEM saiu daqui: ele agora é só do lado das provas (ver
+  // `ExamSelect.jsx`), porque só cabe UM relógio na dobra de uma coluna de
+  // meia tela.
+  //
+  // O destaque é o curso mais avançado em andamento (`emAndamento`, a MESMA
+  // regra que já escolhia o herói de `ContinuarAprendendo`) — só que agora
+  // desenhado com o pedaço de caminho andado (`CartaoDestaque`), não um anel
+  // sozinho. Os outros cursos e todos os e-books caem juntos na mesma grade
+  // de ladrilhos, sem cabeçalho de área: são sete a doze itens, não setenta —
+  // a capa (glifo + degradê) já é o que separa um do outro de relance.
+  if (embutido) {
+    const destaque = emAndamento(dados?.cursos || [])[0] || null;
+    const outrosCursos = (dados?.cursos || []).filter((c) => c.curso_id !== destaque?.curso_id);
+
+    return (
+      <>
+        {erro && (
+          <div className="mb-5 rounded-2xl border border-amber-300/30 bg-amber-500/10 px-5 py-4 text-sm text-amber-100">
+            {erro}
+          </div>
+        )}
+
+        {destaque && <CartaoDestaque curso={destaque} />}
+
+        {dados && (
+          <ul className={`grade-ladrilhos ${destaque ? "mt-5" : ""}`} data-testid="estudar-catalogo">
+            {outrosCursos.map((c) => ladrilhoDoCurso(c))}
+            {(dados.ebooks || []).map((e) => ladrilhoDoEbook(e))}
+          </ul>
+        )}
+
+        {/* As pontes de venda continuam existindo — só não competem mais com
+            o catálogo pela primeira dobra. */}
+        <div className="mt-10 space-y-4">
+          <Link
+            to="/aula-ao-vivo"
+            className="lift flex flex-wrap items-center gap-4 rounded-3xl border border-rose-400/25 bg-gradient-to-r from-rose-500/[0.12] via-amber-400/[0.07] to-transparent p-5 hover:border-rose-400/50"
+            data-testid="estudar-ponte-live"
+          >
+            <span className="relative shrink-0">
+              <MentorUSP tamanho="m" testid="estudar-ponte-live-mentor" />
+              <span className="absolute -right-1 -top-1 flex h-3 w-3">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-500 opacity-80" />
+                <span className="relative inline-flex h-3 w-3 rounded-full bg-rose-500" />
+              </span>
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="font-mono-alt text-[10px] uppercase tracking-[0.25em] text-rose-200/90">
+                {live?.ao_vivo_agora ? "Acontecendo agora" : "Ao vivo · toda quinta"}
+              </div>
+              <div className="mt-0.5 font-display text-lg font-bold tracking-tight text-white">
+                A aula ao vivo com o {MENTOR.nome}, {MENTOR.titulo}.
+              </div>
+              <div className="text-xs text-white/50">
+                {live?.tenho_acesso
+                  ? live.incluso_no_plano
+                    ? "Inclusa no seu pacote — esta quinta e as próximas. Toque para entrar na sala."
+                    : "Sua vaga desta quinta está garantida. Toque para pegar o link da sala."
+                  : `${live?.duracao_minutos ?? 60} minutos, uma vez por semana · ${live?.custo_sparks ?? 200} Sparks por edição`}
+              </div>
+            </div>
+            <ArrowRight className="h-4 w-4 shrink-0 text-white/30" />
+          </Link>
+
+          {pacoteDosCursos && !cursosInclusos && (
+            <Link
+              to="/sparks"
+              className="lift flex flex-wrap items-center gap-3 rounded-2xl border border-violet-400/30 bg-violet-500/[0.10] p-4 hover:border-violet-400/60"
+              data-testid="estudar-oferta-pacote"
+            >
+              <PackageCheck className="h-6 w-6 shrink-0 text-violet-300" />
+              <div className="min-w-0 flex-1">
+                <div className="font-display text-sm font-bold tracking-tight text-violet-100">
+                  Todos saem juntos no pacote de {pacoteDosCursos.sparks_amount} Sparks.
+                </div>
+                <div className="text-xs text-violet-200/70">
+                  {conta ? (
+                    <>
+                      Avulso isto seria{" "}
+                      <strong className="font-semibold text-violet-100">
+                        {conta.partes.join(" + ")} = {conta.total} Sparks
+                      </strong>
+                      . O pacote de {formatBRL(pacoteDosCursos.price_cents)} inclui os dois — e
+                      ainda credita {conta.sparksDoPacote} Sparks no seu saldo.
+                    </>
+                  ) : (
+                    <>
+                      {formatBRL(pacoteDosCursos.price_cents)} uma vez: os{" "}
+                      {dados?.cursos?.length || 7} cursos e os e-books inclusos, para sempre — em vez de{" "}
+                      {dados?.cursos?.[0]?.custo_sparks || 350} Sparks por curso.
+                    </>
+                  )}
+                </div>
+              </div>
+              <ArrowRight className="h-4 w-4 shrink-0 text-violet-300/60" />
+            </Link>
+          )}
+
+          {cursosInclusos && (
+            <div
+              className="flex flex-wrap items-center gap-3 rounded-2xl border border-emerald-400/30 bg-emerald-500/10 p-4"
+              data-testid="estudar-todos-inclusos"
+            >
+              <PackageCheck className="h-6 w-6 shrink-0 text-emerald-300" />
+              <div className="min-w-0 flex-1 text-sm text-emerald-100/85">
+                <strong className="font-semibold text-emerald-200">Todos já são seus.</strong>{" "}
+                Cursos e e-books vieram no seu pacote de Sparks — inclusive os que ainda entrarem
+                no catálogo.
+              </div>
+            </div>
+          )}
+
+          <Link
+            to="/mentoria"
+            className="lift flex items-center gap-4 rounded-2xl border border-[#4FD9FF]/20 bg-[#4FD9FF]/[0.06] p-5 hover:border-[#4FD9FF]/45"
+            data-testid="estudar-ponte-mentoria"
+          >
+            <MentorUSP tamanho="m" testid="estudar-ponte-mentoria-foto" />
+            <div className="min-w-0 flex-1">
+              <div className="font-display text-base font-bold tracking-tight text-white">
+                Quer ele só para você?
+              </div>
+              <div className="text-xs text-white/45">
+                A mentoria é um a um, com o próprio {MENTOR.nome}. Uma pessoa, poucas vagas —
+                entre na lista de espera.
+              </div>
+            </div>
+            <ArrowRight className="h-4 w-4 shrink-0 text-white/30" />
+          </Link>
+        </div>
+      </>
+    );
+  }
 
   const cartaoDoCurso = (c) => (
     <article
@@ -611,7 +761,7 @@ export default function Cursos({ embutido = false }) {
                     <>
                       {formatBRL(pacoteDosCursos.price_cents)} uma vez: os{" "}
                       {dados?.cursos?.length || 7} cursos e os e-books inclusos, para sempre — em vez de{" "}
-                      {dados?.cursos?.[0]?.custo_sparks || 200} Sparks por curso. Os{" "}
+                      {dados?.cursos?.[0]?.custo_sparks || 350} Sparks por curso. Os{" "}
                       {pacoteDosCursos.sparks_amount} Sparks entram no seu saldo do mesmo jeito.
                     </>
                   )}
@@ -660,15 +810,9 @@ export default function Cursos({ embutido = false }) {
                   {area.itens.length} curso{area.itens.length === 1 ? "" : "s"}
                 </span>
               </div>
-              {embutido ? (
-                <ul className="grade-ladrilhos mt-4">
-                  {area.itens.map((c) => ladrilhoDoCurso(c))}
-                </ul>
-              ) : (
-                <div className="grid gap-4 md:grid-cols-2">
-                  {area.itens.map((c) => cartaoDoCurso(c))}
-                </div>
-              )}
+              <div className="grid gap-4 md:grid-cols-2">
+                {area.itens.map((c) => cartaoDoCurso(c))}
+              </div>
             </div>
           ))}
         </section>
@@ -696,11 +840,6 @@ export default function Cursos({ embutido = false }) {
               estudo. Quem tem o pacote de Sparks já tem a prateleira inteira.
             </p>
 
-            {embutido ? (
-              <ul className="grade-ladrilhos mt-5">
-                {dados.ebooks.map((e) => ladrilhoDoEbook(e))}
-              </ul>
-            ) : (
             <div className="mt-5 grid gap-4 sm:grid-cols-2">
               {dados.ebooks.map((e) => (
                 <article
@@ -769,7 +908,6 @@ export default function Cursos({ embutido = false }) {
                 </article>
               ))}
             </div>
-            )}
           </section>
         )}
 
@@ -793,8 +931,6 @@ export default function Cursos({ embutido = false }) {
         </Link>
     </>
   );
-
-  if (embutido) return conteudo;
 
   return (
     <div className="min-h-screen">

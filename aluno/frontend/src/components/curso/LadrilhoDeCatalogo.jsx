@@ -42,6 +42,7 @@ export default function LadrilhoDeCatalogo({
   olho,
   selo = null,
   meu = false,
+  progresso = null,
   aberto = false,
   aoAbrir,
   children,
@@ -60,9 +61,17 @@ export default function LadrilhoDeCatalogo({
         <CapaDoCurso capa={capa} altura="h-full" className="ladrilho-capa" />
 
         {/* Os selos ficam SOBRE a capa, no fechado e no aberto: "No ar" e
-            "Meu" são o que muda a decisão antes de qualquer texto. */}
+            "Meu" são o que muda a decisão antes de qualquer texto. Quando o
+            aluno já começou, o selo de progresso SUBSTITUI o "Meu" (ver
+            `pages/Cursos.jsx`, `ladrilhoDoCurso`) — "62%" já diz que é seu
+            e diz mais do que "Meu" sozinho. */}
         <div className="ladrilho-selos">
           {meu && <span className="ladrilho-selo ladrilho-selo--meu">Meu</span>}
+          {progresso != null && (
+            <span className="ladrilho-selo ladrilho-selo--progresso" data-testid={testid && `${testid}-progresso`}>
+              {progresso}%
+            </span>
+          )}
           {selo}
         </div>
 

@@ -1,6 +1,5 @@
 import { useCallback, useState } from "react";
 import Nav from "../components/Nav";
-import ContagemEnem from "../components/ContagemEnem";
 import Cursos from "./Cursos";
 import ExamSelect from "./ExamSelect";
 
@@ -59,13 +58,6 @@ export default function Estudar() {
               À esquerda, o conteúdo: cursos e e-books. À direita, as provas —
               cada questão que você responde vira informação sobre você.
             </p>
-            {/* O relógio do ENEM subiu para o cabeçalho da aba unida. Ele
-                estava dentro de "Cursos" e explicava por que aquela página
-                importava hoje; aqui ele explica a aba inteira, e aparece uma
-                vez em vez de duas. */}
-            <div className="mt-6">
-              <ContagemEnem comCta={false} testid="estudar-contagem-enem" />
-            </div>
           </header>
         )}
 

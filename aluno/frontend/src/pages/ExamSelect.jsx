@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { api, API, errMsg} from "../lib/api";
 import Nav from "../components/Nav";
+import ContagemEnem from "../components/ContagemEnem";
 import { ArrowRight, Check, X, RotateCw, Sparkles, BookOpen, ChevronLeft } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import FormulaMath from "../components/FormulaMath";
@@ -808,7 +809,6 @@ function QuestionRunner({ filtro, onExit }) {
 // grupo é um caderno real já sincronizado do Firestore (nunca inventado
 // aqui). `onSelect` recebe exatamente esses 3 campos, usados como filtro em
 // <QuestionRunner>.
-const MINUTOS_POR_QUESTAO = 1.5; // heurística fixa, só para uma estimativa de tempo — não vem de telemetria real.
 
 function _blocoKey(p) {
   return [p.banca || "", p.ano || "", p.prova || "", p.numero_min || "", p.numero_max || ""].join("|");
@@ -908,22 +908,27 @@ function ProvasGrid({ onSelect, onExit }) {
         </div>
       )}
 
+      {/* O RETÂNGULO PEQUENO — um por prova, e não mais o card de coluna
+          inteira com ementa, três chips de estatística e uma barra de
+          progresso de 6px. Numa coluna de meia tela ao lado do catálogo de
+          cursos (`pages/Estudar.jsx`), aquele card era o dobro da largura
+          disponível; isto aqui é uma LINHA: capa pequena, título, uma
+          estatística só (a última nota) e a porcentagem, tudo numa faixa que
+          cabe de relance. Nada saiu — reiniciar continua no canto e o clique
+          no corpo inteiro continua abrindo a prova — só a apresentação
+          encolheu. */}
       {!loading && !erro && provas.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3" data-testid="provas-grade">
           {provas.map((p, i) => {
             const stats = roundStats[_blocoKey(p)];
             const prog = progresso[_blocoKey(p)];
             const respondidas = Math.min(prog?.respondidas || 0, p.count || 0);
             const pct = p.count > 0 ? Math.round((100 * respondidas) / p.count) : 0;
             const concluida = p.count > 0 && respondidas >= p.count;
-            const expectedRounds = Math.ceil((p.count || 0) / 10);
-            const remaining = Math.max(0, (p.count || 0) - (stats?.roundsCompleted || 0) * 10);
-            const etaMin = Math.max(1, Math.round(remaining * MINUTOS_POR_QUESTAO));
-            const delta = stats && stats.previousAccuracy != null ? Math.round(stats.lastAccuracy - stats.previousAccuracy) : null;
             return (
               <div
                 key={`${p.banca}-${p.ano}-${p.prova}-${p.numero_min}-${i}`}
-                className="relative lift card-sapiens rounded-2xl p-6"
+                className="relative lift card-sapiens rounded-2xl p-3"
               >
                 {respondidas > 0 && (
                   <button
@@ -931,67 +936,45 @@ function ProvasGrid({ onSelect, onExit }) {
                     title="Reiniciar prova"
                     data-testid={`prova-reset-${p.banca}-${p.ano}-${p.prova}-${p.numero_min}`}
                     aria-label={`Reiniciar ${p.banca} ${p.ano} caderno ${p.prova}`}
-                    // `-m-2 p-2`: o ícone de 16px era um alvo de 16px para uma
-                    // ação destrutiva, encostado na borda de um card inteiro
-                    // clicável — pequeno demais para acertar de propósito e
-                    // fácil demais de acertar sem querer. A margem negativa
-                    // mantém o ícone exatamente onde estava.
-                    className="absolute top-4 right-4 z-10 -m-2 p-2 text-zinc-300 hover:text-rose-500 transition-colors"
+                    className="absolute top-1.5 right-1.5 z-10 p-2 text-zinc-300 hover:text-rose-500 transition-colors"
                   >
-                    <RotateCw className="w-4 h-4" />
+                    <RotateCw className="w-3.5 h-3.5" />
                   </button>
                 )}
                 <button
                   onClick={() => onSelect(p)}
                   data-testid={`prova-card-${p.banca}-${p.ano}-${p.prova}-${p.numero_min}`}
-                  className="w-full text-left"
+                  className="flex w-full items-center gap-3 text-left"
                 >
-                  <div className="flex items-center gap-2 pr-6">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sapiens-accent to-sapiens-navy text-white flex items-center justify-center shrink-0">
-                      <BookOpen className="w-5 h-5" strokeWidth={1.7} />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="font-display font-bold text-lg tracking-tight text-zinc-950 truncate">
-                        {p.banca} {p.ano} · Caderno {capitalizar(p.prova)}
-                      </div>
-                      <div className="text-xs text-zinc-500">
-                        {p.disciplinas.join(" e ") || "Disciplina não informada"} · Questões {p.numero_min}–{p.numero_max}
-                      </div>
-                    </div>
+                  <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-sapiens-accent to-sapiens-navy text-white flex items-center justify-center shrink-0">
+                    <BookOpen className="w-4 h-4" strokeWidth={1.7} />
                   </div>
-
-                  {stats && (
-                    <div className="mt-4 flex flex-wrap items-center gap-2" data-testid={`prova-stats-${p.banca}-${p.ano}-${p.prova}-${p.numero_min}`}>
-                      <span className="text-[11px] font-mono-alt font-bold text-sapiens-accentDeep bg-sapiens-accentSoft px-2 py-1 rounded-full">
-                        última: {stats.lastAccuracy}%
-                      </span>
-                      {delta != null && delta !== 0 && (
-                        <span className={`text-[11px] font-mono-alt font-bold px-2 py-1 rounded-full ${delta > 0 ? "text-emerald-700 bg-emerald-50" : "text-rose-700 bg-rose-50"}`}>
-                          {delta > 0 ? "+" : ""}{delta} p.p. vs. anterior
-                        </span>
-                      )}
-                      <span className="text-[11px] font-mono-alt text-zinc-500 bg-zinc-100 px-2 py-1 rounded-full">
-                        {stats.roundsCompleted}/{expectedRounds} rodadas
-                      </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="font-display font-bold text-sm tracking-tight text-zinc-950 truncate pr-6">
+                      {p.banca} {p.ano} · Caderno {capitalizar(p.prova)}
                     </div>
-                  )}
-
-                  <div className="mt-4" data-testid={`prova-progresso-${p.banca}-${p.ano}-${p.prova}-${p.numero_min}`}>
-                    <div className="mb-1.5 flex items-center justify-between text-xs font-mono-alt text-zinc-400">
-                      <span>{respondidas}/{p.count} respondidas{remaining > 0 && !concluida ? ` · ~${etaMin} min` : ""}</span>
-                      <span>{pct}%</span>
+                    <div
+                      className="mt-0.5 truncate text-[11px] text-zinc-500"
+                      data-testid={`prova-stats-${p.banca}-${p.ano}-${p.prova}-${p.numero_min}`}
+                    >
+                      {respondidas}/{p.count} respondidas
+                      {stats ? ` · última ${stats.lastAccuracy}%` : ""}
                     </div>
-                    <div className="h-1.5 w-full rounded-full bg-zinc-100 overflow-hidden">
+                    <div
+                      className="mt-1.5 h-1 w-full rounded-full bg-zinc-100 overflow-hidden"
+                      data-testid={`prova-progresso-${p.banca}-${p.ano}-${p.prova}-${p.numero_min}`}
+                    >
                       <div
                         className="h-full rounded-full bg-gradient-to-r from-sapiens-accentSoft to-sapiens-accent transition-all duration-500 ease-out"
                         style={{ width: `${pct}%` }}
                       />
                     </div>
                   </div>
-
-                  <div className="mt-3 flex items-center justify-end">
-                    <span className="inline-flex items-center gap-1.5 text-sm text-zinc-900 font-medium">
-                      {concluida ? "Ver resultado" : respondidas > 0 ? "Continuar" : "Praticar"} <ArrowRight className="w-4 h-4" />
+                  <div className="shrink-0 text-right">
+                    <div className="font-mono-alt text-xs font-bold text-zinc-700">{pct}%</div>
+                    <span className="mt-0.5 flex items-center gap-0.5 text-[10px] font-medium text-zinc-500">
+                      {concluida ? "Ver" : respondidas > 0 ? "Continuar" : "Praticar"}
+                      <ArrowRight className="w-3 h-3" />
                     </span>
                   </div>
                 </button>
@@ -1167,6 +1150,17 @@ export default function ExamSelect({ embutido = false, onModo = null }) {
           />
         ) : mode === "provas" ? (
           <>
+            {/* O relógio pequeno — só aqui, e só embutido. `/estudar` tinha
+                DOIS relógios grandes (um no cabeçalho da aba, outro dentro do
+                catálogo de cursos) competindo pela mesma dobra; agora existe
+                um só, do lado das provas, na variante "medida" que já existe
+                para caber num azulejo pequeno (ver `PainelDeProgresso`). */}
+            {embutido && (
+              <div className="mb-6 max-w-[13rem]">
+                <ContagemEnem variante="medida" testid="estudar-contagem-enem" />
+              </div>
+            )}
+
             {/* O cabeçalho encolhe quando esta tela é uma COLUNA e não uma
                 página: um `titulo-tela` de 42px dentro de meia largura, ao
                 lado de outro título do mesmo tamanho, cria dois donos para a

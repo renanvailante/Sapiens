@@ -2307,6 +2307,11 @@ a.chip:hover, button.chip:hover {
     background: rgba(47, 185, 141, 0.28);
     color: #D8FFF1;
 }
+.ladrilho-selo--progresso {
+    border-color: rgba(127, 216, 255, 0.45);
+    background: rgba(47, 129, 255, 0.32);
+    color: #E4F6FF;
+}
 
 .ladrilho-fita {
     position: relative;

@@ -156,7 +156,7 @@ class TestCatalogo:
     def test_todo_curso_tem_o_mesmo_preco_de_tabela(self, db, carteira):
         dados = _run(routes.listar(user=_user()))
         assert {c["custo_sparks"] for c in dados["cursos"]} == {cursos.CURSO_CUSTO_SPARKS}
-        assert cursos.CURSO_CUSTO_SPARKS == 200
+        assert cursos.CURSO_CUSTO_SPARKS == 350
 
     def test_marcar_interesse_nao_custa_sparks(self, db, carteira):
         _run(routes.marcar_interesse("redacao-0-1000", user=_user()))

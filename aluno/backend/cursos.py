@@ -273,9 +273,10 @@ CURSOS_POR_ID: dict[str, Curso] = {c.curso_id: c for c in CURSOS}
 # promessa é a mesma nos quatro, e um preço por card seria uma tabela a mais
 # para manter sem responder nenhuma pergunta do aluno.
 #
-# Baixado de 500 para 200 Sparks em 2026-09-17: decisão de produto para dar
-# mais peso à prateleira de cursos e e-books dentro do catálogo de Sparks.
-CURSO_CUSTO_SPARKS = 200
+# Baixado de 500 para 200 Sparks em 2026-09-17 (mais peso à prateleira de
+# cursos e e-books no catálogo de Sparks); subido para 350 em 2026-09-18,
+# junto do redesenho da aba Estudar — decisão de produto, não deste código.
+CURSO_CUSTO_SPARKS = 350
 
 
 def listar_cursos() -> list[dict]:
@@ -360,7 +361,9 @@ EBOOKS_POR_ID: dict[str, Ebook] = {e.ebook_id: e for e in EBOOKS}
 # tem a prateleira inteira. Não existe preço avulso de e-book, e é decisão de
 # produto — uma segunda tabela de preços para um PDF de oito páginas custaria
 # mais para manter do que o PDF vale.
-EBOOK_CUSTO_SPARKS = 150
+#
+# Subido de 150 para 200 em 2026-09-18, junto do preço do curso.
+EBOOK_CUSTO_SPARKS = 200
 
 
 def listar_ebooks() -> list[dict]:
