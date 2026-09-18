@@ -116,7 +116,9 @@ painel = pp.montar(
     avaliacoes_redacao=avaliacoes,
     hoje=HOJE,
 )
-destino = str(Path(__file__).resolve().parents[3]
+# parents: [0] tests, [1] backend, [2] aluno. O destino é o frontend do app do
+# aluno — subir um nível a mais escreve na raiz do repositório.
+destino = str(Path(__file__).resolve().parents[2]
            / "frontend/src/components/perfil/__fixtures__/painel.json")
 import os
 os.makedirs(os.path.dirname(destino), exist_ok=True)

@@ -100,7 +100,7 @@ export function EvolucaoDaRedacao({ redacao, destacado }) {
         </div>
       ) : (
         <ResponsiveContainer>
-          <AreaChart data={serie} margin={{ top: 14, right: 14, left: -14, bottom: 0 }}>
+          <AreaChart data={serie} margin={{ top: 14, right: 14, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="grad-redacao" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor={COR_NOTA} stopOpacity={0.22} />
@@ -111,7 +111,7 @@ export function EvolucaoDaRedacao({ redacao, destacado }) {
             <XAxis dataKey="rotulo" {...EIXO} minTickGap={20} />
             {/* 0 a 1000 sempre: um eixo apertado em volta das notas do aluno
                 transformaria 40 pontos de variação numa montanha. */}
-            <YAxis {...EIXO} domain={[0, 1000]} ticks={[0, 250, 500, 750, 1000]} width={46} />
+            <YAxis {...EIXO} domain={[0, 1000]} ticks={[0, 250, 500, 750, 1000]} width={48} />
             <ReferenceLine y={redacao.media} stroke={COR_MEDIA} strokeWidth={1.5} />
             <Tooltip
               cursor={{ stroke: GRADE }}
@@ -175,6 +175,14 @@ export function CompetenciasDaRedacao({ redacao, destacado }) {
         { cor: COR_NOTA, rotulo: "Última correção" },
       ]}
       altura={250}
+      rodape={
+        <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
+          A que mais segura a sua nota é{" "}
+          <strong className="text-zinc-300">{pior.rotulo.toLowerCase()}</strong> ({pior.media} de{" "}
+          {pior.maxima} em média, {pior.amostra} correção{pior.amostra === 1 ? "" : "ões"}) —{" "}
+          {pior.descricao.toLowerCase()}.
+        </p>
+      }
       tabela={{
         colunas: ["Competência", "O que mede", "Média", "Última", "Melhor", "Correções"],
         linhas: comps.map((c) => [
@@ -210,11 +218,6 @@ export function CompetenciasDaRedacao({ redacao, destacado }) {
         </RadarChart>
       </ResponsiveContainer>
 
-      <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
-        A que mais segura a sua nota é <strong className="text-zinc-300">{pior.rotulo.toLowerCase()}</strong>{" "}
-        ({pior.media} de {pior.maxima} em média, {pior.amostra} correção
-        {pior.amostra === 1 ? "" : "ões"}) — {pior.descricao.toLowerCase()}.
-      </p>
     </Grafico>
   );
 }

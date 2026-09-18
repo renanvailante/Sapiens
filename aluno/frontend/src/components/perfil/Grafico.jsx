@@ -77,6 +77,13 @@ export default function Grafico({
   tabela,           // { colunas: [...], linhas: [[...]] }
   destacado = false,
   acaoTopo,
+  // Tudo o que vem DEPOIS do gráfico (uma frase de leitura, um botão de ação)
+  // entra por aqui, e não como filho: o filho vive dentro de uma caixa de
+  // altura fixa — a do desenho — e qualquer coisa a mais ali dentro é
+  // espremida por cima do próprio gráfico. Foi o que aconteceu, e é o tipo de
+  // defeito que nenhum teste de render pega: o HTML está certo, a altura é
+  // que não é.
+  rodape,
   className = "",
   children,
 }) {
@@ -124,6 +131,8 @@ export default function Grafico({
       )}
 
       <div style={{ height: altura }}>{children}</div>
+
+      {rodape}
 
       <SeloDaMentis id={id} />
 

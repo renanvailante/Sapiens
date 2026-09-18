@@ -58,6 +58,14 @@ export function AcertoPorFrente({ linhas, destacado }) {
       titulo="Onde você acerta mais"
       explicacao="Só entram as matérias em que você já respondeu o bastante para a conta significar alguma coisa. O número ao lado da barra é a amostra."
       altura={Math.max(150, dados.length * 38 + 20)}
+      rodape={
+        semMedida.length > 0 ? (
+          <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
+            Ainda sem medida: {semMedida.map((l) => l.nome).join(", ")}. Responda algumas questões
+            dessas matérias e elas entram no gráfico.
+          </p>
+        ) : null
+      }
       tabela={{
         colunas: ["Matéria", "Respondidas", "Acertos", "Taxa", "Amostra"],
         linhas: (linhas || []).map((l) => [
@@ -120,13 +128,6 @@ export function AcertoPorFrente({ linhas, destacado }) {
           </BarChart>
         </ResponsiveContainer>
       )}
-
-      {semMedida.length > 0 && (
-        <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
-          Ainda sem medida: {semMedida.map((l) => l.nome).join(", ")}. Responda algumas questões
-          dessas matérias e elas entram no gráfico.
-        </p>
-      )}
     </Grafico>
   );
 }
@@ -164,6 +165,23 @@ export function OndeRendeMais({ linhas, destacado }) {
         { cor: SERIES[0], rotulo: "Demais matérias" },
       ]}
       altura={250}
+      rodape={
+        topo ? (
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-amber-100 bg-amber-50 px-3.5 py-2.5">
+            {/* Sem repetir o nome da matéria: `porque` já começa por ele
+                ("Matemática é uma das duas frentes que..."), e o prefixo em
+                negrito fazia a frase dizer "Matemática — Matemática é...". */}
+            <p className="min-w-0 text-xs leading-relaxed text-amber-900">{topo.porque}</p>
+            <Link
+              to={topo.rota || "/exams"}
+              className="pill btn-sapiens inline-flex min-h-[32px] shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium"
+              data-testid="perfil-ir-prioridade"
+            >
+              Praticar <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+        ) : null
+      }
       tabela={{
         colunas: ["Matéria", "Falta", "Peso", "Amostra", "Por quê"],
         linhas: dados.map((d) => [d.nome, `${d.x}%`, d.peso.toFixed(2), d.respondidas, d.porque]),
@@ -173,7 +191,7 @@ export function OndeRendeMais({ linhas, destacado }) {
         <SemDado>Este gráfico aparece assim que houver matéria medida.</SemDado>
       ) : (
         <ResponsiveContainer>
-          <ScatterChart margin={{ top: 14, right: 20, left: -14, bottom: 4 }}>
+          <ScatterChart margin={{ top: 14, right: 20, left: 0, bottom: 4 }}>
             <CartesianGrid stroke={GRADE} />
             <XAxis
               type="number" dataKey="x" name="Falta" domain={[0, 100]}
@@ -208,19 +226,18 @@ export function OndeRendeMais({ linhas, destacado }) {
                   strokeWidth={2}
                 />
               ))}
+              {/* SÓ a bolha prioritária ganha nome desenhado. Com sete
+                  matérias em três níveis de peso, as bolhas se encostam e os
+                  rótulos empilham um em cima do outro — a regra é rotular o
+                  extremo e deixar o resto para o balão, a legenda e a tabela,
+                  nunca espalhar sete nomes que ninguém consegue ler. */}
               <LabelList
                 dataKey="nome"
-                position="top"
-                fill={TINTA.media}
-                fontSize={10}
-                // Só os três primeiros ganham nome no gráfico: com sete
-                // rótulos eles se sobrepõem e nenhum fica legível. Os outros
-                // estão no balão e na tabela.
                 content={(props) => {
                   const { x, y, index, value } = props;
-                  if (index > 2) return null;
+                  if (index !== 0) return null;
                   return (
-                    <text x={x} y={y - 10} fill={TINTA.media} fontSize={10} textAnchor="middle">
+                    <text x={x} y={y - 14} fill={TINTA.forte} fontSize={11} textAnchor="middle">
                       {value}
                     </text>
                   );
@@ -229,21 +246,6 @@ export function OndeRendeMais({ linhas, destacado }) {
             </Scatter>
           </ScatterChart>
         </ResponsiveContainer>
-      )}
-
-      {topo && (
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-amber-100 bg-amber-50 px-3.5 py-2.5">
-          <p className="min-w-0 text-xs leading-relaxed text-amber-900">
-            <strong className="font-semibold">{topo.nome}</strong> — {topo.porque}
-          </p>
-          <Link
-            to={topo.rota || "/exams"}
-            className="pill btn-sapiens inline-flex min-h-[32px] shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium"
-            data-testid="perfil-ir-prioridade"
-          >
-            Praticar <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
-        </div>
       )}
     </Grafico>
   );
@@ -356,12 +358,12 @@ export function EvolucaoPorFrente({ porFrente, destacado }) {
         </SemDado>
       ) : (
         <ResponsiveContainer>
-          <LineChart data={util} margin={{ top: 10, right: 12, left: -18, bottom: 0 }}>
+          <LineChart data={util} margin={{ top: 10, right: 12, left: 0, bottom: 0 }}>
             <CartesianGrid stroke={GRADE} vertical={false} />
             <XAxis dataKey="rotulo" {...EIXO} minTickGap={24} />
             <YAxis
               {...EIXO} domain={[0, 100]} ticks={[0, 50, 100]}
-              tickFormatter={(v) => `${v}%`} width={46}
+              tickFormatter={(v) => `${v}%`} width={44}
             />
             <Tooltip
               cursor={{ stroke: GRADE }}

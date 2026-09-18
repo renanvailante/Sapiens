@@ -68,7 +68,7 @@ function Variacao({ delta, sufixo = "pts" }) {
       data-testid="perfil-variacao"
     >
       <Icone className="h-3 w-3" />
-      {subiu ? "+" : ""}{Math.round(delta)} {sufixo}
+      {subiu ? "+" : ""}{Math.round(delta)}{sufixo ? ` ${sufixo}` : ""}
     </span>
   );
 }
@@ -87,7 +87,7 @@ function Medida({ icone: Icone, olho, valor, unidade, rodape, extra, cor, testid
           {unidade && <span className="text-xs text-white/45">{unidade}</span>}
           {extra}
         </div>
-        {rodape && <div className="medida-rotulo truncate">{rodape}</div>}
+        {rodape && <div className="medida-rotulo min-w-0 truncate">{rodape}</div>}
       </div>
     </div>
   );
@@ -118,17 +118,22 @@ export default function ResumoDoPainel({ resumo }) {
           <Target className="h-3 w-3" /> Respondidas
         </div>
         <div>
-          <div className="mt-2 flex flex-wrap items-baseline gap-x-1.5">
+          <div className="mt-2">
             <span className="medida-n text-2xl md:text-3xl" style={{ fontVariantNumeric: "proportional-nums" }}>
               {resumo.respondidas}
             </span>
-            <Variacao delta={deltaVolume} sufixo="na semana" />
           </div>
           <Minilinha dias={pulso.dias} />
-          <div className="medida-rotulo truncate">
-            {pulso.respondidas_7 != null
-              ? `${pulso.respondidas_7} nos últimos 7 dias`
-              : "últimos 14 dias"}
+          {/* A variação anda colada ao número de que ela fala. Ao lado do
+              total de sempre, um "+43 na semana" pareceria dizer que o total
+              subiu 43 — e o total não é uma medida que sobe e desce. */}
+          <div className="flex items-center gap-2">
+            <span className="medida-rotulo truncate">
+              {pulso.respondidas_7 != null
+                ? `${pulso.respondidas_7} nos últimos 7 dias`
+                : "últimos 14 dias"}
+            </span>
+            <Variacao delta={deltaVolume} sufixo="" />
           </div>
         </div>
       </div>
@@ -136,11 +141,15 @@ export default function ResumoDoPainel({ resumo }) {
       <Medida
         icone={CheckCircle2} olho="Acerto" testid="perfil-resumo-taxa"
         valor={pct(resumo.taxa)}
-        extra={<Variacao delta={pulso.delta_taxa} />}
         rodape={
-          pulso.delta_taxa != null
-            ? `${pct(pulso.taxa_7)} nos últimos 7 dias`
-            : `${resumo.acertos} questões certas`
+          pulso.delta_taxa != null ? (
+            <span className="flex items-center gap-2">
+              <span className="truncate">{pct(pulso.taxa_7)} em 7 dias</span>
+              <Variacao delta={pulso.delta_taxa} />
+            </span>
+          ) : (
+            `${resumo.acertos} questões certas`
+          )
         }
       />
       <Medida

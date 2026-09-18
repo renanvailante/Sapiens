@@ -33,6 +33,13 @@ export function QuandoVoceEstuda({ porHora, destacado }) {
       titulo="A que horas você estuda"
       explicacao="Cada coluna é uma hora do dia, no horário de Brasília. É o seu volume, não o seu acerto — o acerto por período está logo ao lado."
       altura={190}
+      rodape={
+        pico?.respondidas > 0 ? (
+          <p className="mt-2 text-[11px] text-zinc-500">
+            O seu horário mais frequente é por volta das {pico.rotulo} — {questoes(pico.respondidas)}.
+          </p>
+        ) : null
+      }
       tabela={{
         colunas: ["Hora", "Respondidas", "Acertos", "Taxa"],
         linhas: dados.filter((h) => h.respondidas > 0).map((h) => [h.rotulo, h.respondidas, h.acertos, pct(h.taxa)]),
@@ -42,14 +49,14 @@ export function QuandoVoceEstuda({ porHora, destacado }) {
         <SemDado>Ainda não há respostas com horário registrado.</SemDado>
       ) : (
         <ResponsiveContainer>
-          <BarChart data={dados} margin={{ top: 8, right: 8, left: -26, bottom: 0 }} barCategoryGap="18%">
+          <BarChart data={dados} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} barCategoryGap="18%">
             <CartesianGrid stroke={GRADE} vertical={false} />
             <XAxis
               dataKey="hora" {...EIXO}
               ticks={[0, 3, 6, 9, 12, 15, 18, 21]}
               tickFormatter={(h) => `${h}h`}
             />
-            <YAxis {...EIXO} allowDecimals={false} width={40} />
+            <YAxis {...EIXO} allowDecimals={false} width={38} />
             <Tooltip
               cursor={{ fill: "rgba(255,255,255,0.04)" }}
               content={
@@ -65,11 +72,6 @@ export function QuandoVoceEstuda({ porHora, destacado }) {
             <Bar dataKey="respondidas" name="Questões" radius={[3, 3, 0, 0]} maxBarSize={14} fill={SERIES[0]} />
           </BarChart>
         </ResponsiveContainer>
-      )}
-      {pico?.respondidas > 0 && (
-        <p className="mt-2 text-[11px] text-zinc-500">
-          O seu horário mais frequente é por volta das {pico.rotulo} — {questoes(pico.respondidas)}.
-        </p>
       )}
     </Grafico>
   );
@@ -95,10 +97,10 @@ export function AcertoPorPeriodo({ blocos, destacado }) {
         <SemDado>Ainda não há respostas suficientes para separar por período do dia.</SemDado>
       ) : (
         <ResponsiveContainer>
-          <BarChart data={dados} margin={{ top: 18, right: 8, left: -26, bottom: 0 }} barCategoryGap="34%">
+          <BarChart data={dados} margin={{ top: 18, right: 8, left: 0, bottom: 0 }} barCategoryGap="34%">
             <CartesianGrid stroke={GRADE} vertical={false} />
             <XAxis dataKey="rotulo" {...EIXO} />
-            <YAxis {...EIXO} domain={[0, 100]} ticks={[0, 50, 100]} tickFormatter={(v) => `${v}%`} width={40} />
+            <YAxis {...EIXO} domain={[0, 100]} ticks={[0, 50, 100]} tickFormatter={(v) => `${v}%`} width={44} />
             <Tooltip
               cursor={{ fill: "rgba(255,255,255,0.04)" }}
               content={
@@ -197,10 +199,10 @@ export function RitmoDeResposta({ faixas, destacado }) {
         </SemDado>
       ) : (
         <ResponsiveContainer>
-          <BarChart data={dados} margin={{ top: 18, right: 8, left: -26, bottom: 0 }} barCategoryGap="34%">
+          <BarChart data={dados} margin={{ top: 18, right: 8, left: 0, bottom: 0 }} barCategoryGap="34%">
             <CartesianGrid stroke={GRADE} vertical={false} />
             <XAxis dataKey="rotulo" {...EIXO} />
-            <YAxis {...EIXO} domain={[0, 100]} ticks={[0, 50, 100]} tickFormatter={(v) => `${v}%`} width={40} />
+            <YAxis {...EIXO} domain={[0, 100]} ticks={[0, 50, 100]} tickFormatter={(v) => `${v}%`} width={44} />
             <Tooltip
               cursor={{ fill: "rgba(255,255,255,0.04)" }}
               content={

@@ -57,7 +57,7 @@ export function CurvaDeAcerto({ diaria, destacado }) {
         </SemDado>
       ) : (
         <ResponsiveContainer>
-          <LineChart data={pontos} margin={{ top: 8, right: 10, left: -18, bottom: 0 }}>
+          <LineChart data={pontos} margin={{ top: 8, right: 10, left: 0, bottom: 0 }}>
             <CartesianGrid stroke={GRADE} vertical={false} />
             <XAxis dataKey="rotulo" {...EIXO} minTickGap={36} />
             <YAxis
@@ -65,7 +65,7 @@ export function CurvaDeAcerto({ diaria, destacado }) {
               domain={[0, 100]}
               ticks={[0, 25, 50, 75, 100]}
               tickFormatter={(v) => `${v}%`}
-              width={46}
+              width={44}
             />
             {/* A régua de 50%: não é meta, é referência. Sem ela, uma curva
                 que sobe de 30 para 40 parece a mesma coisa que uma que sobe de
@@ -127,10 +127,10 @@ export function VolumePorSemana({ semanal, destacado }) {
         <SemDado>Responda algumas questões e a sua primeira barra aparece aqui.</SemDado>
       ) : (
         <ResponsiveContainer>
-          <BarChart data={dados} margin={{ top: 8, right: 10, left: -22, bottom: 0 }} barCategoryGap="28%">
+          <BarChart data={dados} margin={{ top: 8, right: 10, left: 0, bottom: 0 }} barCategoryGap="28%">
             <CartesianGrid stroke={GRADE} vertical={false} />
             <XAxis dataKey="rotulo" {...EIXO} minTickGap={18} />
-            <YAxis {...EIXO} allowDecimals={false} width={44} />
+            <YAxis {...EIXO} allowDecimals={false} width={40} />
             <Tooltip
               cursor={{ fill: "rgba(255,255,255,0.04)" }}
               content={
