@@ -40,3 +40,6 @@ test_reports/
 
 # graft's local graph cache — regenerable, not committed (run `graft build`).
 /graft/
+
+# Obsidian: o cofre Cerebro/ e versionado, mas o estado de UI da janela nao.
+Cerebro/.obsidian/workspace.json
