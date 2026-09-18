@@ -73,9 +73,26 @@ let webpackConfig = {
   eslint: {
     configure: {
       extends: ["plugin:react-hooks/recommended"],
+      // `no-undef` LIGADO — e este comentário existe porque desligá-lo já
+      // custou uma tela quebrada em produção.
+      //
+      // Esta chave SUBSTITUI a configuração do CRA (que estende `react-app` e
+      // traz `no-undef: error`); ao listar só `react-hooks`, o app ficou sem
+      // a única regra que pega identificador inexistente. Em 2026-09-18 um
+      // `ref={marcaRef}` sobrou na `Nav` depois que a medição de largura foi
+      // removida: `marcaRef` não existia mais, o build passou sem um aviso, e
+      // TODA página logada caiu no ErrorBoundary — a `Nav` é renderizada em
+      // todas elas. O erro só apareceu nos logs do backend, pelo relator.
+      //
+      // `env` e `globals` são necessários junto: sem eles `no-undef` acusaria
+      // `window`, `document` e afins. `React` entra como global porque o JSX
+      // transform novo não exige o import.
+      env: { browser: true, es2022: true, jest: true, node: true },
+      globals: { React: "readonly" },
       rules: {
         "react-hooks/rules-of-hooks": "error",
         "react-hooks/exhaustive-deps": "warn",
+        "no-undef": "error",
       },
     },
   },

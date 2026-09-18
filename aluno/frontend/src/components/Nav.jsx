@@ -209,7 +209,6 @@ export default function Nav() {
             Desde 2026-09-17, logado, tocar na marca ABRE o mesmo lançador do
             botão "Menu" — o gatilho mais óbvio do produto para abrir o menu é
             a própria marca, e não só um botão de grade a três alvos dali. */}
-        <span ref={marcaRef} className="shrink-0">
         <Logo
           to={user ? null : "/"}
           onClick={user ? () => setLancador(true) : null}
@@ -218,7 +217,6 @@ export default function Nav() {
           classePalavra="text-xl sm:text-2xl"
           testid="nav-brand"
         />
-        </span>
 
         {user && (
           <div className="flex items-center gap-1 lg:gap-2">
