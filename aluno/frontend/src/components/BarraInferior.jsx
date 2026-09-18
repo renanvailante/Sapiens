@@ -51,7 +51,12 @@ const ABAS = [
   { to: "/desempenho", icone: Brain, rotulo: "Desempenho", testid: "barra-desempenho" },
 ];
 
-const ACAO = { to: "/exams", icone: PlayCircle, rotulo: "Praticar", testid: "barra-praticar" };
+// O meio aponta para a aba UNIDA desde 2026-09-18. Ele apontava para
+// `/exams`, que era metade do que o aluno pode fazer para estudar; a outra
+// metade (cursos e e-books) só existia numa aba que o celular alcançava pela
+// tira. O botão elevado é o gesto mais barato do produto e tem de abrir o
+// lugar onde as duas coisas estão. O rótulo segue o destino.
+const ACAO = { to: "/estudar", icone: PlayCircle, rotulo: "Estudar", testid: "barra-praticar" };
 
 // Telas em que a barra não entra, e por quê:
 //
@@ -122,7 +127,7 @@ export default function BarraInferior() {
           to={ACAO.to}
           className="flex flex-1 flex-col items-center justify-start"
           data-testid={ACAO.testid}
-          aria-label="Praticar questões"
+          aria-label="Estudar: cursos, e-books e provas"
         >
           <span className="aba-acao">
             <ACAO.icone className="h-6 w-6" strokeWidth={2.1} />

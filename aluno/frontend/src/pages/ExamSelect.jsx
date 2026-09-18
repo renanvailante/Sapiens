@@ -1102,7 +1102,21 @@ function ExamsByYear() {
   );
 }
 
-export default function ExamSelect() {
+/**
+ * PRATICAR — a escolha do caderno e o motor de responder.
+ *
+ * `embutido` existe desde 2026-09-18, quando esta tela e "Cursos" viraram uma
+ * aba só (`pages/Estudar.jsx`): ela passa a devolver só o conteúdo, sem casca
+ * nem `<Nav />`, para caber na coluna da direita.
+ *
+ * `onModo` é o que faz a aba unida funcionar sem mover uma linha do motor de
+ * prova. Quando o aluno escolhe um caderno, esta tela troca para `practice` —
+ * e responder questão numa coluna de 560px, com o catálogo de cursos ao lado
+ * disputando atenção, seria pior do que as duas abas separadas. Em vez de
+ * mudar o `QuestionRunner`, ela AVISA a página, que recolhe a outra coluna e
+ * devolve a largura inteira. O motor continua exatamente como está.
+ */
+export default function ExamSelect({ embutido = false, onModo = null }) {
   const [params] = useSearchParams();
   const areaParam = params.get("area");
   const itemIdsParam = params.get("item_ids");
@@ -1127,10 +1141,11 @@ export default function ExamSelect() {
 
   const escolherProva = (p, opts) => { setFiltro({ ...p, reiniciar: !!opts?.reiniciar }); setMode("practice"); };
 
-  return (
-    <div className="min-h-screen">
-      <Nav />
-      <div className="max-w-3xl mx-auto px-5 py-7 md:px-10 md:py-10">
+  // A página que hospeda precisa saber se estamos escolhendo ou respondendo.
+  useEffect(() => { onModo?.(mode); }, [mode, onModo]);
+
+  const conteudo = (
+    <>
         {mode === "practice" && filtro?.area && (
           <div className="mb-6" data-testid="practice-area-header">
             <div className="secao-olho">Lacuna recomendada</div>
@@ -1152,12 +1167,22 @@ export default function ExamSelect() {
           />
         ) : mode === "provas" ? (
           <>
-            <div className="mb-10">
+            {/* O cabeçalho encolhe quando esta tela é uma COLUNA e não uma
+                página: um `titulo-tela` de 42px dentro de meia largura, ao
+                lado de outro título do mesmo tamanho, cria dois donos para a
+                mesma tela. Embutido, quem manda é o título da página. */}
+            <div className={embutido ? "mb-6" : "mb-10"}>
               <div className="secao-olho">Praticar</div>
-              <h1 className="titulo-tela" data-testid="exam-select-title">
-                Escolha um caderno
-              </h1>
-              <p className="mt-3 max-w-lg text-white/60">
+              {embutido ? (
+                <h2 className="mt-1.5 font-display text-2xl font-extrabold tracking-tight text-white" data-testid="exam-select-title">
+                  Escolha um caderno
+                </h2>
+              ) : (
+                <h1 className="titulo-tela" data-testid="exam-select-title">
+                  Escolha um caderno
+                </h1>
+              )}
+              <p className={`mt-3 max-w-lg text-white/60 ${embutido ? "text-sm" : ""}`}>
                 Cada caderno é uma prova real, agrupada por banca, ano e cor. Cada questão
                 que você responde aqui vira informação sobre você.
               </p>
@@ -1178,7 +1203,15 @@ export default function ExamSelect() {
             </div>
           </>
         ) : null}
-      </div>
+    </>
+  );
+
+  if (embutido) return conteudo;
+
+  return (
+    <div className="min-h-screen">
+      <Nav />
+      <div className="max-w-3xl mx-auto px-5 py-7 md:px-10 md:py-10">{conteudo}</div>
     </div>
   );
 }

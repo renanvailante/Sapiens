@@ -47,6 +47,7 @@ const Conquistas = lazy(() => import("./pages/Conquistas"));
 const CompletarCadastro = lazy(() => import("./pages/CompletarCadastro"));
 const Mentoria = lazy(() => import("./pages/Mentoria"));
 const Cursos = lazy(() => import("./pages/Cursos"));
+const Estudar = lazy(() => import("./pages/Estudar"));
 const AulaAoVivo = lazy(() => import("./pages/AulaAoVivo"));
 const CursoTrilha = lazy(() => import("./pages/CursoTrilha"));
 const CursoEstacao = lazy(() => import("./pages/CursoEstacao"));
@@ -168,6 +169,15 @@ function AppRouter() {
           endereços circularam no WhatsApp. */}
       <Route path="/aula-ao-vivo" element={<ProtectedRoute><Pagina titulo="Aula ao vivo de quinta"><AulaAoVivo /></Pagina></ProtectedRoute>} />
       <Route path="/live" element={<Navigate to="/aula-ao-vivo" replace />} />
+      {/* ESTUDAR — a aba que uniu "Praticar" e "Cursos" em 2026-09-18. As
+          duas rotas antigas continuam de pé: `/exams` porque é ela que o
+          Painel, as Revisões e a Mentis abrem com filtro na URL (`?area=`,
+          `?item_ids=`) e porque é onde o motor de prova roda em tela cheia;
+          `/cursos` porque há link direto para ela no produto e porque uma
+          ementa não se lê numa coluna de 560px. O que mudou foi a BARRA: ela
+          não pede mais que o aluno escolha entre dois rótulos antes de ver o
+          que há dentro de cada um. */}
+      <Route path="/estudar" element={<ProtectedRoute><Pagina titulo="Estudar"><Estudar /></Pagina></ProtectedRoute>} />
       <Route path="/cursos" element={<ProtectedRoute><Pagina titulo="Cursos"><Cursos /></Pagina></ProtectedRoute>} />
       {/* O curso por dentro: o mapa das trilhas e a sala de aula de uma estação.
           Só chega aqui quem tem acesso — a porta é do servidor, não da rota. */}

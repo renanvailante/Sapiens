@@ -435,6 +435,31 @@ export default function Cronograma() {
   const hojeISO = diaLocalISO();
   const plano = dados?.plano;
   const temPlano = Boolean(plano?.desta_semana && dados?.total_blocos > 0);
+
+  /**
+   * A GRADE, definida aqui porque a ORDEM dela na página depende do estado.
+   *
+   * A aba se chama "Semana" e o cronograma semanal é o que o aluno vem ver:
+   * ele precisa ser a primeira coisa, não a quarta. Estava atrás do resumo da
+   * Mentis, dos dois botões de montar e da faixa de prioridades — três blocos
+   * de meta-informação sobre um plano que o aluno ainda não tinha olhado.
+   *
+   * Com uma exceção, e ela não é um detalhe: quando NÃO HÁ plano, a grade
+   * está vazia, e abrir a tela com sete colunas em branco é pior do que
+   * abri-la com o botão que as preenche. Sem plano, o conteúdo mais importante
+   * é a AÇÃO de montar. A régua é a mesma nos dois casos — o que estiver no
+   * topo tem de ser o que importa agora —, e é o estado que decide qual é.
+   */
+  const grade = dados ? (
+    <GradeSemana
+      dias={dados.dias}
+      hojeISO={hojeISO}
+      onConcluirBloco={concluir}
+      salvandoBloco={salvandoBloco}
+      onApagarCompromisso={apagarCompromisso}
+      onClicarVazio={abrirNovo}
+    />
+  ) : null;
   // Remontar só custa quando há o que remontar. Espelha a mesma condição do
   // servidor (`gerar_cronograma`): semana com plano E com bloco.
   const custoRemontar = temPlano ? (dados?.custo_remontagem ?? 0) : 0;
@@ -490,8 +515,18 @@ export default function Cronograma() {
           </div>
         ) : dados ? (
           <>
-            {/* O que a semana prioriza — e o botão que a monta. */}
-            <section className="card-sapiens mt-8 rounded-3xl p-6 md:p-8" data-testid="cronograma-hero">
+            {/* A SEMANA, primeiro. A agenda contínua: relógio correndo por
+                trás, uma coluna por dia. Tocar num horário livre anota; o X no
+                compromisso apaga — direto na grade, sem trocar de aba. */}
+            {temPlano && grade}
+
+            {/* O que a semana prioriza — e o botão que a remonta. Desceu para
+                DEPOIS da grade: é comentário sobre o plano, e comentário vem
+                depois da coisa comentada. */}
+            <section
+              className={`card-sapiens rounded-3xl p-6 md:p-8 ${temPlano ? "mt-6" : "mt-8"}`}
+              data-testid="cronograma-hero"
+            >
               <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
                 <div className="flex items-start gap-3">
                   <Mentis className="mt-0.5 h-9 w-9 shrink-0" estado={gerando ? "analise" : "neutra"} />
@@ -554,17 +589,8 @@ export default function Cronograma() {
 
             <FaixaDePrioridade prioridades={prioridades} />
 
-            {/* A semana como agenda contínua: relógio correndo por trás,
-                uma coluna por dia. Tocar num horário livre anota; o X no
-                compromisso apaga — direto na grade, sem trocar de aba. */}
-            <GradeSemana
-              dias={dados.dias}
-              hojeISO={hojeISO}
-              onConcluirBloco={concluir}
-              salvandoBloco={salvandoBloco}
-              onApagarCompromisso={apagarCompromisso}
-              onClicarVazio={abrirNovo}
-            />
+            {/* Sem plano, a grade vazia vem DEPOIS do botão que a preenche. */}
+            {!temPlano && grade}
 
             {temPlano && plano.distribuicao?.length > 0 && (
               <section className="card-sapiens mt-6 rounded-3xl p-6" data-testid="cronograma-distribuicao">

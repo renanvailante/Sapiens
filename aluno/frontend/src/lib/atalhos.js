@@ -36,12 +36,17 @@ import {
  * miniaturas do desktop: não há mais nada a calcular em tempo de execução.
  */
 export const ATALHOS = [
+  // AULAS vem primeiro e vem quente. Ela virou aba primária no desktop em
+  // 2026-09-18, e no celular não existe barra de abas: a tira É o caminho.
+  // Não é duplicata — nenhuma tela do celular desenha as duas —, e é o único
+  // destino do produto com HORA MARCADA: uma vez por semana, sem reposição.
+  // `destaque` é o que o `Nav` lê para pintá-la de âmbar.
+  { rota: "/aula-ao-vivo", icone: Radio, nome: "Aula ao vivo", label: "Aula ao vivo de quinta", destaque: true },
   { rota: "/treino", icone: Compass, nome: "Treino", label: "Mapa de treino" },
   { rota: "/redacao", icone: PenLine, nome: "Redação", label: "Redação" },
   { rota: "/revisoes", icone: CalendarClock, nome: "Revisões", label: "Revisões de hoje" },
   { rota: "/comunidade", icone: Users, nome: "Mural", label: "Mural de dúvidas" },
   { rota: "/minhas-questoes", icone: Sparkles, nome: "Minhas questões", label: "Questões geradas pela Mentis" },
   { rota: "/conquistas", icone: Trophy, nome: "Conquistas", label: "Conquistas e liga" },
-  { rota: "/aula-ao-vivo", icone: Radio, nome: "Aula ao vivo", label: "Aula ao vivo de quinta" },
   { rota: "/feed", icone: Rss, nome: "Feed", label: "Feed de questões" },
 ];

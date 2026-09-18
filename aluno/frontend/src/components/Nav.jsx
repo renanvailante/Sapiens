@@ -4,7 +4,7 @@ import { useAuth } from "../lib/auth";
 import { api } from "../lib/api";
 import {
   Zap, LayoutGrid, GraduationCap, MessageCircle, Brain, CalendarDays,
-  PlayCircle, LogOut, Grip,
+  PlayCircle, LogOut, Grip, Radio,
 } from "lucide-react";
 import Logo from "./Logo";
 import Mentis from "./Mentis";
@@ -64,10 +64,22 @@ export function avisarSparksMudou() {
 // nomeados e uma porta.
 const PRIMARY_LINKS = [
   { to: "/dashboard", icon: LayoutGrid, label: "Painel", testid: "nav-dashboard", tour: "nav-dashboard" },
-  { to: "/exams", icon: PlayCircle, label: "Praticar", testid: "nav-praticar", tour: "nav-praticar" },
+  // ESTUDAR — "Praticar" e "Cursos" eram duas abas, e a divisão era do
+  // produto, não do aluno: ele não abre o app querendo "o módulo de questões"
+  // ou "o módulo de cursos", ele abre querendo estudar, e decidia entre dois
+  // rótulos antes de ver o que havia dentro de cada um. Agora é uma aba com
+  // as duas coisas lado a lado — cursos e e-books à esquerda, provas do ENEM
+  // à direita —, e a escolha é feita OLHANDO, não adivinhando. Ver
+  // `pages/Estudar.jsx`.
+  { to: "/estudar", icon: GraduationCap, label: "Estudar", testid: "nav-estudar", tour: "nav-praticar" },
   { to: "/cronograma", icon: CalendarDays, label: "Semana", testid: "nav-cronograma" },
   { to: "/desempenho", icon: Brain, label: "Desempenho", testid: "nav-desempenho" },
-  { to: "/cursos", icon: GraduationCap, label: "Cursos", testid: "nav-cursos" },
+  // AULAS, em âmbar. A aula ao vivo é o único compromisso com HORA MARCADA do
+  // produto: ela acontece uma vez por semana e quem perde não a repõe. Um
+  // destino desses não pode ter o mesmo peso visual de uma tela que estará
+  // igual amanhã. O âmbar é a única cor quente da barra e existe só aqui —
+  // duas coisas em âmbar e nenhuma delas chama atenção.
+  { to: "/aula-ao-vivo", icon: Radio, label: "Aulas", testid: "nav-aulas", aceso: "ambar" },
   { to: "/mentis", icon: MessageCircle, label: "Mentis", testid: "nav-mentis", tour: "nav-mentis", mascote: true },
 ];
 
@@ -232,6 +244,7 @@ export default function Nav() {
                     to={l.to}
                     className="nav-elo nav-tip flex items-center gap-2 rounded-full px-3 py-2 text-sm font-medium"
                     data-ativa={ativa}
+                    data-aceso={l.aceso}
                     data-testid={l.testid}
                     data-tour={l.tour}
                     data-tip={l.label}
@@ -377,6 +390,7 @@ export default function Nav() {
                   to={m.rota}
                   className="nav-elo flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 text-xs font-semibold"
                   data-ativa={ativa}
+                  data-aceso={m.destaque ? "ambar" : undefined}
                   data-testid={`nav-tira-${m.rota.slice(1)}`}
                   aria-label={m.label}
                   aria-current={ativa ? "page" : undefined}

@@ -20,6 +20,7 @@ import {
 import { useDeclararContextoMentis } from "../lib/mentisContexto";
 import { avisarSparksMudou } from "../components/Nav";
 import { Brain, ThumbsUp, Target, ArrowRight } from "lucide-react";
+import PainelDeSugestoes from "../components/perfil/PainelDeSugestoes";
 
 /**
  * SEU PERFIL COGNITIVO — o retrato e, agora, o filme.
@@ -134,6 +135,14 @@ export default function PerfilCognitivo() {
       voltar="/dashboard"
       testid="perfil"
     >
+      {/* O QUE FAZER COM ISTO. O painel descreve; o balão prescreve. Ele só
+          aparece quando há dado suficiente para uma sugestão que cite um
+          número deste aluno — ver `lib/sugestoes.js`. Fica fora do fluxo
+          (`position: fixed`), então não muda o layout de nenhum gráfico, e
+          recolhe na horizontal para o canto direito continuar sendo de quem
+          está comparando duas curvas. */}
+      {!carregando && !erro && dados && <PainelDeSugestoes painel={dados} />}
+
       {carregando ? (
         <Esqueleto />
       ) : erro ? (

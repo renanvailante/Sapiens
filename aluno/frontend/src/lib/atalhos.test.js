@@ -10,12 +10,26 @@ import { ATALHOS } from "./atalhos";
  * nenhuma porta duplicada, e nenhuma porta perdida.
  */
 
-const PRIMARIAS = ["/dashboard", "/exams", "/cronograma", "/desempenho", "/cursos", "/mentis"];
+// As seis abas do DESKTOP (`PRIMARY_LINKS` em `Nav.jsx`). Desde 2026-09-18,
+// "Praticar" e "Cursos" viraram uma só (`/estudar`) e a vaga aberta foi para
+// a aula ao vivo.
+const PRIMARIAS = ["/dashboard", "/estudar", "/cronograma", "/desempenho", "/aula-ao-vivo", "/mentis"];
 
-test("nada que seja aba primária aparece também na tira", () => {
-  // Atalho a 40px de distância da aba com o mesmo destino é ruído: o aluno
-  // não consegue aprender que são a mesma coisa, então trata como duas.
-  for (const a of ATALHOS) expect(PRIMARIAS).not.toContain(a.rota);
+// Os cinco alvos da BARRA INFERIOR (`ABAS` + `ACAO` em `BarraInferior.jsx`),
+// que é o que o celular realmente desenha. O quinto é o Menu, que não é rota.
+const DO_CELULAR = ["/dashboard", "/cronograma", "/estudar", "/desempenho"];
+
+test("nada que o celular já desenha aparece também na tira", () => {
+  // A regra é contra DUPLICATA NA MESMA TELA: um atalho a 40px de distância
+  // de outro alvo com o mesmo destino é ruído, porque o aluno não consegue
+  // aprender que são a mesma coisa e passa a tratar como duas.
+  //
+  // A régua é a barra inferior, e não as abas do desktop, porque é a barra
+  // que divide a tela com a tira: as abas são `lg:flex` e a tira é
+  // `lg:hidden` — elas nunca aparecem juntas. Foi essa distinção que abriu
+  // caminho para a aula ao vivo ser aba no notebook E pílula no celular sem
+  // se repetir em lugar nenhum.
+  for (const a of ATALHOS) expect(DO_CELULAR).not.toContain(a.rota);
 });
 
 test("o que saiu da barra continua alcançável em um toque", () => {
@@ -25,6 +39,16 @@ test("o que saiu da barra continua alcançável em um toque", () => {
   expect(rotas).toContain("/redacao");
   expect(rotas).toContain("/comunidade");
   expect(rotas).toContain("/aula-ao-vivo");
+});
+
+test("a aula ao vivo é a primeira da tira, e é a única em destaque", () => {
+  // Único destino do produto com HORA MARCADA: acontece na quinta e quem
+  // perde não repõe. No celular não há barra de abas, então a tira é o
+  // caminho — e ela precisa ser o primeiro alvo do polegar, não o sétimo.
+  expect(ATALHOS[0].rota).toBe("/aula-ao-vivo");
+  // Âmbar é recurso de uso único: duas pílulas quentes e nenhuma chama
+  // atenção. O `Nav` lê `destaque` para pintar (ver `data-aceso` no CSS).
+  expect(ATALHOS.filter((a) => a.destaque)).toHaveLength(1);
 });
 
 test("toda pílula da tira tem nome escrito", () => {
@@ -44,6 +68,10 @@ test("toda pílula da tira tem nome escrito", () => {
  * seis primários escritos por extenso, a medição no navegador (tipografia
  * real da aplicação, 2026-09-17) deu 979px — 93px de folga. É pouco: um
  * rótulo a mais estoura.
+ *
+ * 2026-09-18: os rótulos MUDARAM sem mudar a contagem — "Praticar" e "Cursos"
+ * saíram, "Estudar" e "Aulas" entraram. A soma dos caracteres caiu de 47 para
+ * 44, então a folga não encolheu; a conta de 979px continua sendo o teto.
  *
  * Este teste não mede pixel (jsdom não faz layout). Ele trava o que CAUSA o
  * estouro: a quantidade de itens nomeados na barra. Se alguém acrescentar um

@@ -14,6 +14,7 @@ import { MENTOR } from "../lib/mentor";
 import ContagemEnem from "../components/ContagemEnem";
 import ContinuarAprendendo from "../components/curso/ContinuarAprendendo";
 import CapaDoCurso from "../components/curso/CapaDoCurso";
+import LadrilhoDeCatalogo from "../components/curso/LadrilhoDeCatalogo";
 import { porArea } from "../lib/recomendacao";
 import { useDeclararContextoMentis } from "../lib/mentisContexto";
 import { marcarAcessoDaLive } from "../lib/live";
@@ -55,7 +56,21 @@ import { quintasAteAProva } from "../lib/enem";
  */
 
 
-export default function Cursos() {
+/**
+ * O CATÁLOGO — cursos e e-books.
+ *
+ * `embutido` existe desde 2026-09-18, quando "Cursos" e "Praticar" viraram
+ * uma aba só (`pages/Estudar.jsx`). Nele a página devolve só o CONTEÚDO: sem
+ * `min-h-screen`, sem `<Nav />` e sem o contêiner de largura — quem manda na
+ * moldura é a coluna que a hospeda. A rota `/cursos` continua existindo e
+ * continua abrindo a tela inteira, porque há links diretos para ela espalhados
+ * pelo produto e porque uma coluna de 560px não é onde se lê uma ementa.
+ */
+export default function Cursos({ embutido = false }) {
+  // Qual ladrilho está aberto pelo TOQUE. No mouse quem abre é o `:hover` do
+  // CSS; no telefone não há cursor, e um por vez é o que impede quatro
+  // cartões grandes sobrepostos sem jeito de fechar nenhum.
+  const [abertoNoToque, setAbertoNoToque] = useState(null);
   const { hash } = useLocation();
   const [dados, setDados] = useState(null);
   const [erro, setErro] = useState(null);
@@ -207,6 +222,124 @@ export default function Cursos() {
    *  de quatro estados desta tela (comprando, marcando, a conta do pacote) —
    *  passar os quatro por props seria mudar a assinatura toda vez que a
    *  vitrine ganha um estado. */
+  /**
+   * O LADRILHO — a forma do catálogo dentro da aba "Estudar".
+   *
+   * Aqui há DUAS apresentações do mesmo catálogo, e a duplicação é deliberada:
+   *
+   * · `/estudar` (embutido) usa ladrilhos. É uma coluna de meia tela ao lado
+   *   das provas, e o gesto ali é PASSAR O OLHO — reconhecer o curso pela capa
+   *   e pelo nome, abrir o que interessa.
+   * · `/cursos` (a página inteira) continua com os cards completos. É onde se
+   *   LÊ: a ementa com os módulos, a descrição, o texto do que está incluso.
+   *   Um ladrilho de 150px não comporta uma lista de seis módulos, e enfiá-la
+   *   lá dentro desfaria a única coisa que o ladrilho resolve.
+   *
+   * Ou seja: nada de informação saiu do produto: ela mudou de endereço, e o
+   * ladrilho aponta para ele.
+   *
+   * `abertoNoToque` existe porque no telefone não há cursor. A página mantém
+   * UM ladrilho aberto por vez — sem isso, tocar em quatro deixaria quatro
+   * cartões grandes sobrepostos, e o aluno não teria como fechar nenhum.
+   */
+  const ladrilhoDoCurso = (c) => (
+    <LadrilhoDeCatalogo
+      key={c.curso_id}
+      capa={c.capa}
+      titulo={c.titulo}
+      chamada={c.chamada}
+      olho={`${c.carga} · ${c.nivel}`}
+      meu={c.tenho_acesso}
+      selo={
+        <span className="ladrilho-selo">
+          {c.tem_conteudo ? "No ar" : "Em breve"}
+        </span>
+      }
+      aberto={abertoNoToque === `curso-${c.curso_id}`}
+      aoAbrir={() => setAbertoNoToque(`curso-${c.curso_id}`)}
+      testid={`ladrilho-curso-${c.curso_id}`}
+    >
+      {c.tenho_acesso && c.tem_conteudo ? (
+        <Link
+          to={`/cursos/${c.curso_id}`}
+          className="pill btn-sapiens inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-bold"
+          data-testid={`ladrilho-curso-${c.curso_id}-estudar`}
+        >
+          <PlayCircle className="h-3.5 w-3.5" />
+          {c.progresso?.comecou ? `Continuar · ${c.progresso.percentual}%` : "Começar"}
+        </Link>
+      ) : c.tenho_acesso ? (
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-100">
+          <Infinito className="h-3.5 w-3.5" /> Avisamos quando abrir
+        </span>
+      ) : (
+        <>
+          <button
+            onClick={() => comprarCurso(c)}
+            disabled={comprandoCurso === c.curso_id}
+            className="pill btn-sapiens inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-medium disabled:opacity-50"
+            data-testid={`ladrilho-curso-${c.curso_id}-comprar`}
+          >
+            <Infinito className="h-3.5 w-3.5" />
+            {comprandoCurso === c.curso_id ? "Garantindo…" : `${c.custo_sparks} Sparks`}
+          </button>
+          <button
+            onClick={() => alternarInteresse(c)}
+            disabled={marcando === c.curso_id}
+            className={[
+              "pill inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium disabled:opacity-50",
+              c.tenho_interesse
+                ? "border border-emerald-400/30 bg-emerald-500/15 text-emerald-200"
+                : "btn-vidro",
+            ].join(" ")}
+            data-testid={`ladrilho-curso-${c.curso_id}-avisar`}
+          >
+            {c.tenho_interesse ? <BellRing className="h-3.5 w-3.5" /> : <Bell className="h-3.5 w-3.5" />}
+          </button>
+        </>
+      )}
+    </LadrilhoDeCatalogo>
+  );
+
+  const ladrilhoDoEbook = (e) => (
+    <LadrilhoDeCatalogo
+      key={e.ebook_id}
+      capa={e.capa}
+      titulo={e.titulo}
+      chamada={e.chamada}
+      olho={`${e.paginas} páginas`}
+      meu={e.tenho_acesso}
+      selo={<span className="ladrilho-selo">E-book</span>}
+      aberto={abertoNoToque === `ebook-${e.ebook_id}`}
+      aoAbrir={() => setAbertoNoToque(`ebook-${e.ebook_id}`)}
+      testid={`ladrilho-ebook-${e.ebook_id}`}
+    >
+      {e.tenho_acesso && e.tem_conteudo ? (
+        <Link
+          to={`/cursos/ebooks/${e.ebook_id}`}
+          className="pill btn-sapiens inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-bold"
+          data-testid={`ladrilho-ebook-${e.ebook_id}-ler`}
+        >
+          <BookOpen className="h-3.5 w-3.5" /> Ler agora
+        </Link>
+      ) : e.tenho_acesso ? (
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-100">
+          <BookOpen className="h-3.5 w-3.5" /> Em breve
+        </span>
+      ) : (
+        <button
+          onClick={() => comprarEbook(e)}
+          disabled={comprandoEbook === e.ebook_id}
+          className="pill btn-sapiens inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-medium disabled:opacity-50"
+          data-testid={`ladrilho-ebook-${e.ebook_id}-comprar`}
+        >
+          <BookOpen className="h-3.5 w-3.5" />
+          {comprandoEbook === e.ebook_id ? "Garantindo…" : `${e.custo_sparks} Sparks`}
+        </button>
+      )}
+    </LadrilhoDeCatalogo>
+  );
+
   const cartaoDoCurso = (c) => (
     <article
       key={c.curso_id}
@@ -365,10 +498,8 @@ export default function Cursos() {
     </article>
   );
 
-  return (
-    <div className="min-h-screen">
-      <Nav />
-      <div className="mx-auto max-w-5xl px-6 py-8 md:px-10 md:py-10">
+  const conteudo = (
+    <>
         {erro && (
           <div className="mb-6 rounded-2xl border border-amber-300/30 bg-amber-500/10 px-5 py-4 text-sm text-amber-100">
             {erro}
@@ -529,9 +660,15 @@ export default function Cursos() {
                   {area.itens.length} curso{area.itens.length === 1 ? "" : "s"}
                 </span>
               </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                {area.itens.map((c) => cartaoDoCurso(c))}
-              </div>
+              {embutido ? (
+                <ul className="grade-ladrilhos mt-4">
+                  {area.itens.map((c) => ladrilhoDoCurso(c))}
+                </ul>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {area.itens.map((c) => cartaoDoCurso(c))}
+                </div>
+              )}
             </div>
           ))}
         </section>
@@ -559,6 +696,11 @@ export default function Cursos() {
               estudo. Quem tem o pacote de Sparks já tem a prateleira inteira.
             </p>
 
+            {embutido ? (
+              <ul className="grade-ladrilhos mt-5">
+                {dados.ebooks.map((e) => ladrilhoDoEbook(e))}
+              </ul>
+            ) : (
             <div className="mt-5 grid gap-4 sm:grid-cols-2">
               {dados.ebooks.map((e) => (
                 <article
@@ -627,6 +769,7 @@ export default function Cursos() {
                 </article>
               ))}
             </div>
+            )}
           </section>
         )}
 
@@ -648,7 +791,15 @@ export default function Cursos() {
           </div>
           <ArrowRight className="h-4 w-4 shrink-0 text-white/30" />
         </Link>
-      </div>
+    </>
+  );
+
+  if (embutido) return conteudo;
+
+  return (
+    <div className="min-h-screen">
+      <Nav />
+      <div className="mx-auto max-w-5xl px-6 py-8 md:px-10 md:py-10">{conteudo}</div>
     </div>
   );
 }
