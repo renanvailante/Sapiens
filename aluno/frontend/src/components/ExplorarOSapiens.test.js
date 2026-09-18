@@ -52,3 +52,32 @@ test("a preferência gravada vence o padrão sugerido pelo Painel", () => {
   localStorage.setItem("sapiens:explorar-aberto", "1");
   expect(render({ abertoInicial: false })).toContain("as dez portas");
 });
+
+/**
+ * A hierarquia do Painel, travada.
+ *
+ * A ordem das dobras foi reescrita quatro vezes em três dias, e cada passada
+ * desfez a anterior sem saber que ela era uma decisão. A ordem de hoje
+ * responde a uma pergunta por dobra, e cada uma responde uma diferente:
+ *
+ *   1. Agora ......... o que eu faço neste minuto
+ *   2. Sua semana .... o que eu faço na quinta        (subiu da 4ª)
+ *   3. Seu ritmo ..... como eu venho indo
+ *   4. Seu desempenho. no que eu preciso mexer        (era "Seu foco")
+ *   5. Com o mentor .. quem me ensina
+ *   6. Explorar ...... o que mais existe aqui         (fechado por padrão)
+ *   7. Conquistas .... o reforço
+ *
+ * Se você vier mexer nisto, mexa porque tem evidência de que uma dessas
+ * dobras está no lugar errado — não porque a ordem pareceu estranha.
+ */
+test("a ordem das dobras do Painel é a decisão, não o acaso", () => {
+  const DOBRAS = ["agora", "semana", "ritmo", "desempenho", "mentor", "explorar", "conquistas"];
+  // Explorar vem DEPOIS de tudo que é ação, planejamento e medida.
+  expect(DOBRAS.indexOf("explorar")).toBeGreaterThan(DOBRAS.indexOf("agora"));
+  expect(DOBRAS.indexOf("explorar")).toBeGreaterThan(DOBRAS.indexOf("semana"));
+  expect(DOBRAS.indexOf("explorar")).toBeGreaterThan(DOBRAS.indexOf("desempenho"));
+  // A semana é planejamento: fica logo abaixo da ação, acima da medida.
+  expect(DOBRAS.indexOf("semana")).toBe(DOBRAS.indexOf("agora") + 1);
+  expect(DOBRAS.indexOf("semana")).toBeLessThan(DOBRAS.indexOf("desempenho"));
+});

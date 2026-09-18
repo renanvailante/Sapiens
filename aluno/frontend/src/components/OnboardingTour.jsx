@@ -41,11 +41,11 @@ const STEPS = [
   {
     target: "nav-primarios",
     title: "Sua barra",
-    text: "Painel, Treino, Praticar e eu. A aba acesa é onde você está agora.",
+    text: "Painel, Praticar, Semana, Desempenho, Cursos e eu. A aba acesa é onde você está agora.",
     mobile: {
       target: "barra-inferior",
       title: "Sua barra",
-      text: "Ela te segue em toda tela. O botão aceso do meio é praticar — é por ele que quase tudo começa.",
+      text: "Ela te segue em toda tela. O botão elevado do meio é praticar — é por ele que quase tudo começa.",
     },
   },
   // O QUE FAZER. O único passo que importa de verdade no primeiro minuto.
@@ -65,7 +65,7 @@ const STEPS = [
   {
     target: "nav-more",
     title: "O resto mora aqui",
-    text: "Redação, revisões, cronograma, cursos, comunidade e o seu desempenho. Vá descobrindo conforme precisar — não precisa saber tudo hoje.",
+    text: "Treino, redação, revisões, mural, conquistas e a aula ao vivo. Vá descobrindo conforme precisar — não precisa saber tudo hoje.",
     mobile: { target: "barra-mais" },
   },
 ];

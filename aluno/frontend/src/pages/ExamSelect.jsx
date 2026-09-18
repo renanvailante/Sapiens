@@ -1107,7 +1107,16 @@ export default function ExamSelect() {
   const areaParam = params.get("area");
   const itemIdsParam = params.get("item_ids");
   const nav = useNavigate();
-  const [mode, setMode] = useState(areaParam || itemIdsParam ? "practice" : "hub"); // 'hub' | 'provas' | 'practice'
+  // "Praticar" abre DIRETO nos cadernos. Havia um modo `hub` antes deste:
+  // uma tela inteira cujo conteúdo era um botão escrito "Começar prática de
+  // questões" e, abaixo, a lista por ano. Um clique inteiro para dizer sim a
+  // uma pergunta que o aluno já tinha respondido ao clicar em "Praticar" —
+  // a definição de interstício.
+  //
+  // A opção secundária (provas oficiais por edição do ENEM) não sumiu: ela
+  // agora mora ao pé da própria grade de cadernos, que é onde alguém
+  // procurando "o ENEM 2019 inteiro" já está olhando.
+  const [mode, setMode] = useState(areaParam || itemIdsParam ? "practice" : "provas"); // 'provas' | 'practice'
   const [filtro, setFiltro] = useState(
     itemIdsParam
       ? { item_ids: itemIdsParam.split(",").filter(Boolean), origem: "revisao" }
@@ -1144,52 +1153,31 @@ export default function ExamSelect() {
         ) : mode === "provas" ? (
           <>
             <div className="mb-10">
-              <div className="secao-olho">Provas</div>
-              <h1 className="titulo-tela">
+              <div className="secao-olho">Praticar</div>
+              <h1 className="titulo-tela" data-testid="exam-select-title">
                 Escolha um caderno
               </h1>
-              <p className="mt-3 text-white/60 max-w-lg">Cada caderno é uma prova real, agrupada por banca, ano e cor.</p>
+              <p className="mt-3 max-w-lg text-white/60">
+                Cada caderno é uma prova real, agrupada por banca, ano e cor. Cada questão
+                que você responde aqui vira informação sobre você.
+              </p>
             </div>
-            <ProvasGrid onSelect={escolherProva} onExit={() => setMode("hub")} />
-          </>
-        ) : (
-          <>
-            <div className="mb-10">
-              <div className="secao-olho">Provas</div>
-              <h1 className="titulo-tela" data-testid="exam-select-title">
-                Cada questão aqui vira informação sobre você.
-              </h1>
-              <p className="mt-3 text-white/60 max-w-lg">Questões auditadas, uma de cada vez. Suas respostas são registradas para revelar seus padrões cognitivos.</p>
-            </div>
+            <ProvasGrid onSelect={escolherProva} onExit={() => nav("/dashboard")} />
 
-            {/* Principal: escolher um caderno (banca/ano/cor) e praticar */}
-            <button
-              onClick={() => setMode("provas")}
-              data-testid="start-practice"
-              className="lift btn-sapiens w-full text-left rounded-3xl p-8 flex items-center gap-5"
-            >
-              <div className="w-12 h-12 rounded-2xl bg-white/15 flex items-center justify-center shrink-0">
-                <Sparkles className="w-6 h-6" />
-              </div>
-              <div className="flex-1">
-                <div className="font-display font-extrabold text-2xl tracking-tight">Começar prática de questões</div>
-                <div className="mt-1 text-sm text-white/70">Escolha uma prova · feedback imediato de certo/errado</div>
-              </div>
-              <ArrowRight className="w-6 h-6" />
-            </button>
-
-            {/* Secundário: praticar por ano (ENEM) */}
+            {/* A prova oficial inteira, por edição. Fica ao PÉ da grade e não
+                numa tela anterior: quem procura "o ENEM 2019 completo" já está
+                olhando para cadernos quando pensa nisso. */}
             <div className="mt-14">
-              <div className="flex items-center gap-3 mb-1">
-                <RotateCw className="w-4 h-4 text-white/40" />
-                <div className="font-mono-alt text-xs uppercase tracking-[0.3em] text-white/50">Opção secundária</div>
+              <div className="mb-1 flex items-center gap-3">
+                <RotateCw className="h-4 w-4 text-white/40" />
+                <div className="font-mono-alt text-xs uppercase tracking-[0.3em] text-white/50">Ou a prova inteira</div>
               </div>
               <h2 className="font-display text-2xl font-bold tracking-tight text-white">Praticar por ano (ENEM)</h2>
-              <p className="mt-2 mb-6 text-sm text-white/60">Provas oficiais completas por edição do ENEM.</p>
+              <p className="mb-6 mt-2 text-sm text-white/60">Provas oficiais completas por edição.</p>
               <ExamsByYear />
             </div>
           </>
-        )}
+        ) : null}
       </div>
     </div>
   );

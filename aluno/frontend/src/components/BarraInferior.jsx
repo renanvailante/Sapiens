@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { LayoutGrid, Compass, PlayCircle, Grip } from "lucide-react";
+import { LayoutGrid, CalendarDays, Brain, PlayCircle, Grip } from "lucide-react";
 import { useAuth } from "../lib/auth";
 import Mentis from "./Mentis";
 import LancadorDeFerramentas from "./LancadorDeFerramentas";
@@ -28,14 +28,27 @@ import LancadorDeFerramentas from "./LancadorDeFerramentas";
  *
  * As quatro abas fixas são as quatro coisas que um aluno faz TODO dia. O
  * critério não é quantas telas existem, é quantas o polegar precisa alcançar
- * sem pensar; a quinta vaga é a porta para as outras dezoito.
+ * sem pensar; a quinta vaga é a porta para todas as outras.
+ *
+ * A LISTA MUDOU EM 2026-09-17 (segunda passada), para espelhar a barra de
+ * cima: Painel · Semana · [Praticar] · Desempenho · Mais. Duas trocas, e as
+ * duas têm motivo:
+ *
+ *   · **Semana entrou** porque o cronograma é a única peça do produto que
+ *     responde "o que eu faço NA QUINTA" em vez de "o que eu faço agora", e
+ *     ele estava enterrado na quarta dobra do Painel.
+ *   · **Mentis saiu da tira, e não do produto.** Ela é camada, não página: o
+ *     ícone flutuante (`MentisWidget`, montado em `App.js`) já a chama de
+ *     QUALQUER tela, inclusive destas cinco. Uma aba para ela era a mesma
+ *     porta duas vezes a 60px de distância — e era a vaga que a Semana
+ *     precisava.
  */
 
 const ABAS = [
   { to: "/dashboard", icone: LayoutGrid, rotulo: "Painel", testid: "barra-painel" },
-  { to: "/treino", icone: Compass, rotulo: "Treino", testid: "barra-treino" },
+  { to: "/cronograma", icone: CalendarDays, rotulo: "Semana", testid: "barra-semana" },
   // O meio é a ação — ver `ACAO` abaixo.
-  { to: "/mentis", mascote: true, rotulo: "Mentis", testid: "barra-mentis" },
+  { to: "/desempenho", icone: Brain, rotulo: "Desempenho", testid: "barra-desempenho" },
 ];
 
 const ACAO = { to: "/exams", icone: PlayCircle, rotulo: "Praticar", testid: "barra-praticar" };

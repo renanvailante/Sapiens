@@ -1,15 +1,15 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { api } from "../lib/api";
 import {
-  Zap, ShieldCheck, LayoutGrid, GraduationCap, MessageCircle, Compass,
-  PlayCircle, LogOut, Megaphone, Grip,
+  Zap, LayoutGrid, GraduationCap, MessageCircle, Brain, CalendarDays,
+  PlayCircle, LogOut, Grip,
 } from "lucide-react";
 import Logo from "./Logo";
 import Mentis from "./Mentis";
 import LancadorDeFerramentas from "./LancadorDeFerramentas";
-import { ATALHOS, quantasCabem } from "../lib/atalhos";
+import { ATALHOS } from "../lib/atalhos";
 
 export const EVENTO_SPARKS = "sparks:mudou";
 
@@ -39,28 +39,34 @@ export function avisarSparksMudou() {
 // arquivo: a barra vive num container de 1152px que nenhum monitor largo
 // aumenta, e desde 16/09 os rótulos só aparecem a partir de `xl`.
 //
-// 2026-09-17 — AS DUAS BARRAS PASSARAM A DESENHAR O MESMO CONJUNTO.
+// AS DUAS BARRAS DESENHAM O MESMO CONJUNTO, E TODO ITEM TEM NOME ESCRITO.
 //
-// Até aqui o desktop tinha seis abas (Treino, Painel, Redação, Semana, Mural,
-// Mentis) e o celular tinha quatro outras (Painel, Treino, Praticar, Mentis):
-// dois produtos diferentes para a mesma pessoa. Quem começava no telefone e
-// abria o notebook à noite não encontrava o que tinha aprendido a usar — e
-// "Praticar", o alvo elevado por onde quase tudo começa no celular, não era
-// sequer uma aba aqui.
+// Duas mudanças moram aqui, e a segunda é a que importa.
 //
-// O conjunto agora é o mesmo, na mesma ordem da esquerda para a direita:
-// Painel · Treino · Praticar · Mentis, mais a porta do Menu. Quatro verbos
-// diários e uma porta — a mesma régua do polegar que a barra de baixo já
-// usava, aplicada também ao mouse.
+// **Uma barra só para os dois aparelhos.** O desktop tinha seis abas e o
+// celular tinha quatro outras: dois produtos para a mesma pessoa. Agora a
+// ordem é a mesma nos dois, e "Praticar" — por onde quase tudo começa — é
+// primeira classe em ambos.
 //
-// Redação, Semana e Mural não sumiram: desceram para as miniaturas
-// (`lib/atalhos`), no topo da prioridade, e continuam no Menu com nome e
-// função. O que se perdeu foi um clique de distância; o que se ganhou foi o
-// aluno poder trocar de aparelho sem reaprender a navegação.
+// **Ícone sozinho não comunica.** Até aqui o rótulo só aparecia a partir de
+// `xl`, e entre 1024 e 1279px a barra virava seis símbolos mudos com um traço
+// aceso; ao lado deles havia ainda uma fileira de MINIATURAS — círculos de
+// 32px sem rótulo nenhum, em nenhuma largura. Um ícone que o aluno precisa
+// decifrar não é navegação, é charada: ele custa uma parada de atenção por
+// clique, todo dia, para sempre.
+//
+// A conta de largura que isso exigiu (o container é de 1152px e nenhum
+// monitor o aumenta — ver a medição no fim do arquivo) foi paga tirando da
+// barra o que não precisava estar nela: a fileira de miniaturas inteira e o
+// botão solto da aula ao vivo, que já mora no Menu, agrupado por intenção,
+// com nome e função escritos. Trocamos onze alvos, sete deles mudos, por seis
+// nomeados e uma porta.
 const PRIMARY_LINKS = [
   { to: "/dashboard", icon: LayoutGrid, label: "Painel", testid: "nav-dashboard", tour: "nav-dashboard" },
-  { to: "/treino", icon: Compass, label: "Treino", testid: "nav-treino", tour: "nav-treino" },
   { to: "/exams", icon: PlayCircle, label: "Praticar", testid: "nav-praticar", tour: "nav-praticar" },
+  { to: "/cronograma", icon: CalendarDays, label: "Semana", testid: "nav-cronograma" },
+  { to: "/desempenho", icon: Brain, label: "Desempenho", testid: "nav-desempenho" },
+  { to: "/cursos", icon: GraduationCap, label: "Cursos", testid: "nav-cursos" },
   { to: "/mentis", icon: MessageCircle, label: "Mentis", testid: "nav-mentis", tour: "nav-mentis", mascote: true },
 ];
 
@@ -173,38 +179,11 @@ export default function Nav() {
   // algumas; em 1920 cabem todas; num notebook de 13" com admin, nenhuma — e
   // em nenhum desses casos a barra quebra. Tudo o que não coube continua a um
   // clique no "Menu" e na tira do celular.
-  const barraRef = useRef(null);
-  const marcaRef = useRef(null);
-  const primariosRef = useRef(null);
-  const fixosRef = useRef(null);
-  const [quantasMiniaturas, setQuantasMiniaturas] = useState(0);
-
-  const medir = useCallback(() => {
-    const barra = barraRef.current;
-    if (!barra) return;
-    // Abaixo de `lg` a barra de cima não tem abas nem miniaturas: quem navega
-    // é a barra inferior e a tira rolável.
-    if (window.innerWidth < 1024) return setQuantasMiniaturas(0);
-    const largura = (el) => (el ? el.getBoundingClientRect().width : 0);
-    const obrigatorio =
-      largura(marcaRef.current) + largura(primariosRef.current) + largura(fixosRef.current);
-    setQuantasMiniaturas(quantasCabem(barra.clientWidth, obrigatorio));
-  }, []);
-
-  useLayoutEffect(() => {
-    medir();
-    const ro = new ResizeObserver(medir);
-    if (barraRef.current) ro.observe(barraRef.current);
-    window.addEventListener("resize", medir);
-    // A fonte muda a largura das abas depois de carregar: medir só na
-    // montagem daria a conta da fonte de fallback, que é mais estreita.
-    document.fonts?.ready?.then(medir).catch(() => {});
-    return () => {
-      ro.disconnect();
-      window.removeEventListener("resize", medir);
-    };
-  }, [medir]);
-
+  // A MEDIÇÃO da barra saiu junto com as miniaturas: ela existia só para
+  // decidir quantos círculos mudos caberiam na folga. Com o conjunto primário
+  // fixo em seis itens nomeados, não há mais nada a calcular em tempo de
+  // execução — a conta agora é de projeto, e está travada em `atalhos.test.js`
+  // e na medição no fim deste arquivo.
   useEffect(() => {
     const aoRolar = () => setRolou(window.scrollY > 8);
     aoRolar();
@@ -220,7 +199,7 @@ export default function Nav() {
       style={rolou ? undefined : { boxShadow: "none", borderBottomColor: "transparent" }}
       data-rolou={rolou}
     >
-      <div ref={barraRef} className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 md:px-10">
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 md:px-10">
         {/* A MARCA, no canto superior esquerdo, em TODA largura de tela.
             Até 2026-09-16 este canto era o botão de menu do celular e a marca
             simplesmente não existia abaixo de 1024px — o produto se
@@ -245,7 +224,7 @@ export default function Nav() {
           <div className="flex items-center gap-1 lg:gap-2">
             {/* Envelope próprio (e não os links soltos) porque o guia de
                 primeira sessão aponta para a BARRA inteira num passo só. */}
-            <div ref={primariosRef} className="hidden items-center gap-1 lg:flex" data-tour="nav-primarios">
+            <div className="hidden items-center gap-1 lg:flex" data-tour="nav-primarios">
               {PRIMARY_LINKS.map((l) => {
                 const ativa = ehRotaAtual(pathname, l.to);
                 return (
@@ -263,53 +242,24 @@ export default function Nav() {
                     {l.mascote
                       ? <Mentis className="h-5 w-5 shrink-0" variante="icone" animada={false} />
                       : <l.icon className="h-4 w-4 shrink-0" strokeWidth={ativa ? 2.3 : 1.9} />}
-                    {/* O rótulo só a partir de `xl`. Entre 1024 e 1279 a barra
-                        fica em ícones puros com o traço aceso marcando onde se
-                        está: é a faixa dos notebooks de 13", onde a soma dos
-                        filhos com os seis rótulos escritos ESTOURAVA o
-                        container (ver a medição no fim do arquivo). */}
-                    <span className="hidden xl:inline">{l.texto || l.label}</span>
+                    {/* O nome, SEMPRE. Era `hidden xl:inline`, e a faixa de
+                        1024–1279px (notebook de 13") ficava só com ícones. O
+                        que pagou a largura foi a saída das miniaturas e do
+                        botão da aula — ver a nota do bloco de links. */}
+                    <span>{l.texto || l.label}</span>
                   </Link>
                 );
               })}
             </div>
 
-            {/* AS MINIATURAS. A barra do desktop tinha ~330px de folga a
-                1536px e ~188px a 1280px (medição no fim do arquivo), e essa
-                folga não estava comprando nada: o aluno de notebook via seis
-                abas e um botão de menu, enquanto o produto tem doze telas que
-                ele usa toda semana. Aqui elas viram ícone redondo de 32px com
-                o nome no `title` — miniatura, não aba: a aba diz onde você
-                está, a miniatura leva onde você ainda não foi.
-
-                Cada uma acende a partir da largura que couber (`min` em
-                `lib/atalhos`), e é a MESMA lista que a tira do celular
-                desenha logo abaixo — uma fonte só para as duas barras, senão
-                o celular volta a ter metade das portas do desktop. */}
-            {quantasMiniaturas > 0 && (
-            <div className="hidden items-center gap-1 lg:flex" data-testid="nav-miniaturas">
-              <span aria-hidden className="mx-1 h-5 w-px shrink-0 bg-white/10" />
-              {ATALHOS.slice(0, quantasMiniaturas).map((m) => {
-                const ativa = ehRotaAtual(pathname, m.rota);
-                return (
-                  <Link
-                    key={m.rota}
-                    to={m.rota}
-                    className="nav-elo nav-tip inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
-                    data-ativa={ativa}
-                    data-testid={`nav-mini-${m.rota.slice(1)}`}
-                    data-tip={m.label}
-                    aria-label={m.label}
-                    aria-current={ativa ? "page" : undefined}
-                  >
-                    <m.icone className="h-4 w-4" strokeWidth={ativa ? 2.3 : 1.9} />
-                  </Link>
-                );
-              })}
-            </div>
-            )}
-
-            <div ref={fixosRef} className="flex items-center gap-1 lg:gap-2">
+            {/* As MINIATURAS saíram em 2026-09-17 (segunda passada). Eram
+                até quatro círculos de 32px sem rótulo em nenhuma largura,
+                desenhados só porque havia folga na barra — e folga não é
+                motivo para desenhar coisa nenhuma. O que elas alcançavam
+                (Redação, Revisões, Mural, Questões da Mentis, Conquistas,
+                Histórico) está no Menu, agrupado por intenção e com o nome e
+                a função de cada ferramenta escritos. */}
+            <div className="flex items-center gap-1 lg:gap-2">
             {/* O lançador: uma grade visual com TODAS as ferramentas.
                 O ícone é `Grip` e não `LayoutGrid` desde 2026-09-17. Até ali
                 a barra desenhava o MESMO símbolo duas vezes, a três alvos de
@@ -340,60 +290,28 @@ export default function Nav() {
               <span className="hidden xl:inline">Menu</span>
             </button>
 
-            {/* A porta das AULAS — a aula ao vivo de quinta com o 1º colocado
-                de Medicina da USP, o único compromisso com hora marcada do
-                produto. No celular fica só o ícone com o ponto pulsante: a
-                palavra custaria os 44px que o chip de Sparks ocupa a 360px, e
-                o ponto vermelho já diz que há algo acontecendo. */}
-            <Link
-              to="/aula-ao-vivo"
-              className="btn-calor pill nav-tip relative inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-2.5 py-2 text-xs sm:px-3.5"
-              data-testid="nav-aulas-particulares"
-              data-tour="nav-aulas"
-              data-tip="Aula ao vivo de quinta"
-              aria-label="Aula ao vivo de quinta"
-            >
-              <span className="relative">
-                <GraduationCap className="h-4 w-4" />
-                <span className="absolute -right-1 -top-1 flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-500 opacity-80" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-rose-500" />
-                </span>
-              </span>
-              <span className="hidden sm:inline">Aulas</span>
-            </Link>
+            {/* A porta das AULAS saiu da barra na mesma passada. Ela era um
+                botão quente permanente para um evento que acontece UMA vez por
+                semana — chamando atenção nos outros seis dias sem ter o que
+                dizer. Ela continua no Menu, no grupo "Com o 1º colocado da
+                USP", e o Painel a anuncia na seção do mentor quando a quinta
+                se aproxima, que é quando a informação é verdadeira. */}
 
             <SparksChip />
 
-            {/* O promoter não é admin — o botão dele leva a um painel à
-                parte (`/promoter`), que só sabe quem usou O CUPOM dele e
-                quanto essas pessoas gastaram. Verde por pedido explícito,
-                com a palavra escrita (e não só o ícone) porque, ao contrário
-                do admin, esta conta pode não reconhecer o ícone sozinho. */}
-            {user.is_promoter && (
-              <Link
-                to="/promoter"
-                className="pill nav-tip hidden h-9 shrink-0 items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-500/15 px-3 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/25 lg:inline-flex"
-                data-testid="nav-promoter"
-                data-tip="Painel do promoter"
-                aria-label="Painel do promoter"
-              >
-                <Megaphone className="h-4 w-4" />
-                Promoter
-              </Link>
-            )}
+            {/* Os chips de ADMIN e PROMOTER saíram da barra em 2026-09-17
+                (segunda passada), e saíram por medição, não por gosto: com os
+                seis primários escritos por extenso, a soma dos filhos numa
+                conta admin+promoter dava 1131px contra os 1072px úteis que o
+                container oferece a 1152px. Alguma coisa tinha de sair, e a
+                pergunta certa era qual.
 
-            {user.is_admin && (
-              <Link
-                to="/admin"
-                className="pill nav-tip hidden h-9 w-9 shrink-0 items-center justify-center rounded-full border border-emerald-400/30 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 lg:inline-flex"
-                data-testid="nav-admin"
-                data-tip="Admin"
-                aria-label="Admin"
-              >
-                <ShieldCheck className="h-4 w-4" />
-              </Link>
-            )}
+                Estes dois, porque eram DUPLICATA: o Menu já tem as duas
+                linhas (`lancador-admin`, `lancador-promoter`), com o nome
+                escrito e o mesmo destino. A barra é do aluno; ferramenta de
+                equipe mora no Menu como todo o resto da cauda longa.
+
+                Ver a medição no fim do arquivo. */}
 
             {/* Sair fica só no desktop. No celular ele mora no rodapé do
                 lançador, que agora abre pela barra inferior — e um botão de
@@ -470,6 +388,37 @@ export default function Nav() {
   );
 }
 
+// ---------------------------------------------------------------------------
+// MEDIÇÃO DA BARRA — refeita em 2026-09-17, com a barra de seis rótulos
+// ---------------------------------------------------------------------------
+//
+// A barra vive num `max-w-6xl` com `px-10`: 1072px de conteúdo útil a partir
+// de 1152px de viewport, e NENHUM monitor mais largo aumenta isso. Toda vez
+// que um item entra aqui, a soma dos filhos tem de ser MEDIDA — não estimada.
+//
+// Medido no navegador, com a tipografia real da aplicação:
+//
+//     marca ......................  110px
+//     seis primários COM texto ...  635px
+//     Menu + Sparks + sair .......  214px
+//     vãos .......................   20px
+//     ---------------------------------
+//     SOMA .......................  979px   → folga de ~93px em 1072px
+//
+// A conta vale para TODA conta, inclusive admin e promoter: os chips dos dois
+// saíram para o Menu nesta passada justamente porque a primeira medição, com
+// eles na barra, deu 1179px — 107px de estouro. Eles eram duplicata do que o
+// Menu já tinha.
+//
+// O que pagou os seis rótulos por extenso (antes só apareciam a partir de
+// `xl`): a saída da fileira de MINIATURAS (até 4 × 40px de ícones sem nome) e
+// do botão permanente da aula ao vivo.
+//
+// Antes de acrescentar qualquer item aqui, meça de novo — 93px é menos que
+// um rótulo.
+//
+// ---------------------------------------------------------------------------
+// Histórico da medição anterior (2026-09-16), mantido para contexto
 // ---------------------------------------------------------------------------
 // MEDIÇÃO DA BARRA — revista em 2026-09-16, com usuário ADMIN (o caso mais largo)
 // ---------------------------------------------------------------------------

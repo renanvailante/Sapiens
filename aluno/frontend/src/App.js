@@ -191,12 +191,20 @@ function AppRouter() {
       <Route path="/map/:analysisId" element={<ProtectedRoute><Pagina titulo="Mapa de aprendizagem"><LearningMap /></Pagina></ProtectedRoute>} />
       <Route path="/history" element={<ProtectedRoute><Pagina titulo="Histórico"><History /></Pagina></ProtectedRoute>} />
       <Route path="/trash" element={<ProtectedRoute><Pagina titulo="Lixeira"><Trash /></Pagina></ProtectedRoute>} />
-      <Route path="/cognitive-profile" element={<ProtectedRoute><Pagina titulo="Seu perfil cognitivo"><PerfilCognitivo /></Pagina></ProtectedRoute>} />
+      {/* DESEMPENHO. O conceito tinha cinco nomes — "Seu foco" no Painel,
+          "Meu desempenho" no link, "Desempenho" na miniatura, "Seu perfil
+          cognitivo" no título e `/cognitive-profile` na URL. Cinco nomes para
+          um lugar é o jeito mais eficiente de impedir o aluno de construir um
+          modelo do produto. Agora é UM nome, em toda parte, e a URL diz o
+          mesmo que a aba. (O endpoint do backend continua `/cognitive-profile`
+          — é outra coisa, e não se mexe nele por causa de uma URL de tela.) */}
+      <Route path="/desempenho" element={<ProtectedRoute><Pagina titulo="Seu desempenho"><PerfilCognitivo /></Pagina></ProtectedRoute>} />
+      <Route path="/cognitive-profile" element={<Navigate to="/desempenho" replace />} />
       {/* Motor Cognitivo e Diagnóstico real viraram esta mesma aba — os
           redirects preservam links salvos/favoritos (inclusive os da
           própria Dashboard.jsx). */}
-      <Route path="/diagnostico" element={<Navigate to="/cognitive-profile" replace />} />
-      <Route path="/motor" element={<Navigate to="/cognitive-profile" replace />} />
+      <Route path="/diagnostico" element={<Navigate to="/desempenho" replace />} />
+      <Route path="/motor" element={<Navigate to="/desempenho" replace />} />
       <Route path="/treino" element={<ProtectedRoute><Pagina titulo="Banco de treino"><TreinoHabilidades /></Pagina></ProtectedRoute>} />
       <Route path="/minhas-questoes" element={<ProtectedRoute><Pagina titulo="Minhas questões"><MinhasQuestoes /></Pagina></ProtectedRoute>} />
       <Route path="/mentis" element={<ProtectedRoute><Pagina titulo="Mentis"><MentisChat /></Pagina></ProtectedRoute>} />

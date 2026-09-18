@@ -175,7 +175,7 @@ export default function PortaisDaJornada({
       },
       {
         id: "perfil",
-        rota: "/cognitive-profile",
+        rota: "/desempenho",
         icone: Gauge,
         nome: "Seu perfil",
         pergunta: "No que você já é bom — e ninguém te disse.",

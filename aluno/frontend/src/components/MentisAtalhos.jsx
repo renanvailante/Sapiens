@@ -25,7 +25,7 @@ export const ATALHOS = [
   { rota: "/conquistas", icone: Trophy, rotulo: "Conquistas" },
   { rota: "/exams", icone: PlayCircle, rotulo: "Questões" },
   { rota: "/minhas-questoes", icone: Sparkles, rotulo: "Questões que gerei" },
-  { rota: "/cognitive-profile", icone: Brain, rotulo: "Meu desempenho" },
+  { rota: "/desempenho", icone: Brain, rotulo: "Meu desempenho" },
   { rota: "/redacao", icone: PenLine, rotulo: "Redação" },
   { rota: "/cronograma", icone: CalendarDays, rotulo: "Minha semana" },
   { rota: "/sparks", icone: Zap, rotulo: "Sparks" },

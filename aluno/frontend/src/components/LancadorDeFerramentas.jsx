@@ -89,7 +89,7 @@ const GRUPOS = [
     titulo: "Meu progresso",
     itens: [
       { rota: "/dashboard", icone: LayoutGrid, nome: "Painel", nota: "Onde tudo começa e para onde tudo volta" },
-      { rota: "/cognitive-profile", icone: Brain, nome: "Desempenho", nota: "Por que você erra — o padrão, não a quantidade" },
+      { rota: "/desempenho", icone: Brain, nome: "Desempenho", nota: "Por que você erra — o padrão, não a quantidade" },
       // Conquistas + Liga. Ver a nota do bloco acima: a ponte para a Liga
       // mora dentro de `Conquistas.jsx`.
       { rota: "/conquistas", icone: Trophy, nome: "Conquistas e liga", nota: "Seus troféus e a sua posição entre os alunos nesta semana" },

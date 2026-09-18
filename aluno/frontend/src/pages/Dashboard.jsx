@@ -4,7 +4,6 @@ import { Link, useLocation, useNavigate, useSearchParams } from "react-router-do
 import { api } from "../lib/api";
 import IntervencaoMentis from "../components/IntervencaoMentis";
 import CardDeMelhora from "../components/CardDeMelhora";
-import { ResumoDaFila } from "../components/FilaDeRevisao";
 import Nav, { EVENTO_SPARKS } from "../components/Nav";
 import PainelDeProgresso from "../components/PainelDeProgresso";
 import ProximoPasso, { escolherPasso } from "../components/ProximoPasso";
@@ -81,77 +80,173 @@ const AREA_CODE_TO_LABEL = {
   "LC-Idioma": "Linguagens e Códigos",
 };
 
-/** O dia de HOJE no cronograma. Só o dia, não a semana: o Painel responde "o
- *  que eu faço agora", e sete colunas aqui competiriam com a tela que já faz
- *  isso melhor. */
-function HojeNoCronograma({ semana }) {
+/**
+ * A SEMANA — subiu da quarta dobra para a segunda.
+ *
+ * Duas coisas estavam erradas aqui, e a segunda vinha da primeira.
+ *
+ * **Primeira: a posição.** O cronograma respondia "o que eu faço na quinta",
+ * que é a única pergunta de PLANEJAMENTO do produto, e estava abaixo de
+ * conquistas, domínio e cards de foco. Quem monta a semana monta para
+ * cumprir; enterrar o plano abaixo do acompanhamento é pedir para ele ser
+ * esquecido.
+ *
+ * **Segunda: o escopo.** A peça mostrava só HOJE, porque no rodapé era tudo o
+ * que cabia. Hoje ela mostra os sete dias — seg→dom, com a coluna de hoje
+ * acesa e a altura de cada dia proporcional ao que foi marcado nele. O aluno
+ * vê de relance se a semana está equilibrada ou se ele empilhou tudo no
+ * domingo, que é a informação que faz o plano ser ajustado em vez de
+ * abandonado.
+ *
+ * A FILA DE REVISÃO entra aqui, e só quando existe. Ela tinha um card
+ * estrutural próprio que, sem nada vencendo, ou desaparecia deixando um buraco
+ * ou — pior — ocupava uma dobra para dizer "nada para revisar". Revisão não é
+ * um lugar, é um PRAZO: ela pertence ao calendário, como um aviso, e some sem
+ * deixar cicatriz quando não há prazo nenhum.
+ */
+function SemanaNoPainel({ semana, revisoes, escondeRevisoes = false }) {
   if (!semana) return null;
-  const hoje = semana.dias?.find((d) => d.data === diaLocal());
+  const hoje = diaLocal();
   const temPlano = semana.plano?.desta_semana && semana.total_blocos > 0;
-  const blocos = hoje?.blocos || [];
-  const compromissos = hoje?.compromissos || [];
+  const vencidas = revisoes?.resumo?.questoes || 0;
+  const avisoRevisao = vencidas > 0 && !escondeRevisoes;
 
   if (!temPlano) {
     return (
-      <Link
-        to="/cronograma"
-        className="superficie lift flex items-center gap-4 p-5"
-        data-testid="dash-cronograma-convite"
-      >
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-[#7FD8FF]">
-          <CalendarDays className="h-5 w-5" strokeWidth={1.8} />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block font-display text-base font-bold tracking-tight text-white">
-            Montar minha semana
+      <section data-testid="dash-semana" data-tour="dash-hoje">
+        <div className="secao-cabeca">
+          <h2 className="secao-titulo">Sua semana</h2>
+        </div>
+        <Link
+          to="/cronograma"
+          className="superficie lift flex items-center gap-4 p-5"
+          data-testid="dash-cronograma-convite"
+        >
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-[#7FD8FF]">
+            <CalendarDays className="h-5 w-5" strokeWidth={1.8} />
           </span>
-          <span className="block text-xs text-white/45">Grátis. O Sapiens encaixa o estudo no que sobra.</span>
-        </span>
-        <ArrowRight className="h-4 w-4 shrink-0 text-white/30" />
-      </Link>
+          <span className="min-w-0 flex-1">
+            <span className="block font-display text-base font-bold tracking-tight text-white">
+              Montar minha semana
+            </span>
+            <span className="block text-xs text-white/45">Grátis. O Sapiens encaixa o estudo no que sobra.</span>
+          </span>
+          <ArrowRight className="h-4 w-4 shrink-0 text-white/30" />
+        </Link>
+        {avisoRevisao && <AvisoDeRevisao vencidas={vencidas} />}
+      </section>
     );
   }
 
-  if (!blocos.length && !compromissos.length) return null;
+  const dias = semana.dias || [];
+  const diaDeHoje = dias.find((d) => d.data === hoje);
+  const blocosDeHoje = diaDeHoje?.blocos || [];
+  const compromissosDeHoje = diaDeHoje?.compromissos || [];
+  const teto = Math.max(1, ...dias.map((d) => (d.blocos || []).length));
 
   return (
-    <section data-testid="dash-cronograma">
+    <section data-testid="dash-semana" data-tour="dash-hoje">
       <div className="secao-cabeca">
-        <h2 className="secao-titulo">Hoje</h2>
+        <h2 className="secao-titulo">Sua semana</h2>
         <Link to="/cronograma" className="-my-2 inline-flex items-center gap-1 py-2 text-xs font-semibold text-[#7FD8FF] hover:underline">
-          {semana.total_concluidos}/{semana.total_blocos} na semana <ArrowRight className="h-3 w-3" />
+          {semana.total_concluidos}/{semana.total_blocos} feitos <ArrowRight className="h-3 w-3" />
         </Link>
       </div>
-      <div className="grid gap-2.5 sm:grid-cols-2">
-        {compromissos.map((c) => (
-          <div
-            key={c.id}
-            className="superficie p-4 opacity-60"
-            data-testid={`dash-cronograma-compromisso-${c.id}`}
-          >
-            <span className="secao-olho">
-              {c.dia_inteiro ? "dia todo" : `${c.inicio}–${c.fim}`}
-            </span>
-            <p className="mt-1.5 text-sm text-white/70">{c.titulo}</p>
-          </div>
-        ))}
-        {blocos.map((b) => (
-          <Link
-            key={b.id}
-            to={b.rota || "/cronograma"}
-            className={`superficie lift p-4 ${b.concluido ? "opacity-50" : ""}`}
-            data-testid={`dash-cronograma-bloco-${b.id}`}
-          >
-            <span className="secao-olho">
-              {b.inicio}–{b.fim} · {b.frente_nome || b.tipo}
-            </span>
-            <p className={`mt-1.5 text-sm font-semibold text-white ${b.concluido ? "line-through" : ""}`}>
-              {b.titulo}
-            </p>
-          </Link>
-        ))}
-      </div>
+
+      {/* Os sete dias. Cada coluna é um link: clicar num sábado cheio leva ao
+          cronograma, não a lugar nenhum — nenhuma peça do Painel é beco. */}
+      <Link
+        to="/cronograma"
+        className="superficie lift block p-4"
+        data-testid="dash-semana-tira"
+      >
+        <div className="grid grid-cols-7 gap-1.5">
+          {dias.map((d) => {
+            const total = (d.blocos || []).length;
+            const feitos = (d.blocos || []).filter((b) => b.concluido).length;
+            const ehHoje = d.data === hoje;
+            const altura = total === 0 ? 4 : Math.max(8, Math.round((total / teto) * 34));
+            return (
+              <div key={d.data} className="flex flex-col items-center gap-1.5" data-testid={`dash-semana-${d.data}`}>
+                <span
+                  className={`font-mono-alt text-[10px] uppercase tracking-wider ${ehHoje ? "text-[#7FD8FF]" : "text-white/35"}`}
+                >
+                  {(d.rotulo || d.data || "").slice(0, 3)}
+                </span>
+                <div className="flex h-[38px] w-full items-end justify-center">
+                  <span
+                    className="w-full rounded-md transition-all"
+                    style={{
+                      height: `${altura}px`,
+                      background:
+                        total === 0
+                          ? "rgba(255,255,255,0.08)"
+                          : feitos === total
+                          ? "linear-gradient(180deg,#5FE9BC,#2FB98D)"
+                          : ehHoje
+                          ? "linear-gradient(180deg,#7FD8FF,#4A85E3)"
+                          : "rgba(255,255,255,0.18)",
+                    }}
+                  />
+                </div>
+                <span className={`text-[10px] font-bold ${ehHoje ? "text-white" : "text-white/40"}`}>
+                  {total || "—"}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </Link>
+
+      {/* HOJE, em detalhe — só quando há algo marcado. Um "hoje" vazio não
+          merece o espaço: a tira acima já mostra que o dia está livre. */}
+      {(blocosDeHoje.length > 0 || compromissosDeHoje.length > 0) && (
+        <div className="mt-2.5 grid gap-2.5 sm:grid-cols-2" data-testid="dash-cronograma">
+          {compromissosDeHoje.map((c) => (
+            <div key={c.id} className="superficie p-4 opacity-60" data-testid={`dash-cronograma-compromisso-${c.id}`}>
+              <span className="secao-olho">{c.dia_inteiro ? "dia todo" : `${c.inicio}–${c.fim}`}</span>
+              <p className="mt-1.5 text-sm text-white/70">{c.titulo}</p>
+            </div>
+          ))}
+          {blocosDeHoje.map((b) => (
+            <Link
+              key={b.id}
+              to={b.rota || "/cronograma"}
+              className={`superficie lift p-4 ${b.concluido ? "opacity-50" : ""}`}
+              data-testid={`dash-cronograma-bloco-${b.id}`}
+            >
+              <span className="secao-olho">{b.inicio}–{b.fim} · {b.frente_nome || b.tipo}</span>
+              <p className={`mt-1.5 text-sm font-semibold text-white ${b.concluido ? "line-through" : ""}`}>
+                {b.titulo}
+              </p>
+            </Link>
+          ))}
+        </div>
+      )}
+
+      {avisoRevisao && <AvisoDeRevisao vencidas={vencidas} />}
     </section>
+  );
+}
+
+/** O aviso de revisão. Uma LINHA dentro da semana, não uma seção: é um prazo
+ *  vencendo, e prazo se lê junto do calendário. Só existe quando há fila. */
+function AvisoDeRevisao({ vencidas }) {
+  return (
+    <Link
+      to="/revisoes"
+      className="superficie lift mt-2.5 flex items-center gap-3 border-amber-300/25 bg-amber-400/[0.07] p-3.5"
+      data-testid="dash-revisoes"
+    >
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-amber-300/30 bg-amber-400/10 text-amber-200">
+        <RotateCw className="h-4 w-4" strokeWidth={1.9} />
+      </span>
+      <span className="min-w-0 flex-1 text-sm text-amber-100">
+        <strong>{vencidas === 1 ? "1 questão venceu" : `${vencidas} questões venceram`}</strong>{" "}
+        <span className="text-amber-100/70">— revisar hoje é o que faz durar.</span>
+      </span>
+      <ArrowRight className="h-4 w-4 shrink-0 text-amber-200/60" />
+    </Link>
   );
 }
 
@@ -702,7 +797,25 @@ export default function Dashboard() {
           />
 
           {/* -------------------------------------------------------------
-              2. SEU RITMO — ofensiva, XP e as missões do dia.
+              2. SUA SEMANA — o planejamento, logo abaixo da ação.
+
+              Estava na quarta dobra, mostrando só o dia de hoje, abaixo de
+              conquistas e domínio. É a única peça que responde "o que eu faço
+              na quinta" — a pergunta de PLANEJAMENTO — e quem monta a semana
+              monta para cumprir. Agora são os sete dias, com hoje aceso.
+
+              A fila de revisão virou uma LINHA aqui dentro, e some quando não
+              há nada vencendo: revisão é prazo, e prazo se lê no calendário.
+              Quando ela já é a ação do topo, não se repete aqui.
+              ------------------------------------------------------------- */}
+          <SemanaNoPainel
+            semana={cronograma}
+            revisoes={revisoes}
+            escondeRevisoes={passoAtual.chave === "revisao"}
+          />
+
+          {/* -------------------------------------------------------------
+              3. SEU RITMO — ofensiva, XP e as missões do dia.
               `id="missoes"`: a Mentis e o guia levam direto até aqui.
               ------------------------------------------------------------- */}
           <div className="scroll-mt-24" id="missoes" data-tour="dash-missoes">
@@ -710,25 +823,26 @@ export default function Dashboard() {
           </div>
 
           {/* -------------------------------------------------------------
-              3. SEU FOCO — onde focar E o domínio por frente, numa seção só.
+              4. SEU DESEMPENHO — a manchete aqui, a profundidade em /desempenho.
 
-              Eram duas seções separadas ("Onde focar" e "Seu domínio") com um
-              link cada para a MESMA tela, mais um terceiro lá embaixo na
-              grade de ferramentas: `/cognitive-profile` aparecia três vezes
-              no mesmo Painel, com três nomes diferentes. Três nomes para um
-              destino é o jeito mais rápido de o aluno não construir modelo
-              nenhum do produto.
+              O conceito tinha CINCO nomes: "Seu foco" aqui, "Meu desempenho"
+              no link, "Desempenho" na miniatura, "Seu perfil cognitivo" no
+              título da página e `/cognitive-profile` na URL. Cinco nomes para
+              um lugar impedem o aluno de construir qualquer modelo do produto.
 
-              Agora é uma pergunta — "no que eu preciso mexer?" — respondida
-              em dois níveis: a CAUSA (os cards, acionáveis) e o MAPA (as
-              barras, panorâmicas). Um cabeçalho, um link.
+              Agora é um nome só, em toda parte — e a fusão com a página não é
+              empilhar os dezessete gráficos aqui: é uma pergunta ("no que eu
+              preciso mexer?") respondida em dois níveis. A CAUSA e o MAPA
+              ficam no Painel, porque são acionáveis e o Painel já tem os
+              dados na mão — nenhuma requisição a mais. A análise inteira fica
+              em /desempenho, a um clique. Progressive disclosure, não recorte.
               ------------------------------------------------------------- */}
           {(focos.length > 0 || fracos.length > 0 || hasMasteryData) && (
             <section data-testid="dash-focos" data-tour="dash-foco">
               <div className="secao-cabeca">
-                <h2 className="secao-titulo">Seu foco</h2>
-                <Link to="/cognitive-profile" className="-my-2 inline-flex items-center gap-1 py-2 text-xs font-semibold text-[#7FD8FF] hover:underline" data-testid="dash-ver-desempenho">
-                  Meu desempenho <ArrowRight className="h-3 w-3" />
+                <h2 className="secao-titulo">Seu desempenho</h2>
+                <Link to="/desempenho" className="-my-2 inline-flex items-center gap-1 py-2 text-xs font-semibold text-[#7FD8FF] hover:underline" data-testid="dash-ver-desempenho">
+                  Ver a análise completa <ArrowRight className="h-3 w-3" />
                 </Link>
               </div>
               <div className="grid gap-3 md:grid-cols-2">
@@ -818,23 +932,6 @@ export default function Dashboard() {
               )}
             </section>
           )}
-
-          {/* -------------------------------------------------------------
-              4. HOJE — o que tem hora marcada.
-
-              A fila de revisão só entra aqui quando NÃO é o Próximo Passo:
-              quando ela vence, ela já é a ação lá de cima, e repeti-la aqui
-              faz a mesma urgência aparecer duas vezes na mesma rolagem, com
-              dois desenhos diferentes, como se fossem duas pendências.
-              ------------------------------------------------------------- */}
-          <div className="space-y-3" data-tour="dash-hoje">
-            <HojeNoCronograma semana={cronograma} />
-            {revisoes?.resumo?.questoes > 0 && passoAtual.chave !== "revisao" && (
-              <Link to="/revisoes" className="block" data-testid="dash-revisoes">
-                <ResumoDaFila resumo={revisoes.resumo} />
-              </Link>
-            )}
-          </div>
 
           {/* -------------------------------------------------------------
               5. COM O MENTOR. Duas peças, nesta ordem, e a ordem é o
