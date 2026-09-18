@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { Flame } from "lucide-react";
 import Grafico, { SemDado } from "./Grafico";
 import { RAMPA, VAZIO, pct, questoes } from "./paleta";
+import { useCortesDaRolagem } from "../TiraRolavel";
 
 /**
  * O CALENDÁRIO DE CONSTÂNCIA — dezessete semanas de estudo num só olhar.
@@ -30,6 +31,9 @@ function titulo(d) {
 export default function Calendario({ constancia, destacado }) {
   const rolagem = useRef(null);
   const dias = constancia?.calendario || [];
+  // O calendário nasce rolado no fim (hoje) e cresce para trás: sem máscara,
+  // os meses anteriores não deixam rastro de que existem.
+  const { atributos: cortes } = useCortesDaRolagem(dias, rolagem);
 
   // A semana de hoje é a que importa; num celular a grade não cabe inteira,
   // então ela abre já no fim, não no começo de quatro meses atrás.
@@ -71,7 +75,7 @@ export default function Calendario({ constancia, destacado }) {
         <SemDado>O calendário começa no seu primeiro dia de estudo.</SemDado>
       ) : (
         <>
-          <div ref={rolagem} className="no-scrollbar overflow-x-auto pb-1">
+          <div ref={rolagem} {...cortes} className="corta-rolagem no-scrollbar overflow-x-auto pb-1">
             <div className="inline-flex gap-[3px]">
               {/* Coluna dos dias da semana: só três rótulos, senão a grade
                   vira um bloco de texto. */}

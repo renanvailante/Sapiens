@@ -13,6 +13,7 @@ import EstadoDeErro from "../components/EstadoDeErro";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { useDeclararContextoMentis } from "../lib/mentisContexto";
 import { criarPortao } from "../lib/idempotencia";
+import { useCortesDaRolagem } from "../components/TiraRolavel";
 
 /**
  * Cronograma — a semana do aluno, de segunda a domingo.
@@ -149,11 +150,20 @@ function hhmmDoMin(min) {
  */
 function GradeSemana({ dias, hojeISO, onConcluirBloco, salvandoBloco, onApagarCompromisso, onClicarVazio }) {
   const nav = useNavigate();
+  // A grade tem 760px de largura mínima e a tela do aluno tem 375: no celular
+  // ela SEMPRE rola, e terminava exatamente na borda — a mesma imagem de uma
+  // semana que acabasse na quinta. A máscara mostra o próximo dia cortado.
+  const { ref: refGrade, atributos: cortes } = useCortesDaRolagem(dias);
   const alturaTotal = (HORA_FIM - HORA_INICIO) * HORA_PX;
   const horas = Array.from({ length: HORA_FIM - HORA_INICIO }, (_, i) => HORA_INICIO + i);
 
   return (
-    <div className="card-sapiens mt-6 overflow-x-auto rounded-3xl p-3" data-testid="cronograma-grade">
+    <div
+      ref={refGrade}
+      {...cortes}
+      className="card-sapiens corta-rolagem mt-6 overflow-x-auto rounded-3xl p-3"
+      data-testid="cronograma-grade"
+    >
       <div className="flex min-w-[760px]">
         <div className="w-10 shrink-0">
           <div className="h-9" />

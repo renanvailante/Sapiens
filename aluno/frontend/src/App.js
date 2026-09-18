@@ -13,6 +13,7 @@ import FirestoreStudentProvisioner from "./components/FirestoreStudentProvisione
 import MentisWidget from "./components/MentisWidget";
 import LembrarComAMentis from "./components/LembrarComAMentis";
 import BarraInferior from "./components/BarraInferior";
+import ContinuidadeDaPagina from "./components/ContinuidadeDaPagina";
 import BrandMark from "./components/BrandMark";
 import { InstalacaoProvider } from "./components/InstalarApp";
 
@@ -278,6 +279,13 @@ export default function App() {
                 tela nova nasceria sem barra. Ela mesma decide onde não
                 aparecer (ver `BarraInferior.jsx`). */}
             <BarraInferior />
+            {/* A pista de que a página CONTINUA. Mora aqui pelo mesmo motivo
+                da barra acima: sete das 52 telas usam a casca comum e as
+                outras 45 montam a própria, então uma linha por tela garantiria
+                que a próxima tela nova nasceria sem a pista. Ver
+                `ContinuidadeDaPagina.jsx` e o bloco "CAMADA DE CONTINUIDADE"
+                do `index.css`. */}
+            <ContinuidadeDaPagina />
             {/* `theme="dark"`: o Sonner nasce claro e um toast branco era a única
                 coisa do produto que continuava em tema claro sobre o ambiente novo. */}
             <Toaster position="top-center" richColors closeButton theme="dark" />

@@ -2015,3 +2015,198 @@ a.chip:hover, button.chip:hover {
         transition: none;
     }
 }
+
+/* =========================================================================
+   CAMADA DE CONTINUIDADE — 2026-09-18
+   =========================================================================
+
+   O produto tinha um defeito de composição que aparecia em quase toda tela: a
+   página TERMINAVA visualmente antes de o conteúdo acabar. A última peça
+   dentro da primeira dobra era um card de borda fechada e, abaixo dela, o
+   fundo — que é exatamente o que uma página realmente acabada também mostra.
+   Não havia como o aluno distinguir "acabou" de "tem mais seis seções", e no
+   Painel são sete dobras, na Landing são doze.
+
+   Esta camada é a resposta, e ela tem três peças, de propósito — uma por
+   escala. Não se usam as três no mesmo lugar: cada uma resolve uma junta
+   diferente da página.
+
+     1. `.veu-continua`  — a JANELA. Global, uma só, no pé da tela.
+     2. `.elo-secao`     — a JUNTA entre duas seções.
+     3. `.fim-da-pagina` — o FIM. Uma vez por página, na última seção.
+
+   E uma quarta para o eixo horizontal, que sofre do mesmo mal:
+
+     4. `.tira-rolavel`  — a fileira que mostra o começo do próximo card.
+
+   REGRA PARA QUEM MEXER AQUI DEPOIS: a pista de continuidade nunca é um
+   texto. "Role para baixo" e uma seta piscando são a confissão de que a
+   composição não está dizendo aquilo sozinha. O que estas classes fazem é
+   cortar, emendar e encerrar — nunca avisar.
+   ------------------------------------------------------------------------- */
+
+/* ---------------- 1. O véu ----------------
+   Ver `components/ContinuidadeDaPagina.jsx` para a medição. Aqui só se
+   consome `--pagina-restante` (0 a 1), publicado na raiz do documento.
+
+   Opacidade ligada ao que FALTA rolar, e não à posição: uma página que cabe
+   na janela nunca acende o véu, e as últimas linhas de qualquer página são
+   lidas sem sombra nenhuma por cima. É a diferença entre uma pista e um
+   enfeite permanente. */
+.veu-continua {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 116px;
+    z-index: 30;      /* acima do conteúdo; abaixo da barra (45) e do lançador (60) */
+    pointer-events: none;
+    opacity: var(--pagina-restante, 0);
+    /* Três paradas, e não duas: um degradê linear simples fica com uma faixa
+       cinzenta visível no meio contra um fundo tão escuro. A curva mais densa
+       no pé imita a sombra de uma página dobrada.
+
+       O TETO É 0.58, e não 1. A primeira versão fechava em 0.88 e ficou
+       óbvio no primeiro teste por que isso não serve: na Landing o par de
+       botões do herói cai justamente nos últimos 60px da dobra, e um véu
+       quase opaco APAGA o call to action para poder dizer que a página
+       continua. A pista não pode cobrar o preço do conteúdo que ela corta.
+       0.58 ainda lê como corte — o olho pega a diferença contra o mesmo card
+       50px acima — e deixa texto e botão legíveis. */
+    background: linear-gradient(
+        180deg,
+        rgba(3, 6, 13, 0) 0%,
+        rgba(3, 6, 13, 0.20) 50%,
+        rgba(3, 6, 13, 0.58) 100%
+    );
+    transition: opacity 220ms var(--mov-saida);
+}
+
+/* No celular o véu encolhe: 116px numa janela de 812px comeriam um sétimo da
+   dobra. */
+@media (max-width: 1023.98px) {
+    .veu-continua { height: 88px; }
+}
+
+/* E onde a barra inferior EXISTE, o véu para em cima dela: sobrepor os dois só
+   lavaria a barra, e o corte deixaria de acontecer onde o conteúdo é de fato
+   cortado. A condição é a presença da barra, publicada pelo componente, e não
+   a largura da tela: a landing, o login e as telas de prova não têm barra, e
+   ali o véu tem de encostar no pé. A barra é `lg:hidden`, então o recuo só faz
+   sentido abaixo de 1024px — as duas condições valem juntas. */
+@media (max-width: 1023.98px) {
+    .veu-continua--acima-da-barra {
+        bottom: calc(var(--barra-inferior-h) + env(safe-area-inset-bottom, 0px));
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .veu-continua { transition: none; }
+}
+
+/* ---------------- 2. O elo entre seções ----------------
+   Duas seções empilhadas com 40px de respiro entre elas leem como duas
+   páginas diferentes que por acaso ficaram juntas. O elo é um fio vertical
+   curto, aceso no topo e dissolvido embaixo, que atravessa esse respiro: ele
+   não separa, ele EMENDA — o olho segue o fio para baixo porque um traço que
+   se apaga pede o que vem depois.
+
+   Usa-se ENTRE seções, nunca antes da primeira nem depois da última. */
+.elo-secao {
+    position: relative;
+    height: 34px;
+    margin: 2px 0;
+    pointer-events: none;
+}
+.elo-secao::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 21px;         /* alinhado à calha interna dos cards, não ao centro */
+    width: 1px;
+    background: linear-gradient(
+        180deg,
+        var(--bio-linha) 0%,
+        rgba(150, 200, 255, 0.16) 55%,
+        transparent 100%
+    );
+}
+/* O ponto de luz no topo do fio: é ele que faz o traço parecer que COMEÇA
+   aqui e desce, em vez de ser uma borda que sobrou. */
+.elo-secao::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 18px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--bio-ciano);
+    box-shadow: 0 0 12px -1px var(--bio-brilho);
+    opacity: 0.55;
+}
+
+/* ---------------- 3. O fim ----------------
+   A única peça do sistema que tem permissão para parecer um fim. Se ela
+   aparecer duas vezes na mesma página, a primeira mente.
+
+   Um traço horizontal que nasce e morre no transparente, centrado: a forma
+   mais antiga de "acabou" que existe em livro. Não leva texto. */
+.fim-da-pagina {
+    /* Página que cabe na janela não tem "fim" para anunciar: o aluno vê a
+       tela inteira de uma vez, e um traço ali é decoração. Quem decide é o
+       componente, que só MONTA o traço em página que rola de verdade — ver
+       `ROLAGEM_MINIMA_PARA_FECHO` em `ContinuidadeDaPagina.jsx`. */
+    display: block;
+    height: 1px;
+    margin: 56px auto 8px;
+    max-width: 180px;
+    border: 0;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(150, 200, 255, 0.34),
+        transparent
+    );
+}
+/* Um respiro maior embaixo no celular: a barra inferior come o pé da tela e,
+   sem isto, o traço encosta nela e deixa de ler como fecho. */
+@media (max-width: 1023.98px) {
+    .fim-da-pagina { margin-top: 44px; }
+}
+
+/* ---------------- 4. A tira que continua ----------------
+   O mesmo defeito do véu, deitado. Ver `components/TiraRolavel.jsx` para a
+   medição; aqui só se consome `data-corta-inicio` e `data-corta-fim`.
+
+   A máscara dissolve 30px em vez de cortá-los a faca: um corte reto lê como
+   "quebrou", um que se apaga lê como "continua". E ela só existe do lado em
+   que ainda há conteúdo — fileira que cabe na tela não recebe máscara
+   nenhuma, e a da direita sai no instante em que o aluno chega ao fim.
+
+   DUAS CLASSES, e não uma. `.corta-rolagem` é só a máscara e não mexe em
+   layout nenhum: serve para a grade da semana, para o calendário do perfil e
+   para a tabela de um bloco de curso, que rolam igual e não sobrevivem a
+   ganhar `display: flex`. `.tira-rolavel` é a fileira propriamente dita. */
+.tira-rolavel {
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+}
+.tira-rolavel > * {
+    scroll-snap-align: start;
+    flex-shrink: 0;
+}
+
+.corta-rolagem[data-corta-fim="1"] {
+    -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 30px), transparent 100%);
+    mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 30px), transparent 100%);
+}
+.corta-rolagem[data-corta-inicio="1"] {
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 26px, #000 100%);
+    mask-image: linear-gradient(90deg, transparent 0, #000 26px, #000 100%);
+}
+.corta-rolagem[data-corta-inicio="1"][data-corta-fim="1"] {
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 26px, #000 calc(100% - 30px), transparent 100%);
+    mask-image: linear-gradient(90deg, transparent 0, #000 26px, #000 calc(100% - 30px), transparent 100%);
+}

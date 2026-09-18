@@ -4,6 +4,7 @@ import {
   Table2, Zap, Trophy, Sparkles,
 } from "lucide-react";
 import TextoRico from "./TextoRico";
+import { useCortesDaRolagem } from "../TiraRolavel";
 
 /**
  * OS BLOCOS DE CONTEÚDO — um renderizador por tipo, e um registro só.
@@ -127,6 +128,10 @@ function BlocoTexto({ bloco, aoExplicar }) {
  * tabela ser tabela: comparar a mesma coluna entre linhas.
  */
 function BlocoTabela({ bloco, aoExplicar }) {
+  // `min-w-[22rem]` (352px) contra os 375px do celular menos o respiro do
+  // card: a tabela rola em quase todo telefone, e uma coluna cortada a faca
+  // na borda lê como tabela inteira. A máscara mostra que há mais colunas.
+  const { ref: refTabela, atributos: cortes } = useCortesDaRolagem(bloco);
   return (
     <section
       className="leitura-clara rounded-3xl p-5 text-zinc-800 md:p-7"
@@ -145,7 +150,7 @@ function BlocoTabela({ bloco, aoExplicar }) {
           {bloco.titulo}
         </h2>
       )}
-      <div className="-mx-1 overflow-x-auto px-1">
+      <div ref={refTabela} {...cortes} className="corta-rolagem -mx-1 overflow-x-auto px-1">
         <table className="w-full min-w-[22rem] border-collapse text-sm">
           <thead>
             <tr>

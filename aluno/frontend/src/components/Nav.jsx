@@ -10,6 +10,7 @@ import Logo from "./Logo";
 import Mentis from "./Mentis";
 import LancadorDeFerramentas from "./LancadorDeFerramentas";
 import { ATALHOS } from "../lib/atalhos";
+import TiraRolavel from "./TiraRolavel";
 
 export const EVENTO_SPARKS = "sparks:mudou";
 
@@ -361,7 +362,13 @@ export default function Nav() {
           some nas telas em que a barra inferior também some. */}
       {user && !SEM_TIRA.some((r) => pathname === r || pathname.startsWith(`${r}/`)) && (
         <div className="lg:hidden" data-testid="nav-tira-atalhos">
-          <div className="rolagem-invisivel flex gap-2 overflow-x-auto px-4 pb-2.5 pt-0.5">
+          {/* `TiraRolavel` e não um `div` com `overflow-x-auto`: são oito
+              portas e cabem quatro num iPhone. A fileira terminava EXATAMENTE
+              na borda da tela, que é a mesma imagem de uma fileira completa —
+              as quatro últimas simplesmente não existiam para quem não tem o
+              hábito de arrastar. Agora o próximo atalho aparece cortado, e o
+              corte some quando a tira chega ao fim. */}
+          <TiraRolavel className="gap-2 px-4 pb-2.5 pt-0.5">
             {ATALHOS.map((m) => {
               const ativa = ehRotaAtual(pathname, m.rota);
               return (
@@ -379,7 +386,7 @@ export default function Nav() {
                 </Link>
               );
             })}
-          </div>
+          </TiraRolavel>
         </div>
       )}
     </div>
