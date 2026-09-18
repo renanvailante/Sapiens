@@ -230,12 +230,27 @@ export default function Landing() {
               {/* O box MENOR é a medalha, e o grande é o rosto. Duas fotos da
                   mesma pessoa a 20cm uma da outra competem entre si; a
                   medalha diz a mesma coisa em outro registro. */}
-              <div className="mt-7 flex flex-col items-stretch gap-4 border-t border-white/10 pt-6 sm:flex-row sm:items-center">
+              {/* EMPILHA DE NOVO A PARTIR DE `md`, e o motivo é geométrico: a
+                  partir de 768px esta seção vira duas colunas
+                  (`md:grid-cols-[1fr_auto]`) dentro de um `max-w-4xl` que não
+                  cresce mais. Com o retrato em `xg` (320px), sobram ~460px
+                  para o texto — e medalha + frase + botão numa linha de 460px
+                  deixam a frase com 200px, que quebra em cinco linhas de três
+                  palavras. Entre 640 e 767px a grade ainda é de uma coluna e a
+                  linha cabe; por isso `sm:flex-row` seguido de `md:flex-col`. */}
+              <div className="mt-7 flex flex-col items-stretch gap-4 border-t border-white/10 pt-6 sm:flex-row sm:items-center md:flex-col md:items-stretch">
                 <div className="flex min-w-0 flex-1 items-center gap-4">
                   <MentorUSP tamanho="p" variante="medalha" comSelo={false} testid="landing-mentor-mini" />
                   <div className="min-w-0 flex-1">
-                    <div className="secao-olho flex items-center gap-1.5 text-amber-200/85">
-                      <Medal className="h-3 w-3" /> A mesma pessoa, um a um
+                    {/* Tracking menor do que o `.secao-olho` padrão (0.28em) e
+                        ícone que não se separa do texto: esta linha vive numa
+                        coluna estreita — a metade de um layout de duas colunas,
+                        ainda dividida com um retrato e um botão — e com o
+                        espaçamento cheio ela quebrava em três linhas, com o
+                        ícone sozinho no meio de uma delas. */}
+                    <div className="secao-olho flex items-center gap-1.5 !tracking-[0.14em] text-amber-200/85">
+                      <Medal className="h-3 w-3 shrink-0" />
+                      <span className="leading-snug">A mesma pessoa, um a um</span>
                     </div>
                     <div className="mt-1 text-sm text-white/60">
                       A mentoria com {MENTOR.nome} tem lista de espera — uma pessoa,
@@ -245,7 +260,7 @@ export default function Landing() {
                 </div>
                 <button
                   onClick={() => nav(user ? "/mentoria" : "/login")}
-                  className="pill btn-vidro inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold sm:w-auto"
+                  className="pill btn-vidro inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold sm:w-auto md:w-full"
                   data-testid="landing-mentoria-cta"
                 >
                   <Users className="h-4 w-4" /> Entrar na lista
@@ -256,7 +271,7 @@ export default function Landing() {
             {/* O rosto grande. É o maior ativo do produto e a landing é onde
                 mora quem ainda não conhece ninguém aqui. */}
             <div className="order-first flex justify-center md:order-none">
-              <MentorUSP tamanho="g" testid="landing-mentor" />
+              <MentorUSP tamanho="xg" testid="landing-mentor" />
             </div>
           </div>
         </div>

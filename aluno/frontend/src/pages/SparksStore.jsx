@@ -8,7 +8,7 @@ import { formatBRL } from "../lib/utils";
 import { economiaDoPacote } from "../lib/venda";
 import { quintasAteAProva } from "../lib/enem";
 import { toast } from "sonner";
-import { Zap, Check, Loader2, History, ShoppingBag, Network, RefreshCw, XCircle, AlertTriangle, Infinity as InfinityIcon, Copy, QrCode, ExternalLink, Gift } from "lucide-react";
+import { Zap, Check, Loader2, History, ShoppingBag, Network, RefreshCw, XCircle, AlertTriangle, Infinity as InfinityIcon, Copy, QrCode, ExternalLink, Gift, CreditCard } from "lucide-react";
 
 const MP_SDK_URL = "https://sdk.mercadopago.com/js/v2";
 
@@ -166,13 +166,20 @@ function PainelPix({ pkg, estado, pix, erro, onFechar, onCartao, onTentarDeNovo 
           cartão não deve ter que esperar um código Pix terminar de nascer
           para poder dizer isso. */}
       {onCartao && estado !== "erro" && (
-        <div className="text-center">
+        <div className="mt-4">
+          {/* Era um link cinza sublinhado de 12px. Quem chegou até aqui e
+              PRECISA parcelar não ia encontrá-lo — e essa pessoa é a que tem
+              mais dificuldade de pagar à vista, não menos. */}
           <button
             onClick={onCartao}
-            className="mt-3 text-xs text-zinc-400 underline hover:text-zinc-700"
+            className="botao-cartao"
             data-testid="sparks-pix-prefiro-cartao"
           >
-            Prefiro pagar com cartão
+            <CreditCard className="h-4 w-4 shrink-0" />
+            <span className="min-w-0">
+              Prefiro pagar com cartão
+              <span className="botao-cartao-nota">dá para parcelar</span>
+            </span>
           </button>
         </div>
       )}
@@ -609,6 +616,29 @@ export default function SparksStore() {
   // Clicar de novo no mesmo pacote NÃO gera um segundo código: o servidor
   // devolve o Pix que ainda está em aberto (`_pix_em_aberto`), justamente
   // para ninguém pagar dois QR Codes do mesmo produto.
+  /**
+   * CARTÃO, direto do card do pacote.
+   *
+   * Até 2026-09-18 o cartão existia, mas só se alcançava por um link cinza
+   * sublinhado DENTRO do painel do Pix — ou seja: para pagar no cartão, o
+   * aluno tinha de primeiro pedir um Pix, esperar o QR Code nascer e então
+   * descobrir, em letra miúda, que havia outro caminho. Quem não quer Pix
+   * (ou quem precisa PARCELAR, que é a maioria dos pacotes maiores) abandonava
+   * antes disso.
+   *
+   * O Pix continua sendo o primeiro botão: ele é um clique, cai na hora e não
+   * tem taxa de parcelamento para o aluno. O cartão é o segundo — mas segundo
+   * VISÍVEL, com o nome escrito e dizendo que dá para parcelar, que é a
+   * informação que decide a compra de quem tem R$ 119,90 para gastar e não
+   * tem R$ 119,90 hoje.
+   */
+  const comprarComCartao = (p) => {
+    setPixPkg(null);
+    setPixDados(null);
+    setPixErro(null);
+    setSelectedPkg(p);
+  };
+
   const comprarComPix = (p) => {
     setSelectedPkg(null);
     setPixPkg(p);
@@ -926,7 +956,24 @@ export default function SparksStore() {
                     className={`pill btn-sapiens mt-5 inline-flex items-center justify-center gap-2 px-4 rounded-full font-medium disabled:opacity-40 disabled:cursor-not-allowed ${NIVEL.btn}`}
                     data-testid={`sparks-buy-${p.package_id}`}
                   >
-                    Comprar
+                    <QrCode className="h-4 w-4" /> Pagar com Pix
+                  </button>
+                  {/* O CARTÃO, no mesmo lugar e não escondido atrás do Pix.
+                      Ele não compete com o botão de cima — é contorno claro
+                      sobre fundo translúcido contra um botão cheio —, mas tem
+                      o mesmo tamanho de alvo e diz a única coisa que decide a
+                      compra de quem não tem o valor inteiro hoje. */}
+                  <button
+                    onClick={() => comprarComCartao(p)}
+                    disabled={!mpDisponivel || !publicKey}
+                    className="botao-cartao mt-2.5"
+                    data-testid={`sparks-buy-cartao-${p.package_id}`}
+                  >
+                    <CreditCard className="h-4 w-4 shrink-0" />
+                    <span className="min-w-0">
+                      Cartão de crédito ou débito
+                      <span className="botao-cartao-nota">dá para parcelar</span>
+                    </span>
                   </button>
                 </div>
               </div>

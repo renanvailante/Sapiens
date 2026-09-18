@@ -534,7 +534,7 @@ export default function Cursos({ embutido = false }) {
           data-testid="cursos-ponte-live"
         >
           <span className="relative shrink-0">
-            <MentorUSP tamanho="p" comSelo={false} testid="cursos-ponte-live-mentor" />
+            <MentorUSP tamanho="m" testid="cursos-ponte-live-mentor" />
             <span className="absolute -right-1 -top-1 flex h-3 w-3">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-500 opacity-80" />
               <span className="relative inline-flex h-3 w-3 rounded-full bg-rose-500" />
@@ -635,7 +635,7 @@ export default function Cursos({ embutido = false }) {
             </div>
           )}
           <div className="mt-4 flex flex-wrap items-center gap-2.5 rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-            <MentorUSP tamanho="p" comSelo={false} testid="cursos-catalogo-mentor" />
+            <MentorUSP tamanho="m" testid="cursos-catalogo-mentor" />
             <div className="min-w-0 flex-1 text-sm text-white/60">
               <strong className="font-semibold text-white">Quem grava é o {MENTOR.nome}.</strong>{" "}
               Os cursos são feitos pela mesma pessoa que passou em 1º lugar em Medicina na
@@ -779,7 +779,7 @@ export default function Cursos({ embutido = false }) {
           className="lift mt-10 flex items-center gap-4 rounded-2xl border border-[#4FD9FF]/20 bg-[#4FD9FF]/[0.06] p-5 hover:border-[#4FD9FF]/45"
           data-testid="cursos-mentoria"
         >
-          <MentorUSP tamanho="p" comSelo={false} testid="cursos-mentoria-foto" />
+          <MentorUSP tamanho="m" testid="cursos-mentoria-foto" />
           <div className="min-w-0 flex-1">
             <div className="font-display text-base font-bold tracking-tight text-white">
               Quer ele só para você?

@@ -72,7 +72,7 @@ export default function Mentoria() {
         >
           <div className="relative grid gap-8 md:grid-cols-[auto_1fr] md:items-center">
             <div className="flex justify-center md:justify-start">
-              <MentorUSP tamanho="g" testid="mentoria-foto" />
+              <MentorUSP tamanho="xg" testid="mentoria-foto" />
             </div>
 
             <div>

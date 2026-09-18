@@ -2068,12 +2068,18 @@ a.chip:hover, button.chip:hover {
    diferente da página.
 
      1. `.veu-continua`  — a JANELA. Global, uma só, no pé da tela.
-     2. `.elo-secao`     — a JUNTA entre duas seções.
-     3. `.fim-da-pagina` — o FIM. Uma vez por página, na última seção.
+     2. `.fim-da-pagina` — o FIM. Uma vez por página, na última seção.
+     3. `.tira-rolavel`  — a fileira que mostra o começo do próximo card
+                           (o mesmo defeito, deitado no eixo horizontal).
 
-   E uma quarta para o eixo horizontal, que sofre do mesmo mal:
-
-     4. `.tira-rolavel`  — a fileira que mostra o começo do próximo card.
+   HOUVE UMA QUARTA e ela foi retirada antes de ir ao ar: um "elo" — fio
+   vertical aceso no topo e dissolvido embaixo — para emendar duas seções
+   empilhadas. A ideia continua boa; o que faltou foi poder CONFERIR. As telas
+   onde ele faria diferença são todas atrás de login, e desenhar um enfeite de
+   34px em quinze páginas sem nunca ter visto uma delas é como o CSS morto
+   nasce. Quem for retomar: o desenho era `::before` com degradê vertical de
+   `--bio-linha` a transparente, na calha interna dos cards (21px), e um ponto
+   de luz no topo para o traço parecer que COMEÇA ali e desce.
 
    REGRA PARA QUEM MEXER AQUI DEPOIS: a pista de continuidade nunca é um
    texto. "Role para baixo" e uma seta piscando são a confissão de que a
@@ -2140,50 +2146,7 @@ a.chip:hover, button.chip:hover {
     .veu-continua { transition: none; }
 }
 
-/* ---------------- 2. O elo entre seções ----------------
-   Duas seções empilhadas com 40px de respiro entre elas leem como duas
-   páginas diferentes que por acaso ficaram juntas. O elo é um fio vertical
-   curto, aceso no topo e dissolvido embaixo, que atravessa esse respiro: ele
-   não separa, ele EMENDA — o olho segue o fio para baixo porque um traço que
-   se apaga pede o que vem depois.
-
-   Usa-se ENTRE seções, nunca antes da primeira nem depois da última. */
-.elo-secao {
-    position: relative;
-    height: 34px;
-    margin: 2px 0;
-    pointer-events: none;
-}
-.elo-secao::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 21px;         /* alinhado à calha interna dos cards, não ao centro */
-    width: 1px;
-    background: linear-gradient(
-        180deg,
-        var(--bio-linha) 0%,
-        rgba(150, 200, 255, 0.16) 55%,
-        transparent 100%
-    );
-}
-/* O ponto de luz no topo do fio: é ele que faz o traço parecer que COMEÇA
-   aqui e desce, em vez de ser uma borda que sobrou. */
-.elo-secao::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 18px;
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: var(--bio-ciano);
-    box-shadow: 0 0 12px -1px var(--bio-brilho);
-    opacity: 0.55;
-}
-
-/* ---------------- 3. O fim ----------------
+/* ---------------- 2. O fim ----------------
    A única peça do sistema que tem permissão para parecer um fim. Se ela
    aparecer duas vezes na mesma página, a primeira mente.
 
@@ -2212,7 +2175,7 @@ a.chip:hover, button.chip:hover {
     .fim-da-pagina { margin-top: 44px; }
 }
 
-/* ---------------- 4. A tira que continua ----------------
+/* ---------------- 3. A tira que continua ----------------
    O mesmo defeito do véu, deitado. Ver `components/TiraRolavel.jsx` para a
    medição; aqui só se consome `data-corta-inicio` e `data-corta-fim`.
 
@@ -2661,4 +2624,73 @@ a.chip:hover, button.chip:hover {
 
 @media (prefers-reduced-motion: reduce) {
     .balao-sugestoes, .balao-item { transition: none; }
+}
+
+/* =========================================================================
+   O BOTÃO DE CARTÃO — 2026-09-18
+   =========================================================================
+
+   O cartão já existia na loja: o Payment Brick do Mercado Pago está montado
+   desde sempre. O que não existia era a PORTA. Ela era um link cinza
+   sublinhado de 12px dentro do painel do Pix — para pagar no cartão, o aluno
+   tinha de primeiro pedir um Pix, esperar o QR Code nascer e então descobrir,
+   em letra miúda, que havia outro caminho.
+
+   Quem precisa desse caminho é justamente quem tem mais dificuldade de pagar
+   à vista. Esconder o parcelamento atrás de um link cinza é, na prática,
+   vender só para quem tem o valor inteiro hoje.
+
+   POR QUE ELE NÃO É UM SEGUNDO BOTÃO CHEIO. O Pix continua sendo o primeiro:
+   é um clique, cai na hora e não tem taxa de parcelamento para o aluno. Dois
+   botões sólidos lado a lado não têm hierarquia — o olho não sabe qual é o
+   caminho da casa. Este é de CONTORNO: mesmo tamanho de alvo, mesma largura,
+   peso visual menor. Visível não é sinônimo de dominante.
+
+   A NOTA "dá para parcelar" é a única coisa que ele promete, e é de
+   propósito que não há número de parcelas escrito aqui. Quantas vezes, com ou
+   sem juros, quem decide é o Mercado Pago em função do cartão, da bandeira e
+   da conta — escrever "em até 12x" nesta folha seria o produto prometendo uma
+   coisa que quem cobra pode não cumprir. Mesma regra do resto da loja: preço
+   e condição vêm do servidor, nunca do JavaScript.
+   ------------------------------------------------------------------------- */
+
+.botao-cartao {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    padding: 11px 16px;
+    border: 1.5px solid rgba(124, 58, 237, 0.4);
+    border-radius: 999px;
+    background: linear-gradient(180deg, rgba(139, 92, 246, 0.09), rgba(139, 92, 246, 0.04));
+    font-size: 0.875rem;
+    font-weight: 700;
+    line-height: 1.2;
+    color: #5B21B6;
+    cursor: pointer;
+    transition: border-color var(--mov-rapido) var(--mov-saida),
+                background-color var(--mov-rapido) var(--mov-saida),
+                transform var(--mov-rapido) var(--mov-saida);
+}
+@media (hover: hover) and (pointer: fine) {
+    .botao-cartao:hover {
+        border-color: rgba(124, 58, 237, 0.75);
+        background: linear-gradient(180deg, rgba(139, 92, 246, 0.16), rgba(139, 92, 246, 0.08));
+    }
+}
+.botao-cartao:active { transform: scale(0.985); }
+.botao-cartao:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* A promessa, na segunda linha e em caixa alta pequena: ela precisa ser lida
+   junto do rótulo, não no lugar dele. */
+.botao-cartao-nota {
+    display: block;
+    margin-top: 2px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: #7C3AED;
 }

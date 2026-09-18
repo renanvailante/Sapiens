@@ -483,7 +483,7 @@ export default function AulaAoVivo() {
                 vai para o fim do bloco em vez de empurrar a manchete para
                 baixo da dobra. */}
             <div className="order-first flex justify-center md:order-none md:justify-end">
-              <MentorUSP tamanho="m" testid="aula-mentor" />
+              <MentorUSP tamanho="g" testid="aula-mentor" />
             </div>
           </div>
         </section>

@@ -283,7 +283,7 @@ function ChamadaDaLive({ inclusa = false, argumento = null }) {
       <div className="flex min-w-0 flex-1 items-start gap-4 sm:items-center">
         {/* O ROSTO, e não um ícone: quem dá a aula é o argumento. */}
         <span className="relative shrink-0">
-          <MentorUSP tamanho="p" comSelo={false} testid="dash-live-mentor" />
+          <MentorUSP tamanho="m" testid="dash-live-mentor" />
           <span className="absolute -right-1 -top-1 flex h-3 w-3">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-500 opacity-80" />
             <span className="relative inline-flex h-3 w-3 rounded-full bg-rose-500" />
@@ -359,7 +359,7 @@ function ChamadaDaMentoria() {
       data-tour="dash-mentoria"
     >
       <div className="flex min-w-0 flex-1 items-start gap-4 sm:items-center sm:gap-5">
-        <MentorUSP tamanho="m" comSelo={false} testid="dash-mentoria-mentor" />
+        <MentorUSP tamanho="g" testid="dash-mentoria-mentor" />
 
         <div className="min-w-0 flex-1">
           <div className="secao-olho inline-flex items-center gap-1.5 text-amber-200/90">
