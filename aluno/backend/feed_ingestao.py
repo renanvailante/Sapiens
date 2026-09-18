@@ -38,10 +38,11 @@ O que o compilador faz e um importador ingênuo não faria
    vira o feedback DAQUELE distrator.
 3. **Embaralha os passos do `ordene` e a coluna direita do `relacione`**, e
    guarda a ordem certa só do lado do servidor.
-4. **O id do card é o hash do texto dele.** Recompilar o mesmo texto dá
-   exatamente o mesmo id: republicar depois de corrigir uma vírgula ATUALIZA o
-   card em vez de criar um segundo, e o histórico de interação continua
-   apontando para o mesmo lugar. Mexer em outro card não mexe neste.
+4. **O id do card é o hash do texto dele.** Recompilar exatamente o mesmo
+   texto dá o mesmo id — colar o mesmo lote duas vezes (um duplo clique) não
+   duplica nada. Reescrever uma frase do card MUDA o hash: o resultado é um
+   card novo, e o antigo continua no ar até alguém apagá-lo — publicar nunca
+   apaga em silêncio. Mexer num card nunca muda o id dos outros.
 5. **Card quebrado vira aviso, não catástrofe.** Uma questão sem `Resposta:`
    sai nominalmente nos avisos e o resto do lote vai ao ar. Só um texto que
    não produziu card NENHUM é recusado.
@@ -636,8 +637,16 @@ def _card_de_verdadeiro_falso(pedaco: Pedaco, bruto: Bruto, card: dict) -> dict:
 
 
 def _card_de_memoria(pedaco: Pedaco, bruto: Bruto, card: dict) -> dict:
-    """Flashcard e Revisão: uma frente, um verso e um julgamento honesto."""
-    frente = bruto.rotulos.get("frente", "").strip() or _titulo_e_corpo(pedaco, bruto)[0]
+    """Flashcard e Revisão: uma frente, um verso e um julgamento honesto.
+
+    A FRENTE é o parágrafo do corpo quando ele existe — "## FLASHCARD —
+    Trabalho de uma força" seguido de "Qual a fórmula...?" tem um TÍTULO
+    (o assunto, que vira tag) e uma PERGUNTA (o que aparece na tela); usar o
+    título como frente perderia a pergunta de verdade em silêncio. Só quando
+    não há parágrafo nenhum o título do cabeçalho vira a própria frente.
+    """
+    corpo = " ".join(bruto.paragrafos).strip()
+    frente = bruto.rotulos.get("frente", "").strip() or corpo or pedaco.titulo.strip()
     verso = bruto.rotulos.get("verso", "").strip() or bruto.rotulos.get("resposta", "").strip()
     if not verso:
         # Sem rótulo, o último parágrafo é o verso — é assim que a maioria das

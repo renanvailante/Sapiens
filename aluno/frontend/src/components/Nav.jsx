@@ -3,8 +3,8 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { api } from "../lib/api";
 import {
-  Zap, ShieldCheck, LayoutGrid, GraduationCap, PenLine, MessageCircle, Compass,
-  CalendarDays, Users, LogOut, Megaphone, Grip,
+  Zap, ShieldCheck, LayoutGrid, GraduationCap, MessageCircle, Compass,
+  PlayCircle, LogOut, Megaphone, Grip,
 } from "lucide-react";
 import Logo from "./Logo";
 import Mentis from "./Mentis";
@@ -38,12 +38,29 @@ export function avisarSparksMudou() {
 // (aria-label e title), sempre por extenso. Ver a nota de medição no fim do
 // arquivo: a barra vive num container de 1152px que nenhum monitor largo
 // aumenta, e desde 16/09 os rótulos só aparecem a partir de `xl`.
+//
+// 2026-09-17 — AS DUAS BARRAS PASSARAM A DESENHAR O MESMO CONJUNTO.
+//
+// Até aqui o desktop tinha seis abas (Treino, Painel, Redação, Semana, Mural,
+// Mentis) e o celular tinha quatro outras (Painel, Treino, Praticar, Mentis):
+// dois produtos diferentes para a mesma pessoa. Quem começava no telefone e
+// abria o notebook à noite não encontrava o que tinha aprendido a usar — e
+// "Praticar", o alvo elevado por onde quase tudo começa no celular, não era
+// sequer uma aba aqui.
+//
+// O conjunto agora é o mesmo, na mesma ordem da esquerda para a direita:
+// Painel · Treino · Praticar · Mentis, mais a porta do Menu. Quatro verbos
+// diários e uma porta — a mesma régua do polegar que a barra de baixo já
+// usava, aplicada também ao mouse.
+//
+// Redação, Semana e Mural não sumiram: desceram para as miniaturas
+// (`lib/atalhos`), no topo da prioridade, e continuam no Menu com nome e
+// função. O que se perdeu foi um clique de distância; o que se ganhou foi o
+// aluno poder trocar de aparelho sem reaprender a navegação.
 const PRIMARY_LINKS = [
-  { to: "/treino", icon: Compass, label: "Treino", testid: "nav-treino", tour: "nav-treino" },
   { to: "/dashboard", icon: LayoutGrid, label: "Painel", testid: "nav-dashboard", tour: "nav-dashboard" },
-  { to: "/redacao", icon: PenLine, label: "Redação", testid: "nav-redacao", tour: "nav-redacao" },
-  { to: "/cronograma", icon: CalendarDays, label: "Cronograma", texto: "Semana", testid: "nav-cronograma" },
-  { to: "/comunidade", icon: Users, label: "Comunidade", texto: "Mural", testid: "nav-comunidade" },
+  { to: "/treino", icon: Compass, label: "Treino", testid: "nav-treino", tour: "nav-treino" },
+  { to: "/exams", icon: PlayCircle, label: "Praticar", testid: "nav-praticar", tour: "nav-praticar" },
   { to: "/mentis", icon: MessageCircle, label: "Mentis", testid: "nav-mentis", tour: "nav-mentis", mascote: true },
 ];
 

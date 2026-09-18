@@ -60,3 +60,17 @@ test("a ofensiva medida vira o título da seção", () => {
   expect(render({ engajamento: { ofensiva: { dias: 5 } } })).toContain("5 dias seguidos");
   expect(render({ engajamento: { ofensiva: { dias: 0 } } })).toContain("Dez portas");
 });
+
+// O modo compacto é o que a seção "Explorar" usa. Duas coisas não podem
+// mudar aí: as dez portas continuam inteiras (a descoberta não foi podada,
+// só realocada) e o cabeçalho grande sai, porque quem anuncia a seção é a
+// seção — repetir o título ali seria o mesmo texto duas vezes na mesma dobra.
+test("compacto: as dez portas inteiras, sem o cabeçalho da vitrine", () => {
+  const html = render({ compacto: true });
+  expect(html).not.toContain("Por onde começar hoje");
+  expect(html).not.toContain("Dez portas. Cada uma");
+  expect(html).toContain("Mapa de treino");
+  expect(html).toContain("Falar com a Mentis");
+  // o sorteio desce para o rodapé da grade, mas não some
+  expect(html).toContain("Surpreenda-me");
+});

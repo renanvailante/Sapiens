@@ -28,8 +28,13 @@ class FeedItem(BaseModel):
     forward-compatible placeholder. Future ingestion pipelines populate them.
     """
     content_id: str = Field(default_factory=_uuid)
-    content_type: str  # "question" | "flashcard" | "video" | "diagram" | "explanation"
+    content_type: str  # ver `feed_conteudo.TIPOS_DE_CARD` para o vocabulário completo
     sequence_order: int = 0
+
+    # Só usado por tipos de resposta aberta (hoje: "desafio" sem alternativas).
+    # "" = múltipla escolha / não se aplica; "aberto" = resposta curta/numérica
+    # conferida por `feed_conteudo.corrigir` contra `metadata.aceitos`/`numero`.
+    formato: str = ""
 
     # Flexible payloads — schemas may evolve without breaking the feed
     question_data: dict[str, Any] = Field(default_factory=dict)   # {prompt, image_url, video_url, ...}
@@ -92,6 +97,7 @@ class FeedItemIn(BaseModel):
     """Admin create/update payload."""
     content_type: str
     sequence_order: int = 0
+    formato: str = ""
     question_data: dict[str, Any] = Field(default_factory=dict)
     answer_options: list[dict[str, Any]] = Field(default_factory=list)
     explanation_data: dict[str, Any] = Field(default_factory=dict)

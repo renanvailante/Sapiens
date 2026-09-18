@@ -7,7 +7,7 @@ import {
 import Mentis from "./Mentis";
 
 /**
- * OS PORTAIS — a primeira coisa que o aluno vê no Painel.
+ * OS PORTAIS — a vitrine de descoberta do produto.
  *
  * O problema que isto resolve: o Painel abria pelo mapa de missões, uma peça
  * bonita mas FECHADA — quem chegava via um caminho já traçado e uma única
@@ -16,6 +16,30 @@ import Mentis from "./Mentis";
  * várias entradas visíveis ao mesmo tempo, cada uma mostrando quanto já foi
  * feito e o que ainda não foi tocado — é a vitrine que gera a vontade, não o
  * corredor.
+ *
+ * ---------------------------------------------------------------------------
+ * QUANDO ELA ABRE, E POR QUE NÃO ABRE SEMPRE (2026-09-17)
+ * ---------------------------------------------------------------------------
+ *
+ * Dez portas e um Próximo Passo na mesma dobra são DUAS respostas para a
+ * mesma pergunta — "e agora?" — e a de cima ganha. O comentário do próprio
+ * `ProximoPasso` já dizia que escolher entre dez coisas é o jeito mais
+ * confiável de não fazer nenhuma; a vitrine tinha sido posta exatamente
+ * acima dele.
+ *
+ * A saída não é escolher entre vitrine e ação: é saber QUANDO cada uma
+ * responde melhor.
+ *
+ * - **Aluno sem medida nenhuma** (nunca respondeu): o Próximo Passo cai no
+ *   último degrau, "responda uma prova", que é verdadeiro mas fraco — ele não
+ *   sabe ainda o que o produto tem. A vitrine é a peça forte. Abre inteira.
+ * - **Aluno com trajetória**: o passo é uma revisão que vence hoje ou o bloco
+ *   que ele mesmo marcou. Aí a vitrine vira ruído sobre uma decisão já
+ *   tomada, e desce para a seção "Explorar", fechada, ao alcance de um
+ *   clique (ver `ExplorarOSapiens`).
+ *
+ * `compacto` é o que a seção Explorar usa: a grade sem o cabeçalho grande,
+ * porque quem desenha o título ali é a seção.
  *
  * Três regras que não se quebram aqui:
  *
@@ -66,6 +90,7 @@ export default function PortaisDaJornada({
   engajamento = null,
   conquistas = [],
   totalRespondidas = 0,
+  compacto = false,
   testid = "portais",
 }) {
   const nav = useNavigate();
@@ -209,28 +234,33 @@ export default function PortaisDaJornada({
 
   return (
     <section data-testid={testid} data-tour="dash-portais">
-      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-        <div className="min-w-0">
-          <div className="secao-olho inline-flex items-center gap-1.5">
-            <Sparkles className="h-3.5 w-3.5 text-[#7FD8FF]" /> Por onde começar hoje
+      {/* O cabeçalho grande só existe no modo vitrine. Dentro de "Explorar"
+          quem já anunciou a seção foi a própria seção, e repetir o título ali
+          seria o mesmo texto duas vezes em quatro centímetros de tela. */}
+      {!compacto && (
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+          <div className="min-w-0">
+            <div className="secao-olho inline-flex items-center gap-1.5">
+              <Sparkles className="h-3.5 w-3.5 text-[#7FD8FF]" /> Por onde começar hoje
+            </div>
+            <h2 className="mt-1.5 font-display text-xl font-extrabold tracking-tight text-white md:text-2xl">
+              {ofensiva > 0
+                ? `${ofensiva} ${ofensiva === 1 ? "dia" : "dias"} seguidos. Escolha o de hoje.`
+                : "Dez portas. Cada uma te conta algo que você ainda não sabe."}
+            </h2>
           </div>
-          <h2 className="mt-1.5 font-display text-xl font-extrabold tracking-tight text-white md:text-2xl">
-            {ofensiva > 0
-              ? `${ofensiva} ${ofensiva === 1 ? "dia" : "dias"} seguidos. Escolha o de hoje.`
-              : "Dez portas. Cada uma te conta algo que você ainda não sabe."}
-          </h2>
+          <button
+            type="button"
+            onClick={surpresa}
+            className="pill btn-vidro inline-flex shrink-0 items-center gap-2 rounded-full px-4 py-2.5 text-xs font-semibold"
+            data-testid={`${testid}-surpresa`}
+            title={novos ? `${novos} portas você ainda não abriu` : "Sorteia uma porta"}
+          >
+            <Shuffle className="h-3.5 w-3.5" /> Surpreenda-me
+            {novos > 0 && <span className="text-[#7FD8FF]">· {novos} novas</span>}
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={surpresa}
-          className="pill btn-vidro inline-flex shrink-0 items-center gap-2 rounded-full px-4 py-2.5 text-xs font-semibold"
-          data-testid={`${testid}-surpresa`}
-          title={novos ? `${novos} portas você ainda não abriu` : "Sorteia uma porta"}
-        >
-          <Shuffle className="h-3.5 w-3.5" /> Surpreenda-me
-          {novos > 0 && <span className="text-[#7FD8FF]">· {novos} novas</span>}
-        </button>
-      </div>
+      )}
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
         {portais.map((p) => {
@@ -322,6 +352,22 @@ export default function PortaisDaJornada({
           );
         })}
       </div>
+
+      {/* No modo compacto o sorteio desce para cá: ele é bom demais para
+          sumir — é o único caminho do produto que não exige o aluno já saber
+          o que quer — mas não é o que a seção anuncia, então vira rodapé. */}
+      {compacto && (
+        <button
+          type="button"
+          onClick={surpresa}
+          className="pill btn-vidro mt-3 inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-xs font-semibold"
+          data-testid={`${testid}-surpresa`}
+          title={novos ? `${novos} portas você ainda não abriu` : "Sorteia uma porta"}
+        >
+          <Shuffle className="h-3.5 w-3.5" /> Surpreenda-me
+          {novos > 0 && <span className="text-[#7FD8FF]">· {novos} novas</span>}
+        </button>
+      )}
     </section>
   );
 }

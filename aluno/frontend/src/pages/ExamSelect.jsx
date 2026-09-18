@@ -9,6 +9,7 @@ import Mentis from "../components/Mentis";
 import IntervencaoMentis from "../components/IntervencaoMentis";
 import ProfessorInvisivel from "../components/ProfessorInvisivel";
 import Microdiagnostico from "../components/Microdiagnostico";
+import Alternativas from "../components/questao/Alternativas";
 import ReportarQuestao from "../components/ReportarQuestao";
 
 const APP_VERSION = "sapiens-web-1.0";
@@ -189,6 +190,11 @@ function QuestionRunner({ filtro, onExit }) {
   const figurasPorAlternativa = todosVisualAssets
     .filter((a) => a.papel === "alternativa_figura" && a.letra)
     .reduce((acc, a) => { acc[a.letra] = a; return acc; }, {});
+  // `Alternativas` recebe figura já resolvida em `{ src }`: a peça
+  // compartilhada não conhece o formato de asset do corpus, e não deveria.
+  const figurasParaAlternativas = Object.fromEntries(
+    Object.entries(figurasPorAlternativa).map(([letra, a]) => [letra, { src: urlAssetVisual(a) }]),
+  );
   const figurasPrincipais = [...todosVisualAssets]
     .filter((a) => a.papel !== "alternativa_figura")
     .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
@@ -299,26 +305,21 @@ function QuestionRunner({ filtro, onExit }) {
     }
   };
 
-  // Atalhos: A-E escolhem, Enter responde/avança. Quem faz 45 questões
-  // seguidas passa a maior parte do tempo aqui, e tirar a mão do teclado a
-  // cada questão é atrito puro.
+  // Enter responde/avança. As letras A–E não estão mais aqui: elas moram em
+  // `components/questao/Alternativas`, que é quem desenha as opções — assim
+  // o treino e as questões geradas ganharam o mesmo atalho sem ninguém ter
+  // de lembrar de copiá-lo. Quem faz 45 questões seguidas passa a maior
+  // parte do tempo nesta tela, e tirar a mão do teclado a cada questão é
+  // atrito puro.
   useEffect(() => {
     const aoTeclar = (e) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       const alvo = e.target?.tagName;
       if (alvo === "INPUT" || alvo === "TEXTAREA") return;
-
-      const letra = e.key.toUpperCase();
-      if (!result && "ABCDE".includes(letra) && letra.length === 1) {
-        const existe = alternativas.some((a) => a.letra === letra && a.texto);
-        if (existe) { e.preventDefault(); pick(letra); }
-        return;
-      }
-      if (e.key === "Enter") {
-        e.preventDefault();
-        if (!result && selected && !submitting) responder();
-        else if (result && !submitting) avancar();
-      }
+      if (e.key !== "Enter") return;
+      e.preventDefault();
+      if (!result && selected && !submitting) responder();
+      else if (result && !submitting) avancar();
     };
     window.addEventListener("keydown", aoTeclar);
     return () => window.removeEventListener("keydown", aoTeclar);
@@ -523,62 +524,20 @@ function QuestionRunner({ filtro, onExit }) {
           )
         )}
 
-        <div className="mt-6 grid gap-2">
-          {alternativas.map((alt) => {
-            const letra = alt.letra;
-            const isSelected = selected === letra;
-            const isCorrect = result && letra === result.correta;
-            const isWrongChoice = result && isSelected && !result.acertou;
-            const figuraAlt = figurasPorAlternativa[letra];
-            // Um atributo em vez de quatro strings de classe montadas à mão: o
-            // estado da alternativa é DADO, e quem o desenha é o CSS
-            // (`.alternativa[data-estado]` no index.css). O `select-pop`
-            // continua marcando a escolha no instante do toque.
-            const estado = isCorrect ? "certa" : isWrongChoice ? "errada" : isSelected ? "escolhida" : "livre";
-            return (
-              <button
-                key={letra}
-                onClick={() => pick(letra)}
-                disabled={!!result || !alt.texto}
-                data-testid={`alt-${letra}`}
-                data-estado={estado}
-                className={`alternativa ${isSelected && !result ? "select-pop" : ""}`}
-              >
-                <span className="alternativa-letra">
-                  {isCorrect ? <Check className="h-4 w-4" /> : isWrongChoice ? <X className="h-4 w-4" /> : letra}
-                </span>
-                <span className="flex flex-col gap-2">
-                  {figuraAlt && (
-                    <img
-                      src={urlAssetVisual(figuraAlt)}
-                      alt={`Alternativa ${letra}`}
-                      className="max-w-[220px] cursor-zoom-in rounded-lg border border-zinc-200 bg-white"
-                      loading="lazy"
-                      data-testid={`alt-${letra}-figura`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setLightbox({
-                          src: urlAssetVisual(figuraAlt),
-                          alt: `Alternativa ${letra}`,
-                        });
-                      }}
-                      onError={(e) => { e.currentTarget.style.display = "none"; }}
-                    />
-                  )}
-                  {alt.texto ? (
-                    <span className="text-zinc-700">{alt.texto}</span>
-                  ) : (
-                    // EST-02: 18 itens do corpus têm alternativa sem texto. Antes
-                    // disto o botão vinha em branco, clicável, e o aluno podia
-                    // "responder" uma alternativa que não existe na prova.
-                    <span className="text-zinc-400 italic">
-                      Alternativa indisponível — esta questão está em correção.
-                    </span>
-                  )}
-                </span>
-              </button>
-            );
-          })}
+        {/* A gramática das alternativas mora em `components/questao` desde
+            2026-09-17. Ela nasceu aqui e continua idêntica — o que mudou é
+            que o treino e as questões geradas passaram a usar ESTA, em vez
+            de cada tela desenhar o seu próprio verde. */}
+        <div className="mt-6">
+          <Alternativas
+            alternativas={alternativas}
+            selecionada={selected}
+            resultado={result}
+            aoEscolher={pick}
+            figurasPorLetra={figurasParaAlternativas}
+            aoAmpliarFigura={setLightbox}
+            testidPrefixo="alt"
+          />
         </div>
 
         {lightbox && (

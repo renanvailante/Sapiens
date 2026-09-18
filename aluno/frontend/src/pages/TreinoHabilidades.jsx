@@ -4,10 +4,12 @@ import { AnimatePresence, motion } from "framer-motion";
 import { api, errMsg } from "../lib/api";
 import Nav from "../components/Nav";
 import {
-  Compass, Check, X, Loader2, ArrowLeft, ArrowRight, Sparkles, Waves,
+  Compass, Check, Loader2, ArrowLeft, ArrowRight, Sparkles, Waves,
   PartyPopper, Telescope,
 } from "lucide-react";
 import ReportarQuestao from "../components/ReportarQuestao";
+import Alternativas from "../components/questao/Alternativas";
+import Veredito from "../components/questao/Veredito";
 import { useDeclararContextoMentis } from "../lib/mentisContexto";
 import { MapaMundo3D, BriefingHUD, GuiaMissoes, aplicarProgressao } from "../components/mapa3d";
 import { ESTADO_LABEL } from "../components/mapa3d/sceneBuilder";
@@ -163,68 +165,44 @@ function Missao({ hab, onSair, onConcluida }) {
           <p className="mt-3 whitespace-pre-line text-[15px] leading-relaxed text-zinc-800">{questao.enunciado_depois}</p>
         )}
 
-        <div className="mt-6 grid gap-2">
-          {questao.alternativas.map((alt) => {
-            const letra = alt.letra;
-            const isSelected = selecionada === letra;
-            const isCorrect = resultado && resultado.gabarito.includes(letra);
-            const isWrongChoice = resultado && isSelected && !resultado.acertou;
-            let cls = "border-zinc-200 bg-white hover:border-sapiens-accent hover:shadow-sm";
-            if (isCorrect) cls = "border-emerald-400 bg-emerald-50";
-            else if (isWrongChoice) cls = "border-rose-400 bg-rose-50";
-            else if (isSelected) cls = "border-sapiens-accent bg-sapiens-accentSoft/60 shadow-sm";
-            return (
-              <button
-                key={letra}
-                onClick={() => responder(letra)}
-                disabled={!!resultado || enviando}
-                data-testid={`treino-alt-${letra}`}
-                className={`flex items-start gap-3 rounded-xl border px-4 py-3 text-left transition ${cls}`}
-              >
-                <span className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
-                  isCorrect ? "bg-emerald-500 text-white" : isWrongChoice ? "bg-rose-500 text-white" : isSelected ? "bg-sapiens-accent text-white" : "bg-zinc-100 text-zinc-600"
-                }`}>
-                  {isCorrect ? <Check className="w-4 h-4" /> : isWrongChoice ? <X className="w-4 h-4" /> : letra}
-                </span>
-                <span className="text-zinc-700">{alt.texto}</span>
-              </button>
-            );
-          })}
+        {/* A MESMA gramática da prova e dos cursos (`components/questao`).
+            Antes isto era uma lista de classes Tailwind montadas na mão, com
+            um verde próprio, um vermelho próprio e uma letra de outro
+            tamanho: o aluno trocava de tela e tinha de reconhecer de novo o
+            que "certo" parece. O teclado A–E veio junto, de graça. */}
+        <div className="mt-6">
+          <Alternativas
+            alternativas={questao.alternativas}
+            selecionada={selecionada}
+            resultado={resultado}
+            desabilitado={enviando}
+            aoEscolher={responder}
+            testidPrefixo="treino-alt"
+          />
         </div>
 
         {erro && <div className="mt-3 text-sm text-rose-600">{erro}</div>}
 
-        <AnimatePresence>
-          {resultado && (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-              className={`mt-5 rounded-xl px-4 py-4 ${resultado.acertou ? "bg-emerald-50" : "bg-rose-50"}`}
-              data-testid="treino-resultado"
-            >
-              <div className={`text-sm font-bold ${resultado.acertou ? "text-emerald-700" : "text-rose-700"}`}>
-                {resultado.acertou ? "Você acertou!" : `Resposta incorreta. Gabarito: ${resultado.gabarito.join(" ou ")}.`}
-              </div>
-              <p className="mt-2 text-sm leading-relaxed text-zinc-700">{resultado.elucidacao}</p>
-              {resultado.sparks_ganhos > 0 && (
-                <div className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-amber-700">
-                  <Sparkles className="w-3.5 h-3.5" /> +{resultado.sparks_ganhos} Spark
-                </div>
-              )}
+        {resultado && (
+          <Veredito
+            resultado={resultado}
+            explicacao={resultado.elucidacao}
+            sparksGanhos={resultado.sparks_ganhos || 0}
+            testid="treino-resultado"
+          >
+            <div className="mt-4 flex items-start gap-2.5 rounded-lg border border-zinc-200 bg-white/70 px-3.5 py-3">
+              <Waves className="mt-0.5 h-4 w-4 shrink-0 text-sapiens-accentDeep" />
+              <p className="text-xs leading-relaxed text-zinc-600">
+                <span className="font-bold text-zinc-700">Onde isso aparece: </span>
+                {bioma.resumo}
+              </p>
+            </div>
 
-              <div className="mt-4 rounded-lg bg-white/70 border border-zinc-200 px-3.5 py-3 flex gap-2.5 items-start">
-                <Waves className="w-4 h-4 text-sapiens-accentDeep shrink-0 mt-0.5" />
-                <p className="text-xs leading-relaxed text-zinc-600">
-                  <span className="font-bold text-zinc-700">Onde isso aparece: </span>
-                  {bioma.resumo}
-                </p>
-              </div>
-
-              <button onClick={proxima} className="pill mt-4 inline-flex text-sm font-medium btn-sapiens px-4 py-2 rounded-full" data-testid="treino-proxima">
-                {ultima ? "Concluir missão" : "Próxima questão"}
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
+            <button onClick={proxima} className="pill btn-sapiens mt-4 inline-flex rounded-full px-4 py-2 text-sm font-medium" data-testid="treino-proxima">
+              {ultima ? "Concluir missão" : "Próxima questão"}
+            </button>
+          </Veredito>
+        )}
       </article>
     </div>
   );

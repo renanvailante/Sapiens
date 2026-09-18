@@ -75,6 +75,11 @@ export default function LembrarComAMentis() {
   const emVoo = useRef(false);
   const timer = useRef(null);
   const toqueLongo = useRef(null);
+  // Espelho do alvo para os ouvintes do `document`. Sem ele, o efeito que os
+  // inscreve teria de depender do próprio alvo e se reinscreveria a cada
+  // seleção — e os handlers ainda leriam um valor de um render anterior.
+  const alvoRef = useRef(null);
+  alvoRef.current = alvo;
   const ativo = rotaAceitaCaptura(location.pathname) && !loading && !!user;
 
   const fechar = useCallback(() => {
@@ -85,6 +90,10 @@ export default function LembrarComAMentis() {
   /** Mede a seleção atual e decide se há botão a mostrar. `toque` muda o lado
    *  em que ele nasce — ver `posicionarBotao`. */
   const avaliarSelecao = useCallback((toque) => {
+    // Um objeto marcado (clique-direito/toque longo) não tem seleção de texto
+    // por trás: medir a seleção aqui o derrubaria 180ms depois de ele
+    // aparecer. Quem o dispensa é o `pointerdown` seguinte, abaixo.
+    if (alvoRef.current?.tipo === "objeto") return undefined;
     const sel = window.getSelection?.();
     if (!sel || sel.isCollapsed || sel.rangeCount === 0) return fechar();
     const texto = sel.toString();
@@ -146,16 +155,17 @@ export default function LembrarComAMentis() {
     };
     const aoSoltarToque = () => agendar(true);
 
-    const aoMudarSelecao = () => {
-      const sel = window.getSelection?.();
-      // Só o CANCELAMENTO é tratado aqui, na hora: a seleção sumiu, o botão
-      // some junto. Mostrar por este evento faria o botão piscar a cada
-      // quadro enquanto o aluno ainda arrasta.
-      if (!sel || sel.isCollapsed) {
-        clearTimeout(timer.current);
-        setAlvo((atual) => (atual?.tipo === "objeto" ? atual : null));
-        setPos((atual) => (atual && alvo?.tipo === "objeto" ? atual : null));
-      }
+    // UM dispensador só, e é o começo do próximo gesto. Encostar na tela
+    // fora do botão apaga o alvo anterior na hora; o que vier depois
+    // (seleção nova, objeto novo, ou nada) decide sozinho o que mostrar.
+    //
+    // Era `selectionchange` quem dispensava, e ele não servia para isto: um
+    // alvo de OBJETO não tem seleção por trás, então o evento ou não vinha, ou
+    // vinha "vazio" e apagava um botão que tinha acabado de nascer.
+    const aoEncostar = (e) => {
+      if (e.target?.closest?.('[data-lembrar-ui="1"]')) return;
+      clearTimeout(timer.current);
+      if (alvoRef.current) fechar();
     };
 
     const aoMenuContexto = (e) => {
@@ -181,7 +191,7 @@ export default function LembrarComAMentis() {
 
     document.addEventListener("mouseup", aoSoltarMouse);
     document.addEventListener("touchend", aoSoltarToque);
-    document.addEventListener("selectionchange", aoMudarSelecao);
+    document.addEventListener("pointerdown", aoEncostar, true);
     document.addEventListener("contextmenu", aoMenuContexto);
     document.addEventListener("touchstart", aoComecarToque, { passive: true });
     document.addEventListener("touchmove", cancelarToqueLongo, { passive: true });
@@ -195,7 +205,7 @@ export default function LembrarComAMentis() {
       clearTimeout(toqueLongo.current);
       document.removeEventListener("mouseup", aoSoltarMouse);
       document.removeEventListener("touchend", aoSoltarToque);
-      document.removeEventListener("selectionchange", aoMudarSelecao);
+      document.removeEventListener("pointerdown", aoEncostar, true);
       document.removeEventListener("contextmenu", aoMenuContexto);
       document.removeEventListener("touchstart", aoComecarToque);
       document.removeEventListener("touchmove", cancelarToqueLongo);
@@ -204,7 +214,7 @@ export default function LembrarComAMentis() {
       window.removeEventListener("scroll", aoRolar, true);
       window.removeEventListener("resize", aoRolar);
     };
-  }, [ativo, avaliarSelecao, avaliarObjeto, fechar, alvo?.tipo]);
+  }, [ativo, avaliarSelecao, avaliarObjeto, fechar]);
 
   // Trocar de tela fecha o botão: ele descreve um trecho da tela anterior.
   useEffect(() => { fechar(); }, [location.pathname, fechar]);

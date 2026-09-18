@@ -4,6 +4,7 @@ import {
   lembravelMaisProximo,
   montarPayload,
   normalizar,
+  pontoGrosso,
   posicionarBotao,
   resumir,
   rotaAceitaCaptura,
@@ -49,6 +50,22 @@ describe("onde o botão aparece", () => {
     const { x, y } = posicionarBotao(semDesvio, { ...DESKTOP, toque: true });
     const invade = x + DESKTOP.largura > DESKTOP.vw - 96 && y + DESKTOP.altura > DESKTOP.vh - 96;
     expect(invade).toBe(false);
+  });
+});
+
+describe("de que lado o botão nasce", () => {
+  test("o aparelho é decidido pelo PONTEIRO, não pelo evento que disparou", () => {
+    // Um celular também entrega `mouseup`. Se o lado fosse decidido pelo
+    // evento, a seleção por um caminho que termina em mouse poria o botão
+    // exatamente onde o iOS desenha "Copiar".
+    const original = window.matchMedia;
+    window.matchMedia = (q) => ({ matches: q === "(pointer: coarse)" });
+    expect(pontoGrosso()).toBe(true);
+    window.matchMedia = () => ({ matches: false });
+    expect(pontoGrosso()).toBe(false);
+    window.matchMedia = undefined;
+    expect(pontoGrosso()).toBe(false);   // navegador sem suporte não quebra
+    window.matchMedia = original;
   });
 });
 

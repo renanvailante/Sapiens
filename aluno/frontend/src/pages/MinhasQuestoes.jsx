@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Sparkles, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { Sparkles, Loader2 } from "lucide-react";
 import { api, errMsg } from "../lib/api";
 import Nav from "../components/Nav";
 import Mentis from "../components/Mentis";
 import GerarQuestoesPainel from "../components/GerarQuestoesPainel";
+import Alternativas from "../components/questao/Alternativas";
+import Veredito from "../components/questao/Veredito";
 
 /**
  * Questões que a Mentis já gerou (ou reaproveitou de outro aluno) para este
@@ -17,8 +19,23 @@ const DIFICULDADE_LABEL = { FACIL: "Fácil", MEDIO_FACIL: "Médio-fácil", MEDIO
 
 function CartaoQuestao({ item, onResolvida }) {
   const [selecionada, setSelecionada] = useState(item.minha_resposta || null);
+  // Ao REABRIR uma questão já respondida, o servidor devolve o que o aluno
+  // marcou e se acertou, mas nunca o gabarito (`_questao_ia_sem_gabarito` em
+  // `treino_routes.py` — de propósito: a lista não pode entregar a resposta
+  // de questões ainda não respondidas).
+  //
+  // Isto aqui montava `gabarito: [minha_resposta]` em qualquer caso, então
+  // quem reabria uma questão que tinha ERRADO via a própria alternativa
+  // errada pintada de verde, com o tique de "certa" ao lado. A devolutiva
+  // mentia justamente para quem mais precisava dela.
+  //
+  // Só afirmamos que uma letra é a correta quando ela É: no acerto, a
+  // marcada; no erro, nenhuma — e aí a escolha do aluno aparece como errada,
+  // que é a verdade que temos em mão.
   const [resultado, setResultado] = useState(
-    item.respondida ? { acertou: item.acertou, gabarito: item.minha_resposta ? [item.minha_resposta] : [] } : null
+    item.respondida
+      ? { acertou: item.acertou, gabarito: item.acertou && item.minha_resposta ? [item.minha_resposta] : [] }
+      : null
   );
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState(null);
@@ -39,61 +56,44 @@ function CartaoQuestao({ item, onResolvida }) {
   };
 
   return (
-    <article className="card-sapiens rounded-2xl p-5 md:p-6" data-testid="minhas-questoes-item">
+    // `leitura-clara`: a questão gerada passou a ser lida na MESMA superfície
+    // da prova e da missão de treino. Enunciado é texto longo, e o produto já
+    // tinha decidido que texto longo se lê em fundo claro — só esta tela
+    // tinha ficado de fora, com um cartão escuro e uma terceira paleta de
+    // alternativas só dela.
+    <article className="card-sapiens leitura-clara rounded-2xl p-5 md:p-6" data-testid="minhas-questoes-item">
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <span className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold text-white/70">
+        <span className="rounded-full bg-zinc-100 px-3 py-1 text-[11px] font-semibold text-zinc-600">
           {item.habilidade_nome}
         </span>
-        <span className="rounded-full bg-white/5 px-3 py-1 text-[11px] text-white/45">
+        <span className="rounded-full bg-zinc-50 px-3 py-1 text-[11px] text-zinc-500">
           {DIFICULDADE_LABEL[item.dificuldade] || item.dificuldade}
         </span>
       </div>
 
-      <p className="whitespace-pre-line text-sm leading-relaxed text-white/85">{item.enunciado_antes}</p>
+      <p className="whitespace-pre-line text-[15px] leading-relaxed text-zinc-800">{item.enunciado_antes}</p>
       {item.enunciado_depois && (
-        <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-white/85">{item.enunciado_depois}</p>
+        <p className="mt-2 whitespace-pre-line text-[15px] leading-relaxed text-zinc-800">{item.enunciado_depois}</p>
       )}
 
-      <div className="mt-4 grid gap-2">
-        {item.alternativas.map((alt) => {
-          const marcada = selecionada === alt.letra;
-          const mostrarCerta = resultado && resultado.gabarito?.includes(alt.letra);
-          const mostrarErrada = resultado && marcada && !resultado.acertou;
-          return (
-            <button
-              key={alt.letra}
-              type="button"
-              onClick={() => responder(alt.letra)}
-              disabled={!!resultado || enviando}
-              className={`flex items-start gap-3 rounded-xl border px-4 py-3 text-left text-sm transition ${
-                mostrarCerta
-                  ? "border-emerald-400/50 bg-emerald-400/10 text-emerald-100"
-                  : mostrarErrada
-                  ? "border-rose-400/50 bg-rose-400/10 text-rose-100"
-                  : "border-white/10 bg-white/5 text-white/80 hover:border-white/20 hover:bg-white/10"
-              } ${resultado ? "cursor-default" : ""}`}
-              data-testid={`minhas-questoes-alt-${alt.letra}`}
-            >
-              <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs font-bold">
-                {alt.letra}
-              </span>
-              <span>{alt.texto}</span>
-            </button>
-          );
-        })}
+      <div className="mt-4">
+        <Alternativas
+          alternativas={item.alternativas}
+          selecionada={selecionada}
+          resultado={resultado}
+          desabilitado={enviando}
+          aoEscolher={responder}
+          testidPrefixo="minhas-questoes-alt"
+        />
       </div>
 
-      {erro && <p className="mt-3 text-xs text-rose-300">{erro}</p>}
+      {erro && <p className="mt-3 text-xs text-rose-600">{erro}</p>}
 
-      {resultado && (
-        <div className="mt-4 rounded-xl bg-white/5 border border-white/10 px-4 py-3">
-          <div className={`flex items-center gap-1.5 text-xs font-bold ${resultado.acertou ? "text-emerald-300" : "text-rose-300"}`}>
-            {resultado.acertou ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
-            {resultado.acertou ? "Você acertou." : `Resposta incorreta. Gabarito: ${resultado.gabarito?.join(" ou ")}.`}
-          </div>
-          {resultado.elucidacao && <p className="mt-2 text-xs leading-relaxed text-white/60">{resultado.elucidacao}</p>}
-        </div>
-      )}
+      <Veredito
+        resultado={resultado}
+        explicacao={resultado?.elucidacao}
+        testid="minhas-questoes-resultado"
+      />
     </article>
   );
 }

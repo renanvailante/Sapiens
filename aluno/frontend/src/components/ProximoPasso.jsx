@@ -137,7 +137,9 @@ export default function ProximoPasso({
     <section
       className="mapa-vitrine relative overflow-hidden rounded-[26px] p-6 md:p-8"
       data-testid={testid}
-      data-tour="dash-mapa"
+      // `dash-agora`: o tour aponta a AÇÃO, e o nome do gancho diz isso.
+      // `dash-mapa` era o nome de quando esta peça era a vitrine do mapa.
+      data-tour="dash-agora"
     >
       <div className="relative grid gap-7 md:grid-cols-[1.4fr_1fr] md:items-center">
         <div className="min-w-0">

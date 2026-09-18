@@ -56,7 +56,6 @@ const Feed = lazy(() => import("./pages/Feed"));
 const Comunidade = lazy(() => import("./pages/Comunidade"));
 const ComunidadeDuvida = lazy(() => import("./pages/ComunidadeDuvida"));
 const Liga = lazy(() => import("./pages/Liga"));
-const Questoes = lazy(() => import("./pages/Questoes"));
 const Redacao = lazy(() => import("./pages/Redacao"));
 const Sugestoes = lazy(() => import("./pages/Sugestoes"));
 const EsqueciSenha = lazy(() => import("./pages/EsqueciSenha"));
@@ -141,7 +140,11 @@ function AppRouter() {
       <Route path="/termos" element={<Pagina titulo="Termos de Uso"><Termos /></Pagina>} />
       <Route path="/privacidade" element={<Pagina titulo="Política de Privacidade"><Privacidade /></Pagina>} />
 
-      <Route path="/questoes" element={<ProtectedRoute><Pagina titulo="Banco de questões"><Questoes /></Pagina></ProtectedRoute>} />
+      {/* `/questoes` era uma quinta interface de responder questão, sem
+          NENHUM link de entrada em todo o produto — nem no lançador, nem nas
+          portas, nem na barra: só alcançável digitando a URL. Redireciona
+          para as provas, que é o que ela tentava ser. */}
+      <Route path="/questoes" element={<Navigate to="/exams" replace />} />
       <Route path="/dashboard" element={<ProtectedRoute><Pagina titulo="Painel"><Dashboard /></Pagina></ProtectedRoute>} />
       {/* Primeiro acesso: vídeo + as três perguntas da Mentis. O Painel manda
           para cá quem ainda tem `flags.onboarded === false`. */}

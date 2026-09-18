@@ -7,13 +7,13 @@ import CardDeMelhora from "../components/CardDeMelhora";
 import { ResumoDaFila } from "../components/FilaDeRevisao";
 import Nav, { EVENTO_SPARKS } from "../components/Nav";
 import PainelDeProgresso from "../components/PainelDeProgresso";
-import ProximoPasso from "../components/ProximoPasso";
+import ProximoPasso, { escolherPasso } from "../components/ProximoPasso";
 import PortaisDaJornada from "../components/PortaisDaJornada";
+import ExplorarOSapiens from "../components/ExplorarOSapiens";
 import EsqueletoDoPainel from "../components/Esqueleto";
 import OnboardingTour from "../components/OnboardingTour";
 import PainelDeConquistas from "../components/PainelDeConquistas";
 import BotaoInstalar from "../components/InstalarApp";
-import Mentis from "../components/Mentis";
 import { COMPETENCIAS_REDACAO } from "../constants/redacao";
 import { computeStreak, computeWeek, diaLocal } from "../lib/atividade";
 import { avaliarConquistas } from "../lib/conquistas";
@@ -24,45 +24,49 @@ import { quintasAteAProva } from "../lib/enem";
 import MentorUSP from "../components/MentorUSP";
 import { useDeclararContextoMentis } from "../lib/mentisContexto";
 import {
-  ArrowRight, Sparkles, Trophy, CloudOff, RotateCw,
-  MessageSquareWarning, Users, PenLine, Brain, Zap, CalendarDays,
-  HelpCircle, Download, ChevronRight, Radio, Video, Medal, Target,
+  ArrowRight, Trophy, CloudOff, RotateCw, MessageSquareWarning,
+  CalendarDays, HelpCircle, Download, Video, Medal, Target,
 } from "lucide-react";
 import { useAuth } from "../lib/auth";
 
 /**
- * O Painel — reescrito em 2026-09-16.
+ * O PAINEL — uma pergunta por dobra.
  *
- * A passada de 15/09 já tinha resolvido o problema de EXCESSO: catorze seções
- * com um parágrafo de manifesto cada viraram sete, e a vitrine do Mapa subiu
- * para o topo. O que ela não resolveu foi a ORDEM da pergunta.
+ * Esta tela foi reordenada três vezes em três dias, e a terceira passada
+ * deixou duas aberturas ao mesmo tempo: as dez Portas e o Próximo Passo, uma
+ * em cima da outra. São duas respostas para a mesma pergunta — "e agora?" — e
+ * a de cima ganha sempre. O comentário do próprio `ProximoPasso` já dizia que
+ * escolher entre dez coisas é o jeito mais confiável de não fazer nenhuma; a
+ * vitrine tinha sido posta exatamente acima dele.
  *
- * A tela abria com um relógio regressivo de venda, depois a vitrine do Mapa,
- * depois o anúncio da aula ao vivo, depois um pedido de WhatsApp — quatro
- * blocos grandes antes do primeiro lugar onde o aluno podia FAZER alguma
- * coisa. Ele abria o app para estudar e a primeira metade da rolagem era o
- * produto falando de si mesmo.
+ * A regra desta reescrita (2026-09-17) é uma só: **cada dobra responde a uma
+ * pergunta, e nenhuma pergunta é respondida duas vezes.**
  *
- * A ordem de hoje, e o motivo de cada degrau:
+ *   1. **Agora** — a única ação primária. Revisão vencida > bloco de hoje >
+ *      missão atual > praticar. A vitrine do Mapa continua sendo o fundo
+ *      desta peça: mostrar o produto e dizer o que fazer não competem mais.
+ *   2. **Seu ritmo** — ofensiva, nível, liga, relógio do ENEM e as missões do
+ *      dia, em azulejos baixos. O "como vai indo" numa varredura.
+ *   3. **Seu foco** — a causa (cards acionáveis) e o mapa (domínio por
+ *      frente) numa seção só, com UM link para o desempenho. Eram duas
+ *      seções e três links para a mesma tela, com três nomes diferentes.
+ *   4. **Hoje** — o que tem hora marcada. A fila de revisão só entra quando
+ *      não é o passo do topo.
+ *   5. **Com o mentor** — mentoria e aula ao vivo, juntas.
+ *   6. **Explorar** — as dez Portas, atrás de um clique, abertas por padrão
+ *      só para quem ainda não respondeu nada (ver `ExplorarOSapiens`).
+ *   7. **Conquistas** — o reforço, no fim, onde reforço pertence.
+ *   8. **Rodapé** — instalar o app e falar com a equipe.
  *
- *   1. **O próximo passo.** Uma ação, escolhida do que o aluno tem em mão
- *      (revisão vencida > bloco de hoje > missão atual > praticar). A vitrine
- *      do Mapa não sumiu: ela é o fundo desta peça, com a trilha à direita e
- *      os números do mapa embaixo. Mostrar o produto e dizer o que fazer
- *      deixaram de competir.
- *   2. **A tira de progresso.** Ofensiva, nível, liga e o relógio do ENEM em
- *      quatro azulejos baixos — o "como vai indo" numa varredura, e não em
- *      quatro blocos de altura inteira.
- *   3. **Missões de hoje**, com a pronta acesa e o resgate comemorado no
- *      próprio card.
- *   4. **A aula ao vivo** — o único compromisso com hora marcada do produto.
- *   5. **Onde focar**, **Hoje**, **Domínio**, **Conquistas** — o
- *      acompanhamento, depois da ação.
- *   6. **A Mentis** e as **Ferramentas**.
+ * O QUE SAIU, e por quê: a grade "Ferramentas" (sete azulejos que já existiam
+ * no Lançador e nas Portas) e a linha da Mentis (que já tem aba no topo, alvo
+ * na barra do celular e ícone flutuante em toda tela). O Painel tinha três
+ * menus de ferramentas e quatro portas para a mesma Mentis; de ~30 alvos
+ * simultâneos passou a ~12 com a seção Explorar fechada.
  *
- * E a espera deixou de ser a frase "Preparando seu painel...": a tela nasce
- * com a própria silhueta (`components/Esqueleto.jsx`), então o conteúdo não
- * empurra nada quando chega.
+ * A espera continua nascendo com a própria silhueta
+ * (`components/Esqueleto.jsx`), então o conteúdo não empurra nada quando
+ * chega.
  */
 
 // `by_area` (do fluxo de gabarito/Analysis) usa códigos ENEM curtos; o filtro
@@ -283,44 +287,6 @@ function ChamadaDaMentoria() {
         Entrar na lista
         <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
       </span>
-    </Link>
-  );
-}
-
-/** Um azulejo da grade de ferramentas. `selo` mostra um número real quando
- *  existe (nota da redação, questões geradas) — nunca um enfeite. */
-function Ferramenta({ to, icone: Icone, nome, selo, destaque, testid, onClick, tour }) {
-  const Conteudo = (
-    <>
-      <span
-        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border ${
-          destaque ? "border-amber-300/30 bg-amber-300/15 text-amber-200" : "border-white/10 bg-white/5 text-white/60"
-        }`}
-      >
-        <Icone className="h-5 w-5" strokeWidth={1.8} />
-      </span>
-      <span className="min-w-0 flex-1 text-left">
-        <span className={`block text-sm font-semibold ${destaque ? "text-amber-100" : "text-white"}`}>{nome}</span>
-        {selo && <span className="mt-0.5 block text-[11px] leading-snug text-white/40">{selo}</span>}
-      </span>
-      <ChevronRight className="h-4 w-4 shrink-0 text-white/20" />
-    </>
-  );
-  const classe = [
-    "superficie lift flex items-center gap-3 p-4",
-    destaque ? "border-amber-300/25 bg-amber-300/[0.07]" : "",
-  ].join(" ");
-
-  if (onClick) {
-    return (
-      <button type="button" onClick={onClick} className={classe} data-testid={testid} data-tour={tour}>
-        {Conteudo}
-      </button>
-    );
-  }
-  return (
-    <Link to={to} className={classe} data-testid={testid} data-tour={tour}>
-      {Conteudo}
     </Link>
   );
 }
@@ -634,6 +600,16 @@ export default function Dashboard() {
   });
   const feitas = conquistas.filter((c) => c.desbloqueada).length;
 
+  // O MESMO passo que a peça do topo vai desenhar — a mesma função, não uma
+  // segunda regra parecida. O Painel precisa dele aqui embaixo só para não
+  // repetir a pendência: quando a ação do dia já é a fila de revisão, o card
+  // da fila em "Hoje" sai de cena. Duas peças diferentes cobrando a mesma
+  // coisa na mesma rolagem leem como duas coisas a fazer.
+  const passoAtual = useMemo(
+    () => escolherPasso({ revisoes, cronograma, habilidades }),
+    [revisoes, cronograma, habilidades],
+  );
+
   if (!loaded) {
     return (
       <div className="min-h-screen">
@@ -704,30 +680,17 @@ export default function Dashboard() {
             rolagem numa espera. */}
         <div className="cascata space-y-7">
           {/* -------------------------------------------------------------
-              1. AS PORTAS. A primeira coisa da primeira tela.
+              1. AGORA — a ÚNICA ação primária da tela.
 
-              Antes o Painel abria pelo mapa de missões — uma peça bonita e
-              FECHADA: um caminho único, já traçado, para quem ainda não sabe
-              o que o produto tem. Caminho único não convida, estreita. As
-              portas fazem o contrário: dez entradas visíveis de uma vez, cada
-              uma com uma pergunta que só o clique responde e com o quanto já
-              foi feito ali. É como Khan Academy e Duolingo abrem, e é a razão
-              de o mapa ter descido uma posição — ele continua aqui, logo
-              abaixo, como o passo RECOMENDADO, que é o papel dele.
-              ------------------------------------------------------------- */}
-          <PortaisDaJornada
-            habilidades={habilidades}
-            revisoes={revisoes}
-            cronograma={cronograma}
-            redacoes={redacoes}
-            engajamento={engajamento}
-            conquistas={conquistas}
-            totalRespondidas={totalRespondidas}
-            testid="dash-portais"
-          />
+              Esta posição foi disputada três vezes em três dias (mapa de
+              missões → próximo passo → dez portas) e a disputa era o próprio
+              problema: quem abre o app às sete da noite com uma hora livre
+              não precisa ser convencido de que o produto tem coisas, precisa
+              saber onde pisar. A vitrine continua existindo — desceu para a
+              seção "Explorar", no fim desta mesma tela, onde ela convida sem
+              disputar a decisão.
 
-          {/* -------------------------------------------------------------
-              2. O PRÓXIMO PASSO. Uma ação, sobre a vitrine do Mapa.
+              Uma pergunta por dobra. Esta dobra responde "e agora?".
               ------------------------------------------------------------- */}
           <ProximoPasso
             habilidades={habilidades}
@@ -739,7 +702,7 @@ export default function Dashboard() {
           />
 
           {/* -------------------------------------------------------------
-              3. A TIRA DE PROGRESSO E AS MISSÕES DO DIA
+              2. SEU RITMO — ofensiva, XP e as missões do dia.
               `id="missoes"`: a Mentis e o guia levam direto até aqui.
               ------------------------------------------------------------- */}
           <div className="scroll-mt-24" id="missoes" data-tour="dash-missoes">
@@ -747,31 +710,25 @@ export default function Dashboard() {
           </div>
 
           {/* -------------------------------------------------------------
-              3. A PESSOA. Duas peças, nesta ordem, e a ordem é o argumento:
-              a MENTORIA (um a um, o ativo mais valioso do produto) e depois
-              a AULA AO VIVO (um para muitos, toda quinta).
+              3. SEU FOCO — onde focar E o domínio por frente, numa seção só.
 
-              As duas são o mesmo mentor em graus diferentes de proximidade,
-              então ficam juntas: separá-las fazia a mentoria competir com
-              atalhos de utilidade lá embaixo, onde ela perdia sempre.
-              ------------------------------------------------------------- */}
-          <div className="space-y-3">
-            <ChamadaDaMentoria />
-            <ChamadaDaLive
-              inclusa={Boolean(direitos.lives_inclusas)}
-              argumento={argumentoDaAula}
-            />
-          </div>
+              Eram duas seções separadas ("Onde focar" e "Seu domínio") com um
+              link cada para a MESMA tela, mais um terceiro lá embaixo na
+              grade de ferramentas: `/cognitive-profile` aparecia três vezes
+              no mesmo Painel, com três nomes diferentes. Três nomes para um
+              destino é o jeito mais rápido de o aluno não construir modelo
+              nenhum do produto.
 
-          {/* -------------------------------------------------------------
-              4. ONDE FOCAR — cada card com destino próprio
+              Agora é uma pergunta — "no que eu preciso mexer?" — respondida
+              em dois níveis: a CAUSA (os cards, acionáveis) e o MAPA (as
+              barras, panorâmicas). Um cabeçalho, um link.
               ------------------------------------------------------------- */}
-          {(focos.length > 0 || fracos.length > 0) && (
+          {(focos.length > 0 || fracos.length > 0 || hasMasteryData) && (
             <section data-testid="dash-focos" data-tour="dash-foco">
               <div className="secao-cabeca">
-                <h2 className="secao-titulo">Onde focar</h2>
-                <Link to="/cognitive-profile" className="-my-2 inline-flex items-center gap-1 py-2 text-xs font-semibold text-[#7FD8FF] hover:underline">
-                  Ver tudo <ArrowRight className="h-3 w-3" />
+                <h2 className="secao-titulo">Seu foco</h2>
+                <Link to="/cognitive-profile" className="-my-2 inline-flex items-center gap-1 py-2 text-xs font-semibold text-[#7FD8FF] hover:underline" data-testid="dash-ver-desempenho">
+                  Meu desempenho <ArrowRight className="h-3 w-3" />
                 </Link>
               </div>
               <div className="grid gap-3 md:grid-cols-2">
@@ -821,36 +778,14 @@ export default function Dashboard() {
                   );
                 })}
               </div>
-            </section>
-          )}
 
-          {/* -------------------------------------------------------------
-              5. HOJE — o que tem hora marcada
-              ------------------------------------------------------------- */}
-          <div className="space-y-3" data-tour="dash-hoje">
-            <HojeNoCronograma semana={cronograma} />
-            {revisoes?.resumo?.questoes > 0 && (
-              <Link to="/revisoes" className="block" data-testid="dash-revisoes">
-                <ResumoDaFila resumo={revisoes.resumo} />
-              </Link>
-            )}
-          </div>
-
-          {/* -------------------------------------------------------------
-              6. DOMÍNIO POR FRENTE — com NOME, não só porcentagem (ver
-              `lib/dominio.js`: a régua da escola não é esta, e o aluno não
-              deveria ter de inventar uma). Some inteira enquanto não há
-              medida, em vez de mostrar quatro barras zeradas.
-              ------------------------------------------------------------- */}
-          {hasMasteryData && (
-            <section data-testid="dash-mastery" data-tour="dash-mastery">
-              <div className="secao-cabeca">
-                <h2 className="secao-titulo">Seu domínio</h2>
-                <Link to="/cognitive-profile" className="-my-2 inline-flex items-center gap-1 py-2 text-xs font-semibold text-[#7FD8FF] hover:underline">
-                  Detalhes <ArrowRight className="h-3 w-3" />
-                </Link>
-              </div>
-              <div className="grid gap-2.5 sm:grid-cols-2">
+              {/* O MAPA, logo abaixo da causa: domínio por frente com NOME,
+                  não só porcentagem (ver `lib/dominio.js` — a régua da escola
+                  não é esta, e o aluno não deveria ter de inventar uma).
+                  Some enquanto não há medida, em vez de mostrar quatro barras
+                  zeradas dizendo ao aluno novo que ele é ruim em tudo. */}
+              {hasMasteryData && (
+                <div className="mt-3 grid gap-2.5 sm:grid-cols-2" data-testid="dash-mastery" data-tour="dash-mastery">
                 {rankedHubs.map((h) => {
                   const faixa = faixaDeDominio(h.mastery);
                   return (
@@ -879,12 +814,72 @@ export default function Dashboard() {
                     </div>
                   );
                 })}
-              </div>
+                </div>
+              )}
             </section>
           )}
 
           {/* -------------------------------------------------------------
-              7. CONQUISTAS — clicáveis
+              4. HOJE — o que tem hora marcada.
+
+              A fila de revisão só entra aqui quando NÃO é o Próximo Passo:
+              quando ela vence, ela já é a ação lá de cima, e repeti-la aqui
+              faz a mesma urgência aparecer duas vezes na mesma rolagem, com
+              dois desenhos diferentes, como se fossem duas pendências.
+              ------------------------------------------------------------- */}
+          <div className="space-y-3" data-tour="dash-hoje">
+            <HojeNoCronograma semana={cronograma} />
+            {revisoes?.resumo?.questoes > 0 && passoAtual.chave !== "revisao" && (
+              <Link to="/revisoes" className="block" data-testid="dash-revisoes">
+                <ResumoDaFila resumo={revisoes.resumo} />
+              </Link>
+            )}
+          </div>
+
+          {/* -------------------------------------------------------------
+              5. COM O MENTOR. Duas peças, nesta ordem, e a ordem é o
+              argumento: a MENTORIA (um a um, o ativo mais valioso do produto)
+              e depois a AULA AO VIVO (um para muitos, toda quinta).
+
+              As duas são o mesmo mentor em graus diferentes de proximidade,
+              então ficam juntas: separá-las fazia a mentoria competir com
+              atalhos de utilidade lá embaixo, onde ela perdia sempre.
+              ------------------------------------------------------------- */}
+          <div className="space-y-3">
+            <ChamadaDaMentoria />
+            <ChamadaDaLive
+              inclusa={Boolean(direitos.lives_inclusas)}
+              argumento={argumentoDaAula}
+            />
+          </div>
+
+          {/* -------------------------------------------------------------
+              6. EXPLORAR — a descoberta, atrás de um clique.
+
+              As dez portas continuam inteiras aqui dentro. O que mudou é que
+              elas não disputam mais a primeira dobra com a ação do dia: quem
+              já tem trajetória encontra a seção fechada, e quem ainda não
+              respondeu nada a encontra aberta, porque para ele a vitrine é a
+              peça forte e o Próximo Passo é o degrau genérico.
+              ------------------------------------------------------------- */}
+          <ExplorarOSapiens abertoInicial={totalRespondidas === 0} testid="dash-explorar">
+            <PortaisDaJornada
+              habilidades={habilidades}
+              revisoes={revisoes}
+              cronograma={cronograma}
+              redacoes={redacoes}
+              engajamento={engajamento}
+              conquistas={conquistas}
+              totalRespondidas={totalRespondidas}
+              compacto
+              testid="dash-portais"
+            />
+          </ExplorarOSapiens>
+
+          {/* -------------------------------------------------------------
+              7. CONQUISTAS — o reforço, no fim, onde reforço pertence.
+              Quatro medalhas e não oito: a grade cheia era um segundo mapa
+              competindo com o de cima, e quem quer ver tudo tem o link.
               ------------------------------------------------------------- */}
           <section data-testid="dash-achievements" data-tour="dash-conquistas">
             <div className="secao-cabeca">
@@ -901,98 +896,26 @@ export default function Dashboard() {
                 redacoesCorrigidas: redacoes.filter((r) => r.avaliacao).length,
                 melhorRedacao,
               }}
-              limite={8}
+              limite={4}
               testid="dash-conquistas-grade"
             />
           </section>
 
           {/* -------------------------------------------------------------
-              8. A MENTIS — uma linha, não um banner de três
-              ------------------------------------------------------------- */}
-          <Link
-            to="/mentis"
-            className="superficie superficie-viva lift flex items-center gap-4 p-4"
-            data-testid="dash-mentis"
-            data-tour="dash-mentis"
-          >
-            <Mentis className="h-11 w-11 shrink-0" estado="neutra" />
-            <div className="min-w-0 flex-1">
-              <div className="font-display text-base font-bold tracking-tight text-white">
-                Pergunte à Mentis por que você erra.
-              </div>
-              <div className="text-xs text-white/50">Ela lê o seu histórico inteiro antes da primeira palavra.</div>
-            </div>
-            <ArrowRight className="h-4 w-4 shrink-0 text-white/40" />
-          </Link>
+              8. O RODAPÉ — duas conveniências, nenhuma ferramenta.
 
-          {/* -------------------------------------------------------------
-              9. FERRAMENTAS — o resto do produto, visível
-              ------------------------------------------------------------- */}
-          <section data-testid="dash-ferramentas">
-            <div className="secao-cabeca">
-              <h2 className="secao-titulo">Ferramentas</h2>
-            </div>
-            <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
-              <Ferramenta
-                to="/redacao"
-                icone={PenLine}
-                nome="Redação"
-                selo={ultimaRedacao ? `Sua melhor: ${melhorRedacao}/1000` : "Nota nas 5 competências"}
-                testid="dash-redacao"
-                tour="dash-redacao"
-              />
-              <Ferramenta
-                to="/minhas-questoes"
-                icone={Sparkles}
-                nome="Questões geradas"
-                selo="A Mentis cria sobre a sua lacuna"
-                testid="dash-minhas-questoes"
-                tour="dash-gerar"
-              />
-              <Ferramenta
-                to="/cognitive-profile"
-                icone={Brain}
-                nome="Meu desempenho"
-                selo="Por que você erra, não quanto"
-                testid="dash-desempenho"
-                tour="dash-desempenho"
-              />
-              <Ferramenta
-                to="/sparks"
-                icone={Zap}
-                nome="Sparks"
-                selo={sparks != null ? `Saldo: ${sparks}` : "Saldo e pacotes"}
-                testid="dash-sparks"
-                tour="dash-sparks"
-              />
-              <Ferramenta
-                to="/comunidade"
-                icone={Users}
-                nome="Comunidade"
-                selo="Responder rende Sparks"
-                testid="dash-comunidade"
-                tour="dash-comunidade"
-              />
-              <Ferramenta
-                to="/aula-ao-vivo"
-                icone={Radio}
-                nome="Aula ao vivo de quinta"
-                selo={`Com ${MENTOR.nome} · 200 Sparks`}
-                destaque
-                testid="dash-cursos"
-                tour="dash-cursos"
-              />
-              <Ferramenta
-                to="/mentoria"
-                icone={Medal}
-                nome="Mentoria"
-                selo={`Lista de espera · ${MENTOR.nome}`}
-                destaque
-                testid="dash-aulas-particulares-cta"
-                tour="dash-aulas"
-              />
-            </div>
+              Aqui havia uma grade de sete "Ferramentas" (Redação, Questões
+              geradas, Meu desempenho, Sparks, Comunidade, Live, Mentoria) e,
+              acima dela, mais uma linha para a Mentis. As sete já existem no
+              Lançador, cinco delas também nas Portas, e a Mentis tem aba
+              própria no topo, alvo próprio na barra do celular e o ícone
+              flutuante em toda tela. Era o terceiro menu de ferramentas do
+              mesmo Painel, e a quarta porta para a mesma Mentis.
 
+              O que sobrou é o que não mora em lugar nenhum: instalar o app e
+              falar com a equipe.
+              ------------------------------------------------------------- */}
+          <div data-testid="dash-extras-secao">
             <div className="mt-3 flex flex-wrap items-center gap-2" data-tour="dash-extras">
               {/* Some sozinho quando o Sapiens já está instalado. */}
               <BotaoInstalar className="chip pill" testid="dash-instalar">
@@ -1007,7 +930,7 @@ export default function Dashboard() {
                 <MessageSquareWarning className="h-3.5 w-3.5" /> Achou um erro? Tem uma ideia?
               </Link>
             </div>
-          </section>
+          </div>
         </div>
       </div>
 

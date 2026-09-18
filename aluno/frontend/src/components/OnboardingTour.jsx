@@ -17,148 +17,56 @@ import { ArrowRight, X } from "lucide-react";
 // volta. Quem quiser rever tem o botão "Guia" no topo do Painel e o "Rever o
 // guia" no menu — os dois abrem esta mesma sequência (`?guia=1`).
 //
-// O QUE ENTRA: TUDO o que o aluno pode usar. A régua antiga era "as nove
-// ferramentas principais"; ela deixava de fora justamente o que ninguém
-// descobre sozinho — provas do ENEM, revisões, cronograma, liga, ofensiva,
-// comunidade, instalar o app, falar com a equipe. Uma ferramenta que só existe
-// atrás de um ícone de grade não existe para quem não sabe que ela existe.
+// O QUE ENTRA: só o indispensável para COMEÇAR. A régua anterior era o
+// oposto — "tudo o que o aluno pode usar" —, e produzia vinte e dois balões
+// enfileirados antes da primeira questão: provas, revisões, cronograma, liga,
+// ofensiva, conquistas, comunidade, Sparks, instalar o app, falar com a
+// equipe. Um tour de vinte e dois passos não é onboarding, é o produto
+// pedindo desculpa por ter vinte portas.
 //
-// Uma frase por passo, sempre. Completo não quer dizer longo de ler: são
-// vinte e um passos de uma linha, não cinco parágrafos de filosofia do
-// produto. Alvo que pode não estar na tela (seção que só aparece com dado)
-// simplesmente centraliza o balão, sem quebrar a sequência.
+// Cinco passos: quem está falando, onde você está, o que fazer agora, onde
+// pedir ajuda, onde mora o resto. O resto se descobre USANDO — é para isso
+// que existem a seção "Explorar" no Painel e o Menu agrupado por intenção.
+//
+// Uma frase por passo, sempre.
 const STEPS = [
   {
     target: null,
     mascote: true,
     title: "Oi, eu sou a Mentis",
-    text: "Eu acompanho você até o dia da prova. Meu trabalho é um só: descobrir por que você erra e transformar isso no seu plano. Em um minuto eu te mostro tudo.",
+    text: "Eu acompanho você até o dia da prova. Meu trabalho é um só: descobrir por que você erra e transformar isso no seu plano.",
   },
-  // ONDE ELE ESTÁ, ANTES DO QUE ELE FAZ. O passo entrou em 2026-09-16 junto
-  // com a barra inferior do celular: até então o aluno de celular terminava
-  // o guia inteiro sem nunca ter visto que existe navegação, porque não
-  // existia. No desktop o mesmo passo aponta a fileira de abas de cima, que
-  // agora acende a rota atual.
+  // ONDE ELE ESTÁ. A mesma barra nos dois aparelhos desde 2026-09-17, então
+  // este passo finalmente diz a mesma coisa no celular e no computador.
   {
     target: "nav-primarios",
     title: "Sua barra",
-    text: "Treino, Painel, Redação, Semana, Mural e eu. A aba acesa é onde você está agora.",
+    text: "Painel, Treino, Praticar e eu. A aba acesa é onde você está agora.",
     mobile: {
       target: "barra-inferior",
       title: "Sua barra",
       text: "Ela te segue em toda tela. O botão aceso do meio é praticar — é por ele que quase tudo começa.",
     },
   },
-  // O MAPA DEPOIS. É a peça de maior impacto visual do Sapiens e a que
-  // comunica o valor do produto sem um parágrafo — vir logo em seguida é
-  // decisão de produto, não ordem de tela.
+  // O QUE FAZER. O único passo que importa de verdade no primeiro minuto.
   {
-    target: "dash-mapa",
-    title: "Mapa de Treino",
-    text: "56 pontos. Cada um é uma missão curta. Domine um e o território ao redor se revela.",
+    target: "dash-agora",
+    title: "Comece por aqui",
+    text: "Esta é a sua próxima ação, escolhida pelo que você já respondeu. Quando estiver em dúvida sobre o que estudar, é esta a resposta.",
   },
-  {
-    target: "dash-provas",
-    title: "Provas do ENEM",
-    text: "As provas inteiras, questão por questão, do jeito que caíram — e cada resposta alimenta o resto.",
-  },
-  {
-    target: "dash-mastery",
-    title: "Seu domínio",
-    text: "Seis frentes. Cada uma sobe com ACERTO: 40 acertos numa frente é o que vale um \u201cDominado\u201d.",
-  },
-  {
-    target: "tour-ofensiva",
-    title: "Ofensiva",
-    text: "Dias seguidos estudando. Se faltar um, o congelador salva a sequência.",
-  },
-  {
-    target: "tour-liga",
-    title: "Liga da semana",
-    text: "Seu XP te coloca numa tabela com outros alunos. Zera toda segunda.",
-  },
-  {
-    target: "tour-missoes",
-    title: "Missões de hoje",
-    text: "Três por dia, trocam à meia-noite. Concluir rende Sparks e XP.",
-  },
-  {
-    target: "dash-conquistas",
-    title: "Conquistas",
-    text: "Clique em qualquer uma: ela abre com o seu progresso, o que falta e onde conseguir.",
-  },
-  {
-    target: "dash-foco",
-    title: "Onde focar",
-    text: "Suas dificuldades, com destino. Todo card leva à missão que trata aquilo — ou a mim.",
-    // Some quando o aluno ainda não tem medida nenhuma: apontar para uma
-    // seção que não está na tela centralizaria um balão falando do nada.
-  },
-  {
-    target: "dash-hoje",
-    title: "Hoje",
-    text: "Seu cronograma da semana e as revisões que venceram — o que tem hora marcada aparece aqui.",
-  },
-  {
-    target: "dash-mentis",
-    mascote: true,
-    title: "Eu leio o seu histórico",
-    text: "Antes da primeira palavra eu já sei onde você escorrega. Te levar a qualquer tela daqui é de graça.",
-  },
-  {
-    target: "dash-redacao",
-    title: "Redação",
-    text: "Escreva no padrão ENEM e receba a nota nas cinco competências.",
-  },
-  {
-    target: "dash-gerar",
-    title: "Questões feitas para você",
-    text: "Eu gero questões novas sobre a sua lacuna exata. 5 Sparks cada uma, sempre com o preço à vista.",
-  },
-  {
-    target: "dash-desempenho",
-    title: "Meu desempenho",
-    text: "Não é quanto você errou. É por quê — o padrão que se repete nos seus erros.",
-  },
-  {
-    target: "dash-sparks",
-    title: "Sparks",
-    text: "A moeda do que usa IA. Você ganha estudando e pode comprar. Nada com IA roda sem o preço aparecer antes.",
-  },
-  {
-    target: "dash-comunidade",
-    title: "Comunidade",
-    text: "Mural de dúvidas: perguntar é de graça e responder bem rende Sparks.",
-  },
-  {
-    target: "dash-aulas",
-    title: "Mentoria com o 1º colocado da USP",
-    text: "Quando o problema é maior que uma questão: entre na lista de espera da mentoria com quem passou em 1º lugar em Medicina na USP.",
-  },
-  {
-    target: "dash-extras",
-    title: "App e contato",
-    text: "Instale o Sapiens no aparelho e fale com a equipe quando achar um erro ou tiver uma ideia.",
-  },
-  {
-    target: "nav-more",
-    title: "Tudo o que existe",
-    text: "Este botão abre o produto inteiro em grade: liga, histórico, feed, lixeira e todas as telas.",
-    // No celular o lançador deixou de abrir por um botão ao lado da marca e
-    // passou a abrir pelo "Mais" da barra inferior.
-    mobile: { target: "barra-mais" },
-  },
+  // ONDE PEDIR AJUDA. A camada, não a página.
   {
     target: "mentis-widget",
     mascote: true,
     title: "Estou em toda tela",
     text: "Este ícone me chama de qualquer lugar do Sapiens, sem você perder o que estava fazendo.",
   },
+  // ONDE ESTÁ O RESTO. Não o que É o resto — só onde ele mora.
   {
-    target: null,
-    mascote: true,
-    title: "É isso",
-    text: "Agora é com você: abra o mapa e responda a primeira. Eu cuido do resto do caminho — e o botão \u201cGuia\u201d, no topo do Painel, me traz de volta quando quiser.",
+    target: "nav-more",
+    title: "O resto mora aqui",
+    text: "Redação, revisões, cronograma, cursos, comunidade e o seu desempenho. Vá descobrindo conforme precisar — não precisa saber tudo hoje.",
+    mobile: { target: "barra-mais" },
   },
 ];
 
