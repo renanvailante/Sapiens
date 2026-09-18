@@ -25,6 +25,8 @@ import secrets
 import uuid
 from datetime import datetime, timedelta, timezone
 
+from typing import Any
+
 import bcrypt
 import httpx
 from fastapi import APIRouter, Body, Cookie, Depends, HTTPException, Request, Response
@@ -53,6 +55,15 @@ def _admin_emails() -> set[str]:
 
 def _is_admin_email(email: str) -> bool:
     return email.lower() in _admin_emails()
+
+
+async def _is_promoter(email: str) -> bool:
+    """Um promoter não tem flag própria: é ter o e-mail gravado em algum
+    `promo_codes.promoter_email` (gerido pelo admin em `/admin/promo-codes`).
+    Calculado a cada resposta de auth em vez de guardado no `User` porque o
+    admin pode atribuir/remover um cupom a qualquer momento, e uma flag
+    persistida ficaria desatualizada até o próximo re-cálculo manual."""
+    return bool(await _db.promo_codes.find_one({"promoter_email": email.lower()}, {"_id": 1}))
 
 
 def _hash_password(pw: str) -> str:
@@ -202,6 +213,41 @@ async def _registrar_cupom(user_id: str, code: str | None, sparks: int | None) -
     )
 
 
+async def _registrar_indicacao(user_id: str, code: str | None) -> None:
+    """Segunda leitura do MESMO campo do cadastro: se o texto digitado não era
+    um cupom do catálogo, ainda pode ser o código pessoal de um aluno.
+
+    Um campo só na tela, e não dois, porque quem recebe um código de um amigo
+    não tem como saber de que tipo ele é — e um formulário que exige essa
+    distinção transforma o erro de classificação da pessoa em "não funcionou".
+
+    A ordem de resolução (cupom primeiro, indicação depois) está em
+    `_bonus_de_cadastro`, que é quem já consumiu o catálogo: chegar aqui
+    significa que nenhum cupom ativo casou. O vínculo não dá Spark nenhum
+    agora — ele só passa a valer na primeira compra do indicado, e quem paga
+    é o webhook (ver `indicacoes.creditar_primeira_compra`).
+
+    Erro aqui nunca derruba o cadastro: a conta existe, e uma indicação
+    perdida é infinitamente menos grave que um cadastro que falha.
+    """
+    if not code:
+        return
+    import indicacoes
+
+    try:
+        indicador = await indicacoes.resolver_indicador(_db, code)
+        if not indicador:
+            return
+        await indicacoes.registrar_indicacao(
+            _db,
+            indicado_id=user_id,
+            indicador_id=indicador["user_id"],
+            codigo=indicador["referral_code"],
+        )
+    except Exception:  # noqa: BLE001
+        logger.exception("Falha ao registrar indicação de %s (código %r).", user_id, code)
+
+
 @router.post("/signup")
 async def signup(
     payload: SignupRequest,
@@ -220,22 +266,32 @@ async def signup(
         whatsapp_digitado, whatsapp_e164 = wa.normalizar(payload.whatsapp)
     except wa.WhatsAppInvalido as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+    responsavel = _campos_do_responsavel(
+        payload.menor_de_idade,
+        payload.responsavel_nome,
+        payload.responsavel_whatsapp,
+        exigir=True,
+    )
     user = User(
         user_id=await _gerar_user_id_unico(payload.name),
         email=payload.email, name=payload.name, provider="email",
         password_hash=_hash_password(payload.password),
         is_admin=_is_admin_email(payload.email),
         whatsapp=whatsapp_digitado, whatsapp_e164=whatsapp_e164,
+        **responsavel,
     )
     await _db.users.insert_one(user.model_dump())
     sparks_iniciais, cupom, cupom_sparks = await _bonus_de_cadastro(payload.promo_code)
     await _registrar_cupom(user.user_id, cupom, cupom_sparks)
+    if not cupom:
+        await _registrar_indicacao(user.user_id, payload.promo_code)
     fs.ensure_student_profile(user.user_id, user.name, user.email, initial_sparks=sparks_iniciais)
     token = await _create_session(user.user_id)
     _set_cookie(response, token)
     return {
         "user": {"user_id": user.user_id, "email": user.email, "name": user.name,
-                 "picture": user.picture, "is_admin": user.is_admin},
+                 "picture": user.picture, "is_admin": user.is_admin,
+                 "is_promoter": await _is_promoter(user.email)},
         "token": token,
     }
 
@@ -256,7 +312,8 @@ async def login(
     _set_cookie(response, token)
     return {
         "user": {"user_id": doc["user_id"], "email": doc["email"], "name": doc["name"],
-                 "picture": doc.get("picture"), "is_admin": is_admin},
+                 "picture": doc.get("picture"), "is_admin": is_admin,
+                 "is_promoter": await _is_promoter(doc["email"])},
         "token": token,
     }
 
@@ -267,6 +324,9 @@ async def google_sign_in(
     id_token: str = Body(..., embed=True),
     promo_code: str | None = Body(default=None, embed=True),
     whatsapp: str | None = Body(default=None, embed=True),
+    menor_de_idade: bool = Body(default=False, embed=True),
+    responsavel_nome: str | None = Body(default=None, embed=True),
+    responsavel_whatsapp: str | None = Body(default=None, embed=True),
 ):
     """Troca um ID token do Firebase pela sessão do Sapiens.
 
@@ -344,17 +404,67 @@ async def google_sign_in(
             email=email, name=nome, picture=foto, provider="google",
             is_admin=admin, email_verificado=True,
             **_campos_de_whatsapp(whatsapp),
+            **_campos_do_responsavel(
+                menor_de_idade, responsavel_nome, responsavel_whatsapp, exigir=False
+            ),
         )
         await _db.users.insert_one(novo.model_dump())
         user_id = novo.user_id
         sparks_iniciais, cupom, cupom_sparks = await _bonus_de_cadastro(promo_code)
         await _registrar_cupom(user_id, cupom, cupom_sparks)
+        if not cupom:
+            await _registrar_indicacao(user_id, promo_code)
         fs.ensure_student_profile(user_id, nome, email, initial_sparks=sparks_iniciais)
 
     token = await _create_session(user_id)
     _set_cookie(response, token)
     doc = await _db.users.find_one({"user_id": user_id}, {"_id": 0, "password_hash": 0})
+    doc["is_promoter"] = await _is_promoter(doc["email"])
     return {"user": doc, "token": token}
+
+
+def _campos_do_responsavel(
+    menor: bool, nome: str | None, whatsapp: str | None, *, exigir: bool
+) -> dict[str, Any]:
+    """Os campos do responsável legal de um aluno menor de idade.
+
+    `exigir=True` (cadastro por e-mail) recusa o cadastro com 422 quando falta
+    nome ou telefone: a declaração de ser menor SEM um responsável alcançável
+    é exatamente o registro que a LGPD (art. 14) não aceita, e gravá-la assim
+    seria pior do que não perguntar nada.
+
+    `exigir=False` (login com Google, onde não há formulário) grava o que
+    veio e não barra ninguém — a entrada da pessoa não pode depender de um
+    campo que a tela daquele caminho nem sempre mostra.
+
+    Quem declara ser maior nunca recebe campo de responsável, mesmo que a
+    requisição traga um: seria guardar dado de terceiro sem finalidade.
+    """
+    if not menor:
+        return {"menor_de_idade": False}
+    nome = (nome or "").strip()
+    bruto = (whatsapp or "").strip()
+    if exigir and (not nome or not bruto):
+        raise HTTPException(
+            status_code=422,
+            detail="Quem tem menos de 18 anos precisa informar o nome e o WhatsApp do responsável.",
+        )
+    campos: dict[str, Any] = {"menor_de_idade": True}
+    if nome:
+        campos["responsavel_nome"] = nome
+    if bruto:
+        try:
+            digitado, e164 = wa.normalizar(bruto)
+        except wa.WhatsAppInvalido as exc:
+            if exigir:
+                raise HTTPException(
+                    status_code=422, detail=f"WhatsApp do responsável: {exc}"
+                ) from exc
+            logger.info("WhatsApp do responsável inválido ignorado no login com Google.")
+            return campos
+        campos["responsavel_whatsapp"] = digitado
+        campos["responsavel_whatsapp_e164"] = e164
+    return campos
 
 
 def _campos_de_whatsapp(bruto: str | None) -> dict[str, str]:
@@ -376,23 +486,49 @@ def _campos_de_whatsapp(bruto: str | None) -> dict[str, str]:
 
 
 @router.post("/whatsapp")
-async def definir_whatsapp(request: Request, whatsapp: str = Body(..., embed=True)):
-    """Informa (ou corrige) o WhatsApp da conta.
+async def definir_whatsapp(
+    request: Request,
+    whatsapp: str = Body(..., embed=True),
+    menor_de_idade: bool | None = Body(default=None, embed=True),
+    responsavel_nome: str | None = Body(default=None, embed=True),
+    responsavel_whatsapp: str | None = Body(default=None, embed=True),
+):
+    """Completa o cadastro de quem entrou sem preencher formulário.
 
-    Existe por dois caminhos que o cadastro não cobre: contas criadas antes de
-    2026-09-15, quando o campo não existia, e contas criadas pelo botão do
-    Google a partir da tela de login. Sem esta rota, o aluno mais antigo — que
-    é justamente o mais engajado — seria o único que a equipe não consegue
-    avisar da aula de quinta.
+    **Quem cai aqui:** quem criou a conta pelo botão do Google a partir da aba
+    de LOGIN (onde não existe formulário nenhum) e as contas anteriores a
+    2026-09-15, quando o campo não existia. Para essas duas, esta é a ÚNICA
+    porta pela qual o telefone entra — e sem telefone a equipe não alcança o
+    aluno por canal nenhum.
+
+    Aceita os mesmos campos do cadastro por e-mail (2026-09-17): o WhatsApp e,
+    para quem se declara menor de idade, o responsável. Uma chamada só, porque
+    é uma tela só — ver `pages/CompletarCadastro.jsx`.
+
+    `menor_de_idade=None` significa "não perguntei nesta chamada" e deixa os
+    campos como estão; `False` limpa o responsável, porque quem se declarou
+    maior não pode continuar com o telefone de um terceiro guardado.
     """
     user = await require_user(request)
     try:
         digitado, e164 = wa.normalizar(whatsapp)
     except wa.WhatsAppInvalido as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
-    await _db.users.update_one(
-        {"user_id": user.user_id}, {"$set": {"whatsapp": digitado, "whatsapp_e164": e164}}
-    )
+
+    campos: dict[str, Any] = {"whatsapp": digitado, "whatsapp_e164": e164}
+    if menor_de_idade is not None:
+        campos.update(
+            _campos_do_responsavel(
+                menor_de_idade, responsavel_nome, responsavel_whatsapp, exigir=True,
+            )
+        )
+        if not menor_de_idade:
+            campos.update({
+                "responsavel_nome": None,
+                "responsavel_whatsapp": None,
+                "responsavel_whatsapp_e164": None,
+            })
+    await _db.users.update_one({"user_id": user.user_id}, {"$set": campos})
     return {"ok": True, "whatsapp": digitado}
 
 
@@ -401,7 +537,9 @@ async def me(request: Request):
     user = await _resolve_user(request)
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    return user.model_dump(exclude={"password_hash"})
+    doc = user.model_dump(exclude={"password_hash"})
+    doc["is_promoter"] = await _is_promoter(user.email)
+    return doc
 
 
 # ---------------------------------------------------------------------------

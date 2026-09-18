@@ -1,0 +1,563 @@
+{
+  "schema_version": "1.0",
+  "estacao_id": "mb-16-inequacoes",
+  "titulo": "Inequações",
+  "objetivo": "Você vai resolver inequações do 1º grau, representar soluções em intervalos e reconhecer quando o sinal da desigualdade deve ser invertido.",
+  "versao": "2026-09-16",
+  "duracao_minutos": 11,
+  "numero": 16,
+  "conceitos": [
+    "inequacoes",
+    "intervalos",
+    "inversao-de-sinal"
+  ],
+  "conclusao": {
+    "tipo": "minimo_de_acertos",
+    "minimo": 7
+  },
+  "fonte": {
+    "arquivo": "deepseek_markdown_20260916_3f5001.md",
+    "pasta": "cursos/matemática básica"
+  },
+  "blocos": [
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-16-c-01",
+      "variante": "padrao",
+      "markdown": "Uma inequação é uma desigualdade:\n\n`ax + b > 0`, `ax + b ≥ 0`, `ax + b < 0`, `ax + b ≤ 0`\n\nA solução é um **conjunto de valores**, não um único valor."
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-16-c-02",
+      "variante": "padrao",
+      "markdown": "Multiplicar ou dividir os dois lados por um número **negativo** **inverte o sinal** da desigualdade.\n\n- `−2x > 6` → `x < −3`\n- `−x ≤ 4` → `x ≥ −4`\n\nSomar ou subtrair não altera o sinal.",
+      "titulo": "Regra de ouro"
+    },
+    {
+      "tipo": "tabela",
+      "bloco_id": "mb-16-c-03",
+      "colunas": [
+        "Desigualdade",
+        "Intervalo"
+      ],
+      "linhas": [
+        [
+          "`x > a`",
+          "`]a, +∞[`"
+        ],
+        [
+          "`x ≥ a`",
+          "`[a, +∞[`"
+        ],
+        [
+          "`x < a`",
+          "`]−∞, a[`"
+        ],
+        [
+          "`x ≤ a`",
+          "`]−∞, a]`"
+        ],
+        [
+          "`a < x ≤ b`",
+          "`]a, b]`"
+        ]
+      ],
+      "titulo": "Representação em intervalos"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-16-c-04",
+      "variante": "padrao",
+      "markdown": "Colchete virado para fora do intervalo indica que a extremidade **não** entra. Colchete virado para dentro indica que entra."
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-16-ex-01",
+      "enunciado": "Resolva `x + 3 > 7`.",
+      "passos": [
+        {
+          "texto": "`x > 4`"
+        },
+        {
+          "texto": "Intervalo: `]4, +∞[`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-16-ex-02",
+      "enunciado": "Resolva `2x < 10`.",
+      "passos": [
+        {
+          "texto": "`x < 5`"
+        },
+        {
+          "texto": "Intervalo: `]−∞, 5[`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-16-ex-03",
+      "enunciado": "Resolva `−x > 3`.",
+      "passos": [
+        {
+          "texto": "Multiplicando por −1 e invertendo: `x < −3`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-16-ex-04",
+      "enunciado": "Resolva `3x − 4 ≤ 8`.",
+      "passos": [
+        {
+          "texto": "`3x ≤ 12`"
+        },
+        {
+          "texto": "`x ≤ 4`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-16-ex-05",
+      "enunciado": "Resolva `3(x − 1) < 2(x + 2)`.",
+      "passos": [
+        {
+          "texto": "`3x − 3 < 2x + 4`"
+        },
+        {
+          "texto": "`x < 7`"
+        }
+      ]
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-16-es-01",
+      "variante": "destaque",
+      "markdown": "- Trate como uma equação, mas **fique atento ao sinal** ao multiplicar ou dividir por negativo.\n- Ao passar um número negativo para o outro lado **somando ou subtraindo**, o sinal **não** muda.\n- Em problemas contextualizados, verifique se a solução faz sentido (preço positivo, tempo positivo).\n- Represente graficamente na reta numérica quando ajudar a visualizar."
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-16-er-01",
+      "variante": "atencao",
+      "markdown": "- **Esquecer de inverter o sinal** ao multiplicar/dividir por negativo.\n- **Apresentar apenas um valor** como resposta. Inequações têm infinitas soluções.\n- **Confundir `]a, b[` com `[a, b]`.** Os extremos mudam o conjunto.\n- **Trocar o sinal ao somar/subtrair.** Só multiplicação e divisão por negativo invertem."
+    },
+    {
+      "tipo": "video",
+      "bloco_id": "mb-16-video",
+      "titulo": "Inequações — aula em vídeo",
+      "provedor": "youtube",
+      "ref": null,
+      "resumo": "Aula conduzida pelo 1º colocado de Medicina da USP."
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-16-q01",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Resolva `x + 3 > 7`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "x > 10"
+        },
+        {
+          "id": "b",
+          "texto": "x < 4"
+        },
+        {
+          "id": "c",
+          "texto": "x > 3"
+        },
+        {
+          "id": "d",
+          "texto": "x > 4"
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "b": "Inverte sem motivo.",
+        "a": "Soma em vez de subtrair.",
+        "c": "Ignora o 3."
+      },
+      "solucao": "`x > 4`.",
+      "conceitos": [
+        "inequacoes"
+      ],
+      "origem": {
+        "estacao": 16,
+        "questao": "Questão 1"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-16-q02",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Resolva `2x < 10`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "x > 5"
+        },
+        {
+          "id": "b",
+          "texto": "x ≤ 5"
+        },
+        {
+          "id": "c",
+          "texto": "x < 20"
+        },
+        {
+          "id": "d",
+          "texto": "x < 5"
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "a": "Inverte sem motivo.",
+        "c": "Multiplica.",
+        "b": "Troca a desigualdade."
+      },
+      "solucao": "`x < 5`.",
+      "conceitos": [
+        "inequacoes"
+      ],
+      "origem": {
+        "estacao": 16,
+        "questao": "Questão 2"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-16-q03",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Resolva `−x > 3`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "x < −3"
+        },
+        {
+          "id": "b",
+          "texto": "x > −3"
+        },
+        {
+          "id": "c",
+          "texto": "x < 3"
+        },
+        {
+          "id": "d",
+          "texto": "x > 3"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "b": "Esquece a inversão.",
+        "d": "Esta é uma das que erram sinal.",
+        "c": "Esta é uma das que erram sinal."
+      },
+      "solucao": "Multiplicando por −1, inverte: `x < −3`.",
+      "conceitos": [
+        "inversao-de-sinal"
+      ],
+      "origem": {
+        "estacao": 16,
+        "questao": "Questão 3"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-16-q04",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Resolva `3x − 4 ≤ 8`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "x ≤ 4"
+        },
+        {
+          "id": "b",
+          "texto": "x ≤ 12"
+        },
+        {
+          "id": "c",
+          "texto": "x ≥ 4"
+        },
+        {
+          "id": "d",
+          "texto": "x < 4"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "c": "Inverte.",
+        "b": "Não divide.",
+        "d": "Troca para `<`."
+      },
+      "solucao": "`3x ≤ 12 → x ≤ 4`.",
+      "conceitos": [
+        "inequacoes"
+      ],
+      "origem": {
+        "estacao": 16,
+        "questao": "Questão 4"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-16-q05",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Resolva `2x + 1 > x − 3`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "x < −4"
+        },
+        {
+          "id": "b",
+          "texto": "x > 4"
+        },
+        {
+          "id": "c",
+          "texto": "x > −4"
+        },
+        {
+          "id": "d",
+          "texto": "x > −2"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "a": "Inverte.",
+        "b": "Troca sinal.",
+        "d": "Erro algébrico."
+      },
+      "solucao": "`2x − x > −3 − 1 → x > −4`.",
+      "conceitos": [
+        "inequacoes"
+      ],
+      "origem": {
+        "estacao": 16,
+        "questao": "Questão 5"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-16-q06",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Resolva `−2x ≥ 6`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "x ≤ −3"
+        },
+        {
+          "id": "b",
+          "texto": "x ≤ 3"
+        },
+        {
+          "id": "c",
+          "texto": "x ≥ −3"
+        },
+        {
+          "id": "d",
+          "texto": "x ≥ 3"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "c": "Esquece a inversão.",
+        "b": "Esta é uma das que erram sinal.",
+        "d": "Esta é uma das que erram sinal."
+      },
+      "solucao": "Dividindo por −2 e invertendo: `x ≤ −3`.",
+      "conceitos": [
+        "inversao-de-sinal"
+      ],
+      "origem": {
+        "estacao": 16,
+        "questao": "Questão 6"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-16-q07",
+      "nivel": 3,
+      "formato": "multipla_escolha",
+      "enunciado": "Resolva `3(x − 1) < 2(x + 2)`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "x > 1"
+        },
+        {
+          "id": "b",
+          "texto": "x > 7"
+        },
+        {
+          "id": "c",
+          "texto": "x < 7"
+        },
+        {
+          "id": "d",
+          "texto": "x < 1"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "b": "Inverte.",
+        "d": "Esta é uma das que vêm de distributivas erradas.",
+        "a": "Esta é uma das que vêm de distributivas erradas."
+      },
+      "solucao": "`3x − 3 < 2x + 4 → x < 7`.",
+      "conceitos": [
+        "inequacoes"
+      ],
+      "origem": {
+        "estacao": 16,
+        "questao": "Questão 7"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-16-q08",
+      "nivel": 3,
+      "formato": "multipla_escolha",
+      "enunciado": "O intervalo `[−2, 5[` representa o conjunto:",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "{x | −2 < x ≤ 5}"
+        },
+        {
+          "id": "b",
+          "texto": "{x | −2 ≤ x ≤ 5}"
+        },
+        {
+          "id": "c",
+          "texto": "{x | −2 < x < 5}"
+        },
+        {
+          "id": "d",
+          "texto": "{x | −2 ≤ x < 5}"
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "a": "Esta é uma das que trocam as inclusões.",
+        "b": "Esta é uma das que trocam as inclusões.",
+        "c": "Esta é uma das que trocam as inclusões."
+      },
+      "solucao": "Colchete para dentro = inclui; para fora = exclui. `−2` entra, `5` não entra.",
+      "conceitos": [
+        "intervalos"
+      ],
+      "origem": {
+        "estacao": 16,
+        "questao": "Questão 8"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-16-q09",
+      "nivel": 4,
+      "formato": "multipla_escolha",
+      "enunciado": "Se `x > 3` e `x < 8`, qual o intervalo de `x`?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "]3, 8["
+        },
+        {
+          "id": "b",
+          "texto": "]3, 8]"
+        },
+        {
+          "id": "c",
+          "texto": "[3, 8]"
+        },
+        {
+          "id": "d",
+          "texto": "[3, 8["
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "c": "Esta é uma das que incluem extremos indevidamente.",
+        "d": "Esta é uma das que incluem extremos indevidamente.",
+        "b": "Esta é uma das que incluem extremos indevidamente."
+      },
+      "solucao": "Extremos abertos, pois as desigualdades são estritas.",
+      "conceitos": [
+        "intervalos"
+      ],
+      "origem": {
+        "estacao": 16,
+        "questao": "Questão 9"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-16-q10",
+      "nivel": 4,
+      "formato": "multipla_escolha",
+      "enunciado": "Um estacionamento cobra R$ 5 pela primeira hora e R$ 3 por hora adicional. Se você tem R$ 20, qual o número máximo `h` de horas que pode pagar?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "h ≤ 6"
+        },
+        {
+          "id": "b",
+          "texto": "h ≤ 8"
+        },
+        {
+          "id": "c",
+          "texto": "h ≤ 7"
+        },
+        {
+          "id": "d",
+          "texto": "h ≤ 5"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "d": "Esta é uma das que vêm de erros na montagem.",
+        "c": "Esta é uma das que vêm de erros na montagem.",
+        "b": "Esta é uma das que vêm de erros na montagem."
+      },
+      "solucao": "`5 + 3(h − 1) ≤ 20 → 3h + 2 ≤ 20 → 3h ≤ 18 → h ≤ 6`.",
+      "conceitos": [
+        "inequacoes"
+      ],
+      "origem": {
+        "estacao": 16,
+        "questao": "Questão 10"
+      }
+    },
+    {
+      "tipo": "desafio",
+      "bloco_id": "mb-16-desafio",
+      "nivel": 5,
+      "enunciado": "Resolva:\n\n`(x − 1)/2 > (x + 1)/3`",
+      "formato": "texto_curto",
+      "gabarito": {
+        "aceitos": [
+          "x > 5",
+          "x>5"
+        ]
+      },
+      "solucao": "- Multiplicando por 6: `3(x − 1) > 2(x + 1)`\n- `3x − 3 > 2x + 2`\n- `x > 5`"
+    }
+  ],
+  "pre_requisitos": [
+    "mb-11-equacoes-do-1o-grau"
+  ]
+}

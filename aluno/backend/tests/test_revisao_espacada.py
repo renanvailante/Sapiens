@@ -9,8 +9,9 @@ O que estes testes travam, nesta ordem de importância:
 2. **Raiz nova colapsa; reteste acertado expande; reteste errado NÃO expande.**
    É a regra inteira do espaçamento adaptativo, e a que mais silenciosamente
    se perde numa refatoração.
-3. **Disciplina de interrupção.** Uma intervenção ativa por vez, cooldown por
-   par, dispensa contada. Sem isto o Professor Invisível vira pop-up.
+3. **Disciplina de interrupção.** No máximo `_MAX_INTERVENCOES_ATIVAS` ativas
+   por vez (nunca duas para o mesmo processo), cooldown por par, dispensa
+   contada. Sem isto o Professor Invisível vira pop-up.
 4. **Custo O(1).** Nada aqui varre evento — ver também
    `test_custo_firestore.py::TestCustoDaRevisao`.
 5. **Hipótese continua hipótese.** O rótulo `provisorio` atravessa da raiz até
@@ -32,6 +33,7 @@ import revisao_espacada as rev  # noqa: E402
 PROC = "PROC-SIMB-01"
 ERRO = "ERR-03"
 OUTRO_PROC = "PROC-QUANT-04"
+TERCEIRO_PROC = "PROC-CAUSAL-01"
 
 
 def _raiz(erro=ERRO, processo=PROC, confianca=0.7, provisorio=False):
@@ -244,37 +246,45 @@ class TestGatilho:
         b = _responder(b, dia="2026-09-03", raiz=_raiz())
         g = rev.avaliar_gatilho(b, processo_id=PROC, hoje="2026-09-03")
         b = rev.marcar_disparo(b, g, quando="2026-09-03T10:00:00+00:00", hoje="2026-09-03")
-        b = rev.encerrar_intervencao(b, quando="2026-09-03T10:05:00+00:00")
+        b = rev.encerrar_intervencao(b, processo_id=PROC, quando="2026-09-03T10:05:00+00:00")
 
         b = _responder(b, dia="2026-09-03", raiz=_raiz())
         assert rev.avaliar_gatilho(b, processo_id=PROC, hoje="2026-09-03") is None, "redisparou no cooldown"
 
-    def test_nunca_ha_duas_intervencoes_ativas(self):
+    def test_ate_duas_intervencoes_simultaneas_mas_nunca_a_terceira(self):
         b = _responder(None, dia="2026-09-01", raiz=_raiz())
         b = _responder(b, dia="2026-09-03", raiz=_raiz())
         g = rev.avaliar_gatilho(b, processo_id=PROC, hoje="2026-09-03")
         b = rev.marcar_disparo(b, g, quando="2026-09-03T10:00:00+00:00", hoje="2026-09-03")
 
+        # Um segundo processo, com evidência própria, PODE disparar em paralelo.
         b = _responder(b, dia="2026-09-03", raiz=_raiz(processo=OUTRO_PROC), processos=(OUTRO_PROC,))
         b = _responder(b, dia="2026-09-05", raiz=_raiz(processo=OUTRO_PROC), processos=(OUTRO_PROC,))
-        assert rev.avaliar_gatilho(b, processo_id=OUTRO_PROC, hoje="2026-09-05") is None
-        assert b["intervencao_ativa"]["processo_id"] == PROC
+        g2 = rev.avaliar_gatilho(b, processo_id=OUTRO_PROC, hoje="2026-09-05")
+        assert g2 is not None, "segundo processo represado pelo primeiro"
+        b = rev.marcar_disparo(b, g2, quando="2026-09-05T10:00:00+00:00", hoje="2026-09-05")
+        assert set(b["intervencoes_ativas"]) == {PROC, OUTRO_PROC}
+
+        # Um terceiro esbarra no teto.
+        b = _responder(b, dia="2026-09-05", raiz=_raiz(processo=TERCEIRO_PROC), processos=(TERCEIRO_PROC,))
+        b = _responder(b, dia="2026-09-07", raiz=_raiz(processo=TERCEIRO_PROC), processos=(TERCEIRO_PROC,))
+        assert rev.avaliar_gatilho(b, processo_id=TERCEIRO_PROC, hoje="2026-09-07") is None
 
     def test_dispensar_conta_como_sinal(self):
         b = _responder(None, dia="2026-09-01", raiz=_raiz())
         b = _responder(b, dia="2026-09-03", raiz=_raiz())
         g = rev.avaliar_gatilho(b, processo_id=PROC, hoje="2026-09-03")
         b = rev.marcar_disparo(b, g, quando="2026-09-03T10:00:00+00:00", hoje="2026-09-03")
-        b = rev.encerrar_intervencao(b, quando="2026-09-03T10:01:00+00:00", dispensada=True)
+        b = rev.encerrar_intervencao(b, processo_id=PROC, quando="2026-09-03T10:01:00+00:00", dispensada=True)
         assert _entrada(b)["dispensas"] == 1
-        assert b["intervencao_ativa"] is None
+        assert PROC not in b["intervencoes_ativas"]
 
     def test_concluir_nao_conta_dispensa(self):
         b = _responder(None, dia="2026-09-01", raiz=_raiz())
         b = _responder(b, dia="2026-09-03", raiz=_raiz())
         g = rev.avaliar_gatilho(b, processo_id=PROC, hoje="2026-09-03")
         b = rev.marcar_disparo(b, g, quando="2026-09-03T10:00:00+00:00", hoje="2026-09-03")
-        b = rev.encerrar_intervencao(b, quando="2026-09-03T10:01:00+00:00", dispensada=False)
+        b = rev.encerrar_intervencao(b, processo_id=PROC, quando="2026-09-03T10:01:00+00:00", dispensada=False)
         assert _entrada(b)["dispensas"] == 0
 
 

@@ -1,0 +1,518 @@
+{
+  "schema_version": "1.0",
+  "estacao_id": "mb-18-medias",
+  "titulo": "Médias",
+  "objetivo": "Você vai calcular média aritmética simples, média ponderada e mediana, e vai interpretar essas medidas em conjuntos de dados.",
+  "versao": "2026-09-16",
+  "duracao_minutos": 12,
+  "numero": 18,
+  "conceitos": [
+    "media-aritmetica",
+    "media-ponderada",
+    "mediana"
+  ],
+  "conclusao": {
+    "tipo": "minimo_de_acertos",
+    "minimo": 7
+  },
+  "fonte": {
+    "arquivo": "deepseek_markdown_20260916_9a8266.md",
+    "pasta": "cursos/matemática básica"
+  },
+  "blocos": [
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-18-c-01",
+      "variante": "padrao",
+      "markdown": "`M = (x₁ + x₂ + ... + xₙ) / n`\n\nSome todos os valores e divida pela quantidade.",
+      "titulo": "Média aritmética simples"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-18-c-02",
+      "variante": "padrao",
+      "markdown": "Quando cada valor tem um **peso** diferente:\n\n`M = (x₁·p₁ + x₂·p₂ + ... + xₙ·pₙ) / (p₁ + p₂ + ... + pₙ)`\n\nMultiplique cada valor pelo seu peso, some, e divida pela soma dos pesos.",
+      "titulo": "Média ponderada"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-18-c-03",
+      "variante": "padrao",
+      "markdown": "Valor central quando os dados estão **em ordem crescente**:\n\n- Quantidade **ímpar** de dados → o valor do meio.\n- Quantidade **par** de dados → média dos dois centrais.",
+      "titulo": "Mediana"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-18-c-04",
+      "variante": "padrao",
+      "markdown": "- Média é sensível a **valores extremos**.\n- Mediana resiste a valores extremos.\n- Em salários, renda e imóveis, mediana costuma representar melhor o “típico”.",
+      "titulo": "Comparação"
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-18-ex-01",
+      "enunciado": "Média de `4, 6, 8`.",
+      "passos": [
+        {
+          "texto": "`(4 + 6 + 8)/3 = 18/3 = 6`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-18-ex-02",
+      "enunciado": "Média ponderada: notas `8` (peso 2) e `6` (peso 3).",
+      "passos": [
+        {
+          "texto": "`(8×2 + 6×3)/(2+3) = (16 + 18)/5 = 34/5 = 6,8`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-18-ex-03",
+      "enunciado": "Mediana de `{3, 5, 8, 9, 12}`.",
+      "passos": [
+        {
+          "texto": "Ordem crescente, 5 valores, central é o 3º: `8`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-18-ex-04",
+      "enunciado": "Mediana de `{2, 4, 6, 8}`.",
+      "passos": [
+        {
+          "texto": "4 valores, central é a média do 2º e 3º: `(4 + 6)/2 = 5`"
+        }
+      ]
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-18-es-01",
+      "variante": "destaque",
+      "markdown": "- Antes de calcular, **conte quantos valores** existem. É o erro mais comum.\n- Em média ponderada, sempre verifique a soma dos pesos.\n- Para a mediana, **coloque em ordem primeiro**. Nunca trabalhe com dados fora de ordem.\n- Em problemas com valor faltante, use a soma total implícita: `M × n = soma`."
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-18-er-01",
+      "variante": "atencao",
+      "markdown": "- **Dividir pela soma dos pesos em vez da quantidade** na média simples, ou vice-versa.\n- **Esquecer de ordenar** antes de achar a mediana.\n- **Confundir mediana com moda.** Moda é o valor mais frequente.\n- **Achar que a média é sempre o valor mais representativo.** Em dados assimétricos, a mediana representa melhor."
+    },
+    {
+      "tipo": "video",
+      "bloco_id": "mb-18-video",
+      "titulo": "Médias — aula em vídeo",
+      "provedor": "youtube",
+      "ref": null,
+      "resumo": "Aula conduzida pelo 1º colocado de Medicina da USP."
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-18-q01",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Calcule a média de 4, 6 e 8.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "5"
+        },
+        {
+          "id": "b",
+          "texto": "7"
+        },
+        {
+          "id": "c",
+          "texto": "6"
+        },
+        {
+          "id": "d",
+          "texto": "18"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "d": "Não divide."
+      },
+      "solucao": "`18/3 = 6`. B, C erram a divisão.",
+      "conceitos": [
+        "media-aritmetica"
+      ],
+      "origem": {
+        "estacao": 18,
+        "questao": "Questão 1"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-18-q02",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Calcule a média de 5, 7, 9 e 11.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "32"
+        },
+        {
+          "id": "b",
+          "texto": "8"
+        },
+        {
+          "id": "c",
+          "texto": "9"
+        },
+        {
+          "id": "d",
+          "texto": "7"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "a": "Não divide."
+      },
+      "solucao": "`32/4 = 8`. B, C erram.",
+      "conceitos": [
+        "media-aritmetica"
+      ],
+      "origem": {
+        "estacao": 18,
+        "questao": "Questão 2"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-18-q03",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Qual a mediana de `{3, 5, 8, 9, 12}`?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "5"
+        },
+        {
+          "id": "b",
+          "texto": "9"
+        },
+        {
+          "id": "c",
+          "texto": "8"
+        },
+        {
+          "id": "d",
+          "texto": "7"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "a": "É o 2º.",
+        "b": "É o 4º.",
+        "d": "É média indevida."
+      },
+      "solucao": "Já ordenado, 5 valores, central é 8.",
+      "conceitos": [
+        "mediana"
+      ],
+      "origem": {
+        "estacao": 18,
+        "questao": "Questão 3"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-18-q04",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Média ponderada: notas `8` (peso 2) e `6` (peso 3).",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "6,8"
+        },
+        {
+          "id": "b",
+          "texto": "7,0"
+        },
+        {
+          "id": "c",
+          "texto": "7,2"
+        },
+        {
+          "id": "d",
+          "texto": "6,5"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "b": "Esta é uma das que vêm de pesos errados.",
+        "c": "Esta é uma das que vêm de pesos errados.",
+        "d": "Esta é uma das que vêm de pesos errados."
+      },
+      "solucao": "`(16+18)/5 = 34/5 = 6,8`.",
+      "conceitos": [
+        "media-ponderada"
+      ],
+      "origem": {
+        "estacao": 18,
+        "questao": "Questão 4"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-18-q05",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Mediana de `{2, 4, 6, 8}`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "4,5"
+        },
+        {
+          "id": "b",
+          "texto": "4"
+        },
+        {
+          "id": "c",
+          "texto": "5"
+        },
+        {
+          "id": "d",
+          "texto": "6"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "b": "Esta é uma das que escolhem só um.",
+        "d": "Esta é uma das que escolhem só um.",
+        "a": "Erra a média."
+      },
+      "solucao": "`(4+6)/2 = 5`.",
+      "conceitos": [
+        "mediana"
+      ],
+      "origem": {
+        "estacao": 18,
+        "questao": "Questão 5"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-18-q06",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Um aluno tirou notas 6, 7, 8 e 9. Qual a média?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "7,5"
+        },
+        {
+          "id": "b",
+          "texto": "7,75"
+        },
+        {
+          "id": "c",
+          "texto": "8"
+        },
+        {
+          "id": "d",
+          "texto": "7"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "d": "Esta é uma das que vêm de erros.",
+        "c": "Esta é uma das que vêm de erros.",
+        "b": "Esta é uma das que vêm de erros."
+      },
+      "solucao": "`(6+7+8+9)/4 = 30/4 = 7,5`.",
+      "conceitos": [
+        "media-aritmetica"
+      ],
+      "origem": {
+        "estacao": 18,
+        "questao": "Questão 6"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-18-q07",
+      "nivel": 3,
+      "formato": "multipla_escolha",
+      "enunciado": "A média de 4 números é 7. Se 3 deles são 5, 8 e 6, qual o quarto?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "9"
+        },
+        {
+          "id": "b",
+          "texto": "7"
+        },
+        {
+          "id": "c",
+          "texto": "10"
+        },
+        {
+          "id": "d",
+          "texto": "8"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "d": "Esta é uma das que não fecham a soma.",
+        "c": "Esta é uma das que não fecham a soma.",
+        "b": "Esta é uma das que não fecham a soma."
+      },
+      "solucao": "Soma total: `7 × 4 = 28`. `28 − (5+8+6) = 28 − 19 = 9`.",
+      "conceitos": [
+        "media-aritmetica"
+      ],
+      "origem": {
+        "estacao": 18,
+        "questao": "Questão 7"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-18-q08",
+      "nivel": 3,
+      "formato": "multipla_escolha",
+      "enunciado": "Média ponderada com valores 8, 7, 6 e pesos 1, 2, 3, respectivamente.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "6,67"
+        },
+        {
+          "id": "b",
+          "texto": "6"
+        },
+        {
+          "id": "c",
+          "texto": "7,33"
+        },
+        {
+          "id": "d",
+          "texto": "7"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "d": "Esta é uma das que erram pesos.",
+        "c": "Esta é uma das que erram pesos.",
+        "b": "Esta é uma das que erram pesos."
+      },
+      "solucao": "`(8·1 + 7·2 + 6·3)/(1+2+3) = (8+14+18)/6 = 40/6 ≈ 6,67`.",
+      "conceitos": [
+        "media-ponderada"
+      ],
+      "origem": {
+        "estacao": 18,
+        "questao": "Questão 8"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-18-q09",
+      "nivel": 4,
+      "formato": "multipla_escolha",
+      "enunciado": "Dados os valores `{2, 4, 4, 5, 10}`, qual a diferença entre média e mediana?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "0,5"
+        },
+        {
+          "id": "b",
+          "texto": "2"
+        },
+        {
+          "id": "c",
+          "texto": "1,5"
+        },
+        {
+          "id": "d",
+          "texto": "1"
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "b": "Esta é uma das que vêm de erros.",
+        "a": "Esta é uma das que vêm de erros.",
+        "c": "Esta é uma das que vêm de erros."
+      },
+      "solucao": "Média: `25/5 = 5`. Mediana: `4`. Diferença: `1`.",
+      "conceitos": [
+        "media-aritmetica"
+      ],
+      "origem": {
+        "estacao": 18,
+        "questao": "Questão 9 (versão final)"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-18-q10",
+      "nivel": 4,
+      "formato": "multipla_escolha",
+      "enunciado": "Um aluno tem notas 5, 6, 7 em três provas. Que nota precisa na quarta para ter média 6,5?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "9"
+        },
+        {
+          "id": "b",
+          "texto": "8"
+        },
+        {
+          "id": "c",
+          "texto": "7"
+        },
+        {
+          "id": "d",
+          "texto": "7,5"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "c": "Esta é uma das que não fecham.",
+        "a": "Esta é uma das que não fecham.",
+        "d": "Esta é uma das que não fecham."
+      },
+      "solucao": "`5+6+7+x = 4 × 6,5 = 26`. `x = 26 − 18 = 8`.",
+      "conceitos": [
+        "media-aritmetica"
+      ],
+      "origem": {
+        "estacao": 18,
+        "questao": "Questão 10"
+      }
+    },
+    {
+      "tipo": "desafio",
+      "bloco_id": "mb-18-desafio",
+      "nivel": 5,
+      "enunciado": "Em uma turma, a média das notas dos 20 alunos é 7. Se um aluno com nota 5 sair da turma, qual a nova média?",
+      "formato": "numerico",
+      "gabarito": {
+        "valor": 7.1,
+        "tolerancia": 0.01
+      },
+      "solucao": "- Soma total: `20 × 7 = 140`\n- Após a saída: `140 − 5 = 135`\n- Nova média: `135/19 ≈ 7,105` → aproximadamente `7,11`\n- Aproximando para uma casa decimal: `7,1`"
+    }
+  ],
+  "habilidades": [
+    "HAB-25",
+    "HAB-26"
+  ],
+  "pre_requisitos": [
+    "mb-01-operacoes-fundamentais",
+    "mb-02-fracoes"
+  ]
+}

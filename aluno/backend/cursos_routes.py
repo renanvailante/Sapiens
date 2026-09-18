@@ -64,7 +64,10 @@ from pymongo.errors import DuplicateKeyError
 import cursos
 import cursos_conteudo
 import cursos_progresso
+import cursos_publicados
+import ebooks_conteudo
 import firestore_service as fs
+import mentis_routes
 import rate_limit
 import whatsapp as wa
 from auth import require_admin, require_user
@@ -85,6 +88,9 @@ def set_db(db):
     # ela também precisa do banco de progresso. Dois módulos ligando o mesmo
     # banco é barato; um módulo com `_db` nulo em produção não é.
     cursos_progresso.set_db(db)
+    # Mesma razão: a vitrine conta as estações de cada curso, e uma delas pode
+    # ter sido publicada pelo painel (Mongo), e não por commit.
+    cursos_publicados.set_db(db)
 
 
 def _agora_iso() -> str:
@@ -241,6 +247,12 @@ async def listar(user: User = Depends(require_user)):
     # Quais cursos já têm aula publicada. Custa ZERO: a biblioteca de conteúdo
     # é carregada uma vez no boot e vive em memória (ver `cursos_conteudo`). É
     # o que separa, no card, "comprei a pré-venda" de "posso estudar agora".
+    #
+    # A conferência do que foi publicado PELO PAINEL entra aqui pelo mesmo
+    # motivo que entra na porta da estação: quem publica está numa máquina, e
+    # o aluno pode estar em outra. Ela é limitada a uma leitura minúscula por
+    # minuto por processo (ver `cursos_publicados.garantir_atual`).
+    await cursos_publicados.garantir_atual()
     biblioteca = cursos_conteudo.biblioteca()
 
     # O progresso do aluno em TODOS os cursos, numa consulta só. É o que
@@ -251,7 +263,12 @@ async def listar(user: User = Depends(require_user)):
     def _montar(c: dict) -> dict:
         curso_id = c["curso_id"]
         conteudo = biblioteca.curso(curso_id)
-        tenho_acesso = todos_inclusos or curso_id in meus
+        # Admin entra sem comprar — a MESMA regra de
+        # `cursos_estudo_routes._tem_acesso`, e ela precisa estar nos dois
+        # lados. Sem isto a vitrine oferece "comprar por 500 Sparks" a quem a
+        # sala de aula deixaria entrar, e o card do curso publicado não leva a
+        # lugar nenhum: é assim que se valida conteúdo novo em produção.
+        tenho_acesso = user.is_admin or todos_inclusos or curso_id in meus
         item = {
             **c,
             "tenho_interesse": curso_id in marcados,
@@ -273,9 +290,35 @@ async def listar(user: User = Depends(require_user)):
                 )
         return item
 
+    # A PRATELEIRA DE E-BOOKS. Uma consulta a mais no Mongo, e não uma por
+    # e-book: a mesma disciplina do resto desta rota.
+    meus_ebooks = {
+        e["ebook_id"]
+        for e in await _db.ebooks_acessos.find(
+            {"user_id": user.user_id}, {"_id": 0, "ebook_id": 1}
+        ).to_list(50)
+    }
+
+    biblioteca_ebooks = ebooks_conteudo.biblioteca()
+
+    def _montar_ebook(e: dict) -> dict:
+        # O mesmo direito que libera os cursos libera os e-books: quem comprou
+        # o pacote comprou a prateleira. Uma segunda flag para o mesmo pacote
+        # seria uma segunda coisa para esquecer de ligar.
+        tenho = user.is_admin or todos_inclusos or e["ebook_id"] in meus_ebooks
+        return {
+            **e,
+            "tenho_acesso": tenho,
+            "incluso_no_plano": todos_inclusos,
+            # Tem conteúdo para LER dentro do app — nunca um PDF para baixar.
+            "tem_conteudo": biblioteca_ebooks.tem_conteudo(e["ebook_id"]),
+        }
+
     return {
         "areas": cursos.listar_areas(),
         "cursos": [_montar(c) for c in cursos.listar_cursos()],
+        "ebooks": [_montar_ebook(e) for e in cursos.listar_ebooks()],
+        "custo_ebook": cursos.EBOOK_CUSTO_SPARKS,
         "live": await _montar_live(user, saldo, direitos),
         "direitos": direitos,
         "whatsapp": user.whatsapp,
@@ -489,6 +532,141 @@ async def _resposta_do_curso(
         "disponivel": curso.status == cursos.DISPONIVEL,
         "status": curso.status,
     }
+
+
+async def _tem_acesso_ebook(user: User, ebook_id: str) -> bool:
+    """Comprou, ganhou no pacote, ou é admin — mesma regra de
+    `cursos_estudo_routes._tem_acesso`, do outro lado da casa."""
+    if user.is_admin:
+        return True
+    if await _db.ebooks_acessos.find_one({"_id": f"{user.user_id}:{ebook_id}"}, {"_id": 1}):
+        return True
+    return fs.tem_cursos_inclusos(user.user_id)
+
+
+@router.post("/ebooks/{ebook_id}/acesso")
+async def comprar_ebook(
+    ebook_id: str,
+    user: User = Depends(require_user),
+    _: None = Depends(rate_limit.por_usuario("cursos")),
+):
+    """Compra o acesso VITALÍCIO a um e-book — mesma mecânica do curso.
+
+    Mesmíssima garantia de `comprar_curso`: `_id = "{uid}:{ebook_id}"`, então
+    o duplo clique e o clique de daqui a um ano caem no mesmo registro e a
+    resposta é "você já tem", nunca uma segunda cobrança.
+
+    Não colide com `/{curso_id}/acesso`: aquela rota tem dois segmentos depois
+    do prefixo e esta tem três.
+    """
+    ebook = cursos.get_ebook(ebook_id)
+    if ebook is None:
+        raise HTTPException(status_code=404, detail="E-book não encontrado.")
+
+    doc_id = f"{user.user_id}:{ebook_id}"
+    if await _db.ebooks_acessos.find_one({"_id": doc_id}, {"_id": 1}):
+        return await _resposta_do_ebook(user, ebook, cobrado=False)
+    if fs.tem_cursos_inclusos(user.user_id):
+        return await _resposta_do_ebook(user, ebook, cobrado=False, incluso=True)
+
+    try:
+        saldo = await _reivindicar_e_cobrar(
+            user, "ebooks_acessos", doc_id,
+            {"ebook_id": ebook_id, "vitalicio": True},
+            cursos.EBOOK_CUSTO_SPARKS, f"acesso vitalício ao e-book {ebook_id}",
+        )
+    except _JaTinha:
+        return await _resposta_do_ebook(user, ebook, cobrado=False)
+    return await _resposta_do_ebook(user, ebook, cobrado=True, saldo=saldo)
+
+
+async def _resposta_do_ebook(
+    user: User, ebook, *, cobrado: bool, saldo: int | None = None, incluso: bool = False,
+):
+    if saldo is None:
+        try:
+            saldo = fs.read_sparks_balance(user.user_id)
+        except Exception:  # noqa: BLE001
+            saldo = None
+    return {
+        "ok": True,
+        "ebook_id": ebook.ebook_id,
+        "titulo": ebook.titulo,
+        "cobrado": cobrado,
+        "custo_sparks": cursos.EBOOK_CUSTO_SPARKS if cobrado else 0,
+        "incluso_no_plano": incluso,
+        "sparks_balance": saldo,
+        "tenho_acesso": True,
+        "vitalicio": True,
+        # As páginas podem não existir ainda: a tela distingue "é meu" de "dá
+        # para ler agora", como faz com curso comprado e ainda sem estação no
+        # ar. Nenhum aluno baixa nada — a leitura é sempre dentro do app.
+        "disponivel": ebooks_conteudo.biblioteca().tem_conteudo(ebook.ebook_id),
+    }
+
+
+@router.get("/ebooks/{ebook_id}/conteudo")
+async def ler_ebook(ebook_id: str, user: User = Depends(require_user)):
+    """As páginas de um e-book, para o leitor dentro do app.
+
+    Sem gabarito para esconder (um e-book não tem exercício) — o que se
+    protege aqui é só o ACESSO: quem não comprou nem tem o pacote não lê,
+    mesmo sabendo o `ebook_id`.
+    """
+    ebook = cursos.get_ebook(ebook_id)
+    if ebook is None:
+        raise HTTPException(status_code=404, detail="E-book não encontrado.")
+    if not await _tem_acesso_ebook(user, ebook_id):
+        raise HTTPException(status_code=403, detail="Você ainda não tem acesso a este e-book.")
+
+    conteudo = ebooks_conteudo.biblioteca().ebook(ebook_id)
+    if conteudo is None or not conteudo.paginas:
+        raise HTTPException(status_code=404, detail="Este e-book ainda não tem conteúdo publicado.")
+
+    return {
+        "ebook_id": ebook_id,
+        "titulo": ebook.titulo,
+        "versao": conteudo.versao,
+        "paginas": [
+            {"pagina_id": p.pagina_id, "titulo": p.titulo, "blocos": [dict(b) for b in p.blocos]}
+            for p in conteudo.paginas
+        ],
+    }
+
+
+@router.post("/ebooks/{ebook_id}/paginas/{pagina_id}/blocos/{bloco_id}/explicar")
+async def explicar_bloco_do_ebook(
+    ebook_id: str,
+    pagina_id: str,
+    bloco_id: str,
+    user: User = Depends(require_user),
+    _: None = Depends(rate_limit.por_usuario("llm")),
+):
+    """"Explicar melhor" um trecho de e-book — mesma mecânica e mesmo preço do
+    botão equivalente dentro de um curso (`cursos_estudo_routes.explicar_bloco`)."""
+    ebook = cursos.get_ebook(ebook_id)
+    if ebook is None:
+        raise HTTPException(status_code=404, detail="E-book não encontrado.")
+    if not await _tem_acesso_ebook(user, ebook_id):
+        raise HTTPException(status_code=403, detail="Você ainda não tem acesso a este e-book.")
+
+    conteudo = ebooks_conteudo.biblioteca().ebook(ebook_id)
+    pagina = conteudo.pagina(pagina_id) if conteudo else None
+    bloco = pagina.bloco(bloco_id) if pagina else None
+    if bloco is None:
+        raise HTTPException(status_code=404, detail="Este trecho não foi encontrado.")
+
+    texto_fonte = mentis_routes.texto_do_bloco(bloco)
+    if not texto_fonte.strip():
+        raise HTTPException(status_code=409, detail="Este trecho não tem conteúdo para explicar.")
+
+    return await mentis_routes.explicar_trecho(
+        user.user_id,
+        origem="ebook",
+        ref_id=f"{ebook_id}:{pagina_id}:{bloco_id}:{conteudo.versao}",
+        contexto=f'E-book "{ebook.titulo}", página "{pagina.titulo}"',
+        texto_fonte=texto_fonte,
+    )
 
 
 @router.post("/{curso_id}/interesse")

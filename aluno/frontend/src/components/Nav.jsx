@@ -1,14 +1,15 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { api } from "../lib/api";
 import {
   Zap, ShieldCheck, LayoutGrid, GraduationCap, PenLine, MessageCircle, Compass,
-  CalendarDays, Users, LogOut, Megaphone,
+  CalendarDays, Users, LogOut, Megaphone, Grip,
 } from "lucide-react";
 import Logo from "./Logo";
 import Mentis from "./Mentis";
 import LancadorDeFerramentas from "./LancadorDeFerramentas";
+import { ATALHOS, quantasCabem } from "../lib/atalhos";
 
 export const EVENTO_SPARKS = "sparks:mudou";
 
@@ -49,6 +50,11 @@ const PRIMARY_LINKS = [
 /** A rota atual, para a aba acender. `/dashboard` é exata porque tudo volta
  *  para ela; as outras casam com as filhas (`/comunidade/:id` mantém o Mural
  *  aceso enquanto a dúvida está aberta). */
+/** Onde a tira do celular NÃO entra: as mesmas telas em que a barra inferior
+ *  não entra. `/exam/:id` guarda gabarito não salvo, `/bem-vindo` é uma
+ *  conversa conduzida e o feed tem controles próprios no rodapé. */
+const SEM_TIRA = ["/feed", "/bem-vindo", "/exam"];
+
 function ehRotaAtual(pathname, to) {
   if (to === "/dashboard") return pathname === "/dashboard";
   return pathname === to || pathname.startsWith(`${to}/`);
@@ -110,10 +116,11 @@ function SparksChip() {
   return (
     <Link
       to="/sparks"
-      className={`chip relative shrink-0 border-amber-300/25 bg-amber-400/10 text-amber-100 hover:border-amber-300/50 hover:bg-amber-400/20 ${ganho ? "recompensa" : ""}`}
+      className={`chip nav-tip relative shrink-0 border-amber-300/25 bg-amber-400/10 text-amber-100 hover:border-amber-300/50 hover:bg-amber-400/20 ${ganho ? "recompensa" : ""}`}
       data-testid="nav-sparks"
       data-tour="nav-sparks"
-      title={`${sparks} Sparks`}
+      data-tip="Sparks"
+      aria-label={`${sparks} Sparks`}
     >
       <Zap className="h-3.5 w-3.5 text-amber-300" />
       <span className="font-mono-alt">{sparks}</span>
@@ -134,6 +141,53 @@ export default function Nav() {
   // claro é a falha clássica de barra translúcida.
   const [rolou, setRolou] = useState(false);
 
+  // QUANTAS MINIATURAS CABEM — medido, nunca estimado.
+  //
+  // A barra vive num container de 1152px que nenhum monitor largo aumenta, e
+  // a conta muda por conta: um admin que também é promoter carrega dois chips
+  // a mais, e a medição de 2026-09-17 mostrou que essa conta chega a 1119px
+  // dos 1152 disponíveis — 33px de folga, não os ~330 que a nota antiga
+  // registrava para um aluno comum. Ou seja: uma lista fixa de miniaturas
+  // estoura para uns e sobra para outros.
+  //
+  // Então a barra se mede sozinha. Ela soma o que é obrigatório (marca, abas
+  // primárias, botões fixos), divide o que sobra por 40px (o ícone de 36 mais
+  // o vão) e desenha só essa quantidade. Em 1280 com conta comum cabem
+  // algumas; em 1920 cabem todas; num notebook de 13" com admin, nenhuma — e
+  // em nenhum desses casos a barra quebra. Tudo o que não coube continua a um
+  // clique no "Menu" e na tira do celular.
+  const barraRef = useRef(null);
+  const marcaRef = useRef(null);
+  const primariosRef = useRef(null);
+  const fixosRef = useRef(null);
+  const [quantasMiniaturas, setQuantasMiniaturas] = useState(0);
+
+  const medir = useCallback(() => {
+    const barra = barraRef.current;
+    if (!barra) return;
+    // Abaixo de `lg` a barra de cima não tem abas nem miniaturas: quem navega
+    // é a barra inferior e a tira rolável.
+    if (window.innerWidth < 1024) return setQuantasMiniaturas(0);
+    const largura = (el) => (el ? el.getBoundingClientRect().width : 0);
+    const obrigatorio =
+      largura(marcaRef.current) + largura(primariosRef.current) + largura(fixosRef.current);
+    setQuantasMiniaturas(quantasCabem(barra.clientWidth, obrigatorio));
+  }, []);
+
+  useLayoutEffect(() => {
+    medir();
+    const ro = new ResizeObserver(medir);
+    if (barraRef.current) ro.observe(barraRef.current);
+    window.addEventListener("resize", medir);
+    // A fonte muda a largura das abas depois de carregar: medir só na
+    // montagem daria a conta da fonte de fallback, que é mais estreita.
+    document.fonts?.ready?.then(medir).catch(() => {});
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", medir);
+    };
+  }, [medir]);
+
   useEffect(() => {
     const aoRolar = () => setRolou(window.scrollY > 8);
     aoRolar();
@@ -149,39 +203,45 @@ export default function Nav() {
       style={rolou ? undefined : { boxShadow: "none", borderBottomColor: "transparent" }}
       data-rolou={rolou}
     >
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 md:px-10">
+      <div ref={barraRef} className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 md:px-10">
         {/* A MARCA, no canto superior esquerdo, em TODA largura de tela.
             Até 2026-09-16 este canto era o botão de menu do celular e a marca
             simplesmente não existia abaixo de 1024px — o produto se
             apresentava sem nome justamente no aparelho em que a maioria dos
             alunos entra. O menu desceu para a barra inferior, que é onde o
-            polegar chega, e o canto voltou a ser da marca. */}
+            polegar chega, e o canto voltou a ser da marca.
+            Desde 2026-09-17, logado, tocar na marca ABRE o mesmo lançador do
+            botão "Menu" — o gatilho mais óbvio do produto para abrir o menu é
+            a própria marca, e não só um botão de grade a três alvos dali. */}
+        <span ref={marcaRef} className="shrink-0">
         <Logo
-          to={user ? "/dashboard" : "/"}
+          to={user ? null : "/"}
+          onClick={user ? () => setLancador(true) : null}
           tamanho="m"
           className="shrink-0"
           classePalavra="text-xl sm:text-2xl"
           testid="nav-brand"
         />
+        </span>
 
         {user && (
           <div className="flex items-center gap-1 lg:gap-2">
             {/* Envelope próprio (e não os links soltos) porque o guia de
                 primeira sessão aponta para a BARRA inteira num passo só. */}
-            <div className="hidden items-center gap-1 lg:flex" data-tour="nav-primarios">
+            <div ref={primariosRef} className="hidden items-center gap-1 lg:flex" data-tour="nav-primarios">
               {PRIMARY_LINKS.map((l) => {
                 const ativa = ehRotaAtual(pathname, l.to);
                 return (
                   <Link
                     key={l.to}
                     to={l.to}
-                    className="nav-elo flex items-center gap-2 rounded-full px-3 py-2 text-sm font-medium"
+                    className="nav-elo nav-tip flex items-center gap-2 rounded-full px-3 py-2 text-sm font-medium"
                     data-ativa={ativa}
                     data-testid={l.testid}
                     data-tour={l.tour}
+                    data-tip={l.label}
                     aria-label={l.label}
                     aria-current={ativa ? "page" : undefined}
-                    title={l.label}
                   >
                     {l.mascote
                       ? <Mentis className="h-5 w-5 shrink-0" variante="icone" animada={false} />
@@ -197,17 +257,70 @@ export default function Nav() {
               })}
             </div>
 
-            {/* O lançador: uma grade visual com TODAS as ferramentas. */}
+            {/* AS MINIATURAS. A barra do desktop tinha ~330px de folga a
+                1536px e ~188px a 1280px (medição no fim do arquivo), e essa
+                folga não estava comprando nada: o aluno de notebook via seis
+                abas e um botão de menu, enquanto o produto tem doze telas que
+                ele usa toda semana. Aqui elas viram ícone redondo de 32px com
+                o nome no `title` — miniatura, não aba: a aba diz onde você
+                está, a miniatura leva onde você ainda não foi.
+
+                Cada uma acende a partir da largura que couber (`min` em
+                `lib/atalhos`), e é a MESMA lista que a tira do celular
+                desenha logo abaixo — uma fonte só para as duas barras, senão
+                o celular volta a ter metade das portas do desktop. */}
+            {quantasMiniaturas > 0 && (
+            <div className="hidden items-center gap-1 lg:flex" data-testid="nav-miniaturas">
+              <span aria-hidden className="mx-1 h-5 w-px shrink-0 bg-white/10" />
+              {ATALHOS.slice(0, quantasMiniaturas).map((m) => {
+                const ativa = ehRotaAtual(pathname, m.rota);
+                return (
+                  <Link
+                    key={m.rota}
+                    to={m.rota}
+                    className="nav-elo nav-tip inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
+                    data-ativa={ativa}
+                    data-testid={`nav-mini-${m.rota.slice(1)}`}
+                    data-tip={m.label}
+                    aria-label={m.label}
+                    aria-current={ativa ? "page" : undefined}
+                  >
+                    <m.icone className="h-4 w-4" strokeWidth={ativa ? 2.3 : 1.9} />
+                  </Link>
+                );
+              })}
+            </div>
+            )}
+
+            <div ref={fixosRef} className="flex items-center gap-1 lg:gap-2">
+            {/* O lançador: uma grade visual com TODAS as ferramentas.
+                O ícone é `Grip` e não `LayoutGrid` desde 2026-09-17. Até ali
+                a barra desenhava o MESMO símbolo duas vezes, a três alvos de
+                distância um do outro: `LayoutGrid` era o ícone do Painel e
+                era também o deste botão. Dois alvos idênticos lado a lado não
+                são dois ícones parecidos — são um ícone que não significa
+                nada, e quem clicava no botão esperando o Painel abria um
+                painel deslizante. `Grip` (a malha de pontos) é o gesto de
+                "tudo o que existe", e não colide com nada na barra. */}
             <button
               onClick={() => setLancador(true)}
-              className="nav-elo hidden h-9 w-9 items-center justify-center rounded-full lg:flex"
+              className="btn-vidro pill nav-tip hidden h-9 shrink-0 items-center gap-2 rounded-full px-3 text-xs font-semibold lg:inline-flex xl:px-4"
               data-ativa={lancador}
               data-testid="nav-more"
               data-tour="nav-more"
+              data-tip="Menu"
               aria-label="Todas as ferramentas"
-              title="Todas as ferramentas"
+              aria-haspopup="dialog"
+              aria-expanded={lancador}
             >
-              <LayoutGrid className="h-4 w-4" />
+              <Grip className="h-4 w-4" />
+              {/* A palavra a partir de `xl`, como os rótulos das abas: até
+                  2026-09-17 este era um círculo de 36px sem contorno, sem
+                  fundo e sem texto no meio de seis abas iguais a ele — o
+                  botão que abre METADE do produto era o elemento menos
+                  visível da barra. Agora ele tem superfície (`btn-vidro`),
+                  o que já o separa das abas, e nome onde cabe. */}
+              <span className="hidden xl:inline">Menu</span>
             </button>
 
             {/* A porta das AULAS — a aula ao vivo de quinta com o 1º colocado
@@ -217,11 +330,11 @@ export default function Nav() {
                 o ponto vermelho já diz que há algo acontecendo. */}
             <Link
               to="/aula-ao-vivo"
-              className="btn-calor pill relative inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-2.5 py-2 text-xs sm:px-3.5"
+              className="btn-calor pill nav-tip relative inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-2.5 py-2 text-xs sm:px-3.5"
               data-testid="nav-aulas-particulares"
               data-tour="nav-aulas"
+              data-tip="Aula ao vivo de quinta"
               aria-label="Aula ao vivo de quinta"
-              title="Aula ao vivo de quinta"
             >
               <span className="relative">
                 <GraduationCap className="h-4 w-4" />
@@ -243,10 +356,10 @@ export default function Nav() {
             {user.is_promoter && (
               <Link
                 to="/promoter"
-                className="pill hidden h-9 shrink-0 items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-500/15 px-3 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/25 lg:inline-flex"
+                className="pill nav-tip hidden h-9 shrink-0 items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-500/15 px-3 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/25 lg:inline-flex"
                 data-testid="nav-promoter"
+                data-tip="Painel do promoter"
                 aria-label="Painel do promoter"
-                title="Painel do promoter"
               >
                 <Megaphone className="h-4 w-4" />
                 Promoter
@@ -256,10 +369,10 @@ export default function Nav() {
             {user.is_admin && (
               <Link
                 to="/admin"
-                className="pill hidden h-9 w-9 shrink-0 items-center justify-center rounded-full border border-emerald-400/30 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 lg:inline-flex"
+                className="pill nav-tip hidden h-9 w-9 shrink-0 items-center justify-center rounded-full border border-emerald-400/30 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 lg:inline-flex"
                 data-testid="nav-admin"
+                data-tip="Admin"
                 aria-label="Admin"
-                title="Admin"
               >
                 <ShieldCheck className="h-4 w-4" />
               </Link>
@@ -271,13 +384,15 @@ export default function Nav() {
                 acidental mais fácil de dar num produto de estudo. */}
             <button
               onClick={doLogout}
-              className="pill btn-vidro hidden h-9 w-9 shrink-0 items-center justify-center rounded-full lg:flex"
+              className="pill btn-vidro nav-tip hidden h-9 w-9 shrink-0 items-center justify-center rounded-full lg:flex"
               data-testid="nav-logout"
+              data-tip="Sair"
               aria-label="Sair"
-              title="Sair"
             >
               <LogOut className="h-4 w-4" />
             </button>
+
+            </div>
 
             <LancadorDeFerramentas
               aberto={lancador}
@@ -298,6 +413,42 @@ export default function Nav() {
           </Link>
         )}
       </div>
+
+      {/* A TIRA DO CELULAR — a paridade com o desktop.
+          A barra inferior tem cinco alvos e isso é invariante (é o que o
+          polegar alcança sem pensar), então o celular alcançava cinco telas
+          em um toque contra as doze do desktop; o resto vivia atrás do
+          lançador, que só abre quem já sabe que ele existe. A tira rola na
+          horizontal, tem alvo de 32px de altura e mostra a MESMA lista de
+          `lib/atalhos` — no iPhone e no Android, as mesmas portas do
+          notebook, na mesma ordem.
+
+          `rolagem-invisivel` esconde a barra de rolagem sem tirar a rolagem
+          (o Android desenha uma barra cinza por cima do conteúdo). A borda
+          some nas telas em que a barra inferior também some. */}
+      {user && !SEM_TIRA.some((r) => pathname === r || pathname.startsWith(`${r}/`)) && (
+        <div className="lg:hidden" data-testid="nav-tira-atalhos">
+          <div className="rolagem-invisivel flex gap-2 overflow-x-auto px-4 pb-2.5 pt-0.5">
+            {ATALHOS.map((m) => {
+              const ativa = ehRotaAtual(pathname, m.rota);
+              return (
+                <Link
+                  key={m.rota}
+                  to={m.rota}
+                  className="nav-elo flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 text-xs font-semibold"
+                  data-ativa={ativa}
+                  data-testid={`nav-tira-${m.rota.slice(1)}`}
+                  aria-label={m.label}
+                  aria-current={ativa ? "page" : undefined}
+                >
+                  <m.icone className="h-3.5 w-3.5 shrink-0" strokeWidth={ativa ? 2.3 : 1.9} />
+                  {m.nome}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

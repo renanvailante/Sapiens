@@ -32,6 +32,19 @@ def _normalizar(code: str) -> str:
     return (code or "").strip().upper()
 
 
+def _normalizar_promoter_email(email: str | None) -> str | None:
+    """`None`/vazio limpa o vínculo; qualquer outra coisa exige um "@" —
+    validação frouxa de propósito (é o admin digitando, não um formulário
+    público), só o bastante para pegar o typo óbvio antes de virar a conta
+    que decide quem vê o painel do promoter."""
+    limpo = (email or "").strip().lower()
+    if not limpo:
+        return None
+    if "@" not in limpo:
+        raise HTTPException(status_code=422, detail="E-mail do promoter inválido.")
+    return limpo
+
+
 @router.get("")
 async def list_promo_codes(admin: User = Depends(require_admin)):
     return await _db.promo_codes.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
@@ -50,6 +63,7 @@ async def create_promo_code(payload: CreatePromoCodeRequest, admin: User = Depen
         "active": True,
         "usos": 0,
         "created_at": _now_iso(),
+        "promoter_email": _normalizar_promoter_email(payload.promoter_email),
     }
     await _db.promo_codes.insert_one(doc)
     return doc
@@ -57,9 +71,14 @@ async def create_promo_code(payload: CreatePromoCodeRequest, admin: User = Depen
 
 @router.patch("/{code}")
 async def update_promo_code(code: str, payload: UpdatePromoCodeRequest, admin: User = Depends(require_admin)):
-    campos = payload.model_dump(exclude_none=True)
+    # `exclude_unset`, não `exclude_none`: é o único jeito de o admin poder
+    # LIMPAR o e-mail do promoter (mandar `promoter_email: null` de propósito)
+    # em vez de "ausente" e "vazio" caírem no mesmo lugar.
+    campos = payload.model_dump(exclude_unset=True)
     if not campos:
         raise HTTPException(status_code=422, detail="Nada para atualizar.")
+    if "promoter_email" in campos:
+        campos["promoter_email"] = _normalizar_promoter_email(campos["promoter_email"])
     alvo = _normalizar(code)
     res = await _db.promo_codes.update_one({"code": alvo}, {"$set": campos})
     if res.matched_count == 0:

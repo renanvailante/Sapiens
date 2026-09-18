@@ -202,6 +202,12 @@
 html {
     background-color: var(--bio-abismo);
     min-height: 100%;
+    /* O iOS e o Android INFLAM a fonte por conta própria quando o aparelho
+       vira para o lado ou quando uma coluna parece estreita demais para eles.
+       O produto passa a ter dois tamanhos de texto que ninguém escolheu, e a
+       conta de largura de toda faixa desta folha deixa de fechar. */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
 }
 
 body, #root {
@@ -210,6 +216,27 @@ body, #root {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     min-height: 100%;
+}
+
+/* ---------------- O TOQUE ----------------
+   Duas coisas que o navegador do celular faz sozinho e que fazem um app
+   parecer uma página:
+
+   · O RETÂNGULO CINZA. O Android pinta um bloco translúcido por cima de todo
+     alvo tocado, com o formato da CAIXA — um card de cantos de 26px pisca
+     como um retângulo reto, meio quadro depois do dedo. O produto já tem
+     resposta de toque própria (`.pill:active`, `.superficie:active`, o pé que
+     afunda nos nós da trilha), e ela é mais rápida e tem o formato certo.
+   · O ATRASO DE 300ms. Onde o navegador ainda espera para saber se vem um
+     segundo toque (zoom), `touch-action: manipulation` diz que não vem — o
+     clique sai na hora. É a diferença entre uma interface que responde e uma
+     que parece pensar antes de responder.
+
+   Vale em toda largura de propósito: quem tem tela sensível ao toque num
+   notebook merece o mesmo. */
+a, button, summary, label, select, [role="button"], [role="tab"], [role="option"] {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
 }
 
 body::before {
@@ -297,15 +324,23 @@ body::after {
     pointer-events: none;
 }
 
-/* Elevação no hover: a luz da borda superior acende, o painel não pula. */
+/* Elevação no hover: a luz da borda superior acende, o painel não pula.
+
+   `@media (hover: hover)` não é enfeite aqui. Em tela de toque o navegador
+   deixa o `:hover` GRUDADO no último elemento tocado até o dedo cair em outro
+   lugar: o card que o aluno tocou e voltou continuava levantado e aceso, como
+   se estivesse selecionado. No celular a resposta ao toque é o `:active` logo
+   abaixo, que dura o tempo do dedo. */
 .lift { transition: transform .22s ease-out, box-shadow .22s ease-out, border-color .22s ease-out; }
-.lift:hover {
-    transform: translateY(-2px);
-    border-color: var(--bio-linha-forte);
-    box-shadow:
-        inset 0 1px 0 rgba(190, 230, 255, 0.16),
-        0 30px 70px -34px rgba(0, 0, 0, 0.95),
-        0 0 34px -14px var(--bio-brilho);
+@media (hover: hover) and (pointer: fine) {
+    .lift:hover {
+        transform: translateY(-2px);
+        border-color: var(--bio-linha-forte);
+        box-shadow:
+            inset 0 1px 0 rgba(190, 230, 255, 0.16),
+            0 30px 70px -34px rgba(0, 0, 0, 0.95),
+            0 0 34px -14px var(--bio-brilho);
+    }
 }
 
 /* Barra de navegação — o mesmo vidro, mais denso, porque fica sobre conteúdo
@@ -582,6 +617,17 @@ body::after {
 }
 .select-pop { animation: select-pop .26s ease-out; }
 
+/* O botão "Lembrar-me com a Mentis", que nasce por cima (ou por baixo) de um
+   trecho que o aluno acabou de selecionar — ver `LembrarComAMentis.jsx`.
+   Entra curto e sem deslocamento lateral de propósito: ele aponta para um
+   ponto exato da tela, e qualquer deslize faria o aluno olhar para o
+   movimento em vez do trecho. */
+@keyframes lembrar-surge {
+    from { opacity: 0; transform: translateY(4px) scale(.96); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.lembrar-surge { animation: lembrar-surge .14s ease-out both; }
+
 /* O selo de "+1 Spark" / "+10 XP" da devolutiva. Entra subindo e cresce um
    quinto antes de assentar: é a única animação do produto que celebra alguma
    coisa, e ela dura menos de meio segundo justamente para não virar um
@@ -756,7 +802,11 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
     border-radius: 22px;
     transition: transform .16s ease-out, box-shadow .16s ease-out, border-color .16s ease-out, background-color .16s ease-out;
 }
-.macio:hover { transform: translateY(-2px); }
+/* Mesma regra do `.lift`: no toque o hover gruda, e um azulejo que fica
+   levantado depois de tocado lê como selecionado. */
+@media (hover: hover) and (pointer: fine) {
+    .macio:hover { transform: translateY(-2px); }
+}
 .macio:active { transform: translateY(1px); }
 
 /* ---------------- A vitrine do mapa ----------------
@@ -1099,7 +1149,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
         animation: none !important;
     }
     .tour-spotlight { animation: none; box-shadow: 0 0 0 4px rgba(79, 217, 255, 0.6); }
-    .lift:hover, .btn-sapiens:hover, .btn-sapiens:active, .btn-calor:hover, .pill:active {
+    .lift:hover, .btn-sapiens:hover, .btn-sapiens:active, .btn-calor:hover, .pill:active,
+    a.superficie:active, button.superficie:active, a.lift:active, button.lift:active, .macio:active {
         transform: none !important;
     }
 }
@@ -1384,6 +1435,22 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
                 background-color var(--mov-rapido) var(--mov-saida);
 }
 .nav-elo:hover { color: var(--bio-texto); background-color: rgba(255, 255, 255, 0.06); }
+
+/* A TIRA DE ATALHOS DO CELULAR rola na horizontal e não desenha barra de
+   rolagem: no Android a barra cinza nasce POR CIMA dos chips e cobre a
+   metade de baixo dos rótulos; no iOS ela não aparece, então o mesmo
+   componente ficava com dois recortes diferentes. `overflow-x: auto`
+   continua valendo — some o desenho, não a rolagem — e o embalo do iOS é
+   explícito porque sem ele a tira para seco no fim do arrasto.
+   `overscroll-behavior-x: contain` impede que o arrasto horizontal na tira
+   dispare o "voltar" por gesto de borda do Safari. */
+.rolagem-invisivel {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+}
+.rolagem-invisivel::-webkit-scrollbar { display: none; }
 .nav-elo[data-ativa="true"] {
     color: var(--bio-texto);
     background-color: rgba(79, 217, 255, 0.12);
@@ -1398,6 +1465,53 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
     border-radius: 2px;
     background: linear-gradient(90deg, var(--bio-ciano), var(--bio-violeta));
     box-shadow: 0 0 12px -1px var(--bio-ciano);
+}
+
+/* ---------------- O nome do símbolo, ao passar o mouse ----------------
+   Cada ícone da barra de cima cresce um pouco e mostra o próprio nome
+   embaixo dele ao passar o mouse — ou ao chegar por Tab, para quem navega
+   pelo teclado. `data-tip` carrega o texto (o mesmo que já ia no `title`
+   nativo, que este substitui: os dois juntos duplicavam a legenda). O
+   rótulo nasce com `pointer-events: none` de propósito — ele aparece ONDE
+   o dedo do mouse já está, e não pode roubar o clique de quem mirou no
+   ícone, não na legenda que acabou de surgir por cima dele. */
+.nav-tip {
+    position: relative;
+    transition: transform var(--mov-rapido) var(--mov-saida);
+}
+.nav-tip:hover,
+.nav-tip:focus-visible {
+    transform: scale(1.08);
+}
+.nav-tip::after {
+    content: attr(data-tip);
+    position: absolute;
+    top: calc(100% + 9px);
+    left: 50%;
+    transform: translateX(-50%) translateY(-4px);
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: rgba(8, 14, 26, 0.95);
+    border: 1px solid var(--bio-linha);
+    box-shadow: 0 8px 20px -8px rgba(0, 0, 0, 0.7);
+    color: var(--bio-texto);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    z-index: 60;
+    transition: opacity var(--mov-rapido) var(--mov-saida),
+                transform var(--mov-rapido) var(--mov-saida),
+                visibility var(--mov-rapido);
+}
+.nav-tip:hover::after,
+.nav-tip:focus-visible::after {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
 }
 
 /* ---------------- Superfície padrão de conteúdo ----------------
@@ -1417,13 +1531,30 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
                 background-color var(--mov-medio) var(--mov-saida),
                 box-shadow var(--mov-medio) var(--mov-saida);
 }
-a.superficie:hover, button.superficie:hover, .superficie.lift:hover {
-    transform: translateY(-2px);
-    background: rgba(255, 255, 255, 0.06);
-    border-color: var(--bio-linha-forte);
-    box-shadow: var(--elev-2), 0 0 30px -18px var(--bio-brilho);
+@media (hover: hover) and (pointer: fine) {
+    a.superficie:hover, button.superficie:hover, .superficie.lift:hover {
+        transform: translateY(-2px);
+        background: rgba(255, 255, 255, 0.06);
+        border-color: var(--bio-linha-forte);
+        box-shadow: var(--elev-2), 0 0 30px -18px var(--bio-brilho);
+    }
 }
+/* No mouse, pressionar POUSA o card que o hover tinha levantado. */
 a.superficie:active, button.superficie:active { transform: translateY(0); }
+
+/* No toque não há de onde pousar: o card nunca levantou. Aqui pressionar
+   AFUNDA — 1,5% de escala e um clarão na superfície, em 110ms, que é o tempo
+   em que o dedo ainda está no vidro. Sem isto o aluno toca um card e a tela
+   fica imóvel até a rota trocar; numa rede ruim são dois segundos em que a
+   única leitura possível é "não funcionou", e ele toca de novo. */
+@media (hover: none) {
+    a.superficie:active, button.superficie:active,
+    a.lift:active, button.lift:active {
+        transform: scale(0.985);
+        background-color: rgba(255, 255, 255, 0.07);
+        transition-duration: 110ms;
+    }
+}
 
 /* A variante que PEDE ação: aro aceso e um halo contido. Existe para um
    bloco por tela, no máximo — dois já destroem a hierarquia que ela cria. */
@@ -1445,6 +1576,10 @@ a.superficie-viva:hover, button.superficie-viva:hover {
    caminho. Aqui ela é uma peça só, e a régua fica igual em tudo. */
 .secao-cabeca {
     display: flex;
+    /* `wrap` é a rede de segurança do celular: sem ela, um título um pouco mais
+       longo e o link da direita se espremem até quebrar PALAVRA A PALAVRA em
+       duas colunas de 60px. Com ela, o link simplesmente desce uma linha. */
+    flex-wrap: wrap;
     align-items: baseline;
     justify-content: space-between;
     gap: 12px;

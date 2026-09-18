@@ -1,0 +1,563 @@
+{
+  "schema_version": "1.0",
+  "estacao_id": "mb-11-equacoes-do-1o-grau",
+  "titulo": "Equações do 1º grau",
+  "objetivo": "Você vai resolver equações do 1º grau, isolar variáveis com segurança e traduzir problemas de linguagem natural em equações.",
+  "versao": "2026-09-16",
+  "duracao_minutos": 11,
+  "numero": 11,
+  "conceitos": [
+    "equacoes-do-1-grau",
+    "isolamento-de-variavel"
+  ],
+  "conclusao": {
+    "tipo": "minimo_de_acertos",
+    "minimo": 7
+  },
+  "fonte": {
+    "arquivo": "deepseek_markdown_20260916_2e0e09.md",
+    "pasta": "cursos/matemática básica"
+  },
+  "blocos": [
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-11-c-01",
+      "variante": "padrao",
+      "markdown": "Uma equação do 1º grau tem a forma:\n\n`ax + b = 0`, com `a ≠ 0`\n\nResolver é encontrar o valor de `x` que torna a igualdade verdadeira."
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-11-c-02",
+      "variante": "padrao",
+      "markdown": "Toda operação aplicada a um lado deve ser aplicada ao outro. A igualdade se mantém.",
+      "titulo": "Princípio da balança"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-11-c-03",
+      "variante": "padrao",
+      "markdown": "1. Elimine parênteses (distributiva).\n2. Junte termos semelhantes em cada lado.\n3. Passe termos com `x` para um lado, constantes para o outro — trocando o sinal.\n4. Divida pelo coeficiente de `x`.",
+      "titulo": "Passos"
+    },
+    {
+      "tipo": "tabela",
+      "bloco_id": "mb-11-c-04",
+      "colunas": [
+        "Frase",
+        "Expressão"
+      ],
+      "linhas": [
+        [
+          "“um número”",
+          "`x`"
+        ],
+        [
+          "“o dobro de um número”",
+          "`2x`"
+        ],
+        [
+          "“o triplo, aumentado de 5”",
+          "`3x + 5`"
+        ],
+        [
+          "“a metade de um número”",
+          "`x/2`"
+        ],
+        [
+          "“a soma de dois números consecutivos”",
+          "`x + (x+1)`"
+        ]
+      ],
+      "titulo": "Tradução de enunciados"
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-11-ex-01",
+      "enunciado": "Resolva `2x + 6 = 0`.",
+      "passos": [
+        {
+          "texto": "`2x = −6`"
+        },
+        {
+          "texto": "`x = −3`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-11-ex-02",
+      "enunciado": "Resolva `4x − 7 = 2x + 5`.",
+      "passos": [
+        {
+          "texto": "`4x − 2x = 5 + 7`"
+        },
+        {
+          "texto": "`2x = 12`"
+        },
+        {
+          "texto": "`x = 6`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-11-ex-03",
+      "enunciado": "Resolva `3(x − 2) − 2(x + 1) = 5`.",
+      "passos": [
+        {
+          "texto": "`3x − 6 − 2x − 2 = 5`"
+        },
+        {
+          "texto": "`x − 8 = 5`"
+        },
+        {
+          "texto": "`x = 13`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-11-ex-04",
+      "enunciado": "A soma de um número com seu dobro é 45. Qual o número?",
+      "passos": [
+        {
+          "texto": "`x + 2x = 45`"
+        },
+        {
+          "texto": "`3x = 45`"
+        },
+        {
+          "texto": "`x = 15`"
+        }
+      ]
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-11-es-01",
+      "variante": "destaque",
+      "markdown": "- Antes de resolver, **simplifique cada lado separadamente**.\n- Ao mudar um termo de lado, troque o sinal.\n- Ao multiplicar ou dividir por um número, faça nos dois lados.\n- Em problemas com frações, multiplique toda a equação pelo MMC dos denominadores."
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-11-er-01",
+      "variante": "atencao",
+      "markdown": "- **Mudar de lado sem trocar o sinal.**\n- **Dividir só um dos termos** por um coeficiente comum.\n- **Não distribuir o sinal negativo** em parênteses.\n- **Esquecer que a resposta deve ter sentido no contexto** (idade negativa, distância negativa)."
+    },
+    {
+      "tipo": "video",
+      "bloco_id": "mb-11-video",
+      "titulo": "Equações do 1º grau — aula em vídeo",
+      "provedor": "youtube",
+      "ref": null,
+      "resumo": "Aula conduzida pelo 1º colocado de Medicina da USP."
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-11-q01",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Resolva `2x + 6 = 0`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "x = 3"
+        },
+        {
+          "id": "b",
+          "texto": "x = −3"
+        },
+        {
+          "id": "c",
+          "texto": "x = 6"
+        },
+        {
+          "id": "d",
+          "texto": "x = −6"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "a": "Troca o sinal.",
+        "d": "Esta é uma das que não dividem.",
+        "c": "Esta é uma das que não dividem."
+      },
+      "solucao": "`2x = −6`, `x = −3`.",
+      "conceitos": [
+        "equacoes-do-1-grau"
+      ],
+      "origem": {
+        "estacao": 11,
+        "questao": "Questão 1"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-11-q02",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Resolva `3x − 12 = 0`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "x = −4"
+        },
+        {
+          "id": "b",
+          "texto": "x = 4"
+        },
+        {
+          "id": "c",
+          "texto": "x = 12"
+        },
+        {
+          "id": "d",
+          "texto": "x = 36"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "a": "Troca o sinal.",
+        "c": "Esta é uma das que não dividem.",
+        "d": "Esta é uma das que não dividem."
+      },
+      "solucao": "`3x = 12`, `x = 4`.",
+      "conceitos": [
+        "equacoes-do-1-grau"
+      ],
+      "origem": {
+        "estacao": 11,
+        "questao": "Questão 2"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-11-q03",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Resolva `5x + 10 = 30`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "x = 4"
+        },
+        {
+          "id": "b",
+          "texto": "x = 6"
+        },
+        {
+          "id": "c",
+          "texto": "x = 8"
+        },
+        {
+          "id": "d",
+          "texto": "x = 20"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "c": "Soma em vez de subtrair.",
+        "d": "Não divide.",
+        "b": "Divide errado."
+      },
+      "solucao": "`5x = 20`, `x = 4`.",
+      "conceitos": [
+        "equacoes-do-1-grau"
+      ],
+      "origem": {
+        "estacao": 11,
+        "questao": "Questão 3"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-11-q04",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Resolva `2(x + 3) = 14`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "x = 11"
+        },
+        {
+          "id": "b",
+          "texto": "x = 7"
+        },
+        {
+          "id": "c",
+          "texto": "x = 4"
+        },
+        {
+          "id": "d",
+          "texto": "x = 5"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "d": "Esta é uma das que distribuem mal.",
+        "b": "Esta é uma das que distribuem mal.",
+        "a": "Ignora o parêntese."
+      },
+      "solucao": "`2x + 6 = 14`, `2x = 8`, `x = 4`.",
+      "conceitos": [
+        "isolamento-de-variavel"
+      ],
+      "origem": {
+        "estacao": 11,
+        "questao": "Questão 4"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-11-q05",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Resolva `4x − 7 = 2x + 5`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "x = −6"
+        },
+        {
+          "id": "b",
+          "texto": "x = 2"
+        },
+        {
+          "id": "c",
+          "texto": "x = 12"
+        },
+        {
+          "id": "d",
+          "texto": "x = 6"
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "b": "Esta é uma das que vêm de transposições erradas.",
+        "a": "Esta é uma das que vêm de transposições erradas.",
+        "c": "Esta é uma das que vêm de transposições erradas."
+      },
+      "solucao": "`2x = 12`, `x = 6`.",
+      "conceitos": [
+        "isolamento-de-variavel"
+      ],
+      "origem": {
+        "estacao": 11,
+        "questao": "Questão 5"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-11-q06",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "A soma de um número com seu dobro é 45. Qual é o número?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "30"
+        },
+        {
+          "id": "b",
+          "texto": "9"
+        },
+        {
+          "id": "c",
+          "texto": "22,5"
+        },
+        {
+          "id": "d",
+          "texto": "15"
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "c": "Divide 45 por 2.",
+        "a": "Usa só o dobro.",
+        "b": "Divide por 5."
+      },
+      "solucao": "`x + 2x = 45 → 3x = 45 → x = 15`.",
+      "conceitos": [
+        "equacoes-do-1-grau"
+      ],
+      "origem": {
+        "estacao": 11,
+        "questao": "Questão 6"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-11-q07",
+      "nivel": 3,
+      "formato": "multipla_escolha",
+      "enunciado": "Resolva `(x/3) + 2 = 5`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "x = 9"
+        },
+        {
+          "id": "b",
+          "texto": "x = 1"
+        },
+        {
+          "id": "c",
+          "texto": "x = 3"
+        },
+        {
+          "id": "d",
+          "texto": "x = 21"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "b": "Subtrai o 3.",
+        "c": "Não multiplica.",
+        "d": "Soma errado."
+      },
+      "solucao": "`x/3 = 3`, `x = 9`.",
+      "conceitos": [
+        "isolamento-de-variavel"
+      ],
+      "origem": {
+        "estacao": 11,
+        "questao": "Questão 7"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-11-q08",
+      "nivel": 3,
+      "formato": "multipla_escolha",
+      "enunciado": "Resolva `3(x − 2) − 2(x + 1) = 5`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "x = 1"
+        },
+        {
+          "id": "b",
+          "texto": "x = 5"
+        },
+        {
+          "id": "c",
+          "texto": "x = 13"
+        },
+        {
+          "id": "d",
+          "texto": "x = 9"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "a": "Esta é uma das que vêm de distributivas erradas.",
+        "b": "Esta é uma das que vêm de distributivas erradas.",
+        "d": "Esta é uma das que vêm de distributivas erradas."
+      },
+      "solucao": "`3x − 6 − 2x − 2 = 5 → x − 8 = 5 → x = 13`.",
+      "conceitos": [
+        "equacoes-do-1-grau"
+      ],
+      "origem": {
+        "estacao": 11,
+        "questao": "Questão 8"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-11-q09",
+      "nivel": 4,
+      "formato": "multipla_escolha",
+      "enunciado": "Um terreno retangular tem perímetro 60 m. O comprimento é o dobro da largura. Qual a largura?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "12 m"
+        },
+        {
+          "id": "b",
+          "texto": "15 m"
+        },
+        {
+          "id": "c",
+          "texto": "20 m"
+        },
+        {
+          "id": "d",
+          "texto": "10 m"
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "c": "Dobra.",
+        "b": "Divide por 4.",
+        "a": "Divide por 5."
+      },
+      "solucao": "Seja `L` a largura. `2(L + 2L) = 60 → 6L = 60 → L = 10`.",
+      "conceitos": [
+        "equacoes-do-1-grau"
+      ],
+      "origem": {
+        "estacao": 11,
+        "questao": "Questão 9"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-11-q10",
+      "nivel": 4,
+      "formato": "multipla_escolha",
+      "enunciado": "João tem o triplo da idade de Maria. Juntos, eles têm 48 anos. Qual a idade de Maria?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "12"
+        },
+        {
+          "id": "b",
+          "texto": "24"
+        },
+        {
+          "id": "c",
+          "texto": "16"
+        },
+        {
+          "id": "d",
+          "texto": "36"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "c": "Esta é uma das que vêm de equações mal montadas.",
+        "b": "Esta é uma das que vêm de equações mal montadas.",
+        "d": "Esta é uma das que vêm de equações mal montadas."
+      },
+      "solucao": "`3x + x = 48 → 4x = 48 → x = 12`.",
+      "conceitos": [
+        "equacoes-do-1-grau"
+      ],
+      "origem": {
+        "estacao": 11,
+        "questao": "Questão 10"
+      }
+    },
+    {
+      "tipo": "desafio",
+      "bloco_id": "mb-11-desafio",
+      "nivel": 5,
+      "enunciado": "Resolva:\n\n`(x + 1)/2 − (x − 1)/3 = 1`",
+      "formato": "texto_curto",
+      "gabarito": {
+        "aceitos": [
+          "1",
+          "x = 1",
+          "x=1"
+        ]
+      },
+      "solucao": "- Multiplicando por 6: `3(x+1) − 2(x−1) = 6`\n- `3x + 3 − 2x + 2 = 6`\n- `x + 5 = 6`\n- `x = 1`"
+    }
+  ],
+  "pre_requisitos": [
+    "mb-10-expressoes-algebricas"
+  ]
+}

@@ -277,11 +277,13 @@ _AVISO_PROVISORIO = (
 )
 
 
-def dispensar_intervencao(uid: str, *, dispensada: bool = True) -> dict[str, Any]:
-    """Fecha a intervenção ativa. Dispensar CONTA como sinal — o aluno dizendo
-    "não é isto" é informação sobre a anotação, não silêncio."""
+def dispensar_intervencao(uid: str, *, processo_id: str, dispensada: bool = True) -> dict[str, Any]:
+    """Fecha a intervenção ativa DAQUELE processo — pode haver outra em
+    paralelo (até `rev._MAX_INTERVENCOES_ATIVAS`). Dispensar CONTA como sinal
+    — o aluno dizendo "não é isto" é informação sobre a anotação, não
+    silêncio."""
     bloco = _ler(uid)
-    novo = rev.encerrar_intervencao(bloco, quando=_now_iso(), dispensada=dispensada)
+    novo = rev.encerrar_intervencao(bloco, processo_id=processo_id, quando=_now_iso(), dispensada=dispensada)
     _guardar(uid, novo)
     fs.escrever_revisao(uid, novo)
     return {"ok": True}
@@ -339,7 +341,7 @@ def fila(uid: str, *, limite: int = rev.FILA_TAMANHO) -> dict[str, Any]:
         "provisorio": provisorio,
         "itens": itens,
         "resumo": _resumo(itens),
-        "intervencao_ativa": (rev._clonar(bloco)).get("intervencao_ativa"),
+        "intervencoes_ativas": list((rev._clonar(bloco)).get("intervencoes_ativas", {}).values()),
         "instrumentacao": rev.instrumentacao(bloco),
         "aviso": _AVISO_PROVISORIO if provisorio else None,
     }
@@ -349,6 +351,11 @@ def _vestir_linha(linha: dict[str, Any], respondidos: set[str]) -> dict[str, Any
     pid = linha["processo_id"]
     erro_id = linha.get("erro_dominante")
     transferencia = _transferencia(pid, linha.get("contextos_da_raiz") or [], respondidos)
+    # As questões DESTE processo que o aluno ainda não respondeu — mesma busca
+    # que já existe para a tela de habilidade (`intervencoes.montar`), agora
+    # também na fila: "Fazer a revisão" deixa de cair no /exams genérico e
+    # aponta pras questões que de fato exercitam o que está marcado aqui.
+    praticar = intervencoes.sugerir_pratica(pid, respondidos, limite=5)
     return {
         **linha,
         "processo_nome": motor_cognitivo._nome_processo(pid),
@@ -360,6 +367,7 @@ def _vestir_linha(linha: dict[str, Any], respondidos: set[str]) -> dict[str, Any
         # se degrada para "mais um item igual", que mediria memória do item em
         # vez de estabilização da habilidade.
         "transferencia": transferencia,
+        "praticar": praticar["itens"],
     }
 
 

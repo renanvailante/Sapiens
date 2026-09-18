@@ -43,8 +43,8 @@ export default function Admin() {
   return (
     <div className="min-h-screen">
       <Nav />
-      <div className="max-w-4xl mx-auto px-6 md:px-10 py-12">
-        <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-white/50 mb-3">Admin</div>
+      <div className="max-w-4xl mx-auto px-5 py-7 md:px-10 md:py-10">
+        <div className="secao-olho">Admin</div>
         <h1 className="font-display text-4xl font-extrabold tracking-tighter text-white" data-testid="admin-title">Importar gabarito do INEP</h1>
         <p className="mt-3 text-white/60 max-w-2xl">
           Cole diretamente o gabarito oficial (Ctrl+C / Ctrl+V) da página do INEP. O Sapiens ignora cabeçalhos e formatação, e cria automaticamente as versões em <b>inglês</b> e <b>espanhol</b>.

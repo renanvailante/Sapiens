@@ -137,7 +137,7 @@ export default function MentisWidget() {
   const baloesAtuais = mostrarBaloesIniciais ? BALOES_INICIAIS : baloesContextuais;
 
   return (
-    <div className="fixed bottom-5 right-5 z-50" data-testid="mentis-widget">
+    <div className="flutuante-mentis" data-testid="mentis-widget">
       {aberto && (
         <div
           className="mb-3 flex w-[22rem] max-w-[calc(100vw-2.5rem)] flex-col overflow-hidden rounded-3xl border border-white/10 bg-[#060c18] shadow-2xl"

@@ -347,3 +347,173 @@ def test_get_feedback_nao_cobra(fake_db, carteira, monkeypatch):
     lido = _run(routes.obter_feedback(redacao_id, user=_user()))
     assert lido["feedback"]["abertura"]
     assert carteira.debitos == []
+
+
+# ------------------------------------------------- a coletânea de temas
+#
+# O catálogo de temas é constante de módulo: nenhuma ida ao banco, nenhuma ao
+# Firestore. O que estes testes travam é o contrato com a tela e a regra que o
+# resto do repo já segue — preço não mora em conteúdo.
+
+from redacao import temas as temas_mod  # noqa: E402
+
+
+def test_a_coletanea_sai_inteira_e_agrupada():
+    resposta = _run(routes.listar_temas(_user()))
+    ids = [t["tema_id"] for t in resposta["temas"]]
+    assert ids == [t.tema_id for t in temas_mod.TEMAS]
+    # Todo tema aparece em exatamente um eixo, e nenhum eixo vem vazio.
+    dos_eixos = [tid for e in resposta["eixos"] for tid in e["temas"]]
+    assert sorted(dos_eixos) == sorted(ids)
+    assert all(e["temas"] for e in resposta["eixos"])
+
+
+def test_todo_tema_tem_proposta_e_textos_motivadores():
+    """Um tema sem frase não serve de proposta, e sem motivadores não é
+    coletânea — é um título. Os dois são o produto."""
+    for t in temas_mod.listar():
+        assert t["frase"].strip(), t["tema_id"]
+        assert len(t["textos_motivadores"]) >= 2, t["tema_id"]
+        for m in t["textos_motivadores"]:
+            assert m["rotulo"] and m["fonte"] and len(m["texto"]) > 80
+
+
+def test_nenhum_tema_fala_de_preco():
+    """A mesma regra que o validador de `cursos_conteudo` impõe ao conteúdo
+    dos cursos: preço é decisão de produto e mora no código que cobra. Um tema
+    que cite Spark viraria promessa de preço no ar."""
+    proibidas = ("spark", "r$", "custa", "preço", "preco")
+    for t in temas_mod.listar():
+        corpo = " ".join(
+            [t["titulo"], t["frase"], t["resumo"]]
+            + [m["texto"] for m in t["textos_motivadores"]]
+        ).lower()
+        assert not any(p in corpo for p in proibidas), t["tema_id"]
+
+
+def test_o_tema_escolhido_nao_atalha_a_correcao(fake_db, carteira):
+    """Escrever sobre um tema da coletânea custa exatamente o mesmo, e passa
+    pelo mesmo corretor, que um tema digitado à mão."""
+    routes.set_db(fake_db)
+    tema = temas_mod.listar()[0]
+    resposta = _run(routes.submeter_redacao(
+        _payload(tema_frase=tema["frase"],
+                 textos_motivadores=[m["texto"] for m in tema["textos_motivadores"]]),
+        user=_user(),
+    ))
+    assert carteira.debitos == [("user-1", routes.CORRECAO_COST)]
+    assert len(resposta["avaliacao"]["competencias"]) == 5
+
+
+# ------------------------------------------------- digitalizar a redação
+#
+# A foto vale Sparks porque é uma chamada de VISÃO ao Gemini. O que precisa ser
+# verdade: cobra uma vez por foto, NÃO corrige nada e devolve o dinheiro em
+# todo caminho que não entrega texto.
+
+_IMAGEM = "data:image/jpeg;base64," + ("A" * 200)
+
+
+def _ocr_fake(resultado):
+    async def _f(_imagem):
+        return resultado
+    return _f
+
+
+def test_digitalizar_devolve_o_texto_e_cobra_uma_vez(fake_db, carteira, monkeypatch):
+    routes.set_db(fake_db)
+    monkeypatch.setattr(ai_service, "ocr_redacao", _ocr_fake(
+        {"texto": "A juventude brasileira enfrenta.", "linhas": 28, "legivel": True, "observacao": ""},
+    ))
+    resposta = _run(routes.digitalizar(
+        routes.DigitalizarRequest(imagem_base64=_IMAGEM, idempotency_key="foto-aaaa-1"),
+        user=_user(),
+    ))
+    assert resposta["texto"] == "A juventude brasileira enfrenta."
+    assert resposta["linhas"] == 28
+    assert carteira.debitos == [("user-1", routes.DIGITALIZACAO_COST)]
+    assert carteira.reembolsos == []
+
+
+def test_digitalizar_nao_cria_redacao_nem_avaliacao(fake_db, carteira, monkeypatch):
+    """Digitalizar é uma compra; corrigir é outra. Se esta rota gravasse uma
+    redação, o aluno pagaria 25 e teria consumido a de 120 sem pedir."""
+    routes.set_db(fake_db)
+    monkeypatch.setattr(ai_service, "ocr_redacao", _ocr_fake(
+        {"texto": "Texto reconhecido.", "linhas": 20, "legivel": True, "observacao": ""},
+    ))
+    _run(routes.digitalizar(
+        routes.DigitalizarRequest(imagem_base64=_IMAGEM, idempotency_key="foto-aaaa-2"),
+        user=_user(),
+    ))
+    assert _run(fake_db.redacoes.count_documents({})) == 0
+    assert _run(fake_db.redacao_avaliacoes.count_documents({})) == 0
+
+
+def test_mesma_foto_reenviada_nao_cobra_de_novo(fake_db, carteira, monkeypatch):
+    routes.set_db(fake_db)
+    monkeypatch.setattr(ai_service, "ocr_redacao", _ocr_fake(
+        {"texto": "Transcrição.", "linhas": 12, "legivel": True, "observacao": ""},
+    ))
+    pedido = routes.DigitalizarRequest(imagem_base64=_IMAGEM, idempotency_key="foto-aaaa-3")
+    primeira = _run(routes.digitalizar(pedido, user=_user()))
+    segunda = _run(routes.digitalizar(pedido, user=_user()))
+    assert segunda["texto"] == primeira["texto"]
+    assert segunda["cobrado"] == 0
+    assert carteira.debitos == [("user-1", routes.DIGITALIZACAO_COST)]
+
+
+def test_foto_ilegivel_devolve_os_sparks(fake_db, carteira, monkeypatch):
+    """Foto tremida é erro do aluno; cobrar por ela é erro do produto — e sem
+    o reembolso, tentar de novo custaria de novo."""
+    routes.set_db(fake_db)
+    monkeypatch.setattr(ai_service, "ocr_redacao", _ocr_fake(
+        {"texto": "", "linhas": None, "legivel": False, "observacao": "Foto escura demais."},
+    ))
+    with pytest.raises(HTTPException) as exc:
+        _run(routes.digitalizar(
+            routes.DigitalizarRequest(imagem_base64=_IMAGEM, idempotency_key="foto-aaaa-4"),
+            user=_user(),
+        ))
+    assert exc.value.status_code == 422
+    assert "escura" in exc.value.detail
+    assert carteira.debitos == [("user-1", routes.DIGITALIZACAO_COST)]
+    assert carteira.reembolsos == [("user-1", routes.DIGITALIZACAO_COST)]
+
+
+def test_falha_do_modelo_devolve_os_sparks(fake_db, carteira, monkeypatch):
+    routes.set_db(fake_db)
+
+    async def _explode(_imagem):
+        raise RuntimeError("Gemini fora do ar")
+
+    monkeypatch.setattr(ai_service, "ocr_redacao", _explode)
+    with pytest.raises(HTTPException) as exc:
+        _run(routes.digitalizar(
+            routes.DigitalizarRequest(imagem_base64=_IMAGEM, idempotency_key="foto-aaaa-5"),
+            user=_user(),
+        ))
+    assert exc.value.status_code == 503
+    assert carteira.reembolsos == [("user-1", routes.DIGITALIZACAO_COST)]
+
+
+def test_imagem_grande_demais_e_recusada_antes_de_cobrar(fake_db, carteira):
+    routes.set_db(fake_db)
+    gigante = "data:image/png;base64," + ("A" * (routes.DIGITALIZACAO_MAX_BYTES + 1))
+    with pytest.raises(HTTPException) as exc:
+        _run(routes.digitalizar(
+            routes.DigitalizarRequest(imagem_base64=gigante, idempotency_key="foto-aaaa-6"),
+            user=_user(),
+        ))
+    assert exc.value.status_code == 413
+    assert carteira.debitos == []
+
+
+def test_os_tres_precos_da_redacao_estao_na_rota_de_precos():
+    precos = _run(routes.precos(_user()))
+    assert precos["custo_correcao"] == routes.CORRECAO_COST
+    assert precos["custo_feedback"] == routes.FEEDBACK_COST
+    assert precos["custo_digitalizacao"] == routes.DIGITALIZACAO_COST
+    # A digitalização é a mais barata das três, e precisa continuar sendo: ela
+    # não avalia nada, só poupa o aluno de digitar.
+    assert precos["custo_digitalizacao"] < precos["custo_feedback"] < precos["custo_correcao"]

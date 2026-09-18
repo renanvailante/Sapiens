@@ -1,0 +1,533 @@
+{
+  "schema_version": "1.0",
+  "estacao_id": "mb-05-porcentagem",
+  "titulo": "Porcentagem",
+  "objetivo": "Você vai calcular percentuais, aumentos, descontos e variações percentuais, e vai entender por que aumentar 20% e depois reduzir 20% não devolve o valor original.",
+  "versao": "2026-09-16",
+  "duracao_minutos": 12,
+  "numero": 5,
+  "conceitos": [
+    "porcentagem",
+    "aumentos-e-descontos",
+    "variacao-percentual"
+  ],
+  "conclusao": {
+    "tipo": "minimo_de_acertos",
+    "minimo": 7
+  },
+  "fonte": {
+    "arquivo": "mat basica 5.md",
+    "pasta": "cursos/matemática básica"
+  },
+  "blocos": [
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-05-c-01",
+      "variante": "padrao",
+      "markdown": "Porcentagem é uma fração com denominador 100.\n\n`20% = 20/100 = 0,20 = 1/5`"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-05-c-02",
+      "variante": "padrao",
+      "markdown": "1. **Qual é o valor inicial?** (base do cálculo)\n2. **Qual é a taxa?** (o percentual)\n3. **O que o problema pede?** (o valor final, a variação ou o próprio percentual)",
+      "titulo": "Três perguntas que resolvem quase tudo"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-05-c-03",
+      "variante": "padrao",
+      "markdown": "- Parte = base × taxa\n- Aumento de `p%`: valor final = base × `(1 + p/100)`\n- Desconto de `p%`: valor final = base × `(1 − p/100)`",
+      "titulo": "Cálculo direto"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-05-c-04",
+      "variante": "padrao",
+      "markdown": "Em vez de calcular a parte e somar, use o **fator**:\n\n- +20% → multiplicar por **1,20**\n- −15% → multiplicar por **0,85**\n- +7,5% → multiplicar por **1,075**\n\nIsso simplifica variações sucessivas.",
+      "titulo": "Fator multiplicativo"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-05-c-05",
+      "variante": "padrao",
+      "markdown": "`variação = (valor final − valor inicial) / valor inicial × 100`\n\nO **denominador é sempre o valor inicial**.",
+      "titulo": "Variação percentual"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-05-c-06",
+      "variante": "padrao",
+      "markdown": "Aumentar 20% e depois reduzir 20% **não** volta ao original:\n\n`1,20 × 0,80 = 0,96` → perda de 4%.",
+      "titulo": "Variações sucessivas"
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-05-ex-01",
+      "enunciado": "Quanto é 15% de 240?",
+      "passos": [
+        {
+          "texto": "`240 × 0,15 = 36`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-05-ex-02",
+      "enunciado": "Um produto de R$ 80 sofre desconto de 25%. Preço final?",
+      "passos": [
+        {
+          "texto": "`80 × 0,75 = 60`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-05-ex-03",
+      "enunciado": "Um preço subiu de R$ 50 para R$ 60. Qual a variação percentual?",
+      "passos": [
+        {
+          "texto": "`(60 − 50)/50 = 10/50 = 0,20 = 20%`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-05-ex-04",
+      "enunciado": "Um produto sofreu aumento de 10% e depois desconto de 10%. Ficou quanto do valor original?",
+      "passos": [
+        {
+          "texto": "`1,10 × 0,90 = 0,99` → perdeu 1%."
+        }
+      ]
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-05-es-01",
+      "variante": "destaque",
+      "markdown": "- Antes de calcular, identifique **qual é o valor de referência**. Aumentar 10% “de” R$ 200 é diferente de aumentar 10% “para” R$ 200.\n- Em variações sucessivas, multiplique os fatores em cadeia. Nunca some os percentuais.\n- Em problemas de desconto, se o enunciado diz “desconto de 30%”, o fator é `0,70`.\n- Em problemas de lucro, se o produto é vendido com 25% de lucro sobre o custo, o preço de venda é `1,25 × custo`."
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-05-er-01",
+      "variante": "atencao",
+      "markdown": "- **Somar percentuais em variações sucessivas.** Aumento de 10% seguido de 10% não é 20%.\n- **Aplicar o percentual sobre o valor final.** Descontos incidem sobre o valor atual, não sobre um valor futuro.\n- **Usar o denominador errado na variação.** Variação percentual usa o valor **inicial**.\n- **Confundir “por cento” com “pontos percentuais”.** De 10% para 13% houve aumento de 3 pontos percentuais, mas de 30% em termos relativos."
+    },
+    {
+      "tipo": "video",
+      "bloco_id": "mb-05-video",
+      "titulo": "Porcentagem — aula em vídeo",
+      "provedor": "youtube",
+      "ref": null,
+      "resumo": "Aula conduzida pelo 1º colocado de Medicina da USP."
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-05-q01",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Quanto é 15% de 240?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "36"
+        },
+        {
+          "id": "b",
+          "texto": "30"
+        },
+        {
+          "id": "c",
+          "texto": "48"
+        },
+        {
+          "id": "d",
+          "texto": "24"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "d": "Corresponde a 10%.",
+        "c": "A 20%.",
+        "b": "A 12,5%."
+      },
+      "solucao": "`240 × 0,15 = 36`.",
+      "conceitos": [
+        "porcentagem"
+      ],
+      "origem": {
+        "estacao": 5,
+        "questao": "Questão 1"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-05-q02",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Um produto de R$ 80 tem desconto de 25%. Qual o preço final?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "R$ 65"
+        },
+        {
+          "id": "b",
+          "texto": "R$ 20"
+        },
+        {
+          "id": "c",
+          "texto": "R$ 55"
+        },
+        {
+          "id": "d",
+          "texto": "R$ 60"
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "b": "É o valor do desconto, não o preço final.",
+        "c": "Esta é uma das que vêm de fatores errados.",
+        "a": "Esta é uma das que vêm de fatores errados."
+      },
+      "solucao": "`80 × 0,75 = 60`.",
+      "conceitos": [
+        "aumentos-e-descontos"
+      ],
+      "origem": {
+        "estacao": 5,
+        "questao": "Questão 2"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-05-q03",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Um preço subiu de R$ 50 para R$ 60. A variação percentual foi:",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "20%"
+        },
+        {
+          "id": "b",
+          "texto": "16,7%"
+        },
+        {
+          "id": "c",
+          "texto": "10%"
+        },
+        {
+          "id": "d",
+          "texto": "25%"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "b": "Usa o valor final como denominador.",
+        "c": "Confunde pontos com valor.",
+        "d": "Aplica percentual sobre o valor do aumento."
+      },
+      "solucao": "`(60 − 50)/50 = 10/50 = 20%`.",
+      "conceitos": [
+        "variacao-percentual"
+      ],
+      "origem": {
+        "estacao": 5,
+        "questao": "Questão 3"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-05-q04",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Um salário de R$ 2.000 sofre aumento de 8%. Qual o novo valor?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "R$ 2.008"
+        },
+        {
+          "id": "b",
+          "texto": "R$ 2.160"
+        },
+        {
+          "id": "c",
+          "texto": "R$ 2.180"
+        },
+        {
+          "id": "d",
+          "texto": "R$ 2.080"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "a": "Soma 8 reais.",
+        "c": "Esta é uma das que vêm de fatores errados.",
+        "d": "Esta é uma das que vêm de fatores errados."
+      },
+      "solucao": "`2000 × 1,08 = 2160`.",
+      "conceitos": [
+        "aumentos-e-descontos"
+      ],
+      "origem": {
+        "estacao": 5,
+        "questao": "Questão 4"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-05-q05",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Um produto sofreu aumento de 20% e depois desconto de 20%. Em relação ao preço original, o preço final é:",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "4% maior"
+        },
+        {
+          "id": "b",
+          "texto": "4% menor"
+        },
+        {
+          "id": "c",
+          "texto": "igual"
+        },
+        {
+          "id": "d",
+          "texto": "20% menor"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "c": "Acredita erroneamente que variações se cancelam.",
+        "a": "Esta é uma das que aplicam raciocínios não multiplicativos.",
+        "d": "Esta é uma das que aplicam raciocínios não multiplicativos."
+      },
+      "solucao": "`1,20 × 0,80 = 0,96` → perdeu 4%.",
+      "conceitos": [
+        "variacao-percentual"
+      ],
+      "origem": {
+        "estacao": 5,
+        "questao": "Questão 5"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-05-q06",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Um tênis custa R$ 250. Na promoção, sai por R$ 200. Qual o desconto percentual?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "50%"
+        },
+        {
+          "id": "b",
+          "texto": "20%"
+        },
+        {
+          "id": "c",
+          "texto": "25%"
+        },
+        {
+          "id": "d",
+          "texto": "10%"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "c": "Usa o valor final como denominador."
+      },
+      "solucao": "`(250 − 200)/250 = 50/250 = 0,20 = 20%`. C, D são arbitrários.",
+      "conceitos": [
+        "variacao-percentual"
+      ],
+      "origem": {
+        "estacao": 5,
+        "questao": "Questão 6"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-05-q07",
+      "nivel": 3,
+      "formato": "multipla_escolha",
+      "enunciado": "Um produto teve dois aumentos sucessivos: 10% e 15%. O aumento total acumulado foi aproximadamente:",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "25,5%"
+        },
+        {
+          "id": "b",
+          "texto": "30%"
+        },
+        {
+          "id": "c",
+          "texto": "25%"
+        },
+        {
+          "id": "d",
+          "texto": "26,5%"
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "c": "Soma os percentuais.",
+        "a": "Esta é uma das que são aproximações incorretas.",
+        "b": "Esta é uma das que são aproximações incorretas."
+      },
+      "solucao": "`1,10 × 1,15 = 1,265` → 26,5%.",
+      "conceitos": [
+        "variacao-percentual"
+      ],
+      "origem": {
+        "estacao": 5,
+        "questao": "Questão 7"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-05-q08",
+      "nivel": 3,
+      "formato": "multipla_escolha",
+      "enunciado": "Um investimento caiu 30% em um mês. Para voltar ao valor original, precisa subir aproximadamente:",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "30%"
+        },
+        {
+          "id": "b",
+          "texto": "40%"
+        },
+        {
+          "id": "c",
+          "texto": "42,9%"
+        },
+        {
+          "id": "d",
+          "texto": "35%"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "a": "Soma.",
+        "b": "Esta é uma das que são aproximações populares incorretas.",
+        "d": "Esta é uma das que são aproximações populares incorretas."
+      },
+      "solucao": "Após cair 30%, o valor é `0,70` do original. Para voltar a `1,00`, é preciso multiplicar por `1/0,70 ≈ 1,4286` → 42,9%.",
+      "conceitos": [
+        "variacao-percentual"
+      ],
+      "origem": {
+        "estacao": 5,
+        "questao": "Questão 8"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-05-q09",
+      "nivel": 4,
+      "formato": "multipla_escolha",
+      "enunciado": "Uma loja anuncia “30% de desconto” em um produto que já estava com “20% de desconto” sobre o preço original. O desconto total em relação ao preço original é de:",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "50%"
+        },
+        {
+          "id": "b",
+          "texto": "36%"
+        },
+        {
+          "id": "c",
+          "texto": "48%"
+        },
+        {
+          "id": "d",
+          "texto": "44%"
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "a": "Soma os percentuais.",
+        "b": "Esta é uma das que são cálculos incorretos com fator único.",
+        "c": "Esta é uma das que são cálculos incorretos com fator único."
+      },
+      "solucao": "`0,80 × 0,70 = 0,56` → desconto total de 44%.",
+      "conceitos": [
+        "variacao-percentual"
+      ],
+      "origem": {
+        "estacao": 5,
+        "questao": "Questão 9"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-05-q10",
+      "nivel": 4,
+      "formato": "multipla_escolha",
+      "enunciado": "Uma pesquisa mostra que 60% de uma população de 25.000 pessoas apoia uma medida. Quantas pessoas apoiam?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "18.000"
+        },
+        {
+          "id": "b",
+          "texto": "15.000"
+        },
+        {
+          "id": "c",
+          "texto": "12.500"
+        },
+        {
+          "id": "d",
+          "texto": "10.000"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "c": "Corresponde a 50%.",
+        "a": "A 72%.",
+        "d": "A 40%."
+      },
+      "solucao": "`25.000 × 0,60 = 15.000`.",
+      "conceitos": [
+        "porcentagem"
+      ],
+      "origem": {
+        "estacao": 5,
+        "questao": "Questão 10"
+      }
+    },
+    {
+      "tipo": "desafio",
+      "bloco_id": "mb-05-desafio",
+      "nivel": 5,
+      "enunciado": "Um produto sofreu três variações sucessivas: aumento de 20%, desconto de 25% e aumento de 10%. Sobre o preço original, o preço final corresponde a:",
+      "formato": "numerico",
+      "gabarito": {
+        "valor": 99,
+        "tolerancia": 0.5
+      },
+      "unidade": "%",
+      "solucao": "- `1,20 × 0,75 = 0,90`\n- `0,90 × 1,10 = 0,99`\n- Logo, o preço final é 99% do original, uma redução de 1%."
+    }
+  ],
+  "habilidades": [
+    "HAB-05"
+  ],
+  "pre_requisitos": [
+    "mb-02-fracoes",
+    "mb-04-regra-de-tres"
+  ]
+}

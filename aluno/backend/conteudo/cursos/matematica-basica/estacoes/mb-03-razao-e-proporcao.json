@@ -1,0 +1,518 @@
+{
+  "schema_version": "1.0",
+  "estacao_id": "mb-03-razao-e-proporcao",
+  "titulo": "Razão e proporção",
+  "objetivo": "Você vai comparar grandezas usando razões e resolver igualdades entre razões (proporções) com segurança.",
+  "versao": "2026-09-16",
+  "duracao_minutos": 12,
+  "numero": 3,
+  "conceitos": [
+    "razao",
+    "proporcao"
+  ],
+  "conclusao": {
+    "tipo": "minimo_de_acertos",
+    "minimo": 7
+  },
+  "fonte": {
+    "arquivo": "mat basica 3.md",
+    "pasta": "cursos/matemática básica"
+  },
+  "blocos": [
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-03-c-01",
+      "variante": "padrao",
+      "markdown": "Razão é uma **comparação por divisão** entre duas grandezas. Escreve-se `a : b` ou `a/b`. A ordem importa: `3 : 4 ≠ 4 : 3`.\n\nAntes de montar uma razão, as duas grandezas precisam estar **na mesma unidade**.",
+      "titulo": "Razão"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-03-c-02",
+      "variante": "padrao",
+      "markdown": "Proporção é uma igualdade entre duas razões:\n\n`a/b = c/d`\n\n**Propriedade fundamental:** o produto dos meios é igual ao produto dos extremos.\n\n`a × d = b × c`\n\nEssa propriedade é a ferramenta principal para resolver proporções com um termo desconhecido.",
+      "titulo": "Proporção"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-03-c-03",
+      "variante": "padrao",
+      "markdown": "Escala é uma razão entre medida no desenho e medida real. Escala `1 : 200` significa que 1 cm no desenho corresponde a 200 cm reais.",
+      "titulo": "Escala"
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-03-ex-01",
+      "enunciado": "Simplifique a razão `12 : 18`.",
+      "passos": [
+        {
+          "texto": "Dividindo por 6: `2 : 3`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-03-ex-02",
+      "enunciado": "Resolva `x/5 = 4/10`.",
+      "passos": [
+        {
+          "texto": "Produto dos extremos: `10x = 20`"
+        },
+        {
+          "texto": "`x = 2`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-03-ex-03",
+      "enunciado": "Em uma turma, a razão entre meninos e meninas é `3 : 4`. Se há 28 meninas, quantos meninos?",
+      "passos": [
+        {
+          "texto": "`3/4 = x/28`"
+        },
+        {
+          "texto": "`4x = 84`"
+        },
+        {
+          "texto": "`x = 21`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-03-ex-04",
+      "enunciado": "Numa escala `1 : 200`, uma parede de 5 cm no desenho corresponde a quantos metros?",
+      "passos": [
+        {
+          "texto": "`5 × 200 = 1000 cm = 10 m`"
+        }
+      ]
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-03-es-01",
+      "variante": "destaque",
+      "markdown": "- Antes de montar a proporção, **identifique as grandezas** e **converta unidades**.\n- Escreva a proporção na ordem em que as grandezas aparecem no enunciado. Misturar ordens é o erro mais comum.\n- Use a propriedade fundamental sempre que houver um termo desconhecido.\n- Escalas, mapas e plantas são proporções diretas."
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-03-er-01",
+      "variante": "atencao",
+      "markdown": "- **Inverter uma razão** ao montar a proporção. `3/4` não é o mesmo que `4/3`.\n- **Comparar grandezas em unidades diferentes.** 30 min e 2 h precisam virar 30 min e 120 min.\n- **Achar que razão é diferença.** `3 : 4` não significa “3 a mais que 4”.\n- **Esquecer a unidade final** em problemas de escala."
+    },
+    {
+      "tipo": "video",
+      "bloco_id": "mb-03-video",
+      "titulo": "Razão e proporção — aula em vídeo",
+      "provedor": "youtube",
+      "ref": null,
+      "resumo": "Aula conduzida pelo 1º colocado de Medicina da USP."
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-03-q01",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "A razão entre 12 e 18 na forma simplificada é:",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "2/3"
+        },
+        {
+          "id": "b",
+          "texto": "6/9"
+        },
+        {
+          "id": "c",
+          "texto": "12/18"
+        },
+        {
+          "id": "d",
+          "texto": "3/2"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "d": "Inverte.",
+        "b": "É simplificação parcial.",
+        "c": "É a forma original, não simplificada."
+      },
+      "solucao": "MDC(12,18) = 6 → `2/3`.",
+      "conceitos": [
+        "razao"
+      ],
+      "origem": {
+        "estacao": 3,
+        "questao": "Questão 1"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-03-q02",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Se `x/5 = 4/10`, então `x` vale:",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "20"
+        },
+        {
+          "id": "b",
+          "texto": "8"
+        },
+        {
+          "id": "c",
+          "texto": "2"
+        },
+        {
+          "id": "d",
+          "texto": "4"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "d": "Copia o 4.",
+        "b": "Dobra.",
+        "a": "Multiplica `5 × 4`."
+      },
+      "solucao": "Produto dos extremos: `10x = 20`, `x = 2`.",
+      "conceitos": [
+        "proporcao"
+      ],
+      "origem": {
+        "estacao": 3,
+        "questao": "Questão 2"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-03-q03",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "A razão entre 30 minutos e 2 horas é:",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "1/2"
+        },
+        {
+          "id": "b",
+          "texto": "1/4"
+        },
+        {
+          "id": "c",
+          "texto": "30/2"
+        },
+        {
+          "id": "d",
+          "texto": "15/1"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "d": "Divide sem converter.",
+        "c": "Trata as grandezas em unidades diferentes.",
+        "a": "Simplifica errado."
+      },
+      "solucao": "2 h = 120 min. `30/120 = 1/4`.",
+      "conceitos": [
+        "razao"
+      ],
+      "origem": {
+        "estacao": 3,
+        "questao": "Questão 3"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-03-q04",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Numa turma, a razão entre meninos e meninas é `3 : 4`. Se há 28 meninas, quantos meninos há?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "24"
+        },
+        {
+          "id": "b",
+          "texto": "16"
+        },
+        {
+          "id": "c",
+          "texto": "21"
+        },
+        {
+          "id": "d",
+          "texto": "18"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "a": "Esta é uma das que vêm de proporções invertidas ou mal montadas.",
+        "d": "Esta é uma das que vêm de proporções invertidas ou mal montadas.",
+        "b": "Esta é uma das que vêm de proporções invertidas ou mal montadas."
+      },
+      "solucao": "`3/4 = x/28 → 4x = 84 → x = 21`.",
+      "conceitos": [
+        "proporcao"
+      ],
+      "origem": {
+        "estacao": 3,
+        "questao": "Questão 4"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-03-q05",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Se 5 cadernos custam R$ 40, quanto custam 8 cadernos?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "R$ 64"
+        },
+        {
+          "id": "b",
+          "texto": "R$ 72"
+        },
+        {
+          "id": "c",
+          "texto": "R$ 60"
+        },
+        {
+          "id": "d",
+          "texto": "R$ 56"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "d": "Esta é uma das que vêm de proporções mal montadas.",
+        "b": "Esta é uma das que vêm de proporções mal montadas.",
+        "c": "Esta é uma das que vêm de proporções mal montadas."
+      },
+      "solucao": "`40/5 = 8` por caderno. `8 × 8 = 64`.",
+      "conceitos": [
+        "proporcao"
+      ],
+      "origem": {
+        "estacao": 3,
+        "questao": "Questão 5"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-03-q06",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Numa escala `1 : 200`, uma parede de 5 cm no desenho corresponde a:",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "100 m"
+        },
+        {
+          "id": "b",
+          "texto": "10 m"
+        },
+        {
+          "id": "c",
+          "texto": "20 m"
+        },
+        {
+          "id": "d",
+          "texto": "1 m"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "a": "Multiplica por 2000.",
+        "d": "Erra a conversão.",
+        "c": "Usa escala 400."
+      },
+      "solucao": "`5 × 200 = 1000 cm = 10 m`.",
+      "conceitos": [
+        "razao"
+      ],
+      "origem": {
+        "estacao": 3,
+        "questao": "Questão 6"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-03-q07",
+      "nivel": 3,
+      "formato": "multipla_escolha",
+      "enunciado": "A razão entre as áreas de dois quadrados é `9 : 25`. A razão entre os lados é:",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "5 : 3"
+        },
+        {
+          "id": "b",
+          "texto": "9 : 25"
+        },
+        {
+          "id": "c",
+          "texto": "81 : 625"
+        },
+        {
+          "id": "d",
+          "texto": "3 : 5"
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "b": "Repete a razão das áreas.",
+        "c": "Eleva ao quadrado.",
+        "a": "Inverte."
+      },
+      "solucao": "A razão entre áreas é o quadrado da razão entre lados. `√9 : √25 = 3 : 5`.",
+      "conceitos": [
+        "razao"
+      ],
+      "origem": {
+        "estacao": 3,
+        "questao": "Questão 7"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-03-q08",
+      "nivel": 3,
+      "formato": "multipla_escolha",
+      "enunciado": "Em uma mistura, a razão entre tinta azul e branca é `2 : 5`. Se usarmos 12 L de azul, quantos litros de branca serão necessários?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "42"
+        },
+        {
+          "id": "b",
+          "texto": "30"
+        },
+        {
+          "id": "c",
+          "texto": "24"
+        },
+        {
+          "id": "d",
+          "texto": "15"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "c": "Aplica a razão invertida.",
+        "d": "Soma.",
+        "a": "Faz `12 + 30`."
+      },
+      "solucao": "`2/5 = 12/x → 2x = 60 → x = 30`.",
+      "conceitos": [
+        "proporcao"
+      ],
+      "origem": {
+        "estacao": 3,
+        "questao": "Questão 8"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-03-q09",
+      "nivel": 4,
+      "formato": "multipla_escolha",
+      "enunciado": "Em um mapa, 4 cm representam 20 km. Quantos km representam 7 cm?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "28"
+        },
+        {
+          "id": "b",
+          "texto": "35"
+        },
+        {
+          "id": "c",
+          "texto": "40"
+        },
+        {
+          "id": "d",
+          "texto": "32"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "a": "Esta é uma das que vêm de proporções invertidas.",
+        "c": "Esta é uma das que vêm de proporções invertidas.",
+        "d": "Esta é uma das que vêm de proporções invertidas."
+      },
+      "solucao": "`20/4 = 5` km por cm. `7 × 5 = 35`.",
+      "conceitos": [
+        "proporcao"
+      ],
+      "origem": {
+        "estacao": 3,
+        "questao": "Questão 9"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-03-q10",
+      "nivel": 4,
+      "formato": "multipla_escolha",
+      "enunciado": "Uma receita de suco usa água e concentrado na razão `5 : 1`. Para 3 L de concentrado, quantos litros de água serão usados?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "10"
+        },
+        {
+          "id": "b",
+          "texto": "15"
+        },
+        {
+          "id": "c",
+          "texto": "18"
+        },
+        {
+          "id": "d",
+          "texto": "8"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "d": "Soma.",
+        "a": "Dobra.",
+        "c": "Multiplica por 6."
+      },
+      "solucao": "`5/1 = x/3 → x = 15`.",
+      "conceitos": [
+        "proporcao"
+      ],
+      "origem": {
+        "estacao": 3,
+        "questao": "Questão 10"
+      }
+    },
+    {
+      "tipo": "desafio",
+      "bloco_id": "mb-03-desafio",
+      "nivel": 5,
+      "enunciado": "Numa empresa, a razão entre o número de funcionários do setor A e do setor B é `7 : 5`. Após contratar 6 funcionários para cada setor, a razão passa a ser `4 : 3`. Quantos funcionários havia inicialmente no setor A?",
+      "formato": "numerico",
+      "gabarito": {
+        "valor": 42.0,
+        "tolerancia": 0.042
+      },
+      "solucao": "- Sejam `A = 7k` e `B = 5k`.\n- `(7k + 6)/(5k + 6) = 4/3`\n- `3(7k + 6) = 4(5k + 6)`\n- `21k + 18 = 20k + 24`\n- `k = 6`\n- `A = 7 × 6 = 42`"
+    }
+  ],
+  "pre_requisitos": [
+    "mb-02-fracoes"
+  ]
+}

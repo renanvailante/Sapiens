@@ -1,0 +1,544 @@
+{
+  "schema_version": "1.0",
+  "estacao_id": "mb-02-fracoes",
+  "titulo": "Frações",
+  "objetivo": "Você vai interpretar frações como parte de um todo, comparar frações, simplificá-las e operá-las com segurança nas quatro operações.",
+  "versao": "2026-09-16",
+  "duracao_minutos": 12,
+  "numero": 2,
+  "conceitos": [
+    "fracoes",
+    "equivalencia",
+    "simplificacao",
+    "operacoes-com-fracoes"
+  ],
+  "conclusao": {
+    "tipo": "minimo_de_acertos",
+    "minimo": 7
+  },
+  "fonte": {
+    "arquivo": "mat basica 2.md",
+    "pasta": "cursos/matemática básica"
+  },
+  "blocos": [
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-02-c-01",
+      "variante": "padrao",
+      "markdown": "Uma fração `a/b` representa **a partes de um todo dividido em b partes iguais**. O número de cima é o **numerador**; o de baixo, o **denominador**."
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-02-c-02",
+      "variante": "padrao",
+      "markdown": "Multiplicar ou dividir numerador e denominador pelo **mesmo número** não altera a fração.\n\n`2/4 = 1/2 = 4/8`",
+      "titulo": "Equivalência"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-02-c-03",
+      "variante": "padrao",
+      "markdown": "Dividir numerador e denominador pelo **maior divisor comum** até não haver mais divisor comum.\n\n`18/24 ÷ 6 = 3/4`",
+      "titulo": "Simplificação"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-02-c-04",
+      "variante": "padrao",
+      "markdown": "Duas frações com o mesmo denominador são comparadas pelo numerador. Com denominadores diferentes, reduza ao mesmo denominador ou converta em decimal.",
+      "titulo": "Comparação"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-02-c-05",
+      "variante": "padrao",
+      "markdown": "Precisam do **mesmo denominador**. Se não tiverem, encontre o MMC.\n\n`1/2 + 1/3 = 3/6 + 2/6 = 5/6`",
+      "titulo": "Soma e subtração"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-02-c-06",
+      "variante": "padrao",
+      "markdown": "Multiplica numerador por numerador e denominador por denominador.\n\n`2/3 × 3/4 = 6/12 = 1/2`",
+      "titulo": "Multiplicação"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-02-c-07",
+      "variante": "padrao",
+      "markdown": "Multiplica pela **inversa** da segunda fração.\n\n`(2/3) ÷ (4/5) = 2/3 × 5/4 = 10/12 = 5/6`",
+      "titulo": "Divisão"
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-02-ex-01",
+      "enunciado": "`1/2 + 1/3`",
+      "passos": [
+        {
+          "texto": "MMC(2,3) = 6"
+        },
+        {
+          "texto": "`1/2 = 3/6`, `1/3 = 2/6`"
+        },
+        {
+          "texto": "`3/6 + 2/6 = 5/6`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-02-ex-02",
+      "enunciado": "`3/4 × 2/5`",
+      "passos": [
+        {
+          "texto": "`(3 × 2)/(4 × 5) = 6/20 = 3/10`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-02-ex-03",
+      "enunciado": "`(2/3) ÷ (4/5)`",
+      "passos": [
+        {
+          "texto": "Inverte a segunda: `2/3 × 5/4 = 10/12 = 5/6`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-02-ex-04",
+      "enunciado": "Contexto: uma receita pede `3/4` de xícara de açúcar. Você vai fazer `2/3` da receita. Quanto açúcar?",
+      "passos": [
+        {
+          "texto": "`3/4 × 2/3 = 6/12 = 1/2` de xícara."
+        }
+      ]
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-02-es-01",
+      "variante": "destaque",
+      "markdown": "- Antes de somar, **pergunte se os denominadores são iguais**. Se não, encontre o MMC.\n- Em problemas de “fração de fração”, a palavra “de” vira multiplicação.\n- Para comparar rapidamente, converta em decimal quando os números não forem limpos.\n- Simplifique **antes** de multiplicar para reduzir contas."
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-02-er-01",
+      "variante": "atencao",
+      "markdown": "- **Somar numeradores e denominadores.** `1/2 + 1/3 ≠ 2/5`.\n- **Multiplicar pela inversa errada.** Na divisão, inverte-se a **segunda** fração, não a primeira.\n- **Parar a simplificação cedo.** `18/24` ainda não está irredutível em `9/12`.\n- **Esquecer o sinal negativo** quando a fração tem numerador ou denominador negativo."
+    },
+    {
+      "tipo": "video",
+      "bloco_id": "mb-02-video",
+      "titulo": "Frações — aula em vídeo",
+      "provedor": "youtube",
+      "ref": null,
+      "resumo": "Aula conduzida pelo 1º colocado de Medicina da USP."
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-02-q01",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Simplifique `18/24`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "9/12"
+        },
+        {
+          "id": "b",
+          "texto": "3/4"
+        },
+        {
+          "id": "c",
+          "texto": "6/8"
+        },
+        {
+          "id": "d",
+          "texto": "2/3"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "a": "Esta é uma das que são simplificações parciais.",
+        "c": "Esta é uma das que são simplificações parciais.",
+        "d": "Não é equivalente."
+      },
+      "solucao": "MDC(18,24) = 6. `18 ÷ 6 = 3`, `24 ÷ 6 = 4`.",
+      "conceitos": [
+        "simplificacao"
+      ],
+      "origem": {
+        "estacao": 2,
+        "questao": "Questão 1"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-02-q02",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Qual fração é equivalente a `2/5`?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "5/2"
+        },
+        {
+          "id": "b",
+          "texto": "4/5"
+        },
+        {
+          "id": "c",
+          "texto": "2/10"
+        },
+        {
+          "id": "d",
+          "texto": "4/10"
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "b": "Altera só o numerador.",
+        "c": "Altera só o denominador.",
+        "a": "Inverte a fração."
+      },
+      "solucao": "Multiplicar numerador e denominador por 2 dá `4/10`, que é equivalente.",
+      "conceitos": [
+        "equivalencia"
+      ],
+      "origem": {
+        "estacao": 2,
+        "questao": "Questão 2"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-02-q03",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Calcule `1/4 + 2/4`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "2/4"
+        },
+        {
+          "id": "b",
+          "texto": "3/4"
+        },
+        {
+          "id": "c",
+          "texto": "3/8"
+        },
+        {
+          "id": "d",
+          "texto": "1/2"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "c": "Soma os denominadores.",
+        "a": "Ignora o `1/4`.",
+        "d": "Simplifica errado."
+      },
+      "solucao": "Mesmo denominador: soma-se apenas o numerador. `1 + 2 = 3`, resultado `3/4`.",
+      "conceitos": [
+        "operacoes-com-fracoes"
+      ],
+      "origem": {
+        "estacao": 2,
+        "questao": "Questão 3"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-02-q04",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Calcule `2/3 + 1/4`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "1/2"
+        },
+        {
+          "id": "b",
+          "texto": "11/12"
+        },
+        {
+          "id": "c",
+          "texto": "3/7"
+        },
+        {
+          "id": "d",
+          "texto": "8/12"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "c": "Soma numeradores e denominadores.",
+        "d": "Esquece de converter o `1/4`.",
+        "a": "É um valor aproximado que não corresponde."
+      },
+      "solucao": "MMC(3,4) = 12. `2/3 = 8/12`, `1/4 = 3/12`, soma `11/12`.",
+      "conceitos": [
+        "operacoes-com-fracoes"
+      ],
+      "origem": {
+        "estacao": 2,
+        "questao": "Questão 4"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-02-q05",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Calcule `3/4 × 2/5`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "5/9"
+        },
+        {
+          "id": "b",
+          "texto": "3/10"
+        },
+        {
+          "id": "c",
+          "texto": "15/8"
+        },
+        {
+          "id": "d",
+          "texto": "6/9"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "c": "Inverte as frações, tratando como divisão.",
+        "a": "Soma em vez de multiplicar.",
+        "d": "Soma os numeradores e mantém um denominador incorreto."
+      },
+      "solucao": "`(3 × 2)/(4 × 5) = 6/20 = 3/10`.",
+      "conceitos": [
+        "operacoes-com-fracoes"
+      ],
+      "origem": {
+        "estacao": 2,
+        "questao": "Questão 5"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-02-q06",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Calcule `(2/3) ÷ (4/5)`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "5/6"
+        },
+        {
+          "id": "b",
+          "texto": "8/15"
+        },
+        {
+          "id": "c",
+          "texto": "3/2"
+        },
+        {
+          "id": "d",
+          "texto": "6/5"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "b": "Multiplica diretamente as frações originais.",
+        "d": "Inverte a primeira fração.",
+        "c": "Inverte o resultado."
+      },
+      "solucao": "`2/3 × 5/4 = 10/12 = 5/6`.",
+      "conceitos": [
+        "operacoes-com-fracoes"
+      ],
+      "origem": {
+        "estacao": 2,
+        "questao": "Questão 6"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-02-q07",
+      "nivel": 3,
+      "formato": "multipla_escolha",
+      "enunciado": "Calcule `1/2 + 1/3 − 1/6`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "5/6"
+        },
+        {
+          "id": "b",
+          "texto": "1/6"
+        },
+        {
+          "id": "c",
+          "texto": "1/3"
+        },
+        {
+          "id": "d",
+          "texto": "2/3"
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "c": "Esquece a soma inicial.",
+        "a": "Esquece de subtrair `1/6`.",
+        "b": "Considera apenas o último termo."
+      },
+      "solucao": "MMC(2,3,6) = 6. `3/6 + 2/6 − 1/6 = 4/6 = 2/3`.",
+      "conceitos": [
+        "operacoes-com-fracoes"
+      ],
+      "origem": {
+        "estacao": 2,
+        "questao": "Questão 7"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-02-q08",
+      "nivel": 3,
+      "formato": "multipla_escolha",
+      "enunciado": "Calcule `(1/2 + 1/4) × 2/3`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "1/2"
+        },
+        {
+          "id": "b",
+          "texto": "1/4"
+        },
+        {
+          "id": "c",
+          "texto": "2/3"
+        },
+        {
+          "id": "d",
+          "texto": "3/4"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "d": "Para no parêntese.",
+        "c": "Ignora o parêntese e calcula `1/2 × 2/3`?",
+        "b": "Usa apenas metade do parêntese."
+      },
+      "solucao": "`1/2 + 1/4 = 3/4`. `3/4 × 2/3 = 6/12 = 1/2`. Não, C não corresponde.",
+      "conceitos": [
+        "operacoes-com-fracoes"
+      ],
+      "origem": {
+        "estacao": 2,
+        "questao": "Questão 8"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-02-q09",
+      "nivel": 4,
+      "formato": "multipla_escolha",
+      "enunciado": "Uma receita pede `3/4` de xícara de açúcar. Se você fizer `2/3` da receita, quanto açúcar usará?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "1/2 de xícara"
+        },
+        {
+          "id": "b",
+          "texto": "5/7 de xícara"
+        },
+        {
+          "id": "c",
+          "texto": "9/8 de xícara"
+        },
+        {
+          "id": "d",
+          "texto": "1/4 de xícara"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "b": "Soma as frações.",
+        "c": "Inverte e soma.",
+        "d": "Considera apenas uma fração."
+      },
+      "solucao": "“de” indica multiplicação: `3/4 × 2/3 = 6/12 = 1/2`.",
+      "conceitos": [
+        "operacoes-com-fracoes"
+      ],
+      "origem": {
+        "estacao": 2,
+        "questao": "Questão 9"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-02-q10",
+      "nivel": 4,
+      "formato": "multipla_escolha",
+      "enunciado": "Uma pizza foi dividida em 8 fatias iguais. Ana comeu 3 fatias e Beto comeu `1/4` da pizza. Quantas fatias restaram?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "2"
+        },
+        {
+          "id": "b",
+          "texto": "3"
+        },
+        {
+          "id": "c",
+          "texto": "5"
+        },
+        {
+          "id": "d",
+          "texto": "4"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "d": "Esta é uma das que refletem erros de interpretação do `1/4`.",
+        "c": "Esta é uma das que refletem erros de interpretação do `1/4`.",
+        "a": "Esta é uma das que refletem erros de interpretação do `1/4`."
+      },
+      "solucao": "Beto comeu `1/4 × 8 = 2` fatias. Total comido: `3 + 2 = 5`. Restaram `8 − 5 = 3`.",
+      "conceitos": [
+        "operacoes-com-fracoes"
+      ],
+      "origem": {
+        "estacao": 2,
+        "questao": "Questão 10"
+      }
+    },
+    {
+      "tipo": "desafio",
+      "bloco_id": "mb-02-desafio",
+      "nivel": 5,
+      "enunciado": "Calcule:\n\n`(1/2 + 1/3) ÷ (1/4 − 1/6)`",
+      "formato": "numerico",
+      "gabarito": {
+        "valor": 10.0,
+        "tolerancia": 0.01
+      },
+      "solucao": "- `1/2 + 1/3 = 5/6`\n- `1/4 − 1/6 = 3/12 − 2/12 = 1/12`\n- `(5/6) ÷ (1/12) = 5/6 × 12/1 = 60/6 = 10`"
+    }
+  ],
+  "pre_requisitos": [
+    "mb-01-operacoes-fundamentais"
+  ]
+}

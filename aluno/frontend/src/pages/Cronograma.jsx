@@ -1,16 +1,18 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
-  CalendarDays, ChevronLeft, ChevronRight, Sparkles, Loader2, Check, ArrowRight,
-  TrendingUp, Info,
+  CalendarDays, ChevronLeft, ChevronRight, Sparkles, Loader2, Check,
+  TrendingUp, Info, X,
 } from "lucide-react";
 import { api, errMsg } from "../lib/api";
-import Nav from "../components/Nav";
+import Nav, { avisarSparksMudou } from "../components/Nav";
 import Mentis from "../components/Mentis";
 import CronogramaCompromissos from "../components/CronogramaCompromissos";
 import EstadoDeErro from "../components/EstadoDeErro";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { useDeclararContextoMentis } from "../lib/mentisContexto";
+import { criarPortao } from "../lib/idempotencia";
 
 /**
  * Cronograma — a semana do aluno, de segunda a domingo.
@@ -118,56 +120,154 @@ function FaixaDePrioridade({ prioridades }) {
   );
 }
 
-function Bloco({ bloco, onConcluir, salvando }) {
+const TIPOS_COMPROMISSO = [
+  { id: "aula", rotulo: "Aula" },
+  { id: "trabalho", rotulo: "Trabalho" },
+  { id: "prova", rotulo: "Prova" },
+  { id: "pessoal", rotulo: "Pessoal" },
+];
+
+const HORA_PX = 52;
+const HORA_INICIO = 6;
+const HORA_FIM = 23;
+
+function minDoDia(hhmm) {
+  const [h, m] = hhmm.split(":").map(Number);
+  return h * 60 + m;
+}
+function hhmmDoMin(min) {
+  const h = Math.floor(min / 60), m = min % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+/**
+ * A semana como uma linha do tempo contínua (uma coluna por dia, o relógio
+ * correndo por trás), não sete listas soltas — para o olho comparar horários
+ * entre dias tão fácil quanto numa agenda de verdade. Tocar num horário livre
+ * abre a anotação rápida; o X no próprio compromisso o apaga ali mesmo — sem
+ * abas, sem formulário para tirar o que já está certo.
+ */
+function GradeSemana({ dias, hojeISO, onConcluirBloco, salvandoBloco, onApagarCompromisso, onClicarVazio }) {
   const nav = useNavigate();
+  const alturaTotal = (HORA_FIM - HORA_INICIO) * HORA_PX;
+  const horas = Array.from({ length: HORA_FIM - HORA_INICIO }, (_, i) => HORA_INICIO + i);
+
   return (
-    <div
-      className={`rounded-xl border bg-white/5 p-2.5 transition ${CORES_BLOCO[bloco.tipo] || CORES_BLOCO.questoes} ${
-        bloco.concluido ? "opacity-55" : ""
-      }`}
-      data-testid={`cronograma-bloco-${bloco.id}`}
-    >
-      <div className="flex items-start justify-between gap-1.5">
-        <span className="font-mono-alt text-[9px] uppercase tracking-[0.2em] text-zinc-400">
-          {bloco.inicio}–{bloco.fim} · {ROTULO_TIPO[bloco.tipo] || bloco.tipo}
-        </span>
-        <button
-          type="button"
-          onClick={() => onConcluir(bloco)}
-          disabled={salvando}
-          aria-label={bloco.concluido ? "Desmarcar como feito" : "Marcar como feito"}
-          // A caixinha continua com 16px DESENHADOS (`before:` é só área de
-          // toque, invisível): ela é o marcador de um bloco pequeno, e crescer
-          // o quadrado mudaria a densidade da semana inteira. Mas 16px é
-          // metade do mínimo para um dedo, e este é o gesto que o aluno repete
-          // mais vezes nesta tela. A área invisível leva o alvo a 36px — o
-          // bastante para o dedo, e contido o suficiente para não roubar do
-          // card clicável logo abaixo mais que uma borda.
-          className={`relative flex h-4 w-4 shrink-0 items-center justify-center rounded border transition before:absolute before:-inset-2.5 before:content-[''] ${
-            bloco.concluido
-              ? "border-emerald-400/60 bg-emerald-400/25 text-emerald-200"
-              : "border-white/25 text-transparent hover:border-white/50"
-          }`}
-          data-testid={`cronograma-check-${bloco.id}`}
-        >
-          <Check className="h-2.5 w-2.5" />
-        </button>
+    <div className="card-sapiens mt-6 overflow-x-auto rounded-3xl p-3" data-testid="cronograma-grade">
+      <div className="flex min-w-[760px]">
+        <div className="w-10 shrink-0">
+          <div className="h-9" />
+          {horas.map((h) => (
+            <div key={h} style={{ height: HORA_PX }} className="relative">
+              <span className="absolute -top-2 right-1 font-mono-alt text-[9px] text-zinc-400">
+                {String(h).padStart(2, "0")}h
+              </span>
+            </div>
+          ))}
+        </div>
+        {dias.map((dia) => {
+          const eHoje = dia.data === hojeISO;
+          const diaInteiro = dia.compromissos.filter((c) => c.dia_inteiro);
+          const comHorario = dia.compromissos.filter((c) => !c.dia_inteiro);
+          return (
+            <div key={dia.data} className="min-w-0 flex-1 border-l border-white/[0.06]">
+              <div className={`flex h-9 flex-col items-center justify-center ${eHoje ? "text-[#7FD8FF]" : "text-zinc-400"}`}>
+                <span className="font-display text-xs font-bold tracking-tight">{DIAS_CURTOS[dia.indice].slice(0, 3)}</span>
+                <span className="font-mono-alt text-[9px]">{dia.data.slice(8, 10)}</span>
+              </div>
+              {diaInteiro.map((c) => (
+                <div
+                  key={c.id}
+                  className={`group relative mx-1 mb-1 rounded-lg border px-2 py-1 text-[10px] ${CORES_TIPO[c.tipo] || CORES_TIPO.pessoal}`}
+                >
+                  {c.titulo}
+                  <span
+                    role="button"
+                    onClick={() => onApagarCompromisso(c.id)}
+                    aria-label={`Apagar ${c.titulo}`}
+                    className="absolute right-1 top-1 rounded-full p-1 opacity-0 transition hover:bg-black/20 group-hover:opacity-70"
+                  >
+                    <X className="h-2.5 w-2.5" />
+                  </span>
+                </div>
+              ))}
+              <div
+                className={`relative cursor-copy ${eHoje ? "bg-[#4FD9FF]/[0.03]" : ""}`}
+                style={{ height: alturaTotal }}
+                onClick={(e) => {
+                  const y = e.clientY - e.currentTarget.getBoundingClientRect().top;
+                  onClicarVazio(dia, HORA_INICIO * 60 + Math.round((y / HORA_PX) * 60));
+                }}
+                data-testid={`cronograma-dia-${dia.indice}`}
+              >
+                {horas.map((h) => (
+                  <div key={h} className="absolute inset-x-0 border-t border-white/[0.05]" style={{ top: (h - HORA_INICIO) * HORA_PX }} />
+                ))}
+
+                {comHorario.map((c) => {
+                  const ini = Math.max(0, minDoDia(c.inicio) - HORA_INICIO * 60);
+                  const fim = Math.min(alturaTotal, minDoDia(c.fim) - HORA_INICIO * 60);
+                  if (fim <= ini) return null;
+                  return (
+                    <div
+                      key={c.id}
+                      onClick={(e) => e.stopPropagation()}
+                      style={{ top: (ini / 60) * HORA_PX, height: Math.max((fim - ini) / 60 * HORA_PX, 26) }}
+                      className={`group absolute inset-x-1 overflow-hidden rounded-lg border px-1.5 py-1 text-left text-[10px] leading-tight ${CORES_TIPO[c.tipo] || CORES_TIPO.pessoal}`}
+                      data-testid={`cronograma-compromisso-${c.id}`}
+                    >
+                      <span className="block font-mono-alt text-[8px] opacity-70">{c.inicio}–{c.fim}</span>
+                      <p className="truncate">{c.titulo}</p>
+                      <span
+                        role="button"
+                        onClick={(e) => { e.stopPropagation(); onApagarCompromisso(c.id); }}
+                        aria-label={`Apagar ${c.titulo}`}
+                        className="absolute right-1 top-1 rounded-full p-1 opacity-0 transition hover:bg-black/20 group-hover:opacity-70"
+                      >
+                        <X className="h-2.5 w-2.5" />
+                      </span>
+                    </div>
+                  );
+                })}
+
+                {dia.blocos.map((b) => {
+                  const ini = Math.max(0, minDoDia(b.inicio) - HORA_INICIO * 60);
+                  const fim = Math.min(alturaTotal, minDoDia(b.fim) - HORA_INICIO * 60);
+                  if (fim <= ini) return null;
+                  return (
+                    <div
+                      key={b.id}
+                      onClick={(e) => { e.stopPropagation(); nav(b.rota); }}
+                      style={{ top: (ini / 60) * HORA_PX, height: Math.max((fim - ini) / 60 * HORA_PX, 26) }}
+                      className={`absolute inset-x-1 cursor-pointer overflow-hidden rounded-lg border bg-white/5 px-1.5 py-1 text-left text-[10px] leading-tight transition ${CORES_BLOCO[b.tipo] || CORES_BLOCO.questoes} ${b.concluido ? "opacity-50" : ""}`}
+                      data-testid={`cronograma-bloco-${b.id}`}
+                    >
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="font-mono-alt text-[8px] uppercase tracking-[0.15em] text-zinc-400">
+                          {ROTULO_TIPO[b.tipo] || b.tipo}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); onConcluirBloco(b); }}
+                          disabled={salvandoBloco}
+                          aria-label={b.concluido ? "Desmarcar como feito" : "Marcar como feito"}
+                          className={`relative flex h-3 w-3 shrink-0 items-center justify-center rounded border before:absolute before:-inset-2 before:content-[''] ${
+                            b.concluido ? "border-emerald-400/60 bg-emerald-400/25 text-emerald-200" : "border-white/25 text-transparent hover:border-white/50"
+                          }`}
+                        >
+                          <Check className="h-2 w-2" />
+                        </button>
+                      </div>
+                      <p className={`truncate ${b.concluido ? "line-through" : ""}`}>{b.titulo}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
       </div>
-      <button
-        type="button"
-        onClick={() => nav(bloco.rota)}
-        className="mt-1 w-full text-left"
-      >
-        <p className={`text-[13px] font-medium leading-snug text-zinc-950 ${bloco.concluido ? "line-through" : ""}`}>
-          {bloco.titulo}
-        </p>
-        {bloco.detalhe && (
-          <p className="mt-1 line-clamp-3 text-[11px] leading-relaxed text-zinc-500">{bloco.detalhe}</p>
-        )}
-        <span className="mt-1.5 inline-flex items-center gap-1 text-[10px] text-[#7FD8FF]">
-          Fazer agora <ArrowRight className="h-2.5 w-2.5" />
-        </span>
-      </button>
+      <p className="mt-2 text-center text-[10px] text-zinc-400">Toque num horário livre para anotar um compromisso.</p>
     </div>
   );
 }
@@ -179,8 +279,17 @@ export default function Cronograma() {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState(null);
   const [gerando, setGerando] = useState(null);
+  // `null` | "gratis" | "mentis" — qual montagem está esperando confirmação.
+  // Só abre quando a ação CUSTA: montar a primeira semana de graça não pede
+  // permissão para gastar nada.
+  const [confirmando, setConfirmando] = useState(null);
   const [salvandoBloco, setSalvandoBloco] = useState(false);
   const [, setSaldo] = useState(null);
+  // O clique num horário livre da grade abre isto: {dia, data, inicio, fim}.
+  const [novoCompromisso, setNovoCompromisso] = useState(null);
+  const [tituloNovo, setTituloNovo] = useState("");
+  const [tipoNovo, setTipoNovo] = useState("aula");
+  const [salvandoNovo, setSalvandoNovo] = useState(false);
 
   useDeclararContextoMentis("Montando o cronograma da semana.");
 
@@ -209,19 +318,38 @@ export default function Cronograma() {
 
   useEffect(() => { carregar(undefined); }, [carregar]);
 
+  // A trava do duplo toque. Duas partes, e as duas são necessárias: a `ref`
+  // barra a segunda chamada no mesmo instante (o `setGerando` que desabilita o
+  // botão só vale depois da re-renderização, e dois toques em 50ms acontecem
+  // antes dela), e a CHAVE só é trocada quando a montagem termina — uma nova
+  // tentativa depois de um erro de rede é o mesmo pedido, e o servidor precisa
+  // reconhecê-la como tal (ver `cronograma_routes._reivindicar_montagem`).
+  const portao = useRef(criarPortao("cron"));
+
   const gerar = async (comMentis) => {
+    if (!portao.current.entrar()) return;
+    setConfirmando(null);
     setGerando(comMentis ? "mentis" : "gratis");
     try {
-      const { data } = await api.post("/cronograma/gerar", { semana: semanaISO, com_mentis: comMentis });
+      const { data } = await api.post("/cronograma/gerar", {
+        semana: semanaISO,
+        com_mentis: comMentis,
+        idempotency_key: portao.current.chave,
+      });
+      portao.current.concluir();
       setDados(data.semana);
       if (data.prioridades) setPrioridades(data.prioridades);
       if (typeof data.sparks_balance === "number") setSaldo(data.sparks_balance);
+      // O saldo mudou: a barra precisa saber, senão o chip de Sparks continua
+      // mostrando o número de antes da cobrança.
+      if (data.cobrado) avisarSparksMudou();
       if (data.aviso) toast.warning(data.aviso);
       else if (data.sem_horario_livre) toast.info("Não sobrou horário livre. Ajuste a janela de estudo.");
-      else toast.success("Semana montada.");
+      else toast.success(data.cobrado ? `Semana montada · ${data.cobrado} Sparks` : "Semana montada.");
     } catch (e) {
       toast.error(errMsg(e, "Não consegui montar a sua semana agora."));
     } finally {
+      portao.current.sair();
       setGerando(null);
     }
   };
@@ -249,6 +377,41 @@ export default function Cronograma() {
     }
   };
 
+  const abrirNovo = (dia, minutosClicados) => {
+    const base = Math.round(minutosClicados / 30) * 30;
+    setNovoCompromisso({ dia: dia.indice, data: dia.data, inicio: hhmmDoMin(base), fim: hhmmDoMin(base + 60) });
+    setTituloNovo("");
+    setTipoNovo("aula");
+  };
+
+  const salvarNovo = async () => {
+    if (!tituloNovo.trim() || salvandoNovo) return;
+    setSalvandoNovo(true);
+    try {
+      await api.post("/cronograma/compromisso", {
+        titulo: tituloNovo.trim(), tipo: tipoNovo,
+        inicio: novoCompromisso.inicio, fim: novoCompromisso.fim,
+        data: novoCompromisso.data,
+      });
+      setNovoCompromisso(null);
+      toast.success("Compromisso anotado.");
+      carregar(semanaISO);
+    } catch (e) {
+      toast.error(errMsg(e, "Não consegui salvar esse compromisso."));
+    } finally {
+      setSalvandoNovo(false);
+    }
+  };
+
+  const apagarCompromisso = async (id) => {
+    try {
+      await api.delete(`/cronograma/compromisso/${id}`);
+      carregar(semanaISO);
+    } catch (e) {
+      toast.error(errMsg(e, "Não consegui apagar."));
+    }
+  };
+
   const irPara = (dias) => {
     const alvo = deslocarSemana(semanaISO, dias);
     setSemanaISO(alvo);
@@ -262,18 +425,22 @@ export default function Cronograma() {
   const hojeISO = diaLocalISO();
   const plano = dados?.plano;
   const temPlano = Boolean(plano?.desta_semana && dados?.total_blocos > 0);
+  // Remontar só custa quando há o que remontar. Espelha a mesma condição do
+  // servidor (`gerar_cronograma`): semana com plano E com bloco.
+  const custoRemontar = temPlano ? (dados?.custo_remontagem ?? 0) : 0;
+  const custoDaConfirmacao = confirmando === "mentis" ? (dados?.custo_mentis ?? 0) : custoRemontar;
 
   return (
     <div className="min-h-screen">
       <Nav />
-      <div className="max-w-6xl mx-auto px-6 md:px-10 py-10 md:py-14">
+      <div className="max-w-6xl mx-auto px-5 py-7 md:px-10 md:py-10">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="font-mono-alt text-[10px] uppercase tracking-[0.3em] text-zinc-400">
+            <p className="secao-olho">
               Cronograma
             </p>
-            <h1 className="mt-1 font-display text-4xl md:text-5xl font-extrabold tracking-tighter text-white">
-              A sua semana
+            <h1 className="titulo-tela">
+              A sua semana já está decidida.
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-white/55">
               De segunda a domingo, com os seus compromissos e o estudo montado no que sobra —
@@ -337,20 +504,26 @@ export default function Cronograma() {
                     )}
                   </div>
                 </div>
+                {/* Os dois preços saem do SERVIDOR (`custo_remontagem` e
+                    `custo_mentis` em `GET /cronograma`): a tela nunca escreve
+                    um número de Sparks, e quem cobra é quem monta. Remontar só
+                    custa quando a semana já tem plano — a primeira montagem é
+                    de graça e o botão diz isso. */}
                 <div className="flex shrink-0 flex-col gap-2 sm:flex-row md:flex-col lg:flex-row">
                   <button
                     type="button"
-                    onClick={() => gerar(false)}
+                    onClick={() => (custoRemontar ? setConfirmando("gratis") : gerar(false))}
                     disabled={Boolean(gerando)}
                     className="pill btn-sapiens inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full px-5 py-2.5 text-sm font-medium disabled:opacity-50"
                     data-testid="cronograma-gerar"
                   >
                     {gerando === "gratis" ? <Loader2 className="h-4 w-4 animate-spin" /> : <CalendarDays className="h-4 w-4" />}
-                    {temPlano ? "Remontar" : "Montar minha semana"} · grátis
+                    {temPlano ? "Remontar" : "Montar minha semana"} ·{" "}
+                    {custoRemontar ? `${custoRemontar} Sparks` : "grátis"}
                   </button>
                   <button
                     type="button"
-                    onClick={() => gerar(true)}
+                    onClick={() => setConfirmando("mentis")}
                     disabled={Boolean(gerando)}
                     className="pill btn-vidro inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full px-5 py-2.5 text-sm font-medium disabled:opacity-50"
                     data-testid="cronograma-gerar-mentis"
@@ -371,54 +544,17 @@ export default function Cronograma() {
 
             <FaixaDePrioridade prioridades={prioridades} />
 
-            {/* A semana. Sete colunas no desktop, empilhada no celular. */}
-            <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-7" data-testid="cronograma-grade">
-              {dados.dias.map((dia) => {
-                const eHoje = dia.data === hojeISO;
-                const folga = (dados.preferencias.dias_de_folga || []).includes(dia.indice);
-                return (
-                  <div
-                    key={dia.data}
-                    className={`card-sapiens rounded-2xl p-3 ${eHoje ? "ring-1 ring-[#4FD9FF]/45" : ""}`}
-                    data-testid={`cronograma-dia-${dia.indice}`}
-                  >
-                    <div className="mb-2.5 flex items-baseline justify-between gap-1">
-                      <span className="font-display text-sm font-bold tracking-tight text-zinc-950">
-                        {DIAS_CURTOS[dia.indice]}
-                      </span>
-                      <span className="font-mono-alt text-[9px] uppercase tracking-[0.18em] text-zinc-400">
-                        {eHoje ? "hoje" : dia.data.slice(8, 10)}
-                      </span>
-                    </div>
-
-                    <div className="space-y-1.5">
-                      {dia.compromissos.map((c) => (
-                        <div
-                          key={c.id}
-                          className={`rounded-lg border px-2 py-1.5 text-[11px] leading-tight ${CORES_TIPO[c.tipo] || CORES_TIPO.pessoal}`}
-                          data-testid={`cronograma-compromisso-${c.id}`}
-                        >
-                          <span className="block font-mono-alt text-[9px] opacity-70">
-                            {c.dia_inteiro ? "dia todo" : `${c.inicio}–${c.fim}`}
-                          </span>
-                          {c.titulo}
-                        </div>
-                      ))}
-
-                      {dia.blocos.map((b) => (
-                        <Bloco key={b.id} bloco={b} onConcluir={concluir} salvando={salvandoBloco} />
-                      ))}
-
-                      {!dia.compromissos.length && !dia.blocos.length && (
-                        <p className="py-3 text-center text-[10px] text-zinc-400">
-                          {folga ? "folga" : "livre"}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            {/* A semana como agenda contínua: relógio correndo por trás,
+                uma coluna por dia. Tocar num horário livre anota; o X no
+                compromisso apaga — direto na grade, sem trocar de aba. */}
+            <GradeSemana
+              dias={dados.dias}
+              hojeISO={hojeISO}
+              onConcluirBloco={concluir}
+              salvandoBloco={salvandoBloco}
+              onApagarCompromisso={apagarCompromisso}
+              onClicarVazio={abrirNovo}
+            />
 
             {temPlano && plano.distribuicao?.length > 0 && (
               <section className="card-sapiens mt-6 rounded-3xl p-6" data-testid="cronograma-distribuicao">
@@ -453,6 +589,109 @@ export default function Cronograma() {
           </>
         ) : null}
       </div>
+
+      {/* A cobrança, dita ANTES de acontecer — mesma regra da redação e da
+          loja. O diálogo só abre quando a ação custa alguma coisa: montar a
+          primeira semana continua sendo um clique só. */}
+      <Dialog open={Boolean(confirmando)} onOpenChange={(v) => !v && setConfirmando(null)}>
+        <DialogContent className="rounded-2xl" data-testid="cronograma-confirmar">
+          <DialogHeader>
+            <DialogTitle className="font-display text-2xl tracking-tight">
+              {confirmando === "mentis" ? "Montar com a Mentis?" : "Remontar a semana?"}
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm leading-relaxed text-zinc-600">
+            Isto custa <strong>{custoDaConfirmacao} Sparks</strong>.{" "}
+            {confirmando === "mentis" ? (
+              <>
+                A Mentis escreve o conteúdo de cada bloco da sua semana. Se ela não conseguir,
+                os Sparks voltam e a semana é montada do mesmo jeito.
+              </>
+            ) : (
+              <>
+                A semana é montada de novo do zero — e os blocos que você já marcou como
+                feitos <strong>desta semana</strong> são apagados junto.
+              </>
+            )}
+          </p>
+          <DialogFooter>
+            <button
+              onClick={() => setConfirmando(null)}
+              className="pill inline-flex items-center justify-center rounded-full border border-zinc-200 px-5 py-2.5 text-sm font-medium text-zinc-700 hover:border-zinc-300"
+              data-testid="cronograma-cancelar"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={() => gerar(confirmando === "mentis")}
+              className="pill btn-sapiens inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium"
+              data-testid="cronograma-confirmar-btn"
+            >
+              <Sparkles className="h-4 w-4" /> Continuar por {custoDaConfirmacao} Sparks
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* A anotação rápida nascida do clique na grade — mesmo endpoint do
+          formulário da aba "Adicionar à mão", só que sem trocar de aba. */}
+      <Dialog open={Boolean(novoCompromisso)} onOpenChange={(v) => !v && setNovoCompromisso(null)}>
+        <DialogContent className="rounded-2xl" data-testid="cronograma-novo-compromisso">
+          <DialogHeader>
+            <DialogTitle className="font-display text-2xl tracking-tight">Novo compromisso</DialogTitle>
+          </DialogHeader>
+          {novoCompromisso && (
+            <div className="grid gap-3">
+              <input
+                autoFocus
+                value={tituloNovo}
+                onChange={(e) => setTituloNovo(e.target.value)}
+                placeholder="O que é? Ex.: Aula de matemática"
+                className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none"
+                data-testid="cronograma-novo-titulo"
+              />
+              <div className="grid grid-cols-3 gap-2">
+                <select
+                  value={tipoNovo}
+                  onChange={(e) => setTipoNovo(e.target.value)}
+                  className="rounded-xl border border-zinc-200 px-2 py-2 text-sm outline-none"
+                >
+                  {TIPOS_COMPROMISSO.map((t) => <option key={t.id} value={t.id}>{t.rotulo}</option>)}
+                </select>
+                <input
+                  type="time" value={novoCompromisso.inicio}
+                  onChange={(e) => setNovoCompromisso({ ...novoCompromisso, inicio: e.target.value })}
+                  className="rounded-xl border border-zinc-200 px-2 py-2 text-sm outline-none"
+                />
+                <input
+                  type="time" value={novoCompromisso.fim}
+                  onChange={(e) => setNovoCompromisso({ ...novoCompromisso, fim: e.target.value })}
+                  className="rounded-xl border border-zinc-200 px-2 py-2 text-sm outline-none"
+                />
+              </div>
+              <p className="text-xs text-zinc-500">
+                {DIAS_CURTOS[novoCompromisso.dia]}, {novoCompromisso.data.slice(8, 10)}/{novoCompromisso.data.slice(5, 7)}
+              </p>
+            </div>
+          )}
+          <DialogFooter>
+            <button
+              onClick={() => setNovoCompromisso(null)}
+              className="pill inline-flex items-center justify-center rounded-full border border-zinc-200 px-5 py-2.5 text-sm font-medium text-zinc-700 hover:border-zinc-300"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={salvarNovo}
+              disabled={!tituloNovo.trim() || salvandoNovo}
+              className="pill btn-sapiens inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium disabled:opacity-50"
+              data-testid="cronograma-novo-salvar"
+            >
+              {salvandoNovo ? <Loader2 className="h-4 w-4 animate-spin" /> : "Anotar"}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -1,0 +1,519 @@
+{
+  "schema_version": "1.0",
+  "estacao_id": "mb-20-tabelas",
+  "titulo": "Tabelas",
+  "objetivo": "Você vai ler tabelas com segurança, cruzar informações de linhas e colunas, calcular totais e percentuais sobre os dados apresentados.",
+  "versao": "2026-09-16",
+  "duracao_minutos": 12,
+  "numero": 20,
+  "conceitos": [
+    "leitura-de-tabelas",
+    "cruzamento-de-dados",
+    "totais-e-percentuais"
+  ],
+  "conclusao": {
+    "tipo": "minimo_de_acertos",
+    "minimo": 7
+  },
+  "fonte": {
+    "arquivo": "deepseek_markdown_20260916_d4ee28.md",
+    "pasta": "cursos/matemática básica"
+  },
+  "blocos": [
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-20-c-01",
+      "variante": "padrao",
+      "markdown": "1. **Cabeçalhos** — o que cada coluna representa.\n2. **Unidades** — podem estar no título, não em cada célula.\n3. **Totais** — totais de linha, coluna e geral.\n4. **Filtros** — quais dados estão considerados.",
+      "titulo": "Como ler uma tabela"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-20-c-02",
+      "variante": "padrao",
+      "markdown": "Muitas questões pedem o cruzamento de duas informações. Ex.: percentual de homens que preferem a marca A. Nesse caso, o denominador é a **subcategoria** (homens), não o total geral.",
+      "titulo": "Cruzamento de dados"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-20-c-03",
+      "variante": "padrao",
+      "markdown": "- Percentual sobre o **total geral** → divide pela soma total.\n- Percentual sobre a **categoria** → divide pela soma da linha ou da coluna.\n\nVerifique sempre o que o enunciado pede.",
+      "titulo": "Percentual sobre o total ou sobre a linha"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-20-c-04",
+      "variante": "padrao",
+      "markdown": "Quando a tabela apresenta totais, use-os para **verificar** seus cálculos e para **encontrar dados faltantes**.",
+      "titulo": "Margem e totais"
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-20-ex-01",
+      "enunciado": "Tabela com vendas por marca e por região. Se 300 vendas foram na região Sul, de um total de 1.000, qual o percentual?",
+      "passos": [
+        {
+          "texto": "`300/1000 = 30%`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-20-ex-02",
+      "enunciado": "Dos 500 homens entrevistados, 200 preferem a marca A. Qual o percentual?",
+      "passos": [
+        {
+          "texto": "`200/500 = 40%`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-20-ex-03",
+      "enunciado": "A tabela traz totais de 3 anos: 2019=100, 2020=120, 2021=150. Qual o crescimento 2019→2021?",
+      "passos": [
+        {
+          "texto": "`(150 − 100)/100 = 50%`"
+        }
+      ]
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-20-v-01",
+      "variante": "padrao",
+      "markdown": "Para esta estação, uma tabela 3×3 com categorias “Homens/Mulheres” nas linhas e “Marca A / Marca B / Marca C” nas colunas, com totais por linha e por coluna, permitiria trabalhar todos os tipos de cruzamento de dados."
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-20-es-01",
+      "variante": "destaque",
+      "markdown": "- Marque visualmente os dados que serão usados antes de calcular.\n- Escreva a fração antes de transformar em porcentagem.\n- Use os totais para conferir.\n- Em tabelas com totais, calcule primeiro os faltantes e depois responda."
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-20-er-01",
+      "variante": "atencao",
+      "markdown": "- **Usar o total geral quando o problema pede o percentual sobre a categoria.**\n- **Confundir linha com coluna.**\n- **Somar percentuais direto** sem checar se estão sobre a mesma base.\n- **Ignorar unidade.** Uma tabela em milhares exige multiplicar no fim."
+    },
+    {
+      "tipo": "video",
+      "bloco_id": "mb-20-video",
+      "titulo": "Tabelas — aula em vídeo",
+      "provedor": "youtube",
+      "ref": null,
+      "resumo": "Aula conduzida pelo 1º colocado de Medicina da USP."
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-20-q01",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Em uma tabela, uma categoria tem 300 de um total de 1.000. Qual o percentual?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "3%"
+        },
+        {
+          "id": "b",
+          "texto": "300%"
+        },
+        {
+          "id": "c",
+          "texto": "0,3%"
+        },
+        {
+          "id": "d",
+          "texto": "30%"
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "a": "Erra fator 10.",
+        "b": "Esta é uma das que invertem.",
+        "c": "Esta é uma das que invertem."
+      },
+      "solucao": "`300/1000 = 30%`.",
+      "conceitos": [
+        "leitura-de-tabelas"
+      ],
+      "origem": {
+        "estacao": 20,
+        "questao": "Questão 1"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-20-q02",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Dos 500 homens entrevistados, 200 preferem a marca A. Qual o percentual?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "25%"
+        },
+        {
+          "id": "b",
+          "texto": "40%"
+        },
+        {
+          "id": "c",
+          "texto": "20%"
+        },
+        {
+          "id": "d",
+          "texto": "50%"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "c": "Esta é uma das que erram o denominador.",
+        "a": "Esta é uma das que erram o denominador.",
+        "d": "Esta é uma das que erram o denominador."
+      },
+      "solucao": "`200/500 = 40%`.",
+      "conceitos": [
+        "cruzamento-de-dados"
+      ],
+      "origem": {
+        "estacao": 20,
+        "questao": "Questão 2"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-20-q03",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Em uma tabela, o total de vendas é 2.000. Se a região Norte representa 15%, quanto vale?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "200"
+        },
+        {
+          "id": "b",
+          "texto": "150"
+        },
+        {
+          "id": "c",
+          "texto": "300"
+        },
+        {
+          "id": "d",
+          "texto": "250"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "b": "Esta é uma das que erram o cálculo.",
+        "a": "Esta é uma das que erram o cálculo.",
+        "d": "Esta é uma das que erram o cálculo."
+      },
+      "solucao": "`2000 × 0,15 = 300`.",
+      "conceitos": [
+        "totais-e-percentuais"
+      ],
+      "origem": {
+        "estacao": 20,
+        "questao": "Questão 3"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-20-q04",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Se 40% dos 200 entrevistados preferem a marca A e 30% preferem B, quantos preferem A e B juntos?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "100"
+        },
+        {
+          "id": "b",
+          "texto": "140"
+        },
+        {
+          "id": "c",
+          "texto": "120"
+        },
+        {
+          "id": "d",
+          "texto": "130"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "d": "Esta é uma das que erram.",
+        "c": "Esta é uma das que erram.",
+        "a": "Esta é uma das que erram."
+      },
+      "solucao": "`A: 200 × 0,40 = 80`. `B: 200 × 0,30 = 60`. Total: `140`.",
+      "conceitos": [
+        "cruzamento-de-dados"
+      ],
+      "origem": {
+        "estacao": 20,
+        "questao": "Questão 4"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-20-q05",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Em uma tabela, 60% de 300 mulheres preferem A, e 30% de 200 homens preferem A. Quantas pessoas no total preferem A?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "180"
+        },
+        {
+          "id": "b",
+          "texto": "200"
+        },
+        {
+          "id": "c",
+          "texto": "300"
+        },
+        {
+          "id": "d",
+          "texto": "240"
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "a": "Esta é uma das que erram.",
+        "c": "Esta é uma das que erram.",
+        "b": "Esta é uma das que erram."
+      },
+      "solucao": "`300 × 0,60 = 180`, `200 × 0,30 = 60`. Total: `240`.",
+      "conceitos": [
+        "cruzamento-de-dados"
+      ],
+      "origem": {
+        "estacao": 20,
+        "questao": "Questão 5"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-20-q06",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Uma tabela mostra 100, 120, 150 como totais anuais. Qual o crescimento de 2019 a 2021 (considerando 2019 como base)?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "50%"
+        },
+        {
+          "id": "b",
+          "texto": "60%"
+        },
+        {
+          "id": "c",
+          "texto": "25%"
+        },
+        {
+          "id": "d",
+          "texto": "30%"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "d": "Usa 2020 como base.",
+        "c": "Esta é uma das que erram.",
+        "b": "Esta é uma das que erram."
+      },
+      "solucao": "`(150−100)/100 = 50%`.",
+      "conceitos": [
+        "totais-e-percentuais"
+      ],
+      "origem": {
+        "estacao": 20,
+        "questao": "Questão 6"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-20-q07",
+      "nivel": 3,
+      "formato": "multipla_escolha",
+      "enunciado": "Em uma tabela, 40% dos entrevistados preferem A. Dos que preferem A, 25% são homens. Se o total é 1.000, quantos homens preferem A?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "100"
+        },
+        {
+          "id": "b",
+          "texto": "150"
+        },
+        {
+          "id": "c",
+          "texto": "400"
+        },
+        {
+          "id": "d",
+          "texto": "250"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "d": "Esta é uma das que erram em uma das etapas.",
+        "c": "Esta é uma das que erram em uma das etapas.",
+        "b": "Esta é uma das que erram em uma das etapas."
+      },
+      "solucao": "A: `1000 × 0,40 = 400`. Homens que preferem A: `400 × 0,25 = 100`.",
+      "conceitos": [
+        "cruzamento-de-dados"
+      ],
+      "origem": {
+        "estacao": 20,
+        "questao": "Questão 7"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-20-q08",
+      "nivel": 3,
+      "formato": "multipla_escolha",
+      "enunciado": "Uma tabela mostra 3 categorias com totais 40%, 35% e 25% de 2.000. Qual o valor absoluto da categoria com 25%?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "800"
+        },
+        {
+          "id": "b",
+          "texto": "700"
+        },
+        {
+          "id": "c",
+          "texto": "600"
+        },
+        {
+          "id": "d",
+          "texto": "500"
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "b": "Esta é uma das que vêm de percentuais trocados.",
+        "a": "Esta é uma das que vêm de percentuais trocados.",
+        "c": "Esta é uma das que vêm de percentuais trocados."
+      },
+      "solucao": "`2000 × 0,25 = 500`.",
+      "conceitos": [
+        "totais-e-percentuais"
+      ],
+      "origem": {
+        "estacao": 20,
+        "questao": "Questão 8"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-20-q09",
+      "nivel": 4,
+      "formato": "multipla_escolha",
+      "enunciado": "Uma tabela traz 400, 500 e 600 em três anos. Em 2021 houve crescimento de 20% em relação a 2020. Se o valor em 2020 era 500, qual o valor esperado em 2021?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "520"
+        },
+        {
+          "id": "b",
+          "texto": "600"
+        },
+        {
+          "id": "c",
+          "texto": "650"
+        },
+        {
+          "id": "d",
+          "texto": "550"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "a": "Esta é uma das que aplicam percentuais errados.",
+        "d": "Esta é uma das que aplicam percentuais errados.",
+        "c": "Esta é uma das que aplicam percentuais errados."
+      },
+      "solucao": "`500 × 1,20 = 600`.",
+      "conceitos": [
+        "totais-e-percentuais"
+      ],
+      "origem": {
+        "estacao": 20,
+        "questao": "Questão 9"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-20-q10",
+      "nivel": 4,
+      "formato": "multipla_escolha",
+      "enunciado": "Em uma pesquisa, 45% de 800 pessoas preferem a marca A. Dos que não preferem A, 50% preferem B. Quantas pessoas preferem B?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "220"
+        },
+        {
+          "id": "b",
+          "texto": "240"
+        },
+        {
+          "id": "c",
+          "texto": "180"
+        },
+        {
+          "id": "d",
+          "texto": "200"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "b": "Esta é uma das que erram em uma etapa.",
+        "d": "Esta é uma das que erram em uma etapa.",
+        "c": "Esta é uma das que erram em uma etapa."
+      },
+      "solucao": "`A: 800 × 0,45 = 360`. Não A: `800 − 360 = 440`. B: `440 × 0,50 = 220`.",
+      "conceitos": [
+        "cruzamento-de-dados"
+      ],
+      "origem": {
+        "estacao": 20,
+        "questao": "Questão 10"
+      }
+    },
+    {
+      "tipo": "desafio",
+      "bloco_id": "mb-20-desafio",
+      "nivel": 5,
+      "enunciado": "Uma tabela mostra 300 homens e 200 mulheres entrevistados. 60% dos homens preferem A; 40% das mulheres preferem A. Qual o percentual de pessoas que preferem A no total?",
+      "formato": "numerico",
+      "gabarito": {
+        "valor": 52.0,
+        "tolerancia": 0.052000000000000005
+      },
+      "unidade": "%",
+      "solucao": "- Homens que preferem A: `300 × 0,60 = 180`\n- Mulheres que preferem A: `200 × 0,40 = 80`\n- Total que prefere A: `260`\n- Total geral: `500`\n- `260/500 = 0,52 = 52%`"
+    }
+  ],
+  "habilidades": [
+    "HAB-43",
+    "HAB-48"
+  ],
+  "pre_requisitos": [
+    "mb-03-razao-e-proporcao",
+    "mb-05-porcentagem"
+  ]
+}

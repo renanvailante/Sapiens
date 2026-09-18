@@ -1,0 +1,539 @@
+{
+  "schema_version": "1.0",
+  "estacao_id": "mb-14-equacoes-do-2o-grau",
+  "titulo": "Equações do 2º grau",
+  "objetivo": "Você vai resolver equações do 2º grau por Bhaskara, fatoração e completamento de quadrados, e interpretar o discriminante.",
+  "versao": "2026-09-16",
+  "duracao_minutos": 12,
+  "numero": 14,
+  "conceitos": [
+    "equacoes-do-2-grau",
+    "bhaskara",
+    "discriminante"
+  ],
+  "conclusao": {
+    "tipo": "minimo_de_acertos",
+    "minimo": 7
+  },
+  "fonte": {
+    "arquivo": "deepseek_markdown_20260916_71c3e0.md",
+    "pasta": "cursos/matemática básica"
+  },
+  "blocos": [
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-14-c-01",
+      "variante": "padrao",
+      "markdown": "Equação do 2º grau tem a forma:\n\n`ax² + bx + c = 0`, com `a ≠ 0`"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-14-c-02",
+      "variante": "padrao",
+      "markdown": "`Δ = b² − 4ac`\n\n`x = (−b ± √Δ) / (2a)`",
+      "titulo": "Fórmula de Bhaskara"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-14-c-03",
+      "variante": "padrao",
+      "markdown": "- `Δ > 0` → **duas raízes reais distintas**\n- `Δ = 0` → **uma raiz real dupla**\n- `Δ < 0` → **nenhuma raiz real**",
+      "titulo": "Interpretação do discriminante"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-14-c-04",
+      "variante": "padrao",
+      "markdown": "Quando `a = 1`:\n\n- Soma: `x₁ + x₂ = −b`\n- Produto: `x₁ × x₂ = c`\n\nGeneralizando: `x₁ + x₂ = −b/a` e `x₁ × x₂ = c/a`.",
+      "titulo": "Relações de soma e produto"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-14-c-05",
+      "variante": "padrao",
+      "markdown": "- `b = 0`: `ax² + c = 0` → `x = ±√(−c/a)`\n- `c = 0`: `ax² + bx = 0` → `x(ax + b) = 0` → `x = 0` ou `x = −b/a`",
+      "titulo": "Casos particulares"
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-14-ex-01",
+      "enunciado": "Resolva `x² − 5x + 6 = 0`.",
+      "passos": [
+        {
+          "texto": "`Δ = 25 − 24 = 1`"
+        },
+        {
+          "texto": "`x = (5 ± 1)/2` → `x = 3` ou `x = 2`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-14-ex-02",
+      "enunciado": "Resolva `x² − 9 = 0`.",
+      "passos": [
+        {
+          "texto": "`x² = 9`"
+        },
+        {
+          "texto": "`x = ±3`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-14-ex-03",
+      "enunciado": "Resolva `2x² − 4x − 6 = 0`.",
+      "passos": [
+        {
+          "texto": "Dividindo por 2: `x² − 2x − 3 = 0`"
+        },
+        {
+          "texto": "`Δ = 4 + 12 = 16`"
+        },
+        {
+          "texto": "`x = (2 ± 4)/2` → `x = 3` ou `x = −1`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-14-ex-04",
+      "enunciado": "Fatoração direta: `x² − 5x + 6 = (x − 2)(x − 3)`.",
+      "passos": [
+        {
+          "texto": "Confirmando: `x² − 3x − 2x + 6 = x² − 5x + 6` ✓"
+        }
+      ]
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-14-es-01",
+      "variante": "destaque",
+      "markdown": "- Antes de aplicar Bhaskara, verifique se a equação é incompleta (`b = 0` ou `c = 0`). Aí é mais rápido isolar.\n- Verifique se há fator comum. Divida tudo por ele.\n- Em problemas contextualizados, apenas uma das raízes faz sentido físico (tempo, distância, idade).\n- Soma e produto ajudam a **conferir** as raízes encontradas."
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-14-er-01",
+      "variante": "atencao",
+      "markdown": "- **Esquecer o sinal de `b` em `−b`.**\n- **Errar o sinal dentro de `Δ = b² − 4ac`.** `− 4ac`, não `+ 4ac`.\n- **Dividir só o `−b` por `2a`.** A divisão se aplica a toda a expressão.\n- **Aceitar duas respostas em problemas físicos.** Raiz negativa costuma ser descartada."
+    },
+    {
+      "tipo": "video",
+      "bloco_id": "mb-14-video",
+      "titulo": "Equações do 2º grau — aula em vídeo",
+      "provedor": "youtube",
+      "ref": null,
+      "resumo": "Aula conduzida pelo 1º colocado de Medicina da USP."
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-14-q01",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Resolva `x² − 5x + 6 = 0`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "x = −2 ou x = −3"
+        },
+        {
+          "id": "b",
+          "texto": "x = 2 ou x = 3"
+        },
+        {
+          "id": "c",
+          "texto": "x = −1 ou x = 6"
+        },
+        {
+          "id": "d",
+          "texto": "x = 1 ou x = 6"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "a": "Troca os sinais.",
+        "d": "Esta é uma das que vêm de fatoração errada.",
+        "c": "Esta é uma das que vêm de fatoração errada."
+      },
+      "solucao": "`Δ = 1`, `x = (5 ± 1)/2`.",
+      "conceitos": [
+        "equacoes-do-2-grau"
+      ],
+      "origem": {
+        "estacao": 14,
+        "questao": "Questão 1"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-14-q02",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Qual o discriminante de `x² − 4x + 3 = 0`?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "0"
+        },
+        {
+          "id": "b",
+          "texto": "4"
+        },
+        {
+          "id": "c",
+          "texto": "16"
+        },
+        {
+          "id": "d",
+          "texto": "−4"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "c": "Ignora o `4ac`.",
+        "d": "Troca o sinal.",
+        "a": "Iguala a zero."
+      },
+      "solucao": "`Δ = 16 − 12 = 4`.",
+      "conceitos": [
+        "discriminante"
+      ],
+      "origem": {
+        "estacao": 14,
+        "questao": "Questão 2"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-14-q03",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Resolva `x² − 9 = 0`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "x = 3 ou x = −3"
+        },
+        {
+          "id": "b",
+          "texto": "x = ±√3"
+        },
+        {
+          "id": "c",
+          "texto": "x = 9 ou x = −9"
+        },
+        {
+          "id": "d",
+          "texto": "x = 3 ou x = 0"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "d": "Ignora a raiz negativa.",
+        "c": "Não extrai a raiz.",
+        "b": "Erra o radicando."
+      },
+      "solucao": "`x² = 9 → x = ±3`.",
+      "conceitos": [
+        "equacoes-do-2-grau"
+      ],
+      "origem": {
+        "estacao": 14,
+        "questao": "Questão 3"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-14-q04",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Resolva `x² − 6x + 9 = 0`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "x = −3 (raiz dupla)"
+        },
+        {
+          "id": "b",
+          "texto": "x = 3 (raiz dupla)"
+        },
+        {
+          "id": "c",
+          "texto": "x = 3 ou x = −3"
+        },
+        {
+          "id": "d",
+          "texto": "sem raiz real"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "a": "Troca o sinal.",
+        "c": "Considera duas raízes.",
+        "d": "Não reconhece o caso `Δ = 0`."
+      },
+      "solucao": "`Δ = 36 − 36 = 0`, `x = 6/2 = 3`.",
+      "conceitos": [
+        "discriminante"
+      ],
+      "origem": {
+        "estacao": 14,
+        "questao": "Questão 4"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-14-q05",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Resolva `2x² − 8 = 0`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "x = 4 ou x = −4"
+        },
+        {
+          "id": "b",
+          "texto": "x = 2 ou x = −2"
+        },
+        {
+          "id": "c",
+          "texto": "x = 8 ou x = −8"
+        },
+        {
+          "id": "d",
+          "texto": "x = √2 ou x = −√2"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "a": "Esta é uma das que não dividem por 2.",
+        "c": "Esta é uma das que não dividem por 2.",
+        "d": "Erra a raiz."
+      },
+      "solucao": "`x² = 4 → x = ±2`.",
+      "conceitos": [
+        "equacoes-do-2-grau"
+      ],
+      "origem": {
+        "estacao": 14,
+        "questao": "Questão 5"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-14-q06",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Resolva `x² + x − 6 = 0`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "x = −2 ou x = 3"
+        },
+        {
+          "id": "b",
+          "texto": "x = −1 ou x = 6"
+        },
+        {
+          "id": "c",
+          "texto": "x = 1 ou x = −6"
+        },
+        {
+          "id": "d",
+          "texto": "x = 2 ou x = −3"
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "a": "Troca os sinais.",
+        "c": "Esta é uma das que vêm de fatoração errada.",
+        "b": "Esta é uma das que vêm de fatoração errada."
+      },
+      "solucao": "`Δ = 25`, `x = (−1 ± 5)/2`.",
+      "conceitos": [
+        "equacoes-do-2-grau"
+      ],
+      "origem": {
+        "estacao": 14,
+        "questao": "Questão 6"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-14-q07",
+      "nivel": 3,
+      "formato": "multipla_escolha",
+      "enunciado": "Na equação `x² − 7x + 10 = 0`, a soma e o produto das raízes são, respectivamente:",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "7 e 10"
+        },
+        {
+          "id": "b",
+          "texto": "−7 e 10"
+        },
+        {
+          "id": "c",
+          "texto": "7 e −10"
+        },
+        {
+          "id": "d",
+          "texto": "10 e 7"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "b": "Troca o sinal.",
+        "c": "Esta é uma das que invertem.",
+        "d": "Esta é uma das que invertem."
+      },
+      "solucao": "Soma `= −b/a = 7`, produto `= c/a = 10`.",
+      "conceitos": [
+        "equacoes-do-2-grau"
+      ],
+      "origem": {
+        "estacao": 14,
+        "questao": "Questão 7"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-14-q08",
+      "nivel": 3,
+      "formato": "multipla_escolha",
+      "enunciado": "Resolva `2x² − 4x − 6 = 0`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "x = 6 ou x = −2"
+        },
+        {
+          "id": "b",
+          "texto": "x = −3 ou x = 1"
+        },
+        {
+          "id": "c",
+          "texto": "x = 3 ou x = −1"
+        },
+        {
+          "id": "d",
+          "texto": "x = 2 ou x = −3"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "b": "Troca os sinais.",
+        "a": "Esta é uma das que vêm de não dividir antes.",
+        "d": "Esta é uma das que vêm de não dividir antes."
+      },
+      "solucao": "Dividindo por 2: `x² − 2x − 3 = 0`, `Δ = 16`, `x = (2 ± 4)/2`.",
+      "conceitos": [
+        "equacoes-do-2-grau"
+      ],
+      "origem": {
+        "estacao": 14,
+        "questao": "Questão 8"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-14-q09",
+      "nivel": 4,
+      "formato": "multipla_escolha",
+      "enunciado": "A fatoração de `x² − 5x + 6` é:",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "(x − 2)(x − 3)"
+        },
+        {
+          "id": "b",
+          "texto": "(x − 1)(x − 6)"
+        },
+        {
+          "id": "c",
+          "texto": "(x + 1)(x − 6)"
+        },
+        {
+          "id": "d",
+          "texto": "(x + 2)(x + 3)"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "d": "Troca sinais.",
+        "b": "Esta é uma das que usam raízes erradas.",
+        "c": "Esta é uma das que usam raízes erradas."
+      },
+      "solucao": "Raízes 2 e 3.",
+      "conceitos": [
+        "equacoes-do-2-grau"
+      ],
+      "origem": {
+        "estacao": 14,
+        "questao": "Questão 9"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-14-q10",
+      "nivel": 4,
+      "formato": "multipla_escolha",
+      "enunciado": "A área de um retângulo é 24 m². O comprimento é 2 m maior que a largura. Qual a largura?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "6 m"
+        },
+        {
+          "id": "b",
+          "texto": "3 m"
+        },
+        {
+          "id": "c",
+          "texto": "8 m"
+        },
+        {
+          "id": "d",
+          "texto": "4 m"
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "a": "Esta é uma das que vêm de erros.",
+        "c": "Esta é uma das que vêm de erros.",
+        "b": "Erra a conta."
+      },
+      "solucao": "`L(L + 2) = 24 → L² + 2L − 24 = 0`. `Δ = 4 + 96 = 100`, `L = (−2 + 10)/2 = 4`.",
+      "conceitos": [
+        "equacoes-do-2-grau"
+      ],
+      "origem": {
+        "estacao": 14,
+        "questao": "Questão 10"
+      }
+    },
+    {
+      "tipo": "desafio",
+      "bloco_id": "mb-14-desafio",
+      "nivel": 5,
+      "enunciado": "Determine o valor de `m` para que a equação `x² − (m + 1)x + m = 0` tenha uma raiz dupla.",
+      "formato": "texto_curto",
+      "gabarito": {
+        "aceitos": [
+          "1",
+          "m = 1",
+          "m=1"
+        ]
+      },
+      "solucao": "- Raiz dupla exige `Δ = 0`.\n- `Δ = (m + 1)² − 4 × 1 × m = m² + 2m + 1 − 4m = m² − 2m + 1`\n- `m² − 2m + 1 = (m − 1)² = 0`\n- `m = 1`"
+    }
+  ],
+  "pre_requisitos": [
+    "mb-08-radiciacao",
+    "mb-11-equacoes-do-1o-grau"
+  ]
+}

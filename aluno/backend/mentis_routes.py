@@ -46,6 +46,7 @@ from pydantic import BaseModel, Field
 import ai_service
 import annotation_service
 import intervencoes
+import cursos_progresso
 import firestore_service as fs
 import llm_cache
 import llm_telemetry
@@ -313,6 +314,11 @@ si, de um jeito que sirva a qualquer conteúdo em que ela apareça.
 Voz de professor experiente explicando com calma: direta, concreta, sem jargão
 técnico, sem empolgação de mascote. Trate o estudante por "você".
 
+Quem lê este texto está cansado e com medo de não passar. Escreva como quem
+já viu essa falha muitas vezes e sabe que ela não diz nada sobre a
+inteligência de quem a comete — o alívio que você oferece é saber exatamente
+o que fazer na próxima questão, não consolo.
+
 NÃO use identificadores de catálogo (PROC-, ERR-, HAB-, DOM-, COMP-, INT-).
 
 Responda EXCLUSIVAMENTE com JSON:
@@ -508,6 +514,125 @@ async def abrir_intervencao(
     }
 
 
+# ---------- 1c. Explicação de um trecho de conteúdo (curso ou e-book) ----------
+#
+# "Explicar melhor" um pedaço de aula ou de e-book — diferente do "Saiba mais"
+# de uma questão (item 1) porque aqui não há gabarito nem alternativa: é texto
+# corrido, tabela ou exemplo resolvido, e o que o aluno pede é aprofundamento,
+# não resolução.
+#
+# O TEXTO NUNCA VEM DO CLIENTE. Quem chama isto (`cursos_estudo_routes` para
+# um bloco de curso, `cursos_routes` para uma página de e-book) já validou que
+# o aluno tem acesso àquele curso/e-book e resolveu o texto de dentro do
+# CONTEÚDO PUBLICADO (`cursos_conteudo` / `ebooks_conteudo`) antes de chamar
+# `explicar_trecho`. Aceitar texto livre do cliente aqui abriria um chat
+# genérico disfarçado de botão de 10 Sparks — pedindo QUALQUER coisa, não
+# necessariamente o que está na tela.
+#
+# Cacheado por `(origem, ref_id, versão do conteúdo)`, mesma filosofia do
+# "Saiba mais": o primeiro aluno a pedir numa estação ou página paga a
+# chamada ao Gemini, os seguintes leem o cache — e todos pagam os 10 Sparks,
+# porque o valor entregue é o mesmo.
+
+EXPLICACAO_CONTEUDO_COST = 10   # "Explicar melhor" num trecho de curso ou e-book
+
+_CACHE_PREFIXO_CONTEUDO = "mentis-conteudo-v1"
+_TIMEOUT_EXPLICACAO_CONTEUDO = 10.0
+_MAX_TOKENS_EXPLICACAO_CONTEUDO = 900
+
+EXPLICACAO_CONTEUDO_SYSTEM = """Você é a Mentis, a entidade cognitiva do Sapiens. Um aluno está
+estudando um trecho de material (a aula de um curso ou a página de um e-book)
+e pediu para você explicar aquele trecho com mais profundidade.
+
+Você recebe o texto do trecho, e o contexto de onde ele está (o curso/e-book e
+a estação/página). Explique o MESMO conteúdo de um jeito mais claro e mais
+aprofundado — com outro ângulo, um exemplo a mais, ou destrinchando o passo
+que costuma confundir. Não invente fato que não esteja no trecho nem no que
+ele claramente pressupõe (ex.: uma fórmula de matemática básica).
+
+Esta explicação é GENÉRICA: fica salva e será mostrada a qualquer aluno que
+pedir a mesma coisa neste mesmo trecho depois — não fale como se soubesse algo
+específico deste aluno.
+
+Voz de professor experiente, direta e didática, sem empolgação de mascote.
+
+Responda EXCLUSIVAMENTE com JSON no formato:
+{"paragrafos": ["primeiro parágrafo...", "segundo parágrafo...", "terceiro parágrafo...", "..."]}
+Use no MÍNIMO 3 parágrafos e no MÁXIMO 6, cada um com 2 a 5 frases.
+Sem markdown, sem prefixos, apenas o JSON."""
+
+
+def texto_do_bloco(bloco: dict) -> str:
+    """O texto de um bloco de leitura (`texto`, `tabela`, `exemplo`), pronto
+    para virar prompt. Mesmo formato para curso e e-book — os dois usam os
+    mesmos três tipos de bloco de leitura."""
+    tipo = bloco.get("tipo")
+    if tipo == "texto":
+        return bloco.get("markdown") or ""
+    if tipo == "exemplo":
+        partes = [bloco.get("enunciado") or ""]
+        partes += [p.get("texto", "") for p in (bloco.get("passos") or []) if isinstance(p, dict)]
+        return "\n".join(p for p in partes if p)
+    if tipo == "tabela":
+        linhas = [" | ".join(bloco.get("colunas") or [])]
+        linhas += [
+            " | ".join(str(c) for c in linha)
+            for linha in (bloco.get("linhas") or [])
+            if isinstance(linha, list)
+        ]
+        return "\n".join(linhas)
+    return ""
+
+
+async def explicar_trecho(
+    uid: str, *, origem: str, ref_id: str, contexto: str, texto_fonte: str,
+) -> dict[str, Any]:
+    """Cobra `EXPLICACAO_CONTEUDO_COST` e devolve (ou gera e cacheia) a
+    explicação aprofundada de um trecho de curso ou de e-book.
+
+    `ref_id` precisa incluir a versão do conteúdo (estação/página): se o texto
+    for reescrito, o cache velho não pode ser servido por engano — a mesma
+    regra do `item_hash` em `gerar_explicacao`.
+    """
+    saldo = _cobrar(uid, EXPLICACAO_CONTEUDO_COST)
+
+    chave = llm_cache.cache_key(_CACHE_PREFIXO_CONTEUDO, origem, ref_id)
+    cache_hit = await llm_cache.get(_db.mentis_explicacoes, chave)
+    if cache_hit is not None:
+        return {"paragrafos": cache_hit, "sparks_balance": saldo, "cache": True}
+
+    prompt = f"Onde está: {contexto}\n\nTrecho:\n{texto_fonte}"
+    inicio = time.monotonic()
+    try:
+        resultado = await ai_service.generate_json_resiliente(
+            EXPLICACAO_CONTEUDO_SYSTEM, prompt, thinking_level="MINIMAL",
+            timeout=_TIMEOUT_EXPLICACAO_CONTEUDO, max_output_tokens=_MAX_TOKENS_EXPLICACAO_CONTEUDO,
+        )
+        paragrafos = _validar_paragrafos(resultado)
+        await llm_telemetry.persist(
+            _db.mentis_llm_chamadas,
+            contexto=f"{origem}:{ref_id}",
+            motivo="explicação de trecho de conteúdo pedida pelo aluno (Mentis)",
+            modelo="gemini (thinking=MINIMAL)",
+            thinking_level="MINIMAL",
+            resultado_estado="ok",
+            duration_ms=(time.monotonic() - inicio) * 1000,
+        )
+    except Exception as exc:  # noqa: BLE001
+        saldo_restituido = _safe_reembolso(uid, EXPLICACAO_CONTEUDO_COST)
+        logger.exception(
+            "Mentis: explicação de conteúdo falhou para %s:%s — %d Sparks devolvidos (saldo: %s).",
+            origem, ref_id, EXPLICACAO_CONTEUDO_COST, saldo_restituido,
+        )
+        raise HTTPException(
+            status_code=503,
+            detail="Não foi possível gerar a explicação agora. Seus Sparks foram devolvidos.",
+        ) from exc
+
+    await llm_cache.set(_db.mentis_explicacoes, chave, paragrafos)
+    return {"paragrafos": paragrafos, "sparks_balance": saldo, "cache": False}
+
+
 # ---------- 2. Chat: o dossiê do aluno ----------
 
 
@@ -521,6 +646,7 @@ def _montar_dossie(
     agregado: dict,
     prioridades: Optional[list[dict]] = None,
     declarado: Optional[str] = None,
+    cursos_resumo: Optional[dict] = None,
 ) -> dict[str, Any]:
     """Compacta o diagnóstico real num bloco de texto de tamanho previsível +
     um resumo estruturado para a interface mostrar sem chamar o modelo.
@@ -596,6 +722,20 @@ def _montar_dossie(
             "Trate isso como a intenção dele, não como diagnóstico: a meta e o tempo por dia "
             "são o que você usa para dimensionar qualquer plano que propuser."
         )
+    # O que ele já fez em cursos e e-books — a mesma disciplina do resto do
+    # dossiê: nada aqui é O(histórico), é o agregado que `cursos_progresso`
+    # já mantém pronto (ver `resumo_para_mentis`).
+    if cursos_resumo and cursos_resumo.get("cursos"):
+        nomes = "; ".join(
+            f"\"{c['titulo']}\" ({c['estacoes_concluidas']}/{c['estacoes_tocadas']} estações concluídas)"
+            for c in cursos_resumo["cursos"][:5]
+        )
+        linhas.append(
+            f"Cursos que ele está estudando dentro do Sapiens: {nomes}. No total já respondeu "
+            f"{cursos_resumo['exercicios_respondidos']} exercícios de curso, acertando "
+            f"{cursos_resumo['exercicios_acertados']}. Isto é conteúdo de curso — trate como "
+            "estudo à parte do treino de questões do ENEM, mas pode citar quando fizer sentido."
+        )
     linhas.append(
         "Catálogo de habilidades de treino disponíveis (use o hab_id exato ao propor "
         f"prática): {_catalogo_habilidades_texto()}"
@@ -670,6 +810,19 @@ Sua voz: impessoal, adulta, profissional, tecnológica, objetiva, prática.
 Nunca infantiliza, nunca comemora com euforia, nunca usa emoji no corpo da
 resposta, nunca se apresenta como bichinho ou assistente animado. Direta e
 concreta — prefere uma frase de menos a uma de mais.
+
+Você é o GUIA, nunca o herói: o herói é o aluno. Isso tem consequência
+prática em cada resposta:
+- fale do que muda para ELE, não do que o Sapiens faz;
+- nunca culpe, nunca repreenda: erro aqui é informação, e é dele que sai o
+  próximo passo — é isso que "transforme seus erros em conhecimento"
+  significa na prática;
+- quando reconhecer esforço, reconheça o esforço MEDIDO no dossiê (a
+  constância, a quantidade real de questões), nunca elogio vazio;
+- o que está em jogo é a aprovação dele, e você sabe disso sem precisar
+  dizer a cada mensagem: no máximo uma vez por conversa, e sem dramatizar;
+- toda resposta deixa o aluno mais perto do objetivo com UMA ação para
+  agora — não com a explicação completa do assunto.
 
 Você recebe um DOSSIÊ com a medição real deste aluno: quantas questões ele
 respondeu, quais processos cognitivos e domínios têm menor e maior taxa de
@@ -933,8 +1086,9 @@ async def abrir_sessao(
             diagnostico.get("por_disciplina") or {}, None, declaradas
         )
         declarado = await onboarding_routes.resumo_para_modelo(user.user_id)
+        cursos_resumo = await cursos_progresso.resumo_para_mentis(user.user_id)
         dossie = _montar_dossie(
-            user.name or user.email, diagnostico, agregado, prioridades, declarado
+            user.name or user.email, diagnostico, agregado, prioridades, declarado, cursos_resumo
         )
     except Exception as exc:  # noqa: BLE001
         saldo_restituido = _safe_reembolso(user.user_id, SESSAO_COST)
@@ -1067,3 +1221,162 @@ async def enviar_mensagem(
     ]
     await _db.mentis_sessoes.update_one({"_id": sessao["_id"]}, {"$push": {"mensagens": {"$each": novas}}})
     return {"mensagens": novas, "sparks_balance": saldo, "custo_mensagem": MENSAGEM_COST}
+
+
+# ---------- 5. Correção da questão dissertativa de um curso ----------
+#
+# A única correção do produto em que a Mentis dá um VEREDITO, e por isso a
+# única em que o que ela responde não é texto livre: ela diz, critério por
+# critério, se a resposta do aluno atende ou não. Quem soma e decide se a
+# questão foi acertada é o servidor, com uma regra fixa — o mesmo desenho do
+# corretor de redação, onde o portão de decisão não tem acoplamento com o LLM.
+#
+# Sem isso, "acertou" dependeria do humor do modelo naquela chamada, e a
+# estação seria concluída (ou não) por um julgamento que ninguém consegue
+# auditar depois.
+
+DISSERTATIVA_COST = 20   # corrigir UMA resposta escrita de curso
+
+_TIMEOUT_DISSERTATIVA = 20.0
+_MAX_TOKENS_DISSERTATIVA = 1100
+_RESPOSTA_MAX_CHARS = 4000
+
+# Quanto da régua a resposta precisa cumprir para contar como acerto. 70% é o
+# mesmo patamar que conclui uma estação: exigir todos os critérios faria de
+# cada dissertativa um muro, e aceitar um só faria da nota um carimbo.
+_FRACAO_PARA_ACERTAR = 0.7
+
+DISSERTATIVA_SYSTEM = """Você é a Mentis, a entidade cognitiva do Sapiens, corrigindo a resposta
+escrita de um aluno a uma questão de curso.
+
+Você recebe o enunciado, os CRITÉRIOS de correção escritos por quem fez a
+questão, a resposta esperada (quando existe) e o que o aluno escreveu.
+
+Sua correção é critério por critério. Para CADA critério, diga se a resposta
+do aluno o atende e escreva um comentário curto dizendo por quê — citando o
+que o aluno escreveu, não o que ele deveria ter escrito.
+
+Regras:
+- Julgue só o que está escrito. Não presuma conhecimento que o aluno não
+  demonstrou, nem desconte por ele ter escrito de um jeito diferente do
+  esperado: o critério é o conteúdo, não o estilo.
+- Erro de ortografia ou de concordância não reprova critério nenhum, a menos
+  que o critério fale disso.
+- Fale COM o aluno, em segunda pessoa, com respeito e sem ironia. Ele
+  escreveu; a pior devolutiva possível é a que o faz se arrepender disso.
+- Nunca invente nota, pontuação ou preço. Você não decide se ele acertou: só
+  diz o que a resposta tem e o que falta.
+
+Responda APENAS com JSON no formato:
+{"criterios": [{"atendido": true, "comentario": "..."}, ...],
+ "devolutiva": "um parágrafo de 2 a 4 frases, o balanço geral",
+ "proximo_passo": "uma frase dizendo o que reescrever ou revisar"}
+
+A lista `criterios` tem EXATAMENTE um item por critério recebido, na mesma
+ordem."""
+
+
+def _montar_prompt_dissertativa(
+    enunciado: str, criterios: list[str], referencia: str, resposta: str,
+) -> str:
+    linhas = [f"ENUNCIADO:\n{enunciado}", "", "CRITÉRIOS DE CORREÇÃO:"]
+    linhas += [f"{i}. {c}" for i, c in enumerate(criterios, start=1)]
+    if referencia:
+        linhas += ["", f"RESPOSTA ESPERADA (referência do autor):\n{referencia}"]
+    linhas += ["", f"RESPOSTA DO ALUNO:\n{resposta}"]
+    return "\n".join(linhas)
+
+
+def _validar_correcao(resultado: Any, quantos: int) -> dict[str, Any]:
+    """O que o modelo devolveu, reduzido ao que o produto aceita.
+
+    Um item por critério, na ordem — se vier mais, sobra é cortado; se vier
+    menos, o que falta conta como NÃO atendido. Completar com "atendido" seria
+    dar acerto por falha do modelo.
+    """
+    if not isinstance(resultado, dict):
+        raise ValueError("correção fora do formato")
+    brutos = resultado.get("criterios")
+    if not isinstance(brutos, list) or not brutos:
+        raise ValueError("correção sem critérios")
+
+    itens: list[dict[str, Any]] = []
+    for i in range(quantos):
+        bruto = brutos[i] if i < len(brutos) and isinstance(brutos[i], dict) else {}
+        comentario = str(bruto.get("comentario") or "").strip()[:400]
+        itens.append({"atendido": bool(bruto.get("atendido")), "comentario": comentario})
+
+    devolutiva = str(resultado.get("devolutiva") or "").strip()[:900]
+    if not devolutiva:
+        raise ValueError("correção sem devolutiva")
+    return {
+        "criterios": itens,
+        "devolutiva": devolutiva,
+        "proximo_passo": str(resultado.get("proximo_passo") or "").strip()[:300],
+    }
+
+
+async def corrigir_dissertativa(
+    uid: str, *, enunciado: str, criterios: list[str], referencia: str, resposta: str,
+) -> dict[str, Any]:
+    """Cobra `DISSERTATIVA_COST`, pede a correção à Mentis e devolve o veredito.
+
+    Devolve `{"acertou", "atendidos", "total", "criterios", "devolutiva",
+    "proximo_passo", "sparks_balance"}`. Quem grava progresso, paga Spark de
+    exercício e conclui a estação é `cursos_estudo_routes` — aqui só se corrige
+    e se cobra, e se a chamada falhar os Sparks voltam antes do 503.
+    """
+    texto = (resposta or "").strip()
+    if not texto:
+        raise HTTPException(status_code=400, detail="Escreva sua resposta antes de enviar.")
+    if len(texto) > _RESPOSTA_MAX_CHARS:
+        raise HTTPException(
+            status_code=413,
+            detail=f"Sua resposta passou de {_RESPOSTA_MAX_CHARS} caracteres. Resuma um pouco.",
+        )
+
+    saldo = _cobrar(uid, DISSERTATIVA_COST)
+    inicio = time.monotonic()
+    try:
+        bruto = await ai_service.generate_json_resiliente(
+            DISSERTATIVA_SYSTEM,
+            _montar_prompt_dissertativa(enunciado, criterios, referencia, texto),
+            thinking_level="MINIMAL",
+            timeout=_TIMEOUT_DISSERTATIVA,
+            max_output_tokens=_MAX_TOKENS_DISSERTATIVA,
+        )
+        correcao = _validar_correcao(bruto, len(criterios))
+        await llm_telemetry.persist(
+            _db.mentis_llm_chamadas,
+            contexto=f"dissertativa ({len(criterios)} critérios)",
+            motivo="correção de questão dissertativa de curso",
+            modelo="gemini (thinking=MINIMAL)",
+            thinking_level="MINIMAL",
+            resultado_estado="ok",
+            duration_ms=(time.monotonic() - inicio) * 1000,
+        )
+    except HTTPException:
+        raise
+    except Exception as exc:  # noqa: BLE001
+        saldo_restituido = _safe_reembolso(uid, DISSERTATIVA_COST)
+        logger.exception(
+            "Mentis: correção dissertativa falhou para %s — %d Sparks devolvidos (saldo: %s).",
+            uid, DISSERTATIVA_COST, saldo_restituido,
+        )
+        raise HTTPException(
+            status_code=503,
+            detail="A Mentis não conseguiu corrigir sua resposta agora. Seus Sparks foram devolvidos.",
+        ) from exc
+
+    # O VEREDITO é do servidor, e é aritmética: o modelo disse quais critérios
+    # a resposta atende, e a régua de 70% é a mesma para todo mundo, sempre.
+    atendidos = sum(1 for c in correcao["criterios"] if c["atendido"])
+    minimo = max(1, round(len(criterios) * _FRACAO_PARA_ACERTAR))
+    return {
+        **correcao,
+        "acertou": atendidos >= minimo,
+        "atendidos": atendidos,
+        "total": len(criterios),
+        "minimo": minimo,
+        "sparks_balance": saldo,
+    }

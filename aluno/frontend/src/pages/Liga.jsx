@@ -49,8 +49,8 @@ export default function Liga() {
   return (
     <div className="min-h-screen">
       <Nav />
-      <div className="mx-auto max-w-3xl px-6 py-12 md:px-10">
-        <div className="font-mono-alt mb-3 flex items-center gap-2 text-xs uppercase tracking-[0.35em] text-white/50">
+      <div className="mx-auto max-w-3xl px-5 py-7 md:px-10 md:py-10">
+        <div className="secao-olho flex items-center gap-1.5">
           <Trophy className="h-3.5 w-3.5" /> Liga
         </div>
 
@@ -63,14 +63,14 @@ export default function Liga() {
         ) : (
           <>
             <h1
-              className="font-display text-4xl font-extrabold tracking-tighter text-white md:text-5xl"
+              className="titulo-tela"
               data-testid="liga-title"
             >
               Liga <span style={{ color: liga.cor }}>{liga.nome}</span>
             </h1>
             <p className="mt-3 max-w-xl text-white/60">
-              Fecha {formatarFechamento(liga.fecha_em)}. Os {liga.sobem} primeiros sobem de divisão.
-              Cada XP que você ganha estudando conta aqui.
+              Fecha {formatarFechamento(liga.fecha_em)} — só os {liga.sobem} primeiros sobem.
+              Cada questão que você responde hoje conta aqui, e ninguém sobe por sorte.
             </p>
 
             {liga.total === 0 ? (

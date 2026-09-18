@@ -48,6 +48,19 @@ INDICES: list[tuple[str, list[tuple[str, int]], dict]] = [
     # --- identidade ---
     ("users", [("email", pymongo.ASCENDING)], {"name": "email_unico", "unique": True}),
     ("users", [("user_id", pymongo.ASCENDING)], {"name": "user_id_unico", "unique": True}),
+    # Código de indicação: único e ESPARSO. Único porque um código aponta para
+    # um aluno e só um — sem o índice, duas contas criando o código no mesmo
+    # instante podem sortear o mesmo texto e o prêmio passaria a ir para quem
+    # a consulta encontrasse primeiro. Esparso porque a maioria das contas não
+    # tem código até abrir a tela pela primeira vez, e um índice único comum
+    # trataria todos esses `None` como duplicata (ver `indicacoes.py`).
+    ("users", [("referral_code", pymongo.ASCENDING)],
+     {"name": "referral_code_unico", "unique": True, "sparse": True}),
+    # Vínculo da indicação. `indicado_id` é também o `_id` do documento, então
+    # a unicidade já está garantida; este índice é para a consulta do sentido
+    # oposto — "quem eu indiquei" —, que é a da tela do aluno.
+    ("indicacoes", [("indicador_id", pymongo.ASCENDING), ("created_at", pymongo.DESCENDING)],
+     {"name": "indicados_por_aluno"}),
 
     # --- acervo: filtros de /api/questoes e /api/provas ---
     ("questoes_public", [("item_id", pymongo.ASCENDING)], {"name": "item_id_idx"}),
@@ -87,6 +100,12 @@ INDICES: list[tuple[str, list[tuple[str, int]], dict]] = [
      {"name": "redacoes_do_aluno"}),
     ("redacoes", [("redacao_id", pymongo.ASCENDING)], {"name": "redacao_id_idx"}),
     ("redacao_avaliacoes", [("redacao_id", pymongo.ASCENDING)], {"name": "avaliacao_por_redacao"}),
+    # Por aluno e em ordem: é a consulta do painel do perfil (a evolução das
+    # notas) e a de `cronograma_routes._resumo_redacao` (a melhor nota). Sem
+    # ele as duas varrem a coleção inteira — invisível com dez alunos, caro
+    # com mil.
+    ("redacao_avaliacoes", [("user_id", pymongo.ASCENDING), ("created_at", pymongo.DESCENDING)],
+     {"name": "avaliacoes_do_aluno"}),
     # Reivindicações de cobrança (`redacao_routes`). A busca por chave usa o
     # `_id` (`user:chave`), que já é único e indexado pelo Mongo — o índice
     # aqui é só para a varredura por usuário numa eventual auditoria de
@@ -99,7 +118,21 @@ INDICES: list[tuple[str, list[tuple[str, int]], dict]] = [
     # Fila de espera da mentoria. O nome da coleção é anterior ao produto
     # atual e ficou de propósito — ver `mentoria_routes`.
     ("aulas_particulares", [("created_at", pymongo.DESCENDING)], {"name": "aulas_recentes"}),
-    ("aulas_particulares", [("user_id", pymongo.ASCENDING)], {"name": "fila_do_aluno"}),
+    # ÚNICO desde 2026-09-17, e não mais um índice comum: entrar na fila
+    # passou a custar 50 Sparks, e "um aluno, um lugar" deixou de ser só
+    # arrumação da lista do admin para virar a garantia de que ninguém é
+    # cobrado duas vezes. A checagem em `mentoria_routes` continua lá e é ela
+    # que dá a mensagem boa; isto é o que resolve duas requisições que chegam
+    # no mesmo milissegundo, que nenhum `find_one` seguido de `insert_one`
+    # resolve sozinho.
+    ("aulas_particulares", [("user_id", pymongo.ASCENDING)],
+     {"name": "fila_do_aluno_unica", "unique": True}),
+
+    # E-books. Mesma forma dos acessos de curso: `_id = "{uid}:{ebook_id}"` já
+    # é único pelo Mongo e é dele que vem a garantia de cobrar uma vez; este
+    # índice serve à LISTAGEM ("o que este aluno já tem"), que a aba Cursos
+    # faz a cada abertura.
+    ("ebooks_acessos", [("user_id", pymongo.ASCENDING)], {"name": "ebooks_do_aluno"}),
 
     # --- cursos e a aula ao vivo de quinta ---
     # O acesso à live tem `_id = "{uid}:{edicao}"`, que o Mongo já indexa e
@@ -120,6 +153,27 @@ INDICES: list[tuple[str, list[tuple[str, int]], dict]] = [
     ("cursos_acessos", [("user_id", pymongo.ASCENDING)], {"name": "cursos_do_aluno"}),
     ("cursos_acessos", [("curso_id", pymongo.ASCENDING), ("criado_em", pymongo.ASCENDING)],
      {"name": "compradores_do_curso"}),
+
+    # --- estudo dentro do curso (trilhas, estações, blocos) ---
+    # A consulta quente é uma só e é a do mapa da trilha: TODO o progresso de
+    # um aluno num curso, numa ida ao banco (`cursos_progresso.progresso_do_curso`).
+    # O `_id` é `"{uid}:{curso_id}:{estacao_id}"`, que já é único e serve à
+    # leitura de uma estação; este índice serve à leitura do curso inteiro.
+    ("cursos_progresso", [("uid", pymongo.ASCENDING), ("curso_id", pymongo.ASCENDING)],
+     {"name": "progresso_do_aluno_no_curso"}),
+    # Para a pergunta do outro lado: quantos alunos passaram por esta estação.
+    ("cursos_progresso", [("curso_id", pymongo.ASCENDING), ("estacao_id", pymongo.ASCENDING)],
+     {"name": "progresso_por_estacao"}),
+    # Histórico de comportamento dentro do curso — SÓ ESCRITA no caminho do
+    # aluno; quem lê é o painel de análise do admin, sempre recortado por
+    # curso. Sem TTL de propósito: é o dado que diz onde a turma trava e qual
+    # alternativa errada atrai mais gente, e ele só fica mais útil com o
+    # tempo. O que impede a leitura de crescer sem limite é o teto de
+    # `cursos_estudo_routes.TETO_DE_EVENTOS`, não o descarte do dado.
+    ("cursos_eventos", [("curso_id", pymongo.ASCENDING), ("criado_em", pymongo.ASCENDING)],
+     {"name": "eventos_do_curso"}),
+    ("cursos_eventos", [("uid", pymongo.ASCENDING), ("criado_em", pymongo.DESCENDING)],
+     {"name": "eventos_do_aluno"}),
 
     # Reivindicações de geração de questões novas do banco de treino
     # (`treino_routes`). Mesmo desenho de `redacao_cobrancas`: `_id`
@@ -185,6 +239,18 @@ INDICES: list[tuple[str, list[tuple[str, int]], dict]] = [
     # unicidade é o que impede o admin de criar dois códigos iguais numa
     # corrida entre duas abas do painel.
     ("promo_codes", [("code", pymongo.ASCENDING)], {"name": "promo_code_unico", "unique": True}),
+
+    # --- "Lembrar-me com a Mentis" ---
+    # O `_id` é `{uid}:{hash do trecho}` (ver `lembretes_routes.
+    # chave_do_lembrete`), então a trava de "cobra uma vez por trecho" já é a
+    # chave primária e não precisa de índice único próprio. Este é da CONSULTA
+    # da aba de Revisões: a fila aberta do aluno, da mais recente para a mais
+    # antiga — sem ele, montar a aba varre a coleção inteira de todo mundo.
+    ("lembretes_revisao", [
+        ("user_id", pymongo.ASCENDING),
+        ("status", pymongo.ASCENDING),
+        ("criado_em", pymongo.DESCENDING),
+    ], {"name": "lembretes_do_aluno"}),
 
     # --- cronograma ---
     # O documento do cronograma tem `_id = user_id`, então a leitura da tela

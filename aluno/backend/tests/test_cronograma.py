@@ -602,3 +602,41 @@ def test_prioridades_sobrevivem_ao_diagnostico_fora_do_ar(rotas, monkeypatch):
     monkeypatch.setattr(cr.annotation_service, "compute_diagnostico_real", _explode)
     resposta = asyncio.run(cr.minhas_prioridades(_ALUNO))
     assert {p["chave"] for p in resposta["prioridades"][:2]} == {"matematica", "redacao"}
+
+
+# ---------------------------------------------------------------------------
+# O PREÇO DE MONTAR A SEMANA (2026-09-17)
+# ---------------------------------------------------------------------------
+#
+# Montar pela primeira vez é grátis; REMONTAR custa (a remontagem apaga os
+# blocos marcados como feitos); com a Mentis custa o preço dela. E os dois
+# nunca se somam: uma ação, uma cobrança.
+#
+# São chamadas diretas a `_custo_da_montagem`, e não à rota inteira: a regra de
+# preço é a coisa que precisa estar certa, e testá-la por dentro de uma rota
+# que toca Mongo, Firestore e Gemini seria testar três outras coisas junto.
+
+import cronograma_routes as cr  # noqa: E402
+
+
+def test_primeira_montagem_da_semana_e_gratis():
+    assert cr._custo_da_montagem(com_mentis=False, remontagem=False) == 0
+
+
+def test_remontar_custa_o_preco_da_remontagem():
+    assert cr._custo_da_montagem(com_mentis=False, remontagem=True) == cr.REMONTAGEM_COST
+    assert cr.REMONTAGEM_COST > 0
+
+
+def test_com_a_mentis_custa_o_preco_da_mentis():
+    assert cr._custo_da_montagem(com_mentis=True, remontagem=False) == cr.MENTIS_COST
+    assert cr.MENTIS_COST == 50
+
+
+def test_remontar_com_a_mentis_nao_soma_os_dois_precos():
+    """A regra que protege o aluno de uma cobrança que ele não entende: o
+    mesmo botão não pode custar 50 na primeira semana e 60 na segunda."""
+    assert cr._custo_da_montagem(com_mentis=True, remontagem=True) == cr.MENTIS_COST
+    assert cr._custo_da_montagem(com_mentis=True, remontagem=True) < (
+        cr.MENTIS_COST + cr.REMONTAGEM_COST
+    )

@@ -1,16 +1,25 @@
 {
+  "id": "/",
   "short_name": "Sapiens",
   "name": "Sapiens — inteligência educacional",
-  "description": "Descubra por que você erra.",
+  "description": "Transforme seus erros em conhecimento. O Sapiens descobre por que você erra e devolve um plano de estudos para o ENEM e o vestibular — em 10 minutos você sabe o que estudar amanhã.",
   "start_url": "/dashboard",
   "scope": "/",
   "display": "standalone",
-  "orientation": "portrait",
-  "background_color": "#0B1220",
-  "theme_color": "#132D5C",
+  "display_override": ["standalone", "minimal-ui", "browser"],
+  "background_color": "#03060d",
+  "theme_color": "#060c18",
   "lang": "pt-BR",
+  "dir": "ltr",
+  "categories": ["education"],
   "icons": [
-    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Praticar questões", "short_name": "Praticar", "url": "/exams", "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "Mapa de Treino", "short_name": "Treino", "url": "/treino", "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "Falar com a Mentis", "short_name": "Mentis", "url": "/mentis", "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }] }
   ]
 }

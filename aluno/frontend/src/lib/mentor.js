@@ -27,6 +27,11 @@ export const MENTOR = {
   // pertence a uma pessoa pública, verificável, e o nome inteiro é o que se
   // pode checar. Quem precisar do nome no texto usa `MENTOR.nome`.
   titulo: "1º colocado de Medicina da USP",
+  // A frase dele mesmo, na primeira pessoa — por isso fica junto do nome e
+  // não solta numa tela só. Quem usa isto no texto usa `MENTOR.frase`.
+  frase:
+    "Estou comprometido em te conectar com o seu melhor futuro: a mesma " +
+    "estratégia que me levou ao 1º lugar em Medicina na USP, agora para você.",
   // A foto mora em `public/mentor-usp.jpg`. Ver `components/MentorUSP.jsx`:
   // quando o arquivo falta, o componente cai na medalha em vez de mostrar o
   // ícone de imagem quebrada do navegador.

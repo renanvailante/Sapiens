@@ -1,0 +1,560 @@
+{
+  "schema_version": "1.0",
+  "estacao_id": "mb-12-sistemas-de-equacoes",
+  "titulo": "Sistemas de equações",
+  "objetivo": "Você vai resolver sistemas 2×2 pelos métodos da substituição e da adição, e usar sistemas para resolver problemas com duas incógnitas.",
+  "versao": "2026-09-16",
+  "duracao_minutos": 13,
+  "numero": 12,
+  "conceitos": [
+    "sistemas-de-equacoes",
+    "substituicao",
+    "adicao"
+  ],
+  "conclusao": {
+    "tipo": "minimo_de_acertos",
+    "minimo": 7
+  },
+  "fonte": {
+    "arquivo": "mat basica 12 - estacao completa.md",
+    "pasta": "cursos/matemática básica"
+  },
+  "blocos": [
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-12-c-01",
+      "variante": "padrao",
+      "markdown": "Um sistema 2×2 tem duas equações e duas incógnitas:\n\n`2x + y = 10`\n`x − y = 2`\n\nResolver o sistema é encontrar o **par** `(x, y)` que torna as **duas** igualdades verdadeiras ao mesmo tempo. Um valor que serve só para uma das equações não é solução."
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-12-c-02",
+      "variante": "padrao",
+      "markdown": "Isole uma incógnita em uma das equações e leve essa expressão para a outra.\n\n1. Da segunda equação: `x = y + 2`.\n2. Substitua na primeira: `2(y + 2) + y = 10`.\n3. Resolva: `3y + 4 = 10`, então `y = 2`.\n4. Volte: `x = 2 + 2 = 4`.\n\nPrefira isolar a incógnita que já está quase sozinha — a que tem coeficiente 1.",
+      "titulo": "Método da substituição"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-12-c-03",
+      "variante": "padrao",
+      "markdown": "Some as duas equações de modo que uma das incógnitas desapareça. Se os coeficientes não forem opostos, multiplique uma das equações até que sejam.\n\n1. `2x + y = 10`\n2. `x − y = 2`\n3. Somando, o `y` some: `3x = 12`, então `x = 4`.\n4. Volte em qualquer equação: `y = 2`.",
+      "titulo": "Método da adição"
+    },
+    {
+      "tipo": "tabela",
+      "bloco_id": "mb-12-c-04",
+      "colunas": [
+        "Situação",
+        "Quantas soluções",
+        "Como reconhecer"
+      ],
+      "linhas": [
+        [
+          "Retas que se cruzam",
+          "Uma só",
+          "Os coeficientes não são proporcionais"
+        ],
+        [
+          "Retas iguais",
+          "Infinitas",
+          "Uma equação é múltipla da outra"
+        ],
+        [
+          "Retas paralelas",
+          "Nenhuma",
+          "Mesmos coeficientes, resultados diferentes"
+        ]
+      ],
+      "titulo": "Quantas soluções um sistema pode ter"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-12-c-05",
+      "variante": "padrao",
+      "markdown": "`x + y = 7` e `2x + 2y = 14` são a mesma reta escrita duas vezes: infinitas soluções. Já `x + y = 7` e `x + y = 9` se contradizem: nenhuma."
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-12-c-06",
+      "variante": "padrao",
+      "markdown": "Substitua o par encontrado nas **duas** equações originais. Se as duas fecham, acabou. Conferir custa dez segundos e pega quase todo erro de sinal.",
+      "titulo": "Como conferir sem refazer a conta"
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-12-ex-01",
+      "enunciado": "Resolva `x + y = 9` e `x − y = 1` pela adição.",
+      "passos": [
+        {
+          "texto": "Somando as duas: `2x = 10`, então `x = 5`"
+        },
+        {
+          "texto": "Volte na primeira: `5 + y = 9`, então `y = 4`"
+        },
+        {
+          "texto": "Confira na segunda: `5 − 4 = 1`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-12-ex-02",
+      "enunciado": "Resolva `y = 3x` e `x + y = 16` pela substituição.",
+      "passos": [
+        {
+          "texto": "A segunda já entrega `y`: substitua direto"
+        },
+        {
+          "texto": "`x + 3x = 16`, então `4x = 16` e `x = 4`"
+        },
+        {
+          "texto": "`y = 3 × 4 = 12`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-12-ex-03",
+      "enunciado": "Resolva `3x + 2y = 16` e `x − y = 2`.",
+      "passos": [
+        {
+          "texto": "Isole na segunda: `x = y + 2`"
+        },
+        {
+          "texto": "Substitua na primeira: `3(y + 2) + 2y = 16`"
+        },
+        {
+          "texto": "`5y + 6 = 16`, então `y = 2` e `x = 4`"
+        },
+        {
+          "texto": "Confira: `3 × 4 + 2 × 2 = 16`"
+        }
+      ]
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-12-es-01",
+      "variante": "destaque",
+      "markdown": "- **Escolha o método pelo sistema, não por gosto.** Se alguma incógnita tem coeficiente 1, substituição é mais rápida. Se os coeficientes de uma incógnita já são opostos, adição resolve em uma linha.\n- **Antes de multiplicar, olhe os sinais.** Multiplicar a equação certa por `−1` costuma poupar duas linhas de conta.\n- **Multiplique a equação INTEIRA.** Todos os termos, inclusive o resultado do outro lado da igualdade.\n- **Confira nas duas equações.** É o único jeito de saber que o par é solução do sistema, e não só de uma das equações."
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-12-er-01",
+      "variante": "atencao",
+      "markdown": "- **Multiplicar só um lado da equação.** `2 × (x − y = 2)` é `2x − 2y = 4`, não `2x − 2y = 2`.\n- **Trocar x por y na resposta.** O par `(4, 2)` não é o mesmo que `(2, 4)`.\n- **Parar na primeira incógnita.** Achar `x` e esquecer de voltar para achar `y` deixa o sistema pela metade.\n- **Errar o sinal ao somar.** Somar `x − y = 2` com `2x + y = 10` cancela o `y`; subtrair, não.\n- **Conferir em uma equação só.** Todo par errado satisfaz alguma equação — é a outra que o denuncia."
+    },
+    {
+      "tipo": "video",
+      "bloco_id": "mb-12-video",
+      "titulo": "Sistemas de equações — aula em vídeo",
+      "provedor": "youtube",
+      "ref": null,
+      "resumo": "Aula conduzida pelo 1º colocado de Medicina da USP."
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-12-q01",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Resolva o sistema `x + y = 10` e `x − y = 4`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "x = 3 e y = 7"
+        },
+        {
+          "id": "b",
+          "texto": "x = 6 e y = 4"
+        },
+        {
+          "id": "c",
+          "texto": "x = 7 e y = 3"
+        },
+        {
+          "id": "d",
+          "texto": "x = 5 e y = 5"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "a": "Troca os valores das duas incógnitas.",
+        "d": "Divide a soma ao meio e ignora a diferença.",
+        "b": "Não satisfaz a segunda equação."
+      },
+      "solucao": "Somando as duas equações, o `y` se cancela: `2x = 14`, então `x = 7` e `y = 10 − 7 = 3`.",
+      "conceitos": [
+        "sistemas-de-equacoes"
+      ],
+      "origem": {
+        "estacao": 12,
+        "questao": "Questão 1"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-12-q02",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Resolva o sistema `x + y = 12` e `y = 2x`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "x = 6 e y = 6"
+        },
+        {
+          "id": "b",
+          "texto": "x = 8 e y = 4"
+        },
+        {
+          "id": "c",
+          "texto": "x = 3 e y = 9"
+        },
+        {
+          "id": "d",
+          "texto": "x = 4 e y = 8"
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "b": "Troca os valores das duas incógnitas.",
+        "a": "Ignora a segunda equação.",
+        "c": "Usa `y = 3x` em vez de `y = 2x`."
+      },
+      "solucao": "Substituindo `y = 2x` na primeira equação: `3x = 12`, então `x = 4` e `y = 8`.",
+      "conceitos": [
+        "substituicao"
+      ],
+      "origem": {
+        "estacao": 12,
+        "questao": "Questão 2"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-12-q03",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "No sistema `2x + y = 9` e `y = 3`, qual é o valor de `x`?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "1,5"
+        },
+        {
+          "id": "b",
+          "texto": "3"
+        },
+        {
+          "id": "c",
+          "texto": "6"
+        },
+        {
+          "id": "d",
+          "texto": "4,5"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "c": "Esquece de dividir por 2.",
+        "d": "Divide 9 por 2 sem subtrair o 3.",
+        "a": "Subtrai o 3 duas vezes."
+      },
+      "solucao": "Com `y = 3`, a primeira equação vira `2x + 3 = 9`, então `2x = 6` e `x = 3`.",
+      "conceitos": [
+        "substituicao"
+      ],
+      "origem": {
+        "estacao": 12,
+        "questao": "Questão 3"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-12-q04",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Resolva o sistema `3x + 2y = 16` e `x − y = 2`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "x = 3 e y = 1"
+        },
+        {
+          "id": "b",
+          "texto": "x = 6 e y = −1"
+        },
+        {
+          "id": "c",
+          "texto": "x = 2 e y = 4"
+        },
+        {
+          "id": "d",
+          "texto": "x = 4 e y = 2"
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "c": "Troca os valores das duas incógnitas.",
+        "b": "Satisfaz a primeira equação e não a segunda.",
+        "a": "Satisfaz a segunda e não a primeira."
+      },
+      "solucao": "Isolando `x = y + 2` e substituindo: `3(y + 2) + 2y = 16`, `5y = 10`, então `y = 2` e `x = 4`.",
+      "conceitos": [
+        "substituicao"
+      ],
+      "origem": {
+        "estacao": 12,
+        "questao": "Questão 4"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-12-q05",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Resolva o sistema `2x + 3y = 12` e `4x − 3y = 6`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "x = 3 e y = 6"
+        },
+        {
+          "id": "b",
+          "texto": "x = 2 e y = 3"
+        },
+        {
+          "id": "c",
+          "texto": "x = 1,5 e y = 3"
+        },
+        {
+          "id": "d",
+          "texto": "x = 3 e y = 2"
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "b": "Troca os valores das duas incógnitas.",
+        "a": "Esquece de dividir por 3 ao isolar y.",
+        "c": "Divide o x por 2 sem motivo."
+      },
+      "solucao": "Somando as duas equações, os termos em `y` se cancelam: `6x = 18`, então `x = 3`; voltando, `3y = 6` e `y = 2`.",
+      "conceitos": [
+        "adicao"
+      ],
+      "origem": {
+        "estacao": 12,
+        "questao": "Questão 5"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-12-q06",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "A soma de dois números é 30 e a diferença entre eles é 8. Quais são esses números?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "20 e 10"
+        },
+        {
+          "id": "b",
+          "texto": "19 e 11"
+        },
+        {
+          "id": "c",
+          "texto": "18 e 12"
+        },
+        {
+          "id": "d",
+          "texto": "22 e 8"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "d": "Usa a diferença como se fosse um dos números.",
+        "a": "Esta é uma das que somam 30, mas a diferença entre eles não é 8.",
+        "c": "Esta é uma das que somam 30, mas a diferença entre eles não é 8."
+      },
+      "solucao": "O sistema é `x + y = 30` e `x − y = 8`. Somando, `2x = 38`, então `x = 19` e `y = 11`.",
+      "conceitos": [
+        "sistemas-de-equacoes"
+      ],
+      "origem": {
+        "estacao": 12,
+        "questao": "Questão 6"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-12-q07",
+      "nivel": 3,
+      "formato": "multipla_escolha",
+      "enunciado": "Resolva o sistema `5x − 2y = 4` e `3x + 4y = 18`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "x = 2 e y = −3"
+        },
+        {
+          "id": "b",
+          "texto": "x = 4 e y = 8"
+        },
+        {
+          "id": "c",
+          "texto": "x = 3 e y = 2"
+        },
+        {
+          "id": "d",
+          "texto": "x = 2 e y = 3"
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "c": "Troca os valores das duas incógnitas.",
+        "a": "Erra o sinal ao isolar y.",
+        "b": "Satisfaz a primeira equação e não a segunda."
+      },
+      "solucao": "Multiplicando a primeira equação por 2 e somando à segunda, o `y` se cancela: `13x = 26`, então `x = 2` e `y = 3`.",
+      "conceitos": [
+        "adicao"
+      ],
+      "origem": {
+        "estacao": 12,
+        "questao": "Questão 7"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-12-q08",
+      "nivel": 3,
+      "formato": "multipla_escolha",
+      "enunciado": "Quantas soluções tem o sistema `x + y = 7` e `2x + 2y = 14`?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "Nenhuma, porque as duas equações se contradizem."
+        },
+        {
+          "id": "b",
+          "texto": "Exatamente duas."
+        },
+        {
+          "id": "c",
+          "texto": "Infinitas, porque a segunda equação é a primeira multiplicada por 2."
+        },
+        {
+          "id": "d",
+          "texto": "Uma só, `x = 3,5` e `y = 3,5`."
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "d": "Escolhe um par entre infinitos.",
+        "a": "Descreveria `x + y = 7` com `x + y = 9`, que aí sim se contradizem.",
+        "b": "Não é possível: um sistema do 1º grau tem uma solução, nenhuma ou infinitas."
+      },
+      "solucao": "A segunda equação é a primeira multiplicada por 2: as duas descrevem a mesma reta, e todo par que satisfaz uma satisfaz a outra.",
+      "conceitos": [
+        "sistemas-de-equacoes"
+      ],
+      "origem": {
+        "estacao": 12,
+        "questao": "Questão 8"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-12-q09",
+      "nivel": 4,
+      "formato": "multipla_escolha",
+      "enunciado": "Numa lanchonete, 2 sucos e 3 salgados custam R$ 26,00; 1 suco e 2 salgados custam R$ 15,00. Quanto custa um suco?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "R$ 7,00"
+        },
+        {
+          "id": "b",
+          "texto": "R$ 4,00"
+        },
+        {
+          "id": "c",
+          "texto": "R$ 5,50"
+        },
+        {
+          "id": "d",
+          "texto": "R$ 8,00"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "b": "Responde o preço do salgado.",
+        "c": "Divide o total pelo número de itens.",
+        "d": "Não fecha a segunda compra."
+      },
+      "solucao": "Com `s` de suco e `g` de salgado: `2s + 3g = 26` e `s + 2g = 15`. Isolando `s = 15 − 2g` e substituindo, `30 − g = 26`, então `g = 4` e `s = 7`.",
+      "conceitos": [
+        "sistemas-de-equacoes"
+      ],
+      "origem": {
+        "estacao": 12,
+        "questao": "Questão 9"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-12-q10",
+      "nivel": 4,
+      "formato": "multipla_escolha",
+      "enunciado": "Numa prova de 30 questões, cada acerto vale 4 pontos e cada erro desconta 1 ponto. Um aluno respondeu todas e somou 70 pontos. Quantas ele acertou?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "25"
+        },
+        {
+          "id": "b",
+          "texto": "20"
+        },
+        {
+          "id": "c",
+          "texto": "18"
+        },
+        {
+          "id": "d",
+          "texto": "22"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "d": "Esta é uma das que dariam mais de 70 pontos.",
+        "a": "Esta é uma das que dariam mais de 70 pontos.",
+        "c": "Daria 60 pontos."
+      },
+      "solucao": "Com `a` acertos e `e` erros: `a + e = 30` e `4a − e = 70`. Somando, `5a = 100`, então `a = 20` acertos e 10 erros.",
+      "conceitos": [
+        "sistemas-de-equacoes"
+      ],
+      "origem": {
+        "estacao": 12,
+        "questao": "Questão 10"
+      }
+    },
+    {
+      "tipo": "desafio",
+      "bloco_id": "mb-12-desafio",
+      "nivel": 5,
+      "enunciado": "Resolva o sistema abaixo e informe o valor de `x + y`.\n\n`3x + 2y = 19`\n`5x − y = 10`",
+      "formato": "numerico",
+      "gabarito": {
+        "valor": 8.0,
+        "tolerancia": 0.01
+      },
+      "solucao": "- Isole na segunda equação: `y = 5x − 10`\n- Substitua na primeira: `3x + 2(5x − 10) = 19`\n- `13x − 20 = 19`, então `13x = 39` e `x = 3`\n- `y = 5 × 3 − 10 = 5`\n- Confira: `3 × 3 + 2 × 5 = 19` e `5 × 3 − 5 = 10`\n- `x + y = 3 + 5 = 8`"
+    }
+  ],
+  "pre_requisitos": [
+    "mb-11-equacoes-do-1o-grau"
+  ]
+}

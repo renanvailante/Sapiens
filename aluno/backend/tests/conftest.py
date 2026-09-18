@@ -243,7 +243,15 @@ class FakeCollection:
             alvo = alvo.get(p)
         return alvo
 
-    def _aplicar_update(self, doc: dict, update: dict) -> None:
+    def _aplicar_update(self, doc: dict, update: dict, *, inserindo: bool = False) -> None:
+        # `$setOnInsert` só vale quando o upsert de fato CRIOU o documento —
+        # era ignorado sempre, e com isso todo documento nascido de upsert no
+        # dublê vinha sem os campos de nascimento (o `liga_id` da liga, a
+        # identificação do progresso de uma estação). O teste via um documento
+        # que o Mongo real nunca produziria.
+        if inserindo:
+            for campo, valor in (update.get("$setOnInsert") or {}).items():
+                self._set_dotted(doc, campo, valor)
         for campo, valor in (update.get("$set") or {}).items():
             self._set_dotted(doc, campo, valor)
         # `$inc` cria o campo com o incremento quando ele não existe, igual ao
@@ -307,7 +315,7 @@ class FakeCollection:
             # `$ne`/`$gt` e afins no filtro são CONDIÇÃO de busca, não valor
             # inicial: o Mongo não cria um campo com `{"$ne": "x"}` dentro.
             novo = {k: v for k, v in query.items() if not isinstance(v, dict)}
-            self._aplicar_update(novo, update)
+            self._aplicar_update(novo, update, inserindo=True)
             self.docs.append(novo)
             return FakeUpdateResult(matched_count=0, upserted_id=novo.get("_id", True))
         return FakeUpdateResult(matched_count=0)
@@ -433,6 +441,13 @@ def _caches_de_processo_limpos():
             ("curadoria", "_DOCS", None),
             ("microdiagnostico", "_MEMO", {}),
             ("revisao_service", "_MEMO", {}),
+            # A biblioteca de conteúdo dos cursos é carregada uma vez por
+            # processo de propósito (abrir uma trilha não pode custar I/O).
+            # Entre testes, é o conteúdo de mentira de um vazando para o
+            # seguinte — e quem falha é sempre outro arquivo.
+            ("cursos_conteudo", "_BIBLIOTECA", None),
+            ("cursos_conteudo", "_MESCLADA", None),
+            ("cursos_conteudo", "_PUBLICADOS", {}),
         ):
             try:
                 mod = __import__(modulo)

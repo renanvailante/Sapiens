@@ -1,0 +1,506 @@
+{
+  "schema_version": "1.0",
+  "estacao_id": "mb-13-proporcionalidade",
+  "titulo": "Proporcionalidade",
+  "objetivo": "Você vai identificar quando duas grandezas são diretamente ou inversamente proporcionais, e reconhecer relações proporcionais em contextos do mundo real.",
+  "versao": "2026-09-16",
+  "duracao_minutos": 12,
+  "numero": 13,
+  "conceitos": [
+    "proporcionalidade-direta",
+    "proporcionalidade-inversa"
+  ],
+  "conclusao": {
+    "tipo": "minimo_de_acertos",
+    "minimo": 7
+  },
+  "fonte": {
+    "arquivo": "deepseek_markdown_20260916_c72b46.md",
+    "pasta": "cursos/matemática básica"
+  },
+  "blocos": [
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-13-c-01",
+      "variante": "padrao",
+      "markdown": "Duas grandezas são **diretamente** proporcionais quando a razão entre elas é constante.\n\n`y / x = k` (constante de proporcionalidade)\n\n- Se `x` dobra, `y` dobra.\n- Se `x` cai pela metade, `y` cai pela metade.\n\nExemplos: quantidade e preço (a preço fixo), distância e tempo (a velocidade constante), litros e massa (a densidade constante).",
+      "titulo": "Proporcionalidade direta"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-13-c-02",
+      "variante": "padrao",
+      "markdown": "Duas grandezas são **inversamente** proporcionais quando o produto entre elas é constante.\n\n`y × x = k`\n\n- Se `x` dobra, `y` cai pela metade.\n- Se `x` triplica, `y` cai a um terço.\n\nExemplos: velocidade e tempo (para uma mesma distância), número de trabalhadores e tempo (para uma mesma obra), vazão e tempo (para um mesmo tanque).",
+      "titulo": "Proporcionalidade inversa"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-13-c-03",
+      "variante": "padrao",
+      "markdown": "Pergunte: se uma grandeza aumenta, a outra aumenta ou diminui?\n\n- Aumenta junto → **direta**.\n- Diminui junto → **inversa**.",
+      "titulo": "Como identificar"
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-13-ex-01",
+      "enunciado": "`y` é diretamente proporcional a `x`. Se `y = 15` quando `x = 5`, qual `y` quando `x = 7`?",
+      "passos": [
+        {
+          "texto": "`k = 15/5 = 3`"
+        },
+        {
+          "texto": "`y = 3 × 7 = 21`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-13-ex-02",
+      "enunciado": "`y` é inversamente proporcional a `x`. Se `y = 6` quando `x = 4`, qual `y` quando `x = 2`?",
+      "passos": [
+        {
+          "texto": "`k = 6 × 4 = 24`"
+        },
+        {
+          "texto": "`y = 24 / 2 = 12`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-13-ex-03",
+      "enunciado": "4 máquinas produzem certa quantidade de peças em 10 dias. 8 máquinas, no mesmo ritmo, produzem a mesma quantidade em quantos dias?",
+      "passos": [
+        {
+          "texto": "Inversa: `k = 4 × 10 = 40`"
+        },
+        {
+          "texto": "`40 / 8 = 5` dias"
+        }
+      ]
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-13-es-01",
+      "variante": "destaque",
+      "markdown": "- Escreva a equação `y = kx` (direta) ou `y = k/x` (inversa) antes de substituir valores.\n- Em problemas contextualizados, nomeie as grandezas e suas unidades.\n- Desconfie de resultados que contrariam a intuição. Mais trabalhadores → menos tempo."
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-13-er-01",
+      "variante": "atencao",
+      "markdown": "- **Tratar inversa como direta.** Mais velocidade **reduz** o tempo, não aumenta.\n- **Confundir `k = y/x` com `k = x/y`.** A definição depende da orientação.\n- **Generalizar sem verificar.** Nem toda relação entre grandezas é proporcional. Às vezes é linear mas não proporcional (ex.: `y = 2x + 1`).\n- **Esquecer que proporcionalidade exige passar pela origem** (para relações lineares)."
+    },
+    {
+      "tipo": "video",
+      "bloco_id": "mb-13-video",
+      "titulo": "Proporcionalidade — aula em vídeo",
+      "provedor": "youtube",
+      "ref": null,
+      "resumo": "Aula conduzida pelo 1º colocado de Medicina da USP."
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-13-q01",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Se `y` é diretamente proporcional a `x` e `x` dobra, então `y`:",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "cai pela metade"
+        },
+        {
+          "id": "b",
+          "texto": "fica igual"
+        },
+        {
+          "id": "c",
+          "texto": "triplica"
+        },
+        {
+          "id": "d",
+          "texto": "dobra"
+        }
+      ],
+      "gabarito": "d",
+      "solucao": "Por definição, na proporcionalidade direta, multiplicar `x` por um número multiplica `y` pelo mesmo número.",
+      "conceitos": [
+        "proporcionalidade-direta"
+      ],
+      "origem": {
+        "estacao": 13,
+        "questao": "Questão 1"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-13-q02",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Se `y = 15` quando `x = 5` e `y` é diretamente proporcional a `x`, qual a constante `k`?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "5"
+        },
+        {
+          "id": "b",
+          "texto": "75"
+        },
+        {
+          "id": "c",
+          "texto": "3"
+        },
+        {
+          "id": "d",
+          "texto": "15"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "a": "Esta é uma das que confundem a constante com outros valores.",
+        "d": "Esta é uma das que confundem a constante com outros valores.",
+        "b": "Esta é uma das que confundem a constante com outros valores."
+      },
+      "solucao": "`k = y/x = 15/5 = 3`.",
+      "conceitos": [
+        "proporcionalidade-direta"
+      ],
+      "origem": {
+        "estacao": 13,
+        "questao": "Questão 2"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-13-q03",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Se `y = 4x`, qual o valor de `y` quando `x = 7`?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "11"
+        },
+        {
+          "id": "b",
+          "texto": "28"
+        },
+        {
+          "id": "c",
+          "texto": "21"
+        },
+        {
+          "id": "d",
+          "texto": "4"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "a": "Soma.",
+        "d": "Esta é uma das que usam coeficientes errados.",
+        "c": "Esta é uma das que usam coeficientes errados."
+      },
+      "solucao": "`y = 4 × 7 = 28`.",
+      "conceitos": [
+        "proporcionalidade-direta"
+      ],
+      "origem": {
+        "estacao": 13,
+        "questao": "Questão 3"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-13-q04",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Quando `y` é inversamente proporcional a `x`, o produto `x × y` é:",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "igual a `x/y`"
+        },
+        {
+          "id": "b",
+          "texto": "sempre positivo"
+        },
+        {
+          "id": "c",
+          "texto": "zero"
+        },
+        {
+          "id": "d",
+          "texto": "constante"
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "c": "Esta é uma das que descrevem outras relações.",
+        "a": "Esta é uma das que descrevem outras relações.",
+        "b": "Esta é uma das que descrevem outras relações."
+      },
+      "solucao": "É a definição: `x × y = k`.",
+      "conceitos": [
+        "proporcionalidade-inversa"
+      ],
+      "origem": {
+        "estacao": 13,
+        "questao": "Questão 4"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-13-q05",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Se `y` é inversamente proporcional a `x`, `y = 6` quando `x = 4`. Qual `y` quando `x = 2`?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "12"
+        },
+        {
+          "id": "b",
+          "texto": "3"
+        },
+        {
+          "id": "c",
+          "texto": "8"
+        },
+        {
+          "id": "d",
+          "texto": "24"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "b": "Trata como direta.",
+        "c": "Esta é uma das que vêm de erros.",
+        "d": "Esta é uma das que vêm de erros."
+      },
+      "solucao": "`k = 6 × 4 = 24`, `y = 24/2 = 12`.",
+      "conceitos": [
+        "proporcionalidade-inversa"
+      ],
+      "origem": {
+        "estacao": 13,
+        "questao": "Questão 5"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-13-q06",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "4 máquinas produzem certa quantidade de peças em 10 dias. 8 máquinas, no mesmo ritmo, produzem a mesma quantidade em:",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "10 dias"
+        },
+        {
+          "id": "b",
+          "texto": "5 dias"
+        },
+        {
+          "id": "c",
+          "texto": "15 dias"
+        },
+        {
+          "id": "d",
+          "texto": "20 dias"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "d": "Trata como direta.",
+        "a": "Repete.",
+        "c": "Soma."
+      },
+      "solucao": "Inversa. `k = 40`, `40/8 = 5`.",
+      "conceitos": [
+        "proporcionalidade-inversa"
+      ],
+      "origem": {
+        "estacao": 13,
+        "questao": "Questão 6"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-13-q07",
+      "nivel": 3,
+      "formato": "multipla_escolha",
+      "enunciado": "3 torneiras enchem um tanque em 8 h. 4 torneiras iguais enchem o mesmo tanque em:",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "10,7 h"
+        },
+        {
+          "id": "b",
+          "texto": "8 h"
+        },
+        {
+          "id": "c",
+          "texto": "6 h"
+        },
+        {
+          "id": "d",
+          "texto": "4 h"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "a": "Trata como direta.",
+        "b": "Repete.",
+        "d": "Dobra."
+      },
+      "solucao": "Inversa. `k = 24`, `24/4 = 6`.",
+      "conceitos": [
+        "proporcionalidade-inversa"
+      ],
+      "origem": {
+        "estacao": 13,
+        "questao": "Questão 7"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-13-q08",
+      "nivel": 3,
+      "formato": "multipla_escolha",
+      "enunciado": "`y` é inversamente proporcional a `x`. Se `y = 4` quando `x = 3`, qual `y` quando `x = 6`?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "4"
+        },
+        {
+          "id": "b",
+          "texto": "8"
+        },
+        {
+          "id": "c",
+          "texto": "12"
+        },
+        {
+          "id": "d",
+          "texto": "2"
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "b": "Trata como direta.",
+        "a": "Repete.",
+        "c": "Confunde com `k`."
+      },
+      "solucao": "`k = 12`, `y = 12/6 = 2`.",
+      "conceitos": [
+        "proporcionalidade-inversa"
+      ],
+      "origem": {
+        "estacao": 13,
+        "questao": "Questão 8"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-13-q09",
+      "nivel": 4,
+      "formato": "multipla_escolha",
+      "enunciado": "Um carro percorre 240 km em 3 h. Dobrando a velocidade média, o tempo cai pela metade? Isso porque velocidade e tempo, para uma mesma distância, são grandezas:",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "iguais"
+        },
+        {
+          "id": "b",
+          "texto": "diretamente proporcionais"
+        },
+        {
+          "id": "c",
+          "texto": "sem relação"
+        },
+        {
+          "id": "d",
+          "texto": "inversamente proporcionais"
+        }
+      ],
+      "gabarito": "d",
+      "solucao": "Produto `velocidade × tempo = distância`, constante. Por definição, inversa.",
+      "conceitos": [
+        "proporcionalidade-inversa"
+      ],
+      "origem": {
+        "estacao": 13,
+        "questao": "Questão 9"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-13-q10",
+      "nivel": 4,
+      "formato": "multipla_escolha",
+      "enunciado": "Uma fábrica consome 500 kg de matéria-prima por dia em 5 dias úteis. Mantendo o ritmo diário, quantos kg consomem em 12 dias?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "600 kg"
+        },
+        {
+          "id": "b",
+          "texto": "2.400 kg"
+        },
+        {
+          "id": "c",
+          "texto": "1.200 kg"
+        },
+        {
+          "id": "d",
+          "texto": "1.000 kg"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "d": "Esta é uma das que vêm de erros.",
+        "a": "Esta é uma das que vêm de erros.",
+        "b": "Dobra."
+      },
+      "solucao": "Direta. `500/5 = 100` kg por dia. `100 × 12 = 1.200`.",
+      "conceitos": [
+        "proporcionalidade-direta"
+      ],
+      "origem": {
+        "estacao": 13,
+        "questao": "Questão 10"
+      }
+    },
+    {
+      "tipo": "desafio",
+      "bloco_id": "mb-13-desafio",
+      "nivel": 5,
+      "enunciado": "`y` é diretamente proporcional a `x` e inversamente proporcional a `z`. Se `y = 6` quando `x = 4` e `z = 2`, qual o valor de `y` quando `x = 10` e `z = 5`?",
+      "formato": "texto_curto",
+      "gabarito": {
+        "aceitos": [
+          "6",
+          "y = 6",
+          "y=6"
+        ]
+      },
+      "solucao": "- `y = k·x / z`\n- `6 = k·4 / 2 = 2k → k = 3`\n- `y = 3 × 10 / 5 = 30/5 = 6`"
+    }
+  ],
+  "habilidades": [
+    "HAB-03",
+    "HAB-04"
+  ],
+  "pre_requisitos": [
+    "mb-03-razao-e-proporcao",
+    "mb-04-regra-de-tres"
+  ]
+}

@@ -74,6 +74,26 @@ QUEDA_MINIMA = 0.15
 # ficaria permanentemente "em deterioração", que é o mesmo que não ter estado.
 ESTAVEL_MINIMO = 0.70
 
+# A escada acima é igual pra todo aluno — o que é individual é o ESTADO por
+# processo, não o RITMO dela. Este fator corrige isso: um aluno cujos
+# retestes falham muito tem a escada comprimida (volta mais cedo); um cujos
+# retestes raramente falham tem a escada esticada (não desperdiça revisão em
+# quem já consolidou). Amostra mínima evita ajustar o ritmo de um aluno novo
+# com 1 ou 2 retestes — puro ruído.
+FATOR_MIN_AMOSTRA = 6
+FATOR_MIN = 0.6
+FATOR_MAX = 1.4
+# 50% de acerto nos retestes -> 0.7x (mais curto); 90%+ -> 1.3x (mais longo).
+_FATOR_BASE = 0.7
+_FATOR_INCLINACAO = 1.5
+_FATOR_TAXA_REFERENCIA = 0.5
+
+# Teto de intervenções concorrentes (não mais 1): represar um processo B com
+# evidência nova só porque A ainda não fechou também deixa de individualizar
+# — B fica sem reteste agendado até A ser resolvido, às vezes nunca. O piso
+# continua o mesmo: nunca duas vezes o MESMO par, e cooldown por par intacto.
+_MAX_INTERVENCOES_ATIVAS = 2
+
 # Mesmo limiar de evidência do motor. Um limiar novo aqui criaria duas noções
 # divergentes de "evidência suficiente" dentro do mesmo produto.
 from motor_cognitivo import MIN_TRACOS_RAIZ, SENTINELAS  # noqa: E402
@@ -117,10 +137,9 @@ def bloco_vazio() -> dict[str, Any]:
     return {
         "versao": VERSAO_BLOCO,
         "processos": {},
-        # Uma intervenção ATIVA por vez, no bloco inteiro. Sem este teto no
-        # nível do aluno (e não do processo), o "Professor Invisível" vira
-        # pop-up: cinco processos com evidência disparam cinco interrupções.
-        "intervencao_ativa": None,
+        # `processo_id -> intervenção ativa`. Teto em `_MAX_INTERVENCOES_ATIVAS`
+        # — sem teto nenhum, o "Professor Invisível" vira pop-up.
+        "intervencoes_ativas": {},
         # `par -> dia` até o qual aquele par não volta a disparar.
         "cooldowns": {},
         "atualizado_em": None,
@@ -163,6 +182,26 @@ def _limitar(lista: list, teto: int) -> list:
     return lista[-teto:] if len(lista) > teto else lista
 
 
+def _fator_individual(bloco: dict[str, Any]) -> float:
+    """O ritmo da escada PARA ESTE ALUNO — 1.0 até haver amostra.
+
+    Soma os retestes de TODOS os processos porque a pergunta não é "este
+    processo específico" (isso já é o que `degrau` resolve) — é "de modo
+    geral, quando marco um reteste para este aluno, ele volta a acertar?".
+    Recalculado a cada resposta, sem custo de leitura: já está no bloco.
+    """
+    tot = ok = 0
+    for e in (bloco.get("processos") or {}).values():
+        r = e.get("retestes") or {}
+        tot += r.get("total") or 0
+        ok += r.get("acertos") or 0
+    if tot < FATOR_MIN_AMOSTRA:
+        return 1.0
+    taxa = ok / tot
+    fator = _FATOR_BASE + (taxa - _FATOR_TAXA_REFERENCIA) * _FATOR_INCLINACAO
+    return max(FATOR_MIN, min(FATOR_MAX, fator))
+
+
 # ---------------------------------------------------------------------------
 # Escrita — o que uma resposta faz com o estado
 # ---------------------------------------------------------------------------
@@ -196,6 +235,9 @@ def registrar(
     """
     novo = _clonar(bloco)
     entradas = novo["processos"]
+    # Calculado UMA vez por resposta, sobre o estado anterior — a mesma
+    # leitura que `registrar` já pagou, sem I/O adicional.
+    fator = _fator_individual(novo)
 
     for pid in dict.fromkeys(p for p in processos if p):
         e = dict(entradas.get(pid) or _entrada_vazia())
@@ -205,7 +247,7 @@ def registrar(
         #    colapsar o intervalo: a resposta que falha o reteste é a mesma
         #    que produz a raiz nova, e contar só o colapso apagaria a
         #    evidência de que o reteste foi cobrado e não passou.
-        e = _consumir_reteste(e, acertou=acertou, dia=dia, quando=quando, contexto=contexto)
+        e = _consumir_reteste(e, acertou=acertou, dia=dia, quando=quando, contexto=contexto, fator=fator)
 
         # 2) Janelas de desempenho.
         e = _acumular_janela(e, acertou=acertou, dia=dia)
@@ -245,7 +287,7 @@ def _clonar(bloco: dict[str, Any] | None) -> dict[str, Any]:
         return base
     return {
         **base,
-        **{k: v for k, v in bloco.items() if k != "processos"},
+        **{k: v for k, v in bloco.items() if k not in ("processos", "intervencao_ativa")},
         "versao": VERSAO_BLOCO,
         "processos": {
             pid: {**_entrada_vazia(), **e}
@@ -253,6 +295,11 @@ def _clonar(bloco: dict[str, Any] | None) -> dict[str, Any]:
             if isinstance(e, dict)
         },
         "cooldowns": dict(bloco.get("cooldowns") or {}),
+        # `intervencao_ativa` (singular) é o nome do campo em documentos
+        # gravados antes desta mudança — ignorado de propósito (ver acima):
+        # a pior consequência de não migrá-lo é uma vaga que já estava presa
+        # se libertar mais cedo, nunca duas intervenções fantasmas.
+        "intervencoes_ativas": dict(bloco.get("intervencoes_ativas") or {}),
     }
 
 
@@ -268,12 +315,18 @@ def _acumular_janela(e: dict, *, acertou: bool, dia: str) -> dict:
     return {**e, "janela_atual": atual}
 
 
-def _consumir_reteste(e: dict, *, acertou: bool, dia: str, quando: str, contexto: str | None) -> dict:
+def _consumir_reteste(
+    e: dict, *, acertou: bool, dia: str, quando: str, contexto: str | None, fator: float = 1.0
+) -> dict:
     """Esta resposta É o reteste agendado? Só quando há agendamento vencido.
 
     `degrau` sobe com acerto e **fica parado** com erro. Não recua de propósito:
     recuar puniria duas vezes o mesmo erro (colapso do intervalo pela raiz nova
     + perda do degrau) e transformaria um tropeço numa regressão ao início.
+
+    `fator` só se aplica ao caminho de ACERTO — o colapso de erro (abaixo,
+    quando `acertou` é falso) é uma medida de segurança, não uma aposta sobre
+    retenção, e não faz sentido esticá-la para o aluno "fácil".
     """
     marcado = e.get("proximo_reteste")
     if not marcado or dia < marcado:
@@ -295,9 +348,12 @@ def _consumir_reteste(e: dict, *, acertou: bool, dia: str, quando: str, contexto
             # habilidade, não a memória daquele item.
             "transferencia": bool(contexto and e["contextos_da_raiz"] and contexto not in e["contextos_da_raiz"]),
         },
-        # Acertou: reagenda mais longe. Errou: o próximo reteste é o primeiro
-        # degrau de novo, e a raiz nova (se houver) o confirma logo abaixo.
-        "proximo_reteste": _somar_dias(dia, INTERVALOS_DIAS[degrau] if acertou else INTERVALOS_DIAS[0]),
+        # Acertou: reagenda mais longe, escalado pelo ritmo deste aluno. Errou:
+        # o próximo reteste é o primeiro degrau de novo (sem fator), e a raiz
+        # nova (se houver) o confirma logo abaixo.
+        "proximo_reteste": _somar_dias(
+            dia, max(1, round(INTERVALOS_DIAS[degrau] * fator)) if acertou else INTERVALOS_DIAS[0]
+        ),
     }
     return _marco(e, MARCO_RETESTE_OK if acertou else MARCO_RETESTE_FALHO, quando)
 
@@ -518,6 +574,8 @@ def instrumentacao(bloco: dict[str, Any] | None) -> dict[str, Any]:
             "acertos": t_ok,
             "taxa": round(100 * t_ok / t_tot, 1) if t_tot else None,
         },
+        # Transparência: o ritmo que ESTE aluno recebeu, não o ritmo médio.
+        "fator_individual": round(_fator_individual(b), 2),
     }
 
 
@@ -537,12 +595,14 @@ def avaliar_gatilho(
     Disciplina de interrupção, que é o que separa um professor invisível de um
     pop-up (e sem a qual a feature é ignorada em uma semana):
 
-      * no máximo UMA intervenção ativa por vez, no aluno inteiro;
+      * no máximo `_MAX_INTERVENCOES_ATIVAS` intervenções ativas por vez, no
+        aluno inteiro, e nunca duas para o MESMO processo;
       * cooldown por par: disparado, não redispara antes do reteste;
       * dispensar conta como sinal (`dispensas`), e também aciona o cooldown.
     """
     b = _clonar(bloco)
-    if b.get("intervencao_ativa"):
+    ativas = b.get("intervencoes_ativas") or {}
+    if processo_id in ativas or len(ativas) >= _MAX_INTERVENCOES_ATIVAS:
         return None
     e = _entrada(b, processo_id)
 
@@ -587,39 +647,43 @@ def _erro_dominante(e: dict) -> str | None:
 
 
 def marcar_disparo(bloco: dict[str, Any] | None, gatilho: dict, *, quando: str, hoje: str) -> dict[str, Any]:
-    """Registra que a intervenção foi mostrada: trava a vaga única e liga o
-    cooldown do par até o reteste. Sem isto, a mesma evidência dispararia a
-    cada resposta seguinte."""
+    """Registra que a intervenção foi mostrada: ocupa uma vaga (das
+    `_MAX_INTERVENCOES_ATIVAS`) e liga o cooldown do par até o reteste. Sem
+    isto, a mesma evidência dispararia a cada resposta seguinte."""
     b = _clonar(bloco)
     pid = gatilho["processo_id"]
     e = dict(b["processos"].get(pid) or _entrada_vazia())
     b["processos"][pid] = _marco(e, MARCO_INTERVENCAO, quando, erro=gatilho.get("erro_id"))
-    b["intervencao_ativa"] = {
+    ativas = dict(b.get("intervencoes_ativas") or {})
+    ativas[pid] = {
         "processo_id": pid,
         "erro_id": gatilho["erro_id"],
         "par": gatilho["par"],
         "motivo": gatilho["motivo"],
         "em": quando,
     }
+    b["intervencoes_ativas"] = ativas
     b["cooldowns"][gatilho["par"]] = e.get("proximo_reteste") or _somar_dias(hoje, INTERVALOS_DIAS[0])
     b["atualizado_em"] = quando
     return b
 
 
 def encerrar_intervencao(
-    bloco: dict[str, Any] | None, *, quando: str, dispensada: bool = False
+    bloco: dict[str, Any] | None, *, processo_id: str, quando: str, dispensada: bool = False
 ) -> dict[str, Any]:
-    """Libera a vaga única. `dispensada=True` conta a dispensa como sinal — o
-    aluno dizendo "não é isto" é informação sobre a anotação, não silêncio."""
+    """Libera a vaga daquele processo. `dispensada=True` conta a dispensa como
+    sinal — o aluno dizendo "não é isto" é informação sobre a anotação, não
+    silêncio. Encerrar um processo sem vaga ativa é no-op, não erro: a vaga
+    pode já ter expirado por outro caminho."""
     b = _clonar(bloco)
-    ativa = b.get("intervencao_ativa")
-    if not ativa:
+    ativas = dict(b.get("intervencoes_ativas") or {})
+    if processo_id not in ativas:
         return b
-    pid = ativa.get("processo_id")
-    if dispensada and pid in b["processos"]:
-        e = dict(b["processos"][pid])
+    del ativas[processo_id]
+    b["intervencoes_ativas"] = ativas
+    if dispensada and processo_id in b["processos"]:
+        e = dict(b["processos"][processo_id])
         e["dispensas"] = int(e.get("dispensas") or 0) + 1
-        b["processos"][pid] = e
-    b["intervencao_ativa"] = None
+        b["processos"][processo_id] = e
     b["atualizado_em"] = quando
     return b

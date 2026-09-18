@@ -135,7 +135,7 @@ function FormularioDeDuvida({ areas, aoPublicar, sala = "geral" }) {
 
   return (
     <form onSubmit={enviar} className="card-sapiens rounded-2xl p-5" data-testid="comunidade-formulario">
-      <label className="font-mono-alt text-[10px] uppercase tracking-[0.3em] text-zinc-400">Área</label>
+      <label className="secao-olho">Área</label>
       <select
         value={area}
         onChange={(e) => setArea(e.target.value)}
@@ -245,12 +245,12 @@ export default function Comunidade() {
   return (
     <div className="min-h-screen">
       <Nav />
-      <div className="mx-auto max-w-3xl px-6 py-12 md:px-10">
-        <div className="font-mono-alt mb-3 flex items-center gap-2 text-xs uppercase tracking-[0.35em] text-white/50">
+      <div className="mx-auto max-w-3xl px-5 py-7 md:px-10 md:py-10">
+        <div className="secao-olho flex items-center gap-1.5">
           <Users className="h-3.5 w-3.5" /> Comunidade
         </div>
         <h1
-          className="font-display text-4xl font-extrabold tracking-tighter text-white md:text-5xl"
+          className="titulo-tela"
           data-testid="comunidade-title"
         >
           Ninguém trava sozinho.

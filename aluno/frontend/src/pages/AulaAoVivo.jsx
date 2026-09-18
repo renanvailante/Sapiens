@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { MENTOR } from "../lib/mentor";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import {
@@ -10,8 +11,8 @@ import { api, errMsg } from "../lib/api";
 import { formatBRL } from "../lib/utils";
 import { argumentoDaLive } from "../lib/venda";
 import Nav, { avisarSparksMudou } from "../components/Nav";
-import PedirWhatsApp from "../components/PedirWhatsApp";
 import MentorUSP from "../components/MentorUSP";
+import VideoDoMentor from "../components/VideoDoMentor";
 import ContagemEnem from "../components/ContagemEnem";
 import { useDeclararContextoMentis } from "../lib/mentisContexto";
 import { marcarAcessoDaLive } from "../lib/live";
@@ -188,7 +189,7 @@ export default function AulaAoVivo() {
   const liveInclusa = Boolean(live?.incluso_no_plano);
 
   useDeclararContextoMentis(
-    "Na tela da aula ao vivo de quinta-feira com o 1º colocado de Medicina da USP.",
+    `Na tela da aula ao vivo de quinta-feira com ${MENTOR.nome}, ${MENTOR.titulo}.`,
   );
 
   const comprar = async () => {
@@ -298,7 +299,7 @@ export default function AulaAoVivo() {
                     apaga a barriga do "P" em tamanho de display — a manchete
                     lia "USF" na maior parte dos quadros. */}
                 Toda quinta, ao vivo, com o{" "}
-                <span className="text-[#7FD8FF]">1º colocado de Medicina da USP</span>.
+                <span className="text-[#7FD8FF]">{MENTOR.nome}</span>, {MENTOR.titulo}.
               </h1>
               <p className="mt-4 max-w-2xl text-base leading-relaxed text-white/65 md:text-lg">
                 Não é aula gravada, não é resumo, não é PDF. É a pessoa que tirou o primeiro
@@ -487,16 +488,11 @@ export default function AulaAoVivo() {
           </div>
         </section>
 
-        {/* Quem não tem WhatsApp na conta: é por ele que o link e o lembrete
-            chegam. Logo abaixo da compra, que é o momento em que a pessoa
-            mais quer ser avisada. */}
-        <div className="mt-4">
-          <PedirWhatsApp
-            titulo="Receba o link da live no WhatsApp"
-            motivo="A gente avisa uma hora antes da aula começar. Sem spam, sem lista de transmissão de propaganda."
-            testid="aula-pedir-whatsapp"
-          />
-        </div>
+        {/* O VÍDEO, antes do "o que acontece": quem está decidindo gastar 200
+            Sparks numa aula quer saber com quem vai passar 60 minutos. */}
+        <section className="mt-8" data-testid="aula-video">
+          <VideoDoMentor testid="aula-video-mentor" />
+        </section>
 
         {/* ---- O que acontece na aula ---- */}
         <section className="mt-10" data-testid="aula-o-que-acontece">

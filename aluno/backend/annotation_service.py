@@ -8,7 +8,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from collections import defaultdict
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
 import firestore_service as fs
@@ -136,7 +136,12 @@ _CACHE_DERIVADO_TTL_SEGUNDOS = 6 * 3600
 # cosmético (`hub_stats`), que é o insumo do percentual do Mapa de
 # Habilidades. Documento gravado pela v2 não tem o campo, e servi-lo daria
 # mapa zerado a todo aluno com cache quente.
-_CACHE_DERIVADO_VERSAO = "v3"
+# v4 (2026-09-17): o agregado "desempenho" passou a carregar também a
+# TELEMETRIA DESCRITIVA (`telemetria_descritiva`) — as séries por dia, hora,
+# dia da semana, faixa de tempo e origem que alimentam os gráficos do painel
+# do aluno. Documento gravado pela v3 não tem o campo, e servi-lo daria
+# painel vazio a todo aluno com cache quente.
+_CACHE_DERIVADO_VERSAO = "v4"
 
 
 async def _agregado_com_cache(escopo: str, user_id: str, ler_do_firestore) -> dict[str, Any]:
@@ -504,6 +509,145 @@ def _intervencoes_por_id() -> dict[str, dict]:
     return {i["id"]: i for i in (onto.get("intervencoes_pedagogicas") or []) if i.get("id")}
 
 
+# ---------------------------------------------------------------------------
+# TELEMETRIA DESCRITIVA — o insumo dos gráficos do painel do aluno
+#
+# Fronteira declarada, porque ela é sutil e fácil de atravessar sem perceber:
+# o bloco `desempenho` do evento (tempo de resposta, número de tentativas,
+# mudança de resposta) é **coletado e não alimenta crença sobre o estado
+# cognitivo do estudante** — GL-3, aberto, contrato de behavior 1.1. É por
+# isso que `_read_firestore_answered` o ignora, e continua ignorando.
+#
+# O que este bloco faz é outra coisa, e a diferença não é de grau: ele
+# DESCREVE ao aluno o que o aluno fez ("você respondeu 40 questões esta
+# semana", "você responde mais à noite"), sem inferir nada sobre o que ele
+# sabe. Nenhum número daqui entra em ranking de ponto forte/fraco, em fila de
+# revisão, em cronograma, no dossiê da Mentis ou em qualquer caminho que
+# atribua causa a um erro. Por isso a telemetria sai do agregado numa chave
+# própria (`telemetria_descritiva`) que `compute_diagnostico_real` não lê: a
+# separação é de código, não só de intenção.
+#
+# Ela viaja junto do agregado caro de propósito — é a MESMA varredura de
+# eventos que o diagnóstico já fazia. Um painel de gráficos que custasse uma
+# segunda varredura do histórico por aluno é exatamente o que derrubou o app
+# em 04/09 (ver `project_aluno_disciplina_leitura_firestore`).
+# ---------------------------------------------------------------------------
+
+# Faixas de tempo por questão. Não são juízo sobre o aluno: são três gavetas
+# para uma pergunta que ele consegue responder sozinho olhando o gráfico —
+# "eu acerto mais quando vou rápido ou quando penso mais?".
+FAIXA_RAPIDA_SEGUNDOS = 45
+FAIXA_LONGA_SEGUNDOS = 150
+
+# Abaixo disto o tempo não foi registrado (fluxos antigos e o banco de treino
+# gravavam 0). Zero não é "respondeu em zero segundo" — é silêncio, e silêncio
+# não pode virar barra de gráfico.
+_TEMPO_MINIMO_CONFIAVEL = 2
+
+
+def _zero_contagem() -> dict[str, int]:
+    return {"respondidas": 0, "acertos": 0}
+
+
+def _nova_telemetria() -> dict[str, Any]:
+    return {
+        "por_dia": defaultdict(_zero_contagem),
+        "por_hora": defaultdict(_zero_contagem),
+        "por_dia_semana": defaultdict(_zero_contagem),
+        "por_faixa_de_tempo": defaultdict(_zero_contagem),
+        "por_decisao": defaultdict(_zero_contagem),
+        "por_origem": defaultdict(_zero_contagem),
+        "frente_por_semana": defaultdict(_zero_contagem),
+        "tempo_total_segundos": 0.0,
+        "respostas_com_tempo": 0,
+    }
+
+
+def _momento_local(timestamp_iso: Any) -> datetime | None:
+    """O instante do evento no fuso do aluno, ou None se não der para saber.
+
+    Mesmo fuso do resto do produto (`firestore_service.dia_local`): em UTC,
+    quem responde às 22h apareceria estudando no dia seguinte, e o gráfico de
+    horários — que é justamente sobre a noite — sairia deslocado em 3 horas.
+    """
+    if not isinstance(timestamp_iso, str) or not timestamp_iso:
+        return None
+    try:
+        momento = datetime.fromisoformat(timestamp_iso.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if momento.tzinfo is None:
+        momento = momento.replace(tzinfo=timezone.utc)
+    return momento.astimezone(fs.ZONA_BRASIL)
+
+
+def segunda_da_semana(dia_iso: str) -> str:
+    """`YYYY-MM-DD` de qualquer dia -> `YYYY-MM-DD` da segunda daquela semana.
+
+    A semana do aluno começa na segunda em todo o produto (cronograma, liga,
+    missões); um gráfico semanal que começasse no domingo mostraria outra
+    divisão da mesma vida.
+    """
+    d = date.fromisoformat(dia_iso)
+    return (d - timedelta(days=d.weekday())).isoformat()
+
+
+def _faixa_de_tempo(segundos: float) -> str | None:
+    if segundos < _TEMPO_MINIMO_CONFIAVEL:
+        return None
+    if segundos < FAIXA_RAPIDA_SEGUNDOS:
+        return "rapido"
+    if segundos <= FAIXA_LONGA_SEGUNDOS:
+        return "medio"
+    return "longo"
+
+
+def _somar_telemetria(tel: dict[str, Any], ev: dict[str, Any], *, acertou: bool) -> str | None:
+    """Acumula UM evento respondido. Devolve o dia local do evento (ou None),
+    porque quem chama usa esse dia para a série por frente."""
+    def _marcar(balde: dict[str, dict[str, int]], chave: str) -> None:
+        alvo = balde[chave]
+        alvo["respondidas"] += 1
+        if acertou:
+            alvo["acertos"] += 1
+
+    momento = _momento_local(ev.get("timestamp"))
+    dia = None
+    if momento is not None:
+        dia = momento.date().isoformat()
+        _marcar(tel["por_dia"], dia)
+        _marcar(tel["por_hora"], str(momento.hour))
+        _marcar(tel["por_dia_semana"], str(momento.weekday()))
+
+    desempenho = ev.get("desempenho") or {}
+    try:
+        segundos = float(desempenho.get("tempo_resposta_segundos") or 0)
+    except (TypeError, ValueError):
+        segundos = 0.0
+    faixa = _faixa_de_tempo(segundos)
+    if faixa:
+        _marcar(tel["por_faixa_de_tempo"], faixa)
+        tel["tempo_total_segundos"] += segundos
+        tel["respostas_com_tempo"] += 1
+        # Só quem tem tempo registrado entra na conta de "mudou de resposta":
+        # os fluxos que não medem tempo também não medem mudança, e contá-los
+        # como "manteve" inventaria uma decisão que ninguém observou.
+        _marcar(tel["por_decisao"], "mudou" if desempenho.get("mudou_resposta") else "manteve")
+
+    origem = (ev.get("contexto") or {}).get("tipo") or "outro"
+    _marcar(tel["por_origem"], str(origem))
+    return dia
+
+
+def _fechar_telemetria(tel: dict[str, Any]) -> dict[str, Any]:
+    """Converte os `defaultdict` em dicionários simples — o agregado é gravado
+    no Mongo, e `defaultdict` não atravessa BSON como dict puro."""
+    return {
+        chave: (dict(valor) if isinstance(valor, defaultdict) else valor)
+        for chave, valor in tel.items()
+    }
+
+
 def _read_firestore_desempenho_detalhado(user_id: str) -> dict[str, Any]:
     """Como `_read_firestore_answered`, mas guarda respondidas/acertos por
     PROCESSO além de domínio/competência — granularidade que o diagnóstico
@@ -524,6 +668,7 @@ def _read_firestore_desempenho_detalhado(user_id: str) -> dict[str, Any]:
     # em Química" — que é justamente a unidade em que a prova é dividida e em
     # que o ganho de ponto se decide.
     disciplina_stats: dict[str, dict[str, int]] = defaultdict(_zero)
+    telemetria = _nova_telemetria()
     total_events = 0
     matched_events = 0
     unmatched_events = 0
@@ -534,6 +679,13 @@ def _read_firestore_desempenho_detalhado(user_id: str) -> dict[str, Any]:
         if ev.get("status") not in (None, "respondida"):
             continue
         total_events += 1
+        acertou = bool((ev.get("resposta") or {}).get("acertou"))
+        # A telemetria conta TODA resposta, inclusive a de item que a ontologia
+        # não alcança (banco de treino, questão gerada, curso). "Quantas
+        # questões eu respondi esta semana" é uma pergunta sobre o esforço do
+        # aluno, e o esforço não some porque o item não está anotado.
+        dia = _somar_telemetria(telemetria, ev, acertou=acertou)
+
         chave = next(
             (k for k in (ev.get("item_id"), ev.get("item_hash")) if k and k in index),
             None,
@@ -544,13 +696,17 @@ def _read_firestore_desempenho_detalhado(user_id: str) -> dict[str, Any]:
             unmatched_events += 1
             continue
         matched_events += 1
-        acertou = bool((ev.get("resposta") or {}).get("acertou"))
 
         frente = prioridade_enem.classificar_disciplina(((item or {}).get("fonte") or {}).get("disciplina"))
         if frente:
             disciplina_stats[frente]["respondidas"] += 1
             if acertou:
                 disciplina_stats[frente]["acertos"] += 1
+            if dia:
+                alvo = telemetria["frente_por_semana"][f"{frente}|{segunda_da_semana(dia)}"]
+                alvo["respondidas"] += 1
+                if acertou:
+                    alvo["acertos"] += 1
 
         for chave_ec, alvo in (
             ("dominios", dominio_stats),
@@ -571,6 +727,7 @@ def _read_firestore_desempenho_detalhado(user_id: str) -> dict[str, Any]:
         "competencia_stats": dict(competencia_stats),
         "processo_stats": dict(processo_stats),
         "disciplina_stats": dict(disciplina_stats),
+        "telemetria_descritiva": _fechar_telemetria(telemetria),
         "total_events": total_events,
         "matched_events": matched_events,
         "unmatched_events": unmatched_events,
@@ -609,13 +766,42 @@ def _fortes_fracos(stats: dict[str, dict[str, int]], catalogo: dict[str, str]) -
     }
 
 
-async def compute_diagnostico_real(user_id: str) -> dict[str, Any]:
+async def agregado_desempenho(user_id: str) -> dict[str, Any]:
+    """O agregado caro de desempenho, servido do cache quando possível.
+
+    Público porque UMA varredura de eventos serve duas telas: o diagnóstico
+    (`compute_diagnostico_real`) e o painel de gráficos do aluno
+    (`perfil_painel`). Quem precisa dos dois pede o agregado uma vez e passa
+    adiante, em vez de pedir cada leitura por conta própria — no cache quente
+    cada pedido ainda custa uma leitura do documento do aluno no Firestore só
+    para descobrir a chave de invalidação.
+    """
+    return await _agregado_com_cache("desempenho", user_id, _read_firestore_desempenho_detalhado)
+
+
+def telemetria_de(agregado: dict[str, Any] | None) -> dict[str, Any]:
+    """A telemetria descritiva de dentro do agregado, ou `{}`.
+
+    Deliberadamente NÃO é devolvida por `compute_diagnostico_real`: o caminho
+    que forma crença sobre o aluno não deve nem ver estes campos (ver a nota
+    de fronteira acima de `_nova_telemetria`).
+    """
+    return (agregado or {}).get("telemetria_descritiva") or {}
+
+
+async def compute_diagnostico_real(
+    user_id: str, *, agregado: dict[str, Any] | None = None
+) -> dict[str, Any]:
     """Diagnóstico real do aluno: desempenho medido (com amostra mínima) por
     domínio/competência/processo, com nomes reais da ontologia, mais os
     processos fracos que têm exatamente um Tipo de Erro catalogado sem
-    ambiguidade — ver nota de escopo acima da seção."""
+    ambiguidade — ver nota de escopo acima da seção.
+
+    `agregado` já lido por quem chama evita repetir a leitura; omitido, é
+    buscado aqui como sempre foi.
+    """
     try:
-        agg = await _agregado_com_cache("desempenho", user_id, _read_firestore_desempenho_detalhado)
+        agg = agregado if agregado is not None else await agregado_desempenho(user_id)
     except Exception as exc:  # noqa: BLE001
         logger.warning("diagnostico-real: leitura do Firestore falhou para %s: %s", user_id, exc)
         vazio = {"fortes": [], "fracos": []}

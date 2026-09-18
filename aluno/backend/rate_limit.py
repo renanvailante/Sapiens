@@ -59,9 +59,28 @@ LIMITES: dict[str, tuple[int, int]] = {
     # script não martelar a rota de compra — que toca Firestore em cada
     # tentativa, mesmo quando não cobra.
     "cursos": (30, 3600),
+    # Responder exercício dentro de um curso. Não custa Spark nem toca o
+    # Firestore, então o limite é alto de propósito: uma sessão de estudo de
+    # verdade responde dezenas de exercícios seguidos, e um teto apertado aqui
+    # puniria justamente quem está usando o produto como ele foi desenhado.
+    # Existe para um script não martelar a rota de correção.
+    "cursos_estudo": (300, 3600),
     # Reclamações e sugestões: dez por hora é mais do que qualquer aluno
     # honesto escreve, e impede que o canal vire depósito de spam.
     "sugestoes": (10, 3600),
+    # "Lembrar-me com a Mentis". Cada item já custa 10 Sparks, então o dinheiro
+    # é o freio de verdade; o teto existe porque a rota grava e toca o Firestore
+    # a cada tentativa, inclusive nas que não cobram (trecho repetido). Cem por
+    # hora é muito acima de uma sessão de estudo honesta — quem marca um ponto
+    # a cada 36 segundos durante uma hora não está estudando.
+    "lembretes": (100, 3600),
+    # Digitalizar a foto de uma redação manuscrita. É a chamada de VISÃO ao
+    # Gemini, a mais cara por requisição deste app, e a única que a foto
+    # ilegível REEMBOLSA — ou seja, a única em que errar de novo não custa
+    # Sparks. Sem um teto, uma sequência de fotos ruins viraria uma sequência
+    # de chamadas pagas pelo produto. Vinte por hora cobre quem fotografa a
+    # folha três vezes até acertar a luz.
+    "redacao_ocr": (20, 3600),
     # Cronograma. Montar a semana é grátis e barato, mas duas rotas aqui saem
     # da máquina: a extração de compromissos chama o Gemini e a importação de
     # .ics faz o servidor buscar uma URL. Trinta por hora cobre remontar a

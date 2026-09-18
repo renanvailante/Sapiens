@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { MENTOR } from "../lib/mentor";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { api, errMsg} from "../lib/api";
@@ -28,7 +29,7 @@ const SECTIONS = [
   { to: "/admin/curadoria", icon: ShieldCheck, title: "Curadoria",
     desc: "Oferta de itens por processo, revisão humana do elo raiz e o Sapiens Lab. É o que destrava o portão de crença." },
   { to: "/admin/mentoria", icon: GraduationCap, title: "Lista de espera da mentoria",
-    desc: "Quem está esperando a mentoria com o 1º colocado de Medicina da USP. Fale pelo WhatsApp e mova a pessoa na fila." },
+    desc: `Quem está esperando a mentoria com ${MENTOR.nome}. Fale pelo WhatsApp e mova a pessoa na fila.` },
   { to: "/admin/reportes-questoes", icon: Flag, title: "Sugestões de correção",
     desc: "Reportes da bandeira em cada questão, agrupados por questão. Aprovar credita 5 Sparks." },
   { to: "/admin/sugestoes", icon: MessageSquareWarning, title: "Reclamações e sugestões",

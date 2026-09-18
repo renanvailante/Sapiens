@@ -89,6 +89,12 @@ export function ResumoDaFila({ resumo }) {
   );
 }
 
+/** Leva às questões que exercitam ESTE processo, não ao cardápio genérico. */
+function hrefDaRevisao(item) {
+  const ids = (item.praticar || []).map((p) => p.item_id).filter(Boolean);
+  return ids.length ? `/exams?item_ids=${encodeURIComponent(ids.join(","))}` : "/exams";
+}
+
 function evidenciaDe(item) {
   if (item.estado === "em_deterioracao" && item.deterioracao) {
     return `de ${item.deterioracao.antes}% para ${item.deterioracao.agora}% de acerto`;
@@ -170,8 +176,10 @@ export default function FilaDeRevisao({ fila, onSaldo }) {
               assunto={item.processo_nome}
               evidencia={evidenciaDe(item)}
               // O destino principal do card é sempre a prática — a fila só faz
-              // sentido se levar a responder questão.
-              treino={{ href: "/exams", rotulo: "Fazer a revisão" }}
+              // sentido se levar a responder questão. Quando o acervo tem
+              // questão exata pra este processo, o link já vai carregado
+              // com ela; sem isso, cai no cardápio geral.
+              treino={{ href: hrefDaRevisao(item), rotulo: "Fazer a revisão" }}
               onSaldo={onSaldo}
             >
               <div className="space-y-3">

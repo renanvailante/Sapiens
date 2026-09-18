@@ -67,6 +67,32 @@ XP_POR_ACAO: dict[str, int] = {
     "questao_correta": 5,       # somado ao de cima quando acerta
     "revisao_concluida": 15,
     "bloco_cronograma": 25,
+    # Estação de curso concluída: 10-20 minutos de estudo guiado que terminam
+    # com o aluno acertando os exercícios que contam. Vale mais que um bloco
+    # de cronograma (que é uma promessa cumprida) e menos que uma redação (que
+    # é a tarefa mais cara do ENEM). Pago UMA vez por estação — refazer não
+    # fabrica XP (ver `cursos_progresso.talvez_concluir`).
+    "estacao_concluida": 50,
+    # Estação vencida por SONDAGEM DE DOMÍNIO — o aluno provou que já sabia e
+    # pulou. Vale menos que concluir (foram três exercícios, não a estação
+    # inteira) e mais que zero, porque provar domínio também é trabalho. As
+    # duas ações dividem a mesma `chave_unica` (`estacao:{curso}:{estacao}`),
+    # então uma estação paga XP UMA vez, tenha sido estudada ou provada.
+    "estacao_dominada": 30,
+    # Exercício de curso. Pago UMA vez por exercício, com duas guardas de
+    # `chave_unica` diferentes: a de baixo na primeira tentativa (persistir
+    # vale alguma coisa) e a de cima no primeiro acerto. Sem as guardas,
+    # responder errado em laço seria uma máquina de fabricar XP — o exercício
+    # de curso, ao contrário do da prova, pode ser repetido à vontade.
+    "exercicio_curso": 6,
+    "exercicio_curso_correto": 4,        # somado ao de cima quando acerta
+    # Degrau por dificuldade, somado ao acerto. É o que torna o XP do curso
+    # configurável por questão sem espalhar número por tela nenhuma: quem
+    # decide quanto vale um exercício de nível 4 é esta tabela, e só ela.
+    "exercicio_curso_nivel_2": 2,
+    "exercicio_curso_nivel_3": 4,
+    "exercicio_curso_nivel_4": 6,
+    "exercicio_curso_nivel_5": 9,
     "redacao_corrigida": 120,
     "duvida_publicada": 10,
     "resposta_publicada": 15,

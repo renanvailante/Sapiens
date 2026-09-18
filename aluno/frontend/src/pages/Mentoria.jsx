@@ -97,6 +97,10 @@ export default function Mentoria() {
                 ordem da conversa é a ordem de chegada.
               </p>
 
+              <blockquote className="mt-5 max-w-2xl border-l-2 border-[#4FD9FF]/40 pl-4 text-sm italic leading-relaxed text-white/60">
+                “{MENTOR.frase}”
+              </blockquote>
+
               <div className="mt-6 flex flex-wrap items-center gap-3">
                 <a
                   href="#lista"

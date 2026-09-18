@@ -2,9 +2,30 @@
 <html lang="pt-BR">
     <head>
         <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="theme-color" content="#132D5C" />
-        <meta name="description" content="Descubra por que você erra. O Sapiens encontra os padrões cognitivos escondidos nos seus erros e transforma cada prova em um mapa para evoluir." />
+        <!-- `viewport-fit=cover` NÃO é enfeite: sem ele o iOS não expõe
+             `env(safe-area-inset-*)`, e todo `env(safe-area-inset-bottom)` do
+             `index.css` — a barra inferior do celular, o ícone flutuante da
+             Mentis, o respiro do rodapé — avaliava 0px. Ou seja: a barra de
+             navegação do app instalado ficava POR BAIXO da barra de gestos do
+             iPhone, exatamente no aparelho em que a maioria dos alunos entra.
+             O CSS estava certo desde 16/09; faltava esta palavra. -->
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <!-- A cor que o navegador do celular pinta em volta da página. Era o
+             navy da marca antiga, que não é mais a cor de nenhuma superfície
+             do produto: entre a barra do sistema e a barra do app havia um
+             degrau azul que não existia em lugar nenhum da tela. -->
+        <meta name="theme-color" content="#060c18" />
+        <meta name="description" content="Plataforma de estudos para o ENEM e vestibulares que analisa os seus erros, descobre o padrão por trás deles e monta um plano de estudos personalizado, com revisão espaçada e correção de redação. Transforme seus erros em conhecimento." />
+        <!-- SEO. A `description` é o texto que aparece embaixo do link no
+             Google e tem ~155 caracteres úteis: ela precisa conter as palavras
+             que o aluno realmente digita ("plano de estudos ENEM", "correção de
+             redação") e não só o slogan da marca, que ninguém pesquisa.
+             `canonical` evita que o mesmo conteúdo servido em domínio de
+             preview do Cloudflare (`<hash>.sapiens-aluno.pages.dev`) concorra
+             com o endereço oficial e divida a relevância entre os dois. -->
+        <link rel="canonical" href="https://sapiens-aluno.pages.dev/" />
+        <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+        <meta name="author" content="Sapiens" />
 
         <!-- Open Graph: sem estas tags o link colado num grupo de WhatsApp
              aparece como texto cru. Num beta que cresce por indicação entre
@@ -12,20 +33,53 @@
         <meta property="og:type" content="website" />
         <meta property="og:site_name" content="Sapiens" />
         <meta property="og:locale" content="pt_BR" />
-        <meta property="og:title" content="Sapiens — Descubra por que você erra" />
-        <meta property="og:description" content="Não somos um corretor de provas. Somos o sistema que descobre padrões cognitivos escondidos nos seus erros." />
+        <meta property="og:title" content="Sapiens — Plano de estudos personalizado para o ENEM e vestibular" />
+        <meta property="og:description" content="Plataforma de estudos para o ENEM e vestibulares que analisa os seus erros, descobre o padrão por trás deles e monta um plano de estudos personalizado, com revisão espaçada e correção de redação. Transforme seus erros em conhecimento." />
         <meta property="og:url" content="https://sapiens-aluno.pages.dev" />
         <meta property="og:image" content="https://sapiens-aluno.pages.dev/og-image.png" />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
+        <meta property="og:image:alt" content="Sapiens — transforme seus erros em conhecimento" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Sapiens — Descubra por que você erra" />
+        <meta name="twitter:title" content="Sapiens — Plano de estudos personalizado para o ENEM e vestibular" />
         <meta name="twitter:description" content="Padrões cognitivos, não notas. Cada prova vira um mapa para você evoluir." />
         <meta name="twitter:image" content="https://sapiens-aluno.pages.dev/og-image.png" />
 
         <link rel="manifest" href="/manifest.json" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-        <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Cpath d=%22M30 71 C20 68 13 58 18 48 C11 40 18 28 28 26 C30 16 43 12 52 17 C62 11 76 16 79 26 C89 30 90 44 81 49 C84 56 79 62 73 60 C74 70 66 77 57 76 C52 80 44 80 39 76 C34 79 27 77 30 71 Z%22 fill=%22%23132D5C%22/%3E%3Cpath d=%22M31 61 C23 53 26 40 37 37%22 fill=%22none%22 stroke=%22%23fff%22 stroke-width=%227%22 stroke-linecap=%22round%22/%3E%3Cpath d=%22M47 74 C42 68 44 60 50 57%22 fill=%22none%22 stroke=%22%23fff%22 stroke-width=%227%22 stroke-linecap=%22round%22/%3E%3Cpath d=%22M70 62 C77 53 74 41 63 38%22 fill=%22none%22 stroke=%22%23fff%22 stroke-width=%227%22 stroke-linecap=%22round%22/%3E%3Cpath d=%22M70 62 C77 53 74 41 63 38%22 fill=%22none%22 stroke=%22%234A85E3%22 stroke-width=%224.3%22 stroke-linecap=%22round%22/%3E%3C/svg%3E" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+        <!-- INSTALAÇÃO NO iOS / iPadOS. O Safari nunca dispara
+             `beforeinstallprompt`: quem instala o Sapiens no iPhone faz
+             Compartilhar › Adicionar à Tela de Início, e é ESTE bloco que
+             decide o que a pessoa recebe depois de fazer isso.
+
+             · `apple-mobile-web-app-capable` é o que abre o app SEM a barra
+               do Safari. Sem ele, o atalho na tela inicial abria uma aba
+               comum — o app instalado no iPhone não era um app instalado, e
+               `display: standalone` do manifest só passou a valer no iOS
+               16.4. Esta meta cobre também quem está abaixo disso.
+             · `status-bar-style: black-translucent` faz o conteúdo subir por
+               baixo do relógio e da bateria, que é o que o
+               `viewport-fit=cover` acima prepara — as duas coisas andam
+               juntas ou o topo fica com uma faixa branca.
+             · `apple-mobile-web-app-title` é o nome embaixo do ícone: sem
+               ele o iOS usa o <title> da página.
+             `mobile-web-app-capable` é a forma padronizada da primeira, e o
+             Chrome já avisa no console quando ela falta. -->
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="Sapiens" />
+        <!-- O favicon é um ARQUIVO, e não mais um data URI dentro do HTML.
+             A marca nova (cérebro de frente, dois hemisférios recortados e
+             trilhas de circuito) tem degradê e dois `clipPath`: embutida, ela
+             custava 5.5 kB no HTML — que é o documento que NUNCA é cacheado —
+             e deixava o arquivo ilegível. Como arquivo, ela é baixada uma vez
+             e fica no cache do navegador.
+             O PNG de 192 é o `alternate icon` para quem não lê SVG na aba
+             (Safari anterior ao 17): sem ele, esses navegadores caem no
+             /favicon.ico que não existe e mostram uma folha em branco. -->
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <link rel="alternate icon" type="image/png" href="/icon-192.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
         <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet" />
@@ -42,8 +96,19 @@
         work correctly both with client-side routing and a non-root public URL.
         Learn how to configure a non-root public URL by running `npm run build`.
         -->
-        <title>Sapiens</title>
+        <title>Sapiens — Plano de estudos personalizado para o ENEM e vestibular</title>
         <script>window.addEventListener("error",function(e){if(e.error instanceof DOMException&&e.error.name==="DataCloneError"&&e.message&&e.message.includes("PerformanceServerTiming")){e.stopImmediatePropagation();e.preventDefault()}},true);</script>
+        <!-- DADOS ESTRUTURADOS (schema.org). É isto que faz o Google
+             entender que o Sapiens é um serviço educacional brasileiro,
+             quem o assina e o que ele responde — e é o que habilita o
+             bloco de perguntas direto no resultado de busca.
+             O `FAQPage` daqui espelha `src/lib/historia.js` (FAQ), que é
+             o que a landing MOSTRA. Marcar resposta diferente da que
+             aparece na tela é violação da diretriz do Google: mudou lá,
+             muda aqui. -->
+        <script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[{"@type":["EducationalOrganization","Organization"],"@id":"https://sapiens-aluno.pages.dev/#org","name":"Sapiens","alternateName":"Sapiens — inteligência educacional","url":"https://sapiens-aluno.pages.dev/","logo":"https://sapiens-aluno.pages.dev/icon-512.png","image":"https://sapiens-aluno.pages.dev/og-image.png","email":"sapiens.lab12@gmail.com","description":"Plataforma de estudos para o ENEM e vestibulares que analisa os seus erros, descobre o padrão por trás deles e monta um plano de estudos personalizado, com revisão espaçada e correção de redação. Transforme seus erros em conhecimento.","areaServed":"BR","knowsLanguage":"pt-BR","slogan":"Transforme seus erros em conhecimento."},{"@type":"WebSite","@id":"https://sapiens-aluno.pages.dev/#site","url":"https://sapiens-aluno.pages.dev/","name":"Sapiens","inLanguage":"pt-BR","publisher":{"@id":"https://sapiens-aluno.pages.dev/#org"}},{"@type":"WebApplication","name":"Sapiens","url":"https://sapiens-aluno.pages.dev/","applicationCategory":"EducationalApplication","operatingSystem":"Android, iOS, Windows, macOS — navegador","inLanguage":"pt-BR","description":"Plataforma de estudos para o ENEM e vestibulares que analisa os seus erros, descobre o padrão por trás deles e monta um plano de estudos personalizado, com revisão espaçada e correção de redação. Transforme seus erros em conhecimento.","publisher":{"@id":"https://sapiens-aluno.pages.dev/#org"},"offers":{"@type":"Offer","price":"0","priceCurrency":"BRL","description":"Conta gratuita com Sparks para o diagnóstico, o treino e o plano da semana."}},{"@type":"Person","@id":"https://sapiens-aluno.pages.dev/#mentor","name":"Vitor Lara","jobTitle":"Mentor","description":"1º colocado de Medicina da USP; grava os cursos, dá a aula ao vivo semanal e atende a mentoria do Sapiens.","worksFor":{"@id":"https://sapiens-aluno.pages.dev/#org"}},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"O que é o Sapiens?","acceptedAnswer":{"@type":"Answer","text":"Uma plataforma de estudos para o ENEM e para os vestibulares que analisa os seus erros, descobre o padrão cognitivo por trás deles e monta um plano de estudos semanal personalizado, com revisão espaçada e correção de redação."}},{"@type":"Question","name":"Preciso pagar para começar?","acceptedAnswer":{"@type":"Answer","text":"Não. Você cria a conta, recebe Sparks e já faz o diagnóstico, o treino e o plano da semana. Pagar só entra quando você quer mais ferramentas da Mentis, os cursos ou a aula ao vivo."}},{"@type":"Question","name":"Como o Sapiens é diferente de um cursinho?","acceptedAnswer":{"@type":"Answer","text":"Cursinho ensina para a média da sala. O Sapiens parte do seu erro: ele mede como você pensa — precisão, velocidade, abstração — e monta uma trilha individual a partir disso, com base em pesquisa sobre memória e aprendizagem."}},{"@type":"Question","name":"Funciona no celular?","acceptedAnswer":{"@type":"Answer","text":"Sim. O Sapiens funciona no navegador do Android, do iPhone, do Windows e do Mac, e pode ser instalado na tela de início como aplicativo, sem baixar nada de loja."}},{"@type":"Question","name":"Quem dá as aulas?","acceptedAnswer":{"@type":"Answer","text":"Vitor Lara, 1º colocado de Medicina na USP. Ele grava os cursos, dá a aula ao vivo semanal e atende a mentoria individual, que tem lista de espera."}},{"@type":"Question","name":"O Sapiens corrige redação do ENEM?","acceptedAnswer":{"@type":"Answer","text":"Sim. A redação é corrigida nas cinco competências do ENEM, com nota por competência e devolutiva explicando o que tirou ponto e como recuperar."}}]}]}
+        </script>
     </head>
     <body>
         <noscript>You need to enable JavaScript to run this app.</noscript>

@@ -313,10 +313,10 @@ export default function AdminCuradoria() {
   return (
     <div className="min-h-screen">
       <Nav />
-      <div className="mx-auto max-w-4xl px-6 py-12 md:px-10">
+      <div className="mx-auto max-w-4xl px-5 py-7 md:px-10 md:py-10">
         <div className="mb-3 flex items-center gap-3">
           <ShieldCheck className="h-4 w-4 text-sapiens-accent" />
-          <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-white/50">Admin · Curadoria</div>
+          <div className="secao-olho">Admin · Curadoria</div>
         </div>
         <h1 className="font-display text-4xl font-extrabold tracking-tighter text-white" data-testid="admin-curadoria-title">
           Destravar a evidência

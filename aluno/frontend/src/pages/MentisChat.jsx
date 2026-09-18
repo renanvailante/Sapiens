@@ -338,7 +338,7 @@ export default function MentisChat() {
     return (
       <div className="min-h-screen">
         <Nav />
-        <div className="px-6 md:px-10 py-12">
+        <div className="px-5 py-7 md:px-10 md:py-10">
           <Portao
             custoSessao={custoSessao}
             custoMensagem={custoMensagem}

@@ -63,11 +63,11 @@ export default function History() {
   return (
     <div className="min-h-screen">
       <Nav />
-      <div className="max-w-4xl mx-auto px-6 md:px-10 py-12">
+      <div className="max-w-4xl mx-auto px-5 py-7 md:px-10 md:py-10">
         <div className="flex items-end justify-between flex-wrap gap-4">
           <div>
-            <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-white/50 mb-3">Histórico</div>
-            <h1 className="font-display text-4xl md:text-5xl font-extrabold tracking-tighter text-white" data-testid="history-title">
+            <div className="secao-olho">Histórico</div>
+            <h1 className="titulo-tela" data-testid="history-title">
               Sua trajetória.
             </h1>
             <p className="mt-3 text-white/60 max-w-lg">Cada tentativa é armazenada individualmente. Refazer uma prova nunca sobrescreve a análise anterior.</p>

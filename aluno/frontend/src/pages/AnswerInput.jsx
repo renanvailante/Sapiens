@@ -84,10 +84,10 @@ export default function AnswerInput() {
         )}
         {!carregando && !erroCarga && exam && (
           <div className="mb-8">
-            <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-white/50 mb-3">
+            <div className="secao-olho">
               Passo 2 de 3 · {exam.title} · {language === "english" ? "Inglês" : "Espanhol"}
             </div>
-            <h1 className="font-display text-3xl md:text-4xl font-extrabold tracking-tighter text-white" data-testid="answer-title">
+            <h1 className="titulo-tela" data-testid="answer-title">
               Como você quer registrar suas respostas?
             </h1>
           </div>

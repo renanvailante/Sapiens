@@ -1,0 +1,538 @@
+{
+  "schema_version": "1.0",
+  "estacao_id": "mb-07-potenciacao",
+  "titulo": "Potenciação",
+  "objetivo": "Você vai operar potências com segurança: aplicar as propriedades, lidar com expoentes negativos e fracionários e reconhecer os erros mais comuns.",
+  "versao": "2026-09-16",
+  "duracao_minutos": 11,
+  "numero": 7,
+  "conceitos": [
+    "potenciacao",
+    "propriedades-de-potencias",
+    "expoentes"
+  ],
+  "conclusao": {
+    "tipo": "minimo_de_acertos",
+    "minimo": 7
+  },
+  "fonte": {
+    "arquivo": "mat basica 7.md",
+    "pasta": "cursos/matemática básica"
+  },
+  "blocos": [
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-07-c-01",
+      "variante": "padrao",
+      "markdown": "Potência é uma multiplicação repetida.\n\n`aⁿ = a × a × ... × a` (n fatores)\n\n- `a` é a **base**\n- `n` é o **expoente**"
+    },
+    {
+      "tipo": "tabela",
+      "bloco_id": "mb-07-c-02",
+      "colunas": [
+        "Propriedade",
+        "Exemplo"
+      ],
+      "linhas": [
+        [
+          "`aᵐ × aⁿ = aᵐ⁺ⁿ`",
+          "`2³ × 2² = 2⁵ = 32`"
+        ],
+        [
+          "`aᵐ ÷ aⁿ = aᵐ⁻ⁿ`",
+          "`2⁵ ÷ 2² = 2³ = 8`"
+        ],
+        [
+          "`(aᵐ)ⁿ = aᵐ·ⁿ`",
+          "`(2³)² = 2⁶ = 64`"
+        ],
+        [
+          "`(a × b)ⁿ = aⁿ × bⁿ`",
+          "`(2×3)² = 4 × 9 = 36`"
+        ],
+        [
+          "`(a/b)ⁿ = aⁿ/bⁿ`",
+          "`(2/3)² = 4/9`"
+        ],
+        [
+          "`a⁰ = 1` (a ≠ 0)",
+          "`5⁰ = 1`"
+        ],
+        [
+          "`a⁻ⁿ = 1/aⁿ`",
+          "`2⁻³ = 1/8`"
+        ]
+      ],
+      "titulo": "Propriedades"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-07-c-03",
+      "variante": "padrao",
+      "markdown": "`a^(1/n) = ⁿ√a`\n\n`8^(1/3) = ³√8 = 2`",
+      "titulo": "Expoente fracionário"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-07-c-04",
+      "variante": "padrao",
+      "markdown": "- `(−2)² = 4` (base negativa entre parênteses)\n- `−2² = −4` (o expoente só se aplica ao 2)",
+      "titulo": "Sinal da base"
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-07-ex-01",
+      "enunciado": "`2³ × 2⁴`",
+      "passos": [
+        {
+          "texto": "Mesma base, soma expoentes: `2⁷ = 128`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-07-ex-02",
+      "enunciado": "`(3²)³`",
+      "passos": [
+        {
+          "texto": "Multiplica expoentes: `3⁶ = 729`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-07-ex-03",
+      "enunciado": "`5⁻²`",
+      "passos": [
+        {
+          "texto": "`1/5² = 1/25 = 0,04`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-07-ex-04",
+      "enunciado": "`16^(1/4)`",
+      "passos": [
+        {
+          "texto": "`⁴√16 = 2`, pois `2⁴ = 16`"
+        }
+      ]
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-07-es-01",
+      "variante": "destaque",
+      "markdown": "- Antes de calcular, verifique se as bases são iguais. Se não, tente reescrever.\n- `4 = 2²`, `8 = 2³`, `9 = 3²`, `27 = 3³` — memorize essas equivalências.\n- Expoente negativo não deixa o número negativo; ele inverte a fração.\n- Em expressões grandes, fatore tudo em primos e agrupe."
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-07-er-01",
+      "variante": "atencao",
+      "markdown": "- **Somar expoentes em vez de multiplicar em potência de potência.** `(2³)² = 2⁶`, não `2⁵`.\n- **Achar que `a⁰ = 0`.** É `1`.\n- **Confundir `(−3)²` com `−3²`.** O primeiro é `9`; o segundo é `−9`.\n- **Tratar expoente negativo como sinal.** `2⁻³ = 1/8`, não `−8`."
+    },
+    {
+      "tipo": "video",
+      "bloco_id": "mb-07-video",
+      "titulo": "Potenciação — aula em vídeo",
+      "provedor": "youtube",
+      "ref": null,
+      "resumo": "Aula conduzida pelo 1º colocado de Medicina da USP."
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-07-q01",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Calcule `2⁴`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "24"
+        },
+        {
+          "id": "b",
+          "texto": "8"
+        },
+        {
+          "id": "c",
+          "texto": "16"
+        },
+        {
+          "id": "d",
+          "texto": "32"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "b": "Para em `2³`.",
+        "d": "É `2⁵`.",
+        "a": "Soma `2 × 4`."
+      },
+      "solucao": "`2 × 2 × 2 × 2 = 16`.",
+      "conceitos": [
+        "potenciacao"
+      ],
+      "origem": {
+        "estacao": 7,
+        "questao": "Questão 1"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-07-q02",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Calcule `3⁰`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "0"
+        },
+        {
+          "id": "b",
+          "texto": "3"
+        },
+        {
+          "id": "c",
+          "texto": "30"
+        },
+        {
+          "id": "d",
+          "texto": "1"
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "a": "É o erro mais comum.",
+        "b": "Confunde com a base.",
+        "c": "Concatena dígitos."
+      },
+      "solucao": "Qualquer número não nulo elevado a zero é 1.",
+      "conceitos": [
+        "propriedades-de-potencias"
+      ],
+      "origem": {
+        "estacao": 7,
+        "questao": "Questão 2"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-07-q03",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Calcule `2³ × 2²`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "32"
+        },
+        {
+          "id": "b",
+          "texto": "12"
+        },
+        {
+          "id": "c",
+          "texto": "16"
+        },
+        {
+          "id": "d",
+          "texto": "64"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "d": "Multiplica expoentes.",
+        "c": "Calcula `2⁴`.",
+        "b": "Soma `2³ + 2²`."
+      },
+      "solucao": "Soma expoentes: `2⁵ = 32`.",
+      "conceitos": [
+        "propriedades-de-potencias"
+      ],
+      "origem": {
+        "estacao": 7,
+        "questao": "Questão 3"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-07-q04",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Calcule `(3²)³`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "27"
+        },
+        {
+          "id": "b",
+          "texto": "81"
+        },
+        {
+          "id": "c",
+          "texto": "729"
+        },
+        {
+          "id": "d",
+          "texto": "243"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "d": "Calcula `3⁵`.",
+        "b": "Calcula `3⁴`.",
+        "a": "Calcula `3³`."
+      },
+      "solucao": "`3⁶ = 729`.",
+      "conceitos": [
+        "propriedades-de-potencias"
+      ],
+      "origem": {
+        "estacao": 7,
+        "questao": "Questão 4"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-07-q05",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Calcule `5⁻²`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "25"
+        },
+        {
+          "id": "b",
+          "texto": "−1/25"
+        },
+        {
+          "id": "c",
+          "texto": "1/25"
+        },
+        {
+          "id": "d",
+          "texto": "−25"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "d": "Confunde com `−5²`.",
+        "b": "Aplica sinal negativo ao resultado.",
+        "a": "Ignora o expoente negativo."
+      },
+      "solucao": "`1/5² = 1/25`.",
+      "conceitos": [
+        "expoentes"
+      ],
+      "origem": {
+        "estacao": 7,
+        "questao": "Questão 5"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-07-q06",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Calcule `(2/3)³`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "6/9"
+        },
+        {
+          "id": "b",
+          "texto": "8/27"
+        },
+        {
+          "id": "c",
+          "texto": "2/27"
+        },
+        {
+          "id": "d",
+          "texto": "8/9"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "a": "Calcula `2×3 / 3×3`.",
+        "d": "Eleva só o numerador.",
+        "c": "Eleva só o denominador."
+      },
+      "solucao": "`2³/3³ = 8/27`.",
+      "conceitos": [
+        "potenciacao"
+      ],
+      "origem": {
+        "estacao": 7,
+        "questao": "Questão 6"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-07-q07",
+      "nivel": 3,
+      "formato": "multipla_escolha",
+      "enunciado": "Simplifique `(2⁵ × 2⁻³) / 2²`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "1/2"
+        },
+        {
+          "id": "b",
+          "texto": "4"
+        },
+        {
+          "id": "c",
+          "texto": "1"
+        },
+        {
+          "id": "d",
+          "texto": "2"
+        }
+      ],
+      "gabarito": "c",
+      "solucao": "Numerador: `2⁵ × 2⁻³ = 2²`. Depois `2² / 2² = 1`. B, C, D vêm de propriedades mal aplicadas.",
+      "conceitos": [
+        "propriedades-de-potencias"
+      ],
+      "origem": {
+        "estacao": 7,
+        "questao": "Questão 7"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-07-q08",
+      "nivel": 3,
+      "formato": "multipla_escolha",
+      "enunciado": "Qual o valor de `16^(1/2) + 27^(1/3)`?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "5"
+        },
+        {
+          "id": "b",
+          "texto": "9"
+        },
+        {
+          "id": "c",
+          "texto": "7"
+        },
+        {
+          "id": "d",
+          "texto": "11"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "a": "Esquece uma das raízes.",
+        "d": "Soma errado.",
+        "b": "Confunde `16^(1/2)` com `16^(1/4)`."
+      },
+      "solucao": "`16^(1/2) = 4`, `27^(1/3) = 3`. Soma: `7`.",
+      "conceitos": [
+        "expoentes"
+      ],
+      "origem": {
+        "estacao": 7,
+        "questao": "Questão 8"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-07-q09",
+      "nivel": 4,
+      "formato": "multipla_escolha",
+      "enunciado": "Um estudante afirma que `(−2)² = −4` e que `−2² = 4`. Ambas as afirmações estão:",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "parcialmente corretas"
+        },
+        {
+          "id": "b",
+          "texto": "corretas"
+        },
+        {
+          "id": "c",
+          "texto": "erradas; `(−2)² = −4` e `−2² = 4`"
+        },
+        {
+          "id": "d",
+          "texto": "erradas; `(−2)² = 4` e `−2² = −4`"
+        }
+      ],
+      "gabarito": "d",
+      "solucao": "`(−2)² = (−2)×(−2) = 4`. Já `−2² = −(2²) = −4`. A ordem do sinal e dos parênteses muda o resultado.",
+      "conceitos": [
+        "potenciacao"
+      ],
+      "origem": {
+        "estacao": 7,
+        "questao": "Questão 9"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-07-q10",
+      "nivel": 4,
+      "formato": "multipla_escolha",
+      "enunciado": "Uma população de bactérias dobra a cada hora. Iniciando com 100 bactérias, quantas haverá após 5 horas?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "3.200"
+        },
+        {
+          "id": "b",
+          "texto": "6.400"
+        },
+        {
+          "id": "c",
+          "texto": "500"
+        },
+        {
+          "id": "d",
+          "texto": "1.600"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "c": "Multiplica `100 × 5`.",
+        "d": "Usa `2⁴`.",
+        "b": "Usa `2⁶`."
+      },
+      "solucao": "`100 × 2⁵ = 100 × 32 = 3.200`.",
+      "conceitos": [
+        "potenciacao"
+      ],
+      "origem": {
+        "estacao": 7,
+        "questao": "Questão 10"
+      }
+    },
+    {
+      "tipo": "desafio",
+      "bloco_id": "mb-07-desafio",
+      "nivel": 5,
+      "enunciado": "Simplifique e calcule:\n\n`(3⁴ × 3⁻²) ÷ 3⁻³`",
+      "formato": "numerico",
+      "gabarito": {
+        "valor": 243.0,
+        "tolerancia": 0.243
+      },
+      "solucao": "- Numerador: `3⁴ × 3⁻² = 3²`\n- `3² ÷ 3⁻³ = 3^(2 − (−3)) = 3⁵ = 243`"
+    }
+  ],
+  "pre_requisitos": [
+    "mb-01-operacoes-fundamentais"
+  ]
+}

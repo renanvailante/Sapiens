@@ -1,10 +1,14 @@
 # A área do aluno exige login e não deve ser indexada; a landing e as páginas
-# legais, sim.
+# legais, sim. Uma tela atrás de login que entra no índice vira um resultado
+# de busca que só mostra a tela de entrada — gasta orçamento de rastreio e
+# ensina o buscador que o site é uma parede.
 User-agent: *
 Allow: /$
 Allow: /termos
 Allow: /privacidade
 Disallow: /dashboard
+Disallow: /bem-vindo
+Disallow: /completar-cadastro
 Disallow: /exams
 Disallow: /exam/
 Disallow: /analysis/
@@ -17,6 +21,18 @@ Disallow: /feed
 Disallow: /questoes
 Disallow: /redacao
 Disallow: /cognitive-profile
+Disallow: /diagnostico
+Disallow: /cronograma
+Disallow: /cursos
+Disallow: /curso/
+Disallow: /aula-ao-vivo
+Disallow: /mentoria
+Disallow: /mentis
+Disallow: /comunidade
+Disallow: /conquistas
+Disallow: /liga
+Disallow: /indicar
+Disallow: /sugestoes
 Disallow: /admin
 Disallow: /redefinir-senha
 

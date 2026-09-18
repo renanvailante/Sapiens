@@ -51,22 +51,28 @@ async def minha_trajetoria(user: User = Depends(require_user)):
     return await asyncio.to_thread(revisao_service.trajetoria, user.user_id)
 
 
+class IntervencaoRequest(BaseModel):
+    processo_id: str = Field(..., min_length=2, max_length=40)
+
+
 @router.post("/intervencao/dispensar")
-async def dispensar(user: User = Depends(require_user)):
-    """"Não é isto." Libera a vaga única de intervenção e CONTA a dispensa.
+async def dispensar(payload: IntervencaoRequest, user: User = Depends(require_user)):
+    """"Não é isto." Libera a vaga daquele processo e CONTA a dispensa.
 
     Dispensar é sinal, não silêncio: um par (erro, processo) dispensado
     repetidamente por vários alunos é a evidência mais barata de anotação ruim
     que o sistema consegue coletar — e alimenta a revisão humana da Fase 0.
     """
-    return await asyncio.to_thread(revisao_service.dispensar_intervencao, user.user_id, dispensada=True)
+    return await asyncio.to_thread(
+        revisao_service.dispensar_intervencao, user.user_id, processo_id=payload.processo_id, dispensada=True
+    )
 
 
 @router.post("/intervencao/concluir")
-async def concluir(user: User = Depends(require_user)):
+async def concluir(payload: IntervencaoRequest, user: User = Depends(require_user)):
     """O aluno foi trabalhar nisso. Libera a vaga sem contar dispensa."""
     resultado = await asyncio.to_thread(
-        revisao_service.dispensar_intervencao, user.user_id, dispensada=False
+        revisao_service.dispensar_intervencao, user.user_id, processo_id=payload.processo_id, dispensada=False
     )
     # XP da revisão. Não dá para farmar clicando: existe UMA intervenção ativa
     # por vez, e a próxima só nasce de evidência nova no motor cognitivo — o

@@ -168,11 +168,14 @@ def _explicacao_fraca(processo_id: str, padroes_por_processo: dict[str, dict[str
     return GLOSSARIO_PROCESSO[processo_id]["descricao_fraca"]
 
 
-async def perfil_publico(user_id: str) -> dict[str, Any]:
-    """`{"pontos_fortes": [...], "pontos_a_desenvolver": [...],
-    "amostra_insuficiente": bool}` — nenhum campo carrega id, nome interno
-    ou percentual. Cada item é `{"rotulo", "explicacao"}`."""
-    diagnostico = await annotation_service.compute_diagnostico_real(user_id)
+def perfil_de(diagnostico: dict[str, Any]) -> dict[str, Any]:
+    """A tradução propriamente dita, sobre um diagnóstico já lido.
+
+    Existe separada de `perfil_publico` porque o painel de gráficos
+    (`perfil_painel`) já leu o diagnóstico para montar o resto da tela — e
+    pedir a mesma leitura duas vezes por abertura de página é justamente o
+    custo que a disciplina de leitura do produto existe para evitar.
+    """
     por_processo = diagnostico.get("por_processo") or {"fortes": [], "fracos": []}
     fortes = (por_processo.get("fortes") or [])[:TOPO_N]
     fracos = (por_processo.get("fracos") or [])[:TOPO_N]
@@ -196,3 +199,10 @@ async def perfil_publico(user_id: str) -> dict[str, Any]:
         "pontos_a_desenvolver": pontos_a_desenvolver,
         "amostra_insuficiente": not fortes and not fracos,
     }
+
+
+async def perfil_publico(user_id: str) -> dict[str, Any]:
+    """`{"pontos_fortes": [...], "pontos_a_desenvolver": [...],
+    "amostra_insuficiente": bool}` — nenhum campo carrega id, nome interno
+    ou percentual. Cada item é `{"rotulo", "explicacao"}`."""
+    return perfil_de(await annotation_service.compute_diagnostico_real(user_id))

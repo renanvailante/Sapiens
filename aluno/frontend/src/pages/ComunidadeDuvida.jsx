@@ -170,7 +170,7 @@ export default function ComunidadeDuvida() {
     return (
       <div className="min-h-screen">
         <Nav />
-        <div className="mx-auto max-w-3xl px-6 py-12 md:px-10">
+        <div className="mx-auto max-w-3xl px-5 py-7 md:px-10 md:py-10">
           <p className="text-white/60">Esta dúvida não está disponível.</p>
           <Link to="/comunidade" className="mt-4 inline-flex items-center gap-1 text-sm text-[#7FD8FF] hover:underline">
             <ArrowLeft className="h-3.5 w-3.5" /> Voltar ao mural
@@ -187,7 +187,7 @@ export default function ComunidadeDuvida() {
   return (
     <div className="min-h-screen">
       <Nav />
-      <div className="mx-auto max-w-3xl px-6 py-12 md:px-10">
+      <div className="mx-auto max-w-3xl px-5 py-7 md:px-10 md:py-10">
         <Link
           to="/comunidade"
           className="inline-flex items-center gap-1 text-sm text-white/50 hover:text-white"
@@ -306,7 +306,7 @@ export default function ComunidadeDuvida() {
 
         {duvida.status === "publicada" && (
           <form onSubmit={responder} className="card-sapiens mt-6 rounded-2xl p-5" data-testid="form-resposta">
-            <label className="font-mono-alt text-[10px] uppercase tracking-[0.3em] text-zinc-400">
+            <label className="secao-olho">
               {souAutor ? "Acrescentar algo" : "Ajudar quem perguntou"}
             </label>
             <textarea

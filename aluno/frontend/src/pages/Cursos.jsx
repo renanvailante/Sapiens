@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { toast } from "sonner";
 import {
-  Bell, BellRing, Lock, ArrowRight, PlayCircle, BookOpen, Download,
+  Bell, BellRing, Lock, ArrowRight, PlayCircle, BookOpen,
   Infinity as Infinito, PackageCheck,
 } from "lucide-react";
 import { api, errMsg } from "../lib/api";
@@ -433,7 +433,7 @@ export default function Cursos() {
         <section id="cursos" className="mt-12 scroll-mt-24" data-testid="cursos-catalogo">
           <div className="flex flex-wrap items-baseline justify-between gap-3">
             <h2 className="font-display text-2xl font-extrabold tracking-tighter text-white md:text-3xl">
-              Cursos completos
+              O caminho inteiro, do zero à prova
             </h2>
             <span className="secao-olho">
               Em produção · entre na lista
@@ -480,7 +480,7 @@ export default function Cursos() {
                     <>
                       {formatBRL(pacoteDosCursos.price_cents)} uma vez: os{" "}
                       {dados?.cursos?.length || 7} cursos e os e-books inclusos, para sempre — em vez de{" "}
-                      {dados?.cursos?.[0]?.custo_sparks || 500} Sparks por curso. Os{" "}
+                      {dados?.cursos?.[0]?.custo_sparks || 200} Sparks por curso. Os{" "}
                       {pacoteDosCursos.sparks_amount} Sparks entram no seu saldo do mesmo jeito.
                     </>
                   )}
@@ -581,18 +581,18 @@ export default function Cursos() {
                     <p className="mt-2 text-sm leading-relaxed text-white/75">{e.descricao}</p>
 
                     <div className="mt-auto pt-4">
-                      {e.tenho_acesso && e.disponivel ? (
-                        <a
-                          href={e.arquivo}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                      {e.tenho_acesso && e.tem_conteudo ? (
+                        // Lê-se DENTRO do app, página por página — nenhum
+                        // aluno baixa nada do Sapiens. Ver `EbookLeitor`.
+                        <Link
+                          to={`/cursos/ebooks/${e.ebook_id}`}
                           className="pill btn-sapiens inline-flex w-full items-center justify-center gap-2 rounded-full px-5 py-3.5 text-sm font-bold"
-                          data-testid={`ebook-${e.ebook_id}-baixar`}
+                          data-testid={`ebook-${e.ebook_id}-ler`}
                         >
-                          <Download className="h-3.5 w-3.5" /> Baixar o PDF
-                        </a>
+                          <BookOpen className="h-3.5 w-3.5" /> Ler agora
+                        </Link>
                       ) : e.tenho_acesso ? (
-                        // Comprou, mas o PDF ainda não existe. A mesma
+                        // Comprou, mas as páginas ainda não existem. A mesma
                         // distinção do curso comprado sem estação no ar: nunca
                         // oferecemos um link que não abre.
                         <div

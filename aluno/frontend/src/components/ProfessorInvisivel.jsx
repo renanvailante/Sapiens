@@ -14,10 +14,10 @@ import { Lightbulb, ArrowRight, X, Repeat, TrendingDown, CalendarClock } from "l
  * CATALOGADA do erro raiz. Nenhuma chamada de modelo, nenhum Spark.
  *
  * A disciplina de interrupção é o que separa isto de um pop-up, e é imposta no
- * servidor, não aqui: uma intervenção ativa por vez no aluno inteiro, cooldown
- * por par até o reteste, e dispensa contada como sinal. Por isso este painel é
- * INLINE, dentro do feedback da questão — nunca um modal que cobre a tela de
- * quem está no meio de uma prova.
+ * servidor, não aqui: no máximo duas intervenções ativas por vez (nunca duas
+ * para o mesmo processo), cooldown por par até o reteste, e dispensa contada
+ * como sinal. Por isso este painel é INLINE, dentro do feedback da questão —
+ * nunca um modal que cobre a tela de quem está no meio de uma prova.
  *
  * Quando a leitura é provisória, ele se apresenta como hipótese, com o mesmo
  * rigor do aviso do perfil. Um "descobrimos por que você erra" sobre anotação
@@ -48,7 +48,7 @@ export default function ProfessorInvisivel({ gatilho, onFechar }) {
     // pode travar o aluno na questão: a vaga expira no próximo reteste de
     // qualquer forma.
     try {
-      await api.post(`/revisao/intervencao/${rota}`);
+      await api.post(`/revisao/intervencao/${rota}`, { processo_id: gatilho.processo_id });
     } catch {
       /* silencioso de propósito */
     }

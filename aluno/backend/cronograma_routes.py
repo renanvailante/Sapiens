@@ -263,13 +263,19 @@ async def _resumo_redacao(uid: str) -> dict[str, Any]:
     return {"melhor_nota": melhores[0].get("nota_total"), "corrigidas": int(total or 0)}
 
 
-async def _prioridades(uid: str) -> list[dict[str, Any]]:
+async def _prioridades(
+    uid: str, *, diagnostico: Optional[dict[str, Any]] = None
+) -> list[dict[str, Any]]:
     """O ranking de rendimento deste aluno. Nunca levanta: uma falha de
     leitura devolve o ranking do aluno sem histórico — que é uma resposta
     honesta (Matemática e Redação no topo, pelo peso na prova) e não uma tela
-    de erro."""
+    de erro.
+
+    `diagnostico` já lido por quem chama (o painel do aluno faz isso) evita
+    repetir a leitura do agregado."""
     try:
-        diagnostico = await annotation_service.compute_diagnostico_real(uid)
+        if diagnostico is None:
+            diagnostico = await annotation_service.compute_diagnostico_real(uid)
         stats = diagnostico.get("por_disciplina") or {}
     except Exception:  # noqa: BLE001
         logger.exception("cronograma: diagnóstico indisponível para %s", uid)

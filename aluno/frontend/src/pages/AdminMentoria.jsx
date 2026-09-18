@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
+import { MENTOR } from "../lib/mentor";
 import { toast } from "sonner";
 import { api, errMsg } from "../lib/api";
 import Nav from "../components/Nav";
-import { Medal, MessageCircle } from "lucide-react";
+import { Medal, MessageCircle, Zap } from "lucide-react";
 
 // Os VALORES são os que já estão gravados no banco desde a época de "aulas
 // particulares" (ver `backend/mentoria_routes.py`); o que mudou é o rótulo,
@@ -58,16 +59,16 @@ export default function AdminMentoria() {
   return (
     <div className="min-h-screen">
       <Nav />
-      <div className="max-w-5xl mx-auto px-6 md:px-10 py-12">
+      <div className="max-w-5xl mx-auto px-5 py-7 md:px-10 md:py-10">
         <div className="flex items-center gap-3 mb-3">
           <Medal className="w-4 h-4 text-sapiens-accent" />
-          <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-white/50">Admin · Mentoria</div>
+          <div className="secao-olho">Admin · Mentoria</div>
         </div>
         <h1 className="font-display text-4xl font-extrabold tracking-tighter text-white" data-testid="admin-mentoria-title">
           Lista de espera da mentoria
         </h1>
         <p className="mt-3 text-white/60 max-w-xl">
-          Quem está esperando a mentoria com o 1º colocado de Medicina da USP, da chegada mais
+          Quem está esperando a mentoria com o {MENTOR.nome}, da chegada mais
           recente para a mais antiga. Fale pelo WhatsApp e mova a pessoa na fila — o aluno vê a
           própria posição, então tirar alguém de "na fila" muda o número que os outros enxergam.
         </p>
@@ -108,7 +109,34 @@ export default function AdminMentoria() {
                       {STATUS_OPTIONS.find((s) => s.value === r.status)?.label || r.status}
                     </span>
                   </div>
-                  <div className="mt-1 text-sm text-zinc-500">{r.whatsapp} · {formatDate(r.created_at)}</div>
+                  {/* Os TRÊS contatos, em linhas próprias. Até 2026-09-17 a
+                      linha trazia só o WhatsApp: a fila passou a custar 50
+                      Sparks, e quem pagou merece ser alcançável por mais de um
+                      caminho — número trocado é a causa mais comum de um
+                      pedido morrer sem resposta. `email` é `null` nos pedidos
+                      anteriores a essa data, e a linha some sozinha. */}
+                  <div className="mt-1 space-y-0.5 text-sm text-zinc-500">
+                    {r.email && (
+                      <div>
+                        <a href={`mailto:${r.email}`} className="hover:text-zinc-900 hover:underline">
+                          {r.email}
+                        </a>
+                      </div>
+                    )}
+                    <div className="flex flex-wrap items-center gap-x-2">
+                      <span>{r.whatsapp}</span>
+                      <span className="text-zinc-300">·</span>
+                      <span>{formatDate(r.created_at)}</span>
+                      {r.sparks_cobrados > 0 && (
+                        <>
+                          <span className="text-zinc-300">·</span>
+                          <span className="inline-flex items-center gap-1 text-amber-700">
+                            <Zap className="h-3 w-3" /> {r.sparks_cobrados} Sparks
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </div>
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {r.areas.map((a) => (
                       <span key={a} className="text-[11px] bg-zinc-100 text-zinc-600 px-2 py-0.5 rounded-full">{a}</span>

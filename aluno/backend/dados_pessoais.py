@@ -56,6 +56,12 @@ COLECOES_POR_USUARIO: tuple[tuple[str, str], ...] = (
     ("analyses", "user_id"),
     ("redacoes", "user_id"),
     ("redacao_cobrancas", "user_id"),
+    # Reivindicações de montagem do cronograma. Mesma natureza de
+    # `redacao_cobrancas`: uma chave de idempotência por tentativa, que só
+    # existe para não cobrar duas vezes pela mesma ação. Guarda `user_id` e
+    # nada mais do titular, e não serve de prova de obrigação nenhuma depois
+    # que a semana foi entregue — sai com a conta.
+    ("cronograma_cobrancas", "user_id"),
     ("redacao_feedbacks", "user_id"),
     ("sparks_auto_recharge", "user_id"),
     ("mentis_sessoes", "user_id"),
@@ -63,6 +69,11 @@ COLECOES_POR_USUARIO: tuple[tuple[str, str], ...] = (
     ("feed_progress", "user_id"),
     ("question_reports", "user_id"),
     ("sugestoes", "user_id"),
+    # O que o aluno marcou com "Lembrar-me com a Mentis": trechos que ELE
+    # selecionou na tela, com a origem de onde selecionou. É declaração do
+    # titular sobre a própria dificuldade, e um mapa de onde ele andou dentro
+    # do produto — sai inteiro com a conta.
+    ("lembretes_revisao", "user_id"),
     # Fila de espera da mentoria (nome de coleção anterior ao produto atual,
     # preservado para não perder o histórico — ver `mentoria_routes`).
     ("aulas_particulares", "user_id"),
@@ -72,7 +83,22 @@ COLECOES_POR_USUARIO: tuple[tuple[str, str], ...] = (
     # configuração, que não tem aluno nenhum dentro).
     ("cursos_live_acessos", "user_id"),
     ("cursos_acessos", "user_id"),
+    # E-books: a MESMA natureza de `cursos_acessos` — a compra de um material
+    # por um titular. Sai com a conta pela mesma regra.
+    ("ebooks_acessos", "user_id"),
     ("cursos_interesse", "user_id"),
+    # Estudo DENTRO do curso: o que o aluno leu, o que respondeu, o que errou
+    # e quantas vezes. É perfil de comportamento do titular do começo ao fim —
+    # sai inteiro com a conta, pelos dois lados: o estado (`cursos_progresso`)
+    # e o histórico que alimenta a análise pedagógica (`cursos_eventos`).
+    # Nenhum dos dois é registro de obrigação nem prova de pagamento: a compra
+    # do curso é `cursos_acessos`, logo acima, e ela segue a própria regra.
+    ("cursos_progresso", "uid"),
+    ("cursos_eventos", "uid"),
+    # A resposta ESCRITA pelo aluno numa questão dissertativa, com a correção
+    # que a Mentis fez dela. É texto de autoria dele, o dado mais pessoal que
+    # um curso guarda: sai inteiro com a conta.
+    ("cursos_dissertativas", "uid"),
     ("treino_geracoes", "user_id"),
     ("perfil_derivado_cache", "user_id"),
     ("client_errors", "user_id"),
@@ -95,12 +121,18 @@ COLECOES_POR_USUARIO: tuple[tuple[str, str], ...] = (
     # A contagem agregada no conteúdo votado não é reconstruível a partir de
     # quem votou, então ela fica (art. 12).
     ("comunidade_votos", "uid"),
+    # Indicação de amigo, pelo lado de quem FOI indicado: o documento diz de
+    # onde esta conta veio, e some com ela. O outro lado (quem indicou) não
+    # cabe aqui — ver `_desvincular_indicacoes`, logo abaixo, porque apagar
+    # por `indicador_id` destruiria a origem de contas de OUTRAS pessoas.
+    ("indicacoes", "indicado_id"),
 )
 
 # Coleções que guardam dado de aluno mas NÃO cabem no padrão acima — cada uma
 # tem um motivo, tratado explicitamente em `excluir`.
 COLECOES_TRATAMENTO_ESPECIAL: tuple[str, ...] = (
     "sparks_payments",            # anonimizada, não apagada (art. 16, I)
+    "indicacoes",                 # apagada por `indicado_id`, lápide por `indicador_id`
     "redacao_avaliacoes",         # pende de `redacao_id`, não de `user_id`
     "treino_questoes_ia",         # `$pull` do aluno; a questão é conteúdo e fica
     "mentis_intervencoes_abertas",  # `_id` composto `"{uid}|{chave}"`
@@ -120,6 +152,12 @@ COLECOES_SEM_DADO_PESSOAL: tuple[str, ...] = (
     # Link do Meet e tema de cada edição da aula ao vivo: conteúdo publicado
     # pelo admin, chaveado pela DATA da edição. Nenhum aluno dentro.
     "cursos_config",
+    # Estações de curso publicadas pelo painel a partir de texto (ver
+    # `cursos_publicados`): aula, exercícios e gabarito, chaveados pelo
+    # `curso_id`. O único campo de pessoa é o e-mail do ADMIN que publicou, que
+    # é registro de autoria de conteúdo — não é dado de aluno e não some com a
+    # exclusão de uma conta de aluno.
+    "cursos_publicados",
     # Caches de LLM: chaveados por hash do conteúdo, compartilhados entre alunos
     "mentis_explicacoes", "mentis_intervencoes", "treino_conceitos",
     # Telemetria de custo: sem campo de usuário
@@ -317,6 +355,30 @@ async def _anonimizar_comunidade(user_id: str) -> dict[str, int]:
     return saida
 
 
+async def _desvincular_indicacoes(user_id: str) -> int:
+    """O lado INDICADOR do vínculo vira lápide, não some.
+
+    O documento de indicação tem duas pessoas dentro. Quando o titular é o
+    indicado, ele é dele e sai inteiro (está em `COLECOES_POR_USUARIO`).
+    Quando o titular é quem INDICOU, o documento é a origem da conta de outra
+    pessoa — apagá-lo apagaria um dado que não é do titular, e manter o
+    `user_id` dele ali guardaria dado pessoal (o id do Sapiens carrega o nome:
+    `renan_vailante_a1b2`).
+
+    Fica então o registro de que a conta veio por indicação, sem quem indicou:
+    prêmio já pago, história preservada, pessoa desvinculada.
+    """
+    try:
+        r = await _db.indicacoes.update_many(
+            {"indicador_id": user_id},
+            {"$set": {"indicador_id": TOMBSTONE, "codigo": None, "titular_excluido_em": _agora()}},
+        )
+        return r.modified_count
+    except Exception:  # noqa: BLE001
+        logger.exception("excluir: falha desvinculando indicacoes de %s", user_id)
+        return -1
+
+
 async def excluir(user_id: str) -> dict[str, Any]:
     """Apaga o aluno. Devolve o relatório do que saiu, coleção a coleção.
 
@@ -338,6 +400,7 @@ async def excluir(user_id: str) -> dict[str, Any]:
 
     relatorio["mongo"]["sparks_payments_anonimizados"] = await _anonimizar_pagamentos(user_id)
     relatorio["mongo"].update(await _anonimizar_comunidade(user_id))
+    relatorio["mongo"]["indicacoes_desvinculadas"] = await _desvincular_indicacoes(user_id)
 
     for colecao, campo in COLECOES_POR_USUARIO:
         try:

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { MENTOR } from "../lib/mentor";
 import { Link } from "react-router-dom";
 import Tela from "../components/Tela";
 import { Bloco } from "../components/Esqueleto";
@@ -682,7 +683,7 @@ export default function SparksStore() {
 
   if (loading) {
     return (
-      <Tela olho="Sparks" titulo="Quanto custa usar a inteligência do Sapiens." testid="sparks">
+      <Tela olho="Sparks" titulo="Sparks são o combustível do seu plano." testid="sparks">
         <div className="space-y-3">
           <Bloco className="rounded-3xl" altura={112} />
           <div className="grid gap-3 sm:grid-cols-2">
@@ -697,8 +698,11 @@ export default function SparksStore() {
   return (
     <Tela
       olho="Sparks"
-      titulo="Quanto custa usar a inteligência do Sapiens."
-      subtitulo="Sparks alimentam os recursos que usam IA. Ganhe praticando, ou compre quando precisar de mais."
+      /* O título da loja fala do ALUNO, não do custo do servidor. Ele dizia
+          "quanto custa usar a inteligência do Sapiens" — uma frase escrita do
+          lado de cá do balcão, que põe o preço antes do motivo. Ver `lib/historia`. */
+      titulo="Sparks são o combustível do seu plano."
+      subtitulo="Você ganha praticando — e compra quando quiser acelerar. Cada Spark vira uma resposta da Mentis, uma correção de redação ou uma semana montada para você."
       voltar="/dashboard"
       testid="sparks"
     >
@@ -789,28 +793,30 @@ export default function SparksStore() {
           <button
             type="button"
             onClick={() => comprarComPix(pacoteIlimitado)}
-            className="lift mt-10 flex w-full flex-wrap items-center gap-4 rounded-2xl border border-violet-400/35 bg-gradient-to-r from-violet-500/[0.16] via-violet-500/[0.06] to-transparent p-5 text-left hover:border-violet-400/60"
+            className="lift mt-10 flex w-full flex-col items-stretch gap-4 rounded-2xl border border-violet-400/35 bg-gradient-to-r from-violet-500/[0.16] via-violet-500/[0.06] to-transparent p-5 text-left hover:border-violet-400/60 sm:flex-row sm:items-center"
             data-testid="sparks-mentis-ilimitada-oferta"
           >
-            <InfinityIcon className="h-8 w-8 shrink-0 text-violet-300" />
-            <div className="min-w-0 flex-1">
-              <div className="font-mono-alt text-[10px] uppercase tracking-[0.25em] text-violet-300/90">
-                {formatBRL(pacoteIlimitado.price_cents)} · {pacoteIlimitado.sparks_amount} Sparks
-              </div>
-              <div className="mt-0.5 font-display text-xl font-extrabold tracking-tight text-white md:text-2xl">
-                A Mentis para de cobrar. E os cursos já vêm inclusos.
-              </div>
-              <div className="mt-1 text-sm leading-relaxed text-white/60">
-                Uma compra e o chat, as explicações de questão e as intervenções da causa raiz
-                deixam de gastar Spark por um mês, sem limite de mensagens. Junto vêm{" "}
-                <strong className="font-semibold text-white/85">todos os cursos</strong> e{" "}
-                <strong className="font-semibold text-white/85">todas as aulas ao vivo de
-                quinta</strong> com o 1º colocado de Medicina da USP, a{" "}
-                <strong className="font-semibold text-white/85">Comunidade VIP</strong> (a sala
-                fechada do mural) e os {pacoteIlimitado.sparks_amount} Sparks, que não expiram.
+            <div className="flex min-w-0 flex-1 items-start gap-4 sm:items-center">
+              <InfinityIcon className="h-8 w-8 shrink-0 text-violet-300" />
+              <div className="min-w-0 flex-1">
+                <div className="font-mono-alt text-[10px] uppercase tracking-[0.25em] text-violet-300/90">
+                  {formatBRL(pacoteIlimitado.price_cents)} · {pacoteIlimitado.sparks_amount} Sparks
+                </div>
+                <div className="mt-0.5 font-display text-xl font-extrabold tracking-tight text-white md:text-2xl">
+                  A Mentis para de cobrar. E os cursos já vêm inclusos.
+                </div>
+                <div className="mt-1 text-sm leading-relaxed text-white/60">
+                  Uma compra e o chat, as explicações de questão e as intervenções da causa raiz
+                  deixam de gastar Spark por um mês, sem limite de mensagens. Junto vêm{" "}
+                  <strong className="font-semibold text-white/85">todos os cursos</strong> e{" "}
+                  <strong className="font-semibold text-white/85">todas as aulas ao vivo de
+                  quinta</strong> com o {MENTOR.nome}, a{" "}
+                  <strong className="font-semibold text-white/85">Comunidade VIP</strong> (a sala
+                  fechada do mural) e os {pacoteIlimitado.sparks_amount} Sparks, que não expiram.
+                </div>
               </div>
             </div>
-            <span className="pill btn-sapiens inline-flex shrink-0 items-center gap-2 rounded-full px-6 py-3.5 text-sm font-semibold">
+            <span className="pill btn-sapiens inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-full px-6 py-3.5 text-sm font-semibold sm:w-auto">
               Quero a Mentis ilimitada
             </span>
           </button>

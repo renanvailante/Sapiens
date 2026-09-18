@@ -25,6 +25,7 @@ from typing import Any
 import pymongo.errors
 
 import firestore_service as fs
+import indicacoes
 import mercadopago_client as mp
 import sparks_store
 from models import User
@@ -640,6 +641,24 @@ async def process_payment_webhook(db, mp_payment_id: str) -> dict:
                     "DIREITOS NÃO CONCEDIDOS (%s) para %s (pagamento %s) — conceder à mão.",
                     ", ".join(direitos), existing["user_id"], mp_payment_id,
                 )
+
+        # Indicação de amigo: quem trouxe este aluno recebe METADE dos Sparks
+        # desta compra — só na PRIMEIRA compra dele, e a garantia de "uma vez
+        # só" é a reivindicação atômica lá dentro, não uma contagem aqui.
+        # Mesma disciplina dos direitos acima: falhar aqui não pode desfazer o
+        # crédito que o comprador já recebeu, então a exceção morre no log.
+        try:
+            await indicacoes.creditar_primeira_compra(
+                db,
+                comprador_id=existing["user_id"],
+                mp_payment_id=mp_payment_id,
+                sparks_comprados=existing["sparks_amount"],
+            )
+        except Exception:  # noqa: BLE001
+            logger.exception(
+                "PRÊMIO DE INDICAÇÃO NÃO PAGO na compra %s de %s — conceder à mão.",
+                mp_payment_id, existing["user_id"],
+            )
 
         atualizacao = {"credited": True, "updated_at": _now_iso()}
         if resultado.get("saldo_antes") is not None:

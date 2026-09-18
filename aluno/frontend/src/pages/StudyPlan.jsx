@@ -61,7 +61,7 @@ export default function StudyPlan() {
   if (erro || !a) return (
     <div className="min-h-screen">
       <Nav />
-      <div className="max-w-3xl mx-auto px-6 md:px-10 py-14">
+      <div className="max-w-3xl mx-auto px-5 py-7 md:px-10 md:py-10">
         <EstadoDeErro
           mensagem={erro || "Este plano não existe mais ou o link está incompleto."}
           aoTentarNovamente={recarregar}
@@ -75,10 +75,10 @@ export default function StudyPlan() {
   return (
     <div className="min-h-screen">
       <Nav />
-      <div className="max-w-3xl mx-auto px-6 md:px-10 py-12">
+      <div className="max-w-3xl mx-auto px-5 py-7 md:px-10 md:py-10">
         <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-white/50 mb-4">Recomendações</div>
-        <h1 className="font-display text-4xl md:text-5xl font-extrabold tracking-tighter text-white" data-testid="plan-title">
-          O que você precisa estudar.
+        <h1 className="titulo-tela" data-testid="plan-title">
+          O plano: o que estudar, nesta ordem.
         </h1>
         <p className="mt-3 text-white/60 max-w-lg">Cada lacuna abaixo foi ordenada pelo maior retorno esperado — não por matéria. Foque no que traz mais pontos, no menor tempo.</p>
 

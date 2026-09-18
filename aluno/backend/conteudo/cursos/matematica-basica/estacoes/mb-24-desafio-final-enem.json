@@ -1,0 +1,462 @@
+{
+  "schema_version": "1.0",
+  "estacao_id": "mb-24-desafio-final-enem",
+  "titulo": "Desafio final ENEM",
+  "objetivo": "Você vai resolver problemas contextualizados no estilo ENEM, integrando todas as competências do curso.",
+  "versao": "2026-09-16",
+  "duracao_minutos": 10,
+  "numero": 24,
+  "conceitos": [
+    "enem",
+    "interpretacao",
+    "integracao"
+  ],
+  "conclusao": {
+    "tipo": "minimo_de_acertos",
+    "minimo": 7
+  },
+  "fonte": {
+    "arquivo": "deepseek_markdown_20260916_5015b4.md",
+    "pasta": "cursos/matemática básica"
+  },
+  "blocos": [
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-24-c-01",
+      "variante": "padrao",
+      "markdown": "Esta estação encerra o curso com questões no formato do ENEM. Todas combinam **interpretação de contexto** com **execução matemática**."
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-24-c-02",
+      "variante": "padrao",
+      "markdown": "- Leitura de textos, tabelas, gráficos e figuras.\n- Interpretação de dados da realidade.\n- Resolução de problemas com mais de uma etapa.\n- Verificação de plausibilidade.",
+      "titulo": "O que o ENEM cobra"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-24-c-03",
+      "variante": "padrao",
+      "markdown": "1. **Leia a pergunta antes do texto.** Você sabe o que buscar.\n2. **Anote os dados** com unidades.\n3. **Traduza** para linguagem matemática.\n4. **Resolva** passo a passo.\n5. **Confira** se a resposta faz sentido no contexto.",
+      "titulo": "Roteiro"
+    },
+    {
+      "tipo": "video",
+      "bloco_id": "mb-24-video",
+      "titulo": "Desafio final ENEM — aula em vídeo",
+      "provedor": "youtube",
+      "ref": null,
+      "resumo": "Aula conduzida pelo 1º colocado de Medicina da USP."
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-24-q01",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Uma loja vende um produto por R$ 250 e oferece 20% de desconto. Qual o preço final?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "R$ 180"
+        },
+        {
+          "id": "b",
+          "texto": "R$ 220"
+        },
+        {
+          "id": "c",
+          "texto": "R$ 200"
+        },
+        {
+          "id": "d",
+          "texto": "R$ 230"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "b": "Subtrai 30.",
+        "d": "Subtrai 20.",
+        "a": "Aplica 28%."
+      },
+      "solucao": "`250 × 0,80 = 200`.",
+      "conceitos": [
+        "enem"
+      ],
+      "origem": {
+        "estacao": 24,
+        "questao": "Questão 1"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-24-q02",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Uma cidade tinha 400.000 habitantes e cresceu 15%. Qual a nova população?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "500.000"
+        },
+        {
+          "id": "b",
+          "texto": "415.000"
+        },
+        {
+          "id": "c",
+          "texto": "460.000"
+        },
+        {
+          "id": "d",
+          "texto": "440.000"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "b": "Soma 15.000.",
+        "d": "Esta é uma das que erram.",
+        "a": "Esta é uma das que erram."
+      },
+      "solucao": "`400.000 × 1,15 = 460.000`.",
+      "conceitos": [
+        "enem"
+      ],
+      "origem": {
+        "estacao": 24,
+        "questao": "Questão 2"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-24-q03",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Em uma turma, 60% dos 40 alunos são meninas. Quantos meninos?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "16"
+        },
+        {
+          "id": "b",
+          "texto": "20"
+        },
+        {
+          "id": "c",
+          "texto": "24"
+        },
+        {
+          "id": "d",
+          "texto": "12"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "c": "É o número de meninas.",
+        "b": "Esta é uma das que erram.",
+        "d": "Esta é uma das que erram."
+      },
+      "solucao": "Meninas: `24`. Meninos: `40 − 24 = 16`.",
+      "conceitos": [
+        "enem"
+      ],
+      "origem": {
+        "estacao": 24,
+        "questao": "Questão 3"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-24-q04",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Um carro percorre 240 km com 20 L de combustível. Quantos km por litro?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "15 km/L"
+        },
+        {
+          "id": "b",
+          "texto": "20 km/L"
+        },
+        {
+          "id": "c",
+          "texto": "12 km/L"
+        },
+        {
+          "id": "d",
+          "texto": "10 km/L"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "d": "Esta é uma das que erram.",
+        "a": "Esta é uma das que erram.",
+        "b": "Esta é uma das que erram."
+      },
+      "solucao": "`240/20 = 12`.",
+      "conceitos": [
+        "enem"
+      ],
+      "origem": {
+        "estacao": 24,
+        "questao": "Questão 4"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-24-q05",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Um produto teve aumento de 20% e depois desconto de 20%. Sobre o preço original, o preço final:",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "é igual"
+        },
+        {
+          "id": "b",
+          "texto": "subiu 4%"
+        },
+        {
+          "id": "c",
+          "texto": "caiu 4%"
+        },
+        {
+          "id": "d",
+          "texto": "subiu 40%"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "a": "Acredita erroneamente em cancelamento.",
+        "b": "Esta é uma das que erram.",
+        "d": "Esta é uma das que erram."
+      },
+      "solucao": "`1,20 × 0,80 = 0,96` → queda de 4%.",
+      "conceitos": [
+        "enem"
+      ],
+      "origem": {
+        "estacao": 24,
+        "questao": "Questão 5"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-24-q06",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Uma prova tem peso 2 para Matemática e peso 3 para Português. Um aluno tirou 7 em Matemática e 8 em Português. Qual a média ponderada?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "7,5"
+        },
+        {
+          "id": "b",
+          "texto": "8"
+        },
+        {
+          "id": "c",
+          "texto": "7,6"
+        },
+        {
+          "id": "d",
+          "texto": "7,8"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "a": "Esta é uma das que erram.",
+        "d": "Esta é uma das que erram.",
+        "b": "Esta é uma das que erram."
+      },
+      "solucao": "`(7×2 + 8×3)/5 = (14 + 24)/5 = 38/5 = 7,6`.",
+      "conceitos": [
+        "enem"
+      ],
+      "origem": {
+        "estacao": 24,
+        "questao": "Questão 6"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-24-q07",
+      "nivel": 3,
+      "formato": "multipla_escolha",
+      "enunciado": "Juros simples de R$ 2.000 a 3% ao mês por 4 meses. Qual o montante?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "R$ 2.240"
+        },
+        {
+          "id": "b",
+          "texto": "R$ 2.600"
+        },
+        {
+          "id": "c",
+          "texto": "R$ 2.120"
+        },
+        {
+          "id": "d",
+          "texto": "R$ 2.400"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "d": "Esta é uma das que erram.",
+        "b": "Esta é uma das que erram.",
+        "c": "Esta é uma das que erram."
+      },
+      "solucao": "`J = 2000 × 0,03 × 4 = 240`, `M = 2.240`.",
+      "conceitos": [
+        "enem"
+      ],
+      "origem": {
+        "estacao": 24,
+        "questao": "Questão 7"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-24-q08",
+      "nivel": 3,
+      "formato": "multipla_escolha",
+      "enunciado": "Uma caixa d’água tem 2 m³ de capacidade. Se o consumo diário é de 250 L, quantos dias dura?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "12"
+        },
+        {
+          "id": "b",
+          "texto": "6"
+        },
+        {
+          "id": "c",
+          "texto": "8"
+        },
+        {
+          "id": "d",
+          "texto": "10"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "d": "Esta é uma das que erram.",
+        "a": "Esta é uma das que erram.",
+        "b": "Esta é uma das que erram."
+      },
+      "solucao": "`2 m³ = 2.000 L`, `2000/250 = 8` dias.",
+      "conceitos": [
+        "enem"
+      ],
+      "origem": {
+        "estacao": 24,
+        "questao": "Questão 8"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-24-q09",
+      "nivel": 4,
+      "formato": "multipla_escolha",
+      "enunciado": "Uma empresa tem 500 funcionários, sendo 60% homens. Sabe-se que 30% dos homens e 40% das mulheres usam transporte público. Quantos funcionários usam transporte público?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "200"
+        },
+        {
+          "id": "b",
+          "texto": "180"
+        },
+        {
+          "id": "c",
+          "texto": "220"
+        },
+        {
+          "id": "d",
+          "texto": "170"
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "b": "Esta é uma das que erram em etapas.",
+        "a": "Esta é uma das que erram em etapas.",
+        "c": "Esta é uma das que erram em etapas."
+      },
+      "solucao": "Homens: `300`, mulheres: `200`. Usam: `300×0,30 + 200×0,40 = 90 + 80 = 170`.",
+      "conceitos": [
+        "enem"
+      ],
+      "origem": {
+        "estacao": 24,
+        "questao": "Questão 9"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-24-q10",
+      "nivel": 4,
+      "formato": "multipla_escolha",
+      "enunciado": "Um produto custa R$ 400. Foi aumentado em 25% e, depois, vendido com desconto de 10% sobre o preço já aumentado. Qual o preço final?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "R$ 450"
+        },
+        {
+          "id": "b",
+          "texto": "R$ 480"
+        },
+        {
+          "id": "c",
+          "texto": "R$ 460"
+        },
+        {
+          "id": "d",
+          "texto": "R$ 440"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "c": "Esta é uma das que erram.",
+        "d": "Esta é uma das que erram.",
+        "b": "Esta é uma das que erram."
+      },
+      "solucao": "`400 × 1,25 = 500`, `500 × 0,90 = 450`.",
+      "conceitos": [
+        "enem"
+      ],
+      "origem": {
+        "estacao": 24,
+        "questao": "Questão 10"
+      }
+    },
+    {
+      "tipo": "desafio",
+      "bloco_id": "mb-24-desafio",
+      "nivel": 5,
+      "enunciado": "Uma empresa tem dois setores. O setor A tem 120 funcionários e o setor B tem 80. O salário médio do setor A é R$ 2.000 e o do setor B é R$ 3.000. Qual o salário médio geral da empresa?",
+      "formato": "numerico",
+      "gabarito": {
+        "valor": 2400.0,
+        "tolerancia": 2.4
+      },
+      "unidade": "reais",
+      "solucao": "- Folha do setor A: `120 × 2000 = 240.000`\n- Folha do setor B: `80 × 3000 = 240.000`\n- Folha total: `480.000`\n- Funcionários: `200`\n- Média: `480.000 / 200 = 2.400`"
+    }
+  ],
+  "habilidades": [
+    "HAB-42",
+    "HAB-47"
+  ],
+  "pre_requisitos": [
+    "mb-23-revisao-geral"
+  ]
+}

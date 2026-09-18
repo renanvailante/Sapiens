@@ -100,11 +100,11 @@ export default function Sugestoes() {
   return (
     <div className="min-h-screen">
       <Nav />
-      <div className="max-w-3xl mx-auto px-6 md:px-10 py-12">
-        <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-white/50 mb-3 flex items-center gap-2">
+      <div className="max-w-3xl mx-auto px-5 py-7 md:px-10 md:py-10">
+        <div className="secao-olho flex items-center gap-1.5">
           <MessageSquareWarning className="w-3.5 h-3.5" /> Reclamações e sugestões
         </div>
-        <h1 className="font-display text-4xl md:text-5xl font-extrabold tracking-tighter text-white" data-testid="sugestoes-title">
+        <h1 className="titulo-tela" data-testid="sugestoes-title">
           Fale direto com quem faz o Sapiens.
         </h1>
         <p className="mt-3 text-white/60 max-w-xl">

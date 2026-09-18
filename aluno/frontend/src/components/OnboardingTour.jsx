@@ -9,11 +9,13 @@ import { ArrowRight, X } from "lucide-react";
 // Dashboard.jsx, PainelDeProgresso.jsx, Nav.jsx e MentisWidget.jsx). Nunca
 // bloqueia a página por baixo — é dispensável a qualquer momento.
 //
-// QUANDO ABRE (revisto em 2026-09-15): uma vez por SESSÃO do navegador, não
-// uma vez na vida. Quem entra na plataforma vê o guia; quem recarrega a página
-// no meio do estudo, não. Quem quiser rever fora disso tem o botão "Guia" no
-// topo do Painel e o "Rever o guia" no lançador de ferramentas — os dois
-// abrem esta mesma sequência (ver `Dashboard.jsx`, `?guia=1`).
+// QUANDO ABRE (revisto em 2026-09-17): no PRIMEIRO acesso do aluno, e só nele.
+// Entre 15/09 e 17/09 ele abria uma vez por sessão do navegador, o que na
+// prática queria dizer todo dia — vinte e um balões na cara de quem só queria
+// estudar. A marca agora é permanente e mora no servidor (`flags.guia_visto`),
+// então nem logout, nem trocar de aparelho, nem janela anônima o trazem de
+// volta. Quem quiser rever tem o botão "Guia" no topo do Painel e o "Rever o
+// guia" no menu — os dois abrem esta mesma sequência (`?guia=1`).
 //
 // O QUE ENTRA: TUDO o que o aluno pode usar. A régua antiga era "as nove
 // ferramentas principais"; ela deixava de fora justamente o que ninguém
@@ -30,11 +32,26 @@ const STEPS = [
     target: null,
     mascote: true,
     title: "Oi, eu sou a Mentis",
-    text: "Eu acompanho você até a prova. Em um minuto eu te mostro tudo o que existe aqui dentro.",
+    text: "Eu acompanho você até o dia da prova. Meu trabalho é um só: descobrir por que você erra e transformar isso no seu plano. Em um minuto eu te mostro tudo.",
   },
-  // O MAPA PRIMEIRO. É a peça de maior impacto visual do Sapiens e a que
-  // comunica o valor do produto sem um parágrafo — começar por ela é decisão
-  // de produto, não ordem de tela.
+  // ONDE ELE ESTÁ, ANTES DO QUE ELE FAZ. O passo entrou em 2026-09-16 junto
+  // com a barra inferior do celular: até então o aluno de celular terminava
+  // o guia inteiro sem nunca ter visto que existe navegação, porque não
+  // existia. No desktop o mesmo passo aponta a fileira de abas de cima, que
+  // agora acende a rota atual.
+  {
+    target: "nav-primarios",
+    title: "Sua barra",
+    text: "Treino, Painel, Redação, Semana, Mural e eu. A aba acesa é onde você está agora.",
+    mobile: {
+      target: "barra-inferior",
+      title: "Sua barra",
+      text: "Ela te segue em toda tela. O botão aceso do meio é praticar — é por ele que quase tudo começa.",
+    },
+  },
+  // O MAPA DEPOIS. É a peça de maior impacto visual do Sapiens e a que
+  // comunica o valor do produto sem um parágrafo — vir logo em seguida é
+  // decisão de produto, não ordem de tela.
   {
     target: "dash-mapa",
     title: "Mapa de Treino",
@@ -127,7 +144,9 @@ const STEPS = [
     target: "nav-more",
     title: "Tudo o que existe",
     text: "Este botão abre o produto inteiro em grade: liga, histórico, feed, lixeira e todas as telas.",
-    mobile: { target: "nav-mobile-trigger" },
+    // No celular o lançador deixou de abrir por um botão ao lado da marca e
+    // passou a abrir pelo "Mais" da barra inferior.
+    mobile: { target: "barra-mais" },
   },
   {
     target: "mentis-widget",
@@ -139,7 +158,7 @@ const STEPS = [
     target: null,
     mascote: true,
     title: "É isso",
-    text: "Comece abrindo o mapa. Para rever este guia, o botão \u201cGuia\u201d fica no topo do Painel.",
+    text: "Agora é com você: abra o mapa e responda a primeira. Eu cuido do resto do caminho — e o botão \u201cGuia\u201d, no topo do Painel, me traz de volta quando quiser.",
   },
 ];
 
@@ -269,7 +288,17 @@ export default function OnboardingTour({ onDone }) {
 
   const finish = useCallback(() => {
     clearSpotlight();
-    api.put("/firestore/students/me/behavior", { flags: { onboarded: true } }).catch(() => {});
+    // `guia_visto` é o que faz o guia não voltar na próxima entrada — e ele é
+    // gravado tanto no "Começar" do último passo quanto no "Pular tour": quem
+    // pulou decidiu não ver, e reapresentar amanhã o que a pessoa dispensou
+    // hoje é ignorar a única resposta que ela deu.
+    //
+    // `onboarded` continua indo junto porque terminar o guia também encerra o
+    // primeiro acesso, e a marca local de quem chama fecha a conta caso este
+    // PUT falhe (ver `Dashboard.marcarGuiaVisto`).
+    api
+      .put("/firestore/students/me/behavior", { flags: { onboarded: true, guia_visto: true } })
+      .catch(() => {});
     onDone?.();
   }, [clearSpotlight, onDone]);
 

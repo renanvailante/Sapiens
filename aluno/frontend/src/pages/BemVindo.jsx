@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, ArrowLeft, Play, SkipForward, Check, Loader2, Target } from "lucide-react";
+import { ArrowRight, ArrowLeft, SkipForward, Check, Loader2, Target } from "lucide-react";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import Mentis from "../components/Mentis";
-import BrandMark from "../components/BrandMark";
+import Logo from "../components/Logo";
+import VideoDoMentor from "../components/VideoDoMentor";
+import { MENTOR } from "../lib/mentor";
 
 /**
  * O primeiro acesso: um vídeo curto e três perguntas, conduzidas pela Mentis.
@@ -23,15 +25,15 @@ import BrandMark from "../components/BrandMark";
  *    nada depois é só um pedágio.
  *
  * No fim, o guia da Mentis abre por cima do Painel (`/dashboard?guia=1`).
+ *
+ * **O vídeo da primeira etapa (2026-09-17)** é o mesmo de apresentação do
+ * mentor que a landing já usa (`VideoDoMentor` + `lib/mentor.js`) — não um
+ * vídeo de boas-vindas à parte. Antes disso a etapa desenhava só o LUGAR de
+ * um vídeo que nunca chegou a existir: quem via a landing via {MENTOR.nome}
+ * contando quem é antes de criar conta, e quem criava conta via um retângulo
+ * vazio com um ícone de play morto — a primeira interação de quem já era
+ * aluno era pior que a de quem ainda nem tinha entrado.
  */
-
-// O vídeo ainda não existe. Quando existir, é só apontar esta constante para
-// o arquivo (ou para a URL do provedor) — a tela inteira já está montada em
-// volta dele, incluindo o botão de pular e o avanço automático no fim.
-// Um `<video>` com `src` vazio mostraria um player quebrado, então enquanto
-// estiver vazio a tela desenha o lugar do vídeo em vez de fingir que há um.
-const VIDEO_BOAS_VINDAS = "";
-const VIDEO_POSTER = "";
 
 const ETAPAS = ["video", "dificuldades", "objetivo", "meta"];
 
@@ -180,26 +182,33 @@ export default function BemVindo() {
     <div className="min-h-screen">
       <div className="mx-auto flex min-h-screen max-w-2xl flex-col px-6 py-8 md:px-10 md:py-12">
         <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 font-display text-xl font-extrabold tracking-tighter text-white">
-            <BrandMark className="h-5 w-5" /> Sapiens
-          </div>
+          <Logo tamanho="p" testid="onb-marca" />
           <button
             type="button"
             onClick={pularTudo}
-            className="py-2 text-xs text-white/40 transition-colors hover:text-white/80"
+            className="chip pill px-3 py-1.5 text-[11px]"
             data-testid="onb-pular-tudo"
           >
             Pular
           </button>
         </div>
 
-        {/* Quatro traços: o aluno vê de saída que isto acaba rápido. */}
+        {/* Quatro traços: o aluno vê de saída que isto acaba rápido.
+            Três estados, não dois: o PASSADO é uma linha acesa cheia, o ATUAL
+            também acende mas com halo (é onde ele está), e o futuro é trilho.
+            Com dois estados, "onde estou" e "o que já fiz" eram a mesma cor e
+            a barra só dizia quanto falta. */}
         <div className="mt-6 flex gap-1.5" data-testid="onb-progresso">
           {ETAPAS.map((e, i) => (
             <span
               key={e}
-              className={`h-1 flex-1 rounded-full transition-colors ${
-                i <= etapa ? "bg-[#4FD9FF]" : "bg-white/10"
+              data-estado={i < etapa ? "feito" : i === etapa ? "atual" : "futuro"}
+              className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
+                i < etapa
+                  ? "bg-[#4FD9FF]"
+                  : i === etapa
+                  ? "bg-gradient-to-r from-[#4FD9FF] to-[#8B7BFF] shadow-[0_0_12px_-2px_rgba(79,217,255,0.9)]"
+                  : "bg-white/10"
               }`}
             />
           ))}
@@ -209,39 +218,16 @@ export default function BemVindo() {
           {/* ---------------- Vídeo ---------------- */}
           {nome === "video" && (
             <section className="reveal" data-testid="onb-video">
-              <h1 className="font-display text-3xl font-extrabold leading-[1.05] tracking-tighter text-white md:text-5xl">
+              <h1 className="titulo-heroi">
                 {primeiroNome ? `Bem-vindo, ${primeiroNome}.` : "Bem-vindo ao Sapiens."}
               </h1>
-              <p className="mt-3 text-white/55">Dois minutos para entender o que muda daqui em diante.</p>
+              <p className="mt-3 text-white/55">
+                Você está a três passos de saber exatamente o que estudar. Antes
+                do primeiro, conheça quem desenhou o plano: {MENTOR.nome},{" "}
+                {MENTOR.titulo.toLowerCase()}.
+              </p>
 
-              <div className="mt-6 overflow-hidden rounded-2xl border border-white/12 bg-black/40">
-                {VIDEO_BOAS_VINDAS ? (
-                  <video
-                    className="aspect-video w-full"
-                    src={VIDEO_BOAS_VINDAS}
-                    poster={VIDEO_POSTER || undefined}
-                    controls
-                    autoPlay
-                    playsInline
-                    onEnded={avancar}
-                    data-testid="onb-video-player"
-                  />
-                ) : (
-                  // O lugar do vídeo, enquanto ele não existe. Melhor do que
-                  // um player quebrado — e o fluxo já é o definitivo.
-                  <div
-                    className="flex aspect-video w-full flex-col items-center justify-center gap-3 bg-[linear-gradient(140deg,rgba(79,217,255,0.10),rgba(139,123,255,0.10))]"
-                    data-testid="onb-video-placeholder"
-                  >
-                    <span className="flex h-14 w-14 items-center justify-center rounded-full border border-white/15 bg-white/5">
-                      <Play className="ml-0.5 h-6 w-6 text-white/60" />
-                    </span>
-                    <span className="font-mono-alt text-[11px] uppercase tracking-[0.25em] text-white/35">
-                      Vídeo de boas-vindas
-                    </span>
-                  </div>
-                )}
-              </div>
+              <VideoDoMentor className="mt-6" testid="onb-video-mentor" />
 
               <div className="mt-6 flex flex-wrap items-center gap-3">
                 <button
@@ -255,7 +241,7 @@ export default function BemVindo() {
                 <button
                   type="button"
                   onClick={avancar}
-                  className="pill inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-5 py-3 text-sm text-white/70 hover:border-white/30 hover:text-white"
+                  className="pill btn-vidro inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm"
                   data-testid="onb-pular-video"
                 >
                   <SkipForward className="h-4 w-4" /> Pular introdução

@@ -66,6 +66,16 @@ class User(BaseModel):
     # que diz QUANTOS usaram e nunca QUEM.
     promo_code: str | None = None
     promo_sparks: int | None = None
+    # Indicação de amigo (2026-09-16) — NÃO confundir com `promo_code`, que é
+    # cupom de marketing criado pelo admin. `referral_code` é o código PESSOAL
+    # deste aluno, que ele passa para os amigos; `indicado_por` é o `user_id`
+    # de quem trouxe ESTA conta. Os dois nascem `None`: o código é criado na
+    # primeira vez que o aluno abre a tela de indicação (`indicacoes.
+    # garantir_codigo`), e o vínculo só existe se um código de aluno tiver
+    # sido digitado no cadastro. A regra do prêmio mora em `indicacoes.py`.
+    referral_code: str | None = None
+    indicado_por: str | None = None
+    indicado_por_codigo: str | None = None
     # WhatsApp do aluno — pedido no cadastro (2026-09-15) porque é o único
     # canal em que a equipe realmente alcança um estudante: e-mail de menor de
     # idade não é lido, e o link da aula ao vivo de quinta precisa chegar a
@@ -76,6 +86,22 @@ class User(BaseModel):
     # pelo Google sem informar — a tela pede depois, não inventa número.
     whatsapp: str | None = None
     whatsapp_e164: str | None = None
+    # RESPONSÁVEL LEGAL — pedido no cadastro a quem declara ter menos de 18
+    # anos (2026-09-17). Não é campo de marketing: a LGPD (art. 14) trata dado
+    # de criança e adolescente à parte e exige consentimento de um responsável,
+    # e até aqui o produto resolvia isso com uma frase dentro do aceite dos
+    # termos — que não deixa NENHUM registro de quem consentiu nem como
+    # alcançá-lo. Agora deixa.
+    #
+    # `menor_de_idade` é autodeclarado, e é assim de propósito: pedir data de
+    # nascimento a todo mundo para descobrir a idade de uma minoria é coletar
+    # mais dado do que a finalidade justifica (minimização, art. 6º III).
+    # `None` nas contas anteriores a esta data significa "nunca perguntamos",
+    # que é diferente de `False`.
+    menor_de_idade: bool | None = None
+    responsavel_nome: str | None = None
+    responsavel_whatsapp: str | None = None
+    responsavel_whatsapp_e164: str | None = None
     created_at: str = Field(default_factory=_now_iso)
 
 
@@ -195,6 +221,13 @@ class SignupRequest(BaseModel):
     # validado em `whatsapp.normalizar`, não aqui — o `min_length` abaixo só
     # impede o campo vazio; a mensagem que o aluno lê vem de lá.
     whatsapp: str = Field(..., min_length=8, max_length=30)
+    # Menor de idade: se `True`, `responsavel_nome` e `responsavel_whatsapp`
+    # passam a ser OBRIGATÓRIOS — a checagem é na rota, e não aqui, porque a
+    # mensagem que o adolescente lê ("Quem é seu responsável?") é melhor que
+    # um 422 do Pydantic apontando dois campos por nome técnico.
+    menor_de_idade: bool = False
+    responsavel_nome: str | None = Field(default=None, max_length=200)
+    responsavel_whatsapp: str | None = Field(default=None, max_length=30)
     # Opcional: código de promoção que troca o bônus padrão de Sparks do
     # cadastro pelo valor programado no código (ver `promo_codes_routes.py`).
     # Um código inválido/expirado nunca barra a criação da conta — só cai
@@ -255,10 +288,20 @@ class MentoriaEspera(BaseModel):
     request_id: str = Field(default_factory=lambda: f"aula_{uuid.uuid4().hex[:12]}")
     user_id: str
     nome_completo: str
+    # O e-mail da CONTA, copiado no momento em que o aluno entra na fila
+    # (2026-09-17). Copiado, e não resolvido na hora de listar: o painel do
+    # admin precisa dos três contatos em uma consulta só, e a alternativa —
+    # um `users.find` por linha da fila — é N leituras para desenhar uma
+    # tabela. `None` nos pedidos anteriores a esta data.
+    email: str | None = None
     whatsapp: str
     areas: list[str]
     descricao: str = ""
     status: str = "pendente"
+    # Quanto foi efetivamente cobrado para entrar na fila, e quando. Fica no
+    # registro porque é a prova de que a cobrança aconteceu: se o aluno
+    # reclamar de um débito, o admin responde olhando a própria fila.
+    sparks_cobrados: int = 0
     created_at: str = Field(default_factory=_now_iso)
     updated_at: str = Field(default_factory=_now_iso)
 
@@ -290,16 +333,22 @@ class PromoCode(BaseModel):
     active: bool = True
     usos: int = 0
     created_at: str = Field(default_factory=_now_iso)
+    # E-mail de quem divulga este cupom (o "promoter"). Não é uma segunda
+    # tabela: é este campo, num cupom, que dá acesso ao painel restrito de
+    # `/promoter/dashboard` — a própria conta com este e-mail, ao logar.
+    promoter_email: str | None = None
 
 
 class CreatePromoCodeRequest(BaseModel):
     code: str = Field(..., min_length=3, max_length=40)
     sparks_amount: int = Field(..., ge=1, le=100_000)
+    promoter_email: str | None = Field(default=None, max_length=200)
 
 
 class UpdatePromoCodeRequest(BaseModel):
     sparks_amount: int | None = Field(default=None, ge=1, le=100_000)
     active: bool | None = None
+    promoter_email: str | None = Field(default=None, max_length=200)
 
 
 # ---------- Redação (corretor ENEM) ----------

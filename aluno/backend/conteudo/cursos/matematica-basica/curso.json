@@ -1,0 +1,66 @@
+{
+  "schema_version": "1.0",
+  "curso_id": "matematica-basica",
+  "versao": "2026-09-16",
+  "trilhas": [
+    {
+      "trilha_id": "numeros-e-operacoes",
+      "titulo": "Números e operações",
+      "resumo": "A conta que o resto do curso vai usar sem avisar.",
+      "estacoes": [
+        "mb-01-operacoes-fundamentais",
+        "mb-02-fracoes",
+        "mb-07-potenciacao",
+        "mb-08-radiciacao",
+        "mb-09-notacao-cientifica"
+      ]
+    },
+    {
+      "trilha_id": "proporcao-e-porcentagem",
+      "titulo": "Proporção e porcentagem",
+      "resumo": "O assunto que mais cai no ENEM, do conceito ao contexto.",
+      "estacoes": [
+        "mb-03-razao-e-proporcao",
+        "mb-04-regra-de-tres",
+        "mb-05-porcentagem",
+        "mb-06-porcentagem-no-enem",
+        "mb-13-proporcionalidade"
+      ]
+    },
+    {
+      "trilha_id": "algebra",
+      "titulo": "Álgebra",
+      "resumo": "Da letra solta à equação que resolve o problema.",
+      "estacoes": [
+        "mb-10-expressoes-algebricas",
+        "mb-11-equacoes-do-1o-grau",
+        "mb-12-sistemas-de-equacoes",
+        "mb-14-equacoes-do-2o-grau",
+        "mb-15-produtos-notaveis-e-fatoracao",
+        "mb-16-inequacoes"
+      ]
+    },
+    {
+      "trilha_id": "medidas-dados-e-graficos",
+      "titulo": "Medidas, dados e gráficos",
+      "resumo": "Ler o que a prova mostra antes de calcular qualquer coisa.",
+      "estacoes": [
+        "mb-17-unidades-e-conversoes",
+        "mb-18-medias",
+        "mb-19-graficos",
+        "mb-20-tabelas"
+      ]
+    },
+    {
+      "trilha_id": "matematica-do-enem",
+      "titulo": "A matemática do ENEM",
+      "resumo": "Tudo junto, no formato em que a prova cobra.",
+      "estacoes": [
+        "mb-21-problemas-integrados",
+        "mb-22-matematica-financeira-basica",
+        "mb-23-revisao-geral",
+        "mb-24-desafio-final-enem"
+      ]
+    }
+  ]
+}

@@ -1,19 +1,24 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { CalendarDays, Radio, ArrowRight } from "lucide-react";
-import { proximaProva, tempoRestante, quintasAteAProva } from "../lib/enem";
+import { CalendarDays, ArrowRight } from "lucide-react";
+import { proximaProva, tempoRestante } from "../lib/enem";
 
 /**
  * A contagem regressiva para o ENEM.
  *
  * É a peça mais insistente do produto, e de propósito: é também a única que
  * não precisa exagerar para pressionar. A data é real (a mesma de
- * `backend/engajamento.py`), o relógio é real, e o número que fecha o
- * argumento — **quantas quintas-feiras ainda cabem antes da prova** — é
- * aritmética, não retórica. Cada quinta que passa é uma aula ao vivo que não
- * volta, e isso é literalmente verdade.
+ * `backend/engajamento.py`) e o relógio é real.
  *
- * Por isso NÃO existe aqui nenhum contador de "restam 3 vagas", nenhuma
+ * **Ela conta UMA coisa só: quanto falta para a prova.** Até 2026-09-17 o
+ * componente fechava o argumento com "quantas quintas-feiras ainda cabem
+ * antes do ENEM" e levava para `/aula-ao-vivo` — ou seja, o relógio do INEP
+ * era o vendedor da aula ao vivo. São duas coisas diferentes: o relógio vale
+ * para todo aluno, inclusive quem nunca vai comprar uma live, e amarrá-lo a
+ * um produto fazia a única peça honesta da tela parecer anúncio. A venda da
+ * aula vive em `/aula-ao-vivo` e nas pontes que levam até lá.
+ *
+ * Também NÃO existe aqui nenhum contador de "restam 3 vagas", nenhuma
  * oferta que "acaba em 10 minutos" e nenhum desconto que reaparece amanhã.
  * Urgência inventada dura uma semana e queima a confiança de quem já pagou;
  * o calendário do INEP não precisa de ajuda.
@@ -26,11 +31,10 @@ import { proximaProva, tempoRestante, quintasAteAProva } from "../lib/enem";
  *   - "linha"   — uma linha discreta, para o rodapé de outra seção.
  *
  * A "medida" entrou em 2026-09-16, quando a faixa saiu do TOPO do Painel. A
- * faixa é uma peça de venda — três CTAs e dois parágrafos — e ela abria a
- * tela do aluno antes de qualquer coisa que ele pudesse FAZER. O relógio
- * continua sendo a primeira dobra; o que mudou é que ali ele é um dado ao
- * lado da ofensiva e do nível, e o argumento completo vive onde a compra
- * acontece. O número é o mesmo nos dois lugares: o mesmo `tempoRestante`.
+ * faixa abria a tela do aluno antes de qualquer coisa que ele pudesse FAZER.
+ * O relógio continua sendo a primeira dobra; o que mudou é que ali ele é um
+ * dado ao lado da ofensiva e do nível. O número é o mesmo nos dois lugares:
+ * o mesmo `tempoRestante`.
  */
 
 function Bloco({ valor, rotulo, grande }) {
@@ -72,14 +76,15 @@ export default function ContagemEnem({ variante = "faixa", comCta = true, testid
 
   if (!prova || !tempo) return null;
 
-  const quintas = quintasAteAProva();
   const dia = prova.fase === 1 ? "primeiro" : "segundo";
   const dataFmt = prova.inicio.toLocaleDateString("pt-BR", { day: "2-digit", month: "long" });
 
   if (variante === "medida") {
     return (
+      // O destino é o CRONOGRAMA e não a aula ao vivo: o que um aluno faz com
+      // "faltam 52 dias" é reorganizar a semana, não comprar uma live.
       <Link
-        to="/aula-ao-vivo"
+        to="/cronograma"
         className="superficie lift flex flex-col justify-between p-4"
         data-testid={`${testid}-medida`}
         title={`${dia} dia do ENEM · ${dataFmt}`}
@@ -99,13 +104,7 @@ export default function ContagemEnem({ variante = "faixa", comCta = true, testid
             :{String(tempo.segundos).padStart(2, "0")}
           </div>
         </div>
-        <div className="medida-rotulo text-amber-200/70">
-          {quintas === 0
-            ? "sem aula antes da prova"
-            : quintas === 1
-            ? "1 aula ao vivo até lá"
-            : `${quintas} aulas ao vivo até lá`}
-        </div>
+        <div className="medida-rotulo text-amber-200/70">{dataFmt}</div>
       </Link>
     );
   }
@@ -117,11 +116,12 @@ export default function ContagemEnem({ variante = "faixa", comCta = true, testid
         data-testid={`${testid}-linha`}
       >
         <CalendarDays className="h-3.5 w-3.5 text-amber-300" />
-        <strong className="font-semibold text-white/85 tabular-nums">{tempo.dias} dias</strong>
+        <strong className="font-semibold text-white/85 tabular-nums">
+          {tempo.dias} {tempo.dias === 1 ? "dia" : "dias"}
+        </strong>
         para o {dia} dia do ENEM
         <span className="text-white/25">·</span>
-        <strong className="font-semibold text-amber-200 tabular-nums">{quintas}</strong>
-        {quintas === 1 ? " aula ao vivo" : " aulas ao vivo"} até lá
+        <span className="text-white/45">{dataFmt}</span>
       </div>
     );
   }
@@ -144,23 +144,23 @@ export default function ContagemEnem({ variante = "faixa", comCta = true, testid
           <h2 className="mt-2 font-display text-2xl font-extrabold leading-[1.05] tracking-tighter text-white md:text-3xl">
             O relógio não para.{" "}
             <span className="text-amber-200">
-              {quintas === 0
-                ? "Não há mais quinta antes da prova."
-                : quintas === 1
-                ? "Resta 1 aula ao vivo antes da prova."
-                : `Restam ${quintas} aulas ao vivo antes da prova.`}
+              {tempo.dias === 0
+                ? "A prova é hoje."
+                : tempo.dias === 1
+                ? "Falta 1 dia para a prova."
+                : `Faltam ${tempo.dias} dias para a prova.`}
             </span>
           </h2>
           <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-white/55">
-            {quintas > 0 ? (
+            {tempo.dias > 0 ? (
               <>
-                Toda quinta que passa é uma aula com o 1º colocado de Medicina da USP que você
-                não assiste — e ela não volta. A data da prova é a mesma para todo mundo; o que
-                muda é quantas dessas quintas você aproveita.
+                A data é a mesma para todo mundo e ninguém a adia. O que muda de aluno para aluno
+                é o que cabe dentro do tempo que sobrou — e é essa conta que o Sapiens ajuda você
+                a fazer.
               </>
             ) : (
               <>
-                A prova é agora. Use o que você já comprou: reveja seus cursos, converse com a
+                A prova é agora. Use o que você já construiu: reveja o que errou, converse com a
                 Mentis e durma cedo.
               </>
             )}
@@ -175,28 +175,18 @@ export default function ContagemEnem({ variante = "faixa", comCta = true, testid
         </div>
       </div>
 
-      {comCta && quintas > 0 && (
+      {/* O único CTA que a contagem pode ter é o que ela mesma implica:
+          organizar o tempo que sobrou. Ele não é ligado por ninguém hoje
+          (`comCta` chega `false` nas cinco telas), e continua aqui para o dia
+          em que a faixa abrir uma tela de quem ainda não montou a semana. */}
+      {comCta && tempo.dias > 0 && (
         <div className="mt-5 flex flex-wrap items-center gap-2.5 border-t border-white/10 pt-4">
           <Link
-            to="/aula-ao-vivo"
-            className="pill btn-calor inline-flex items-center gap-2 rounded-full px-5 py-3 text-xs"
-            data-testid={`${testid}-cta-live`}
-          >
-            <Radio className="h-3.5 w-3.5" /> Garantir a aula desta quinta
-          </Link>
-          <Link
-            to="/cursos"
+            to="/cronograma"
             className="pill btn-vidro inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 text-xs"
-            data-testid={`${testid}-cta-cursos`}
+            data-testid={`${testid}-cta-cronograma`}
           >
-            Ver os cursos <ArrowRight className="h-3 w-3" />
-          </Link>
-          <Link
-            to="/mentoria"
-            className="pill inline-flex items-center gap-1.5 rounded-full border border-white/12 px-4 py-2.5 text-xs text-white/60 hover:text-white"
-            data-testid={`${testid}-cta-mentoria`}
-          >
-            Entrar na lista da mentoria
+            Montar a minha semana <ArrowRight className="h-3 w-3" />
           </Link>
         </div>
       )}

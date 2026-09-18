@@ -29,7 +29,7 @@ export default function Diagnostic() {
   if (erro || !a) return (
     <div className="min-h-screen">
       <Nav />
-      <div className="max-w-3xl mx-auto px-6 md:px-10 py-14">
+      <div className="max-w-3xl mx-auto px-5 py-7 md:px-10 md:py-10">
         <EstadoDeErro
           mensagem={erro || "Esta análise não existe mais ou o link está incompleto."}
           aoTentarNovamente={recarregar}
@@ -54,7 +54,7 @@ export default function Diagnostic() {
   return (
     <div className="min-h-screen">
       <Nav />
-      <div className="max-w-3xl mx-auto px-6 md:px-10 py-14">
+      <div className="max-w-3xl mx-auto px-5 py-7 md:px-10 md:py-10">
         {phase === "insight" ? (
           <div className="reveal">
             <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-white/50 mb-6">Diagnóstico Sapiens</div>

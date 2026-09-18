@@ -255,7 +255,7 @@ function PainelGerar({ habId, sparksPorQuestao }) {
   return (
     <div className="rounded-2xl border border-zinc-200 bg-white/60 p-5" data-testid="treino-painel-gerar">
       <div className="flex items-center gap-2 font-display font-bold text-base text-zinc-950">
-        <PartyPopper className="w-4.5 h-4.5 text-sapiens-accentDeep" /> Praticar mais nesta habilidade
+        <PartyPopper className="w-5 h-5 text-sapiens-accentDeep" /> Praticar mais nesta habilidade
       </div>
       {resposta ? (
         <div
@@ -342,7 +342,7 @@ function AprofundarConceito({ habId, habNome, habRotulo, custoConceito, onSparks
   return (
     <div className="rounded-2xl border border-zinc-200 bg-white/60 p-5" data-testid="mapa-aprofundar">
       <div className="flex items-center gap-2 font-display font-bold text-base text-zinc-950">
-        <Waves className="w-4.5 h-4.5 text-sapiens-accentDeep" /> Aprofundar com a Mentis
+        <Waves className="w-5 h-5 text-sapiens-accentDeep" /> Aprofundar com a Mentis
       </div>
       {estado === "pronto" ? (
         <div className="mt-3 space-y-2.5" data-testid="mapa-mergulho-texto">
@@ -552,11 +552,11 @@ export default function TreinoHabilidades() {
   return (
     <div className="min-h-screen">
       <Nav />
-      <div className="max-w-6xl mx-auto px-6 md:px-10 py-12">
-        <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-white/50 mb-3 flex items-center gap-2">
+      <div className="max-w-6xl mx-auto px-5 py-7 md:px-10 md:py-10">
+        <div className="secao-olho flex items-center gap-1.5">
           <Compass className="w-3.5 h-3.5" /> Mapa de exploração
         </div>
-        <h1 className="font-display text-4xl md:text-5xl font-extrabold tracking-tighter text-white" data-testid="treino-title">
+        <h1 className="titulo-tela" data-testid="treino-title">
           Existe sempre um território novo para descobrir.
         </h1>
         <p className="mt-3 text-white/60 max-w-xl">

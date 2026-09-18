@@ -1,0 +1,527 @@
+{
+  "schema_version": "1.0",
+  "estacao_id": "mb-01-operacoes-fundamentais",
+  "titulo": "Operações fundamentais",
+  "objetivo": "Ao final desta estação, você saberá resolver expressões numéricas respeitando a ordem correta das operações, e reconhecerá os erros mais comuns que fazem uma conta simples dar errado.",
+  "versao": "2026-09-16",
+  "duracao_minutos": 12,
+  "numero": 1,
+  "conceitos": [
+    "operacoes-fundamentais",
+    "ordem-de-operacoes",
+    "calculo-mental"
+  ],
+  "conclusao": {
+    "tipo": "minimo_de_acertos",
+    "minimo": 7
+  },
+  "fonte": {
+    "arquivo": "mat basica 1.md",
+    "pasta": "cursos/matemática básica"
+  },
+  "blocos": [
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-01-c-01",
+      "variante": "padrao",
+      "markdown": "Toda expressão numérica é resolvida em **quatro níveis de prioridade**, sempre de cima para baixo:\n\n1. **Parênteses** — `( )`, depois `[ ]`, depois `{ }`\n2. **Potências e raízes**\n3. **Multiplicação e divisão** — na ordem em que aparecem, da esquerda para a direita\n4. **Adição e subtração** — também na ordem em que aparecem\n\nDentro do mesmo nível, quem vem primeiro da esquerda tem prioridade. Isso é o que faz `100 ÷ 10 × 2 = 20` e não `5`."
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-01-c-02",
+      "variante": "padrao",
+      "markdown": "A multiplicação é uma soma repetida. Escrever `3 × 4` é escrever `4 + 4 + 4`. Se resolvêssemos a soma antes, estaríamos somando quantidades que ainda não foram contadas. A ordem de operações preserva o significado da expressão.",
+      "titulo": "Por que essa ordem existe"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-01-c-03",
+      "variante": "padrao",
+      "markdown": "Um sinal de menos na frente de um parêntese troca o sinal de **tudo** que está dentro.\n\n`−(3 − 5) = −3 + 5 = 2`",
+      "titulo": "Sinal negativo"
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-01-ex-01",
+      "enunciado": "`7 + 3 × 4`",
+      "passos": [
+        {
+          "texto": "Multiplicação primeiro: `3 × 4 = 12`"
+        },
+        {
+          "texto": "Depois soma: `7 + 12 = 19`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-01-ex-02",
+      "enunciado": "`(7 + 3) × 4`",
+      "passos": [
+        {
+          "texto": "Parêntese primeiro: `7 + 3 = 10`"
+        },
+        {
+          "texto": "Depois multiplicação: `10 × 4 = 40`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-01-ex-03",
+      "enunciado": "`20 − 3 × 4 + 2`",
+      "passos": [
+        {
+          "texto": "Multiplicação: `3 × 4 = 12`"
+        },
+        {
+          "texto": "Esquerda para direita: `20 − 12 = 8`, depois `8 + 2 = 10`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-01-ex-04",
+      "enunciado": "`2 + 3 × {4 + 5 × [6 − 2 × (3 − 1)]}`",
+      "passos": [
+        {
+          "texto": "`(3 − 1) = 2`"
+        },
+        {
+          "texto": "`2 × 2 = 4`, então `[6 − 4] = 2`"
+        },
+        {
+          "texto": "`5 × 2 = 10`, então `{4 + 10} = 14`"
+        },
+        {
+          "texto": "`3 × 14 = 42`"
+        },
+        {
+          "texto": "`2 + 42 = 44`"
+        }
+      ]
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-01-es-01",
+      "variante": "destaque",
+      "markdown": "- Antes de calcular, **marque visualmente** o que resolve primeiro. Circulue parênteses.\n- Em expressões longas, reescreva a linha inteira após cada passo. Não tente resolver tudo de cabeça.\n- Desconfie de resultados “bonitos demais”. Se `100 ÷ 10 × 2` deu `5`, provavelmente você aplicou uma prioridade que não existe.\n- Quando houver dúvida entre duas leituras, teste com números pequenos."
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-01-er-01",
+      "variante": "atencao",
+      "markdown": "- **Somar antes de multiplicar.** `6 + 4 × 5 = 50` está errado; o correto é `26`.\n- **Tratar multiplicação e divisão como níveis diferentes.** Elas têm a mesma prioridade; vale a ordem da esquerda para a direita.\n- **Esquecer o sinal de menos antes de parênteses.** `−(3 − 5)` não é `−3 − 5`.\n- **Abandonar a expressão no meio.** Parar em `20 − 12 = 8` e não somar o `+2`."
+    },
+    {
+      "tipo": "video",
+      "bloco_id": "mb-01-video",
+      "titulo": "Operações fundamentais — aula em vídeo",
+      "provedor": "youtube",
+      "ref": null,
+      "resumo": "Aula conduzida pelo 1º colocado de Medicina da USP."
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-01-q01",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Calcule `6 + 4 × 5`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "30"
+        },
+        {
+          "id": "b",
+          "texto": "26"
+        },
+        {
+          "id": "c",
+          "texto": "20"
+        },
+        {
+          "id": "d",
+          "texto": "50"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "d": "Corresponde a somar primeiro (`10 × 5`).",
+        "a": "Ignora o 4 e multiplica só `6 × 5`.",
+        "c": "Ignora o 6 e para em `4 × 5`."
+      },
+      "solucao": "A multiplicação vem antes da soma: `4 × 5 = 20`, depois `6 + 20 = 26`.",
+      "conceitos": [
+        "ordem-de-operacoes"
+      ],
+      "origem": {
+        "estacao": 1,
+        "questao": "Questão 1"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-01-q02",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Calcule `10 + 2 × 3 − 4`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "12"
+        },
+        {
+          "id": "b",
+          "texto": "0"
+        },
+        {
+          "id": "c",
+          "texto": "32"
+        },
+        {
+          "id": "d",
+          "texto": "16"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "c": "Resolve tudo da esquerda para a direita, ignorando a prioridade.",
+        "b": "Inverte o sinal da multiplicação.",
+        "d": "Esquece a subtração final."
+      },
+      "solucao": "`2 × 3 = 6`, então `10 + 6 − 4 = 12`.",
+      "conceitos": [
+        "ordem-de-operacoes"
+      ],
+      "origem": {
+        "estacao": 1,
+        "questao": "Questão 2"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-01-q03",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Calcule `3² + 4 × 2`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "72"
+        },
+        {
+          "id": "b",
+          "texto": "17"
+        },
+        {
+          "id": "c",
+          "texto": "26"
+        },
+        {
+          "id": "d",
+          "texto": "25"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "c": "Soma primeiro dentro de um parêntese imaginário.",
+        "d": "Calcula `3² + 4²`, aplicando o expoente aos dois termos.",
+        "a": "Multiplica tudo."
+      },
+      "solucao": "`3² = 9`, `4 × 2 = 8`, soma: `9 + 8 = 17`.",
+      "conceitos": [
+        "ordem-de-operacoes"
+      ],
+      "origem": {
+        "estacao": 1,
+        "questao": "Questão 3"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-01-q04",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Calcule `20 ÷ 4 + 3 × (7 − 2)`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "40"
+        },
+        {
+          "id": "b",
+          "texto": "10"
+        },
+        {
+          "id": "c",
+          "texto": "20"
+        },
+        {
+          "id": "d",
+          "texto": "16"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "a": "Multiplica o resultado intermediário pelo parêntese inteiro.",
+        "d": "Usa `2` em vez de `5` dentro do parêntese.",
+        "b": "Trata a multiplicação como soma."
+      },
+      "solucao": "`20 ÷ 4 = 5`. `(7 − 2) = 5`. `3 × 5 = 15`. `5 + 15 = 20`.",
+      "conceitos": [
+        "ordem-de-operacoes"
+      ],
+      "origem": {
+        "estacao": 1,
+        "questao": "Questão 4"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-01-q05",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Calcule `2 + 3 × 4 − 6 ÷ 2`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "14"
+        },
+        {
+          "id": "b",
+          "texto": "17"
+        },
+        {
+          "id": "c",
+          "texto": "11"
+        },
+        {
+          "id": "d",
+          "texto": "7"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "d": "Resolve tudo da esquerda para a direita.",
+        "a": "Esquece de subtrair o `3`.",
+        "b": "Soma o `3` em vez de subtrair."
+      },
+      "solucao": "`3 × 4 = 12`, `6 ÷ 2 = 3`, então `2 + 12 − 3 = 11`.",
+      "conceitos": [
+        "ordem-de-operacoes"
+      ],
+      "origem": {
+        "estacao": 1,
+        "questao": "Questão 5"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-01-q06",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Calcule `(8 − 3)² ÷ 5 + 2 × 3`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "21"
+        },
+        {
+          "id": "b",
+          "texto": "31"
+        },
+        {
+          "id": "c",
+          "texto": "5"
+        },
+        {
+          "id": "d",
+          "texto": "11"
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "a": "Soma `5 + 2` antes de multiplicar por 3.",
+        "c": "Para logo após a divisão.",
+        "b": "Soma 25 e 6 sem dividir."
+      },
+      "solucao": "`(8 − 3) = 5`, `5² = 25`, `25 ÷ 5 = 5`, `2 × 3 = 6`, `5 + 6 = 11`.",
+      "conceitos": [
+        "ordem-de-operacoes"
+      ],
+      "origem": {
+        "estacao": 1,
+        "questao": "Questão 6"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-01-q07",
+      "nivel": 3,
+      "formato": "multipla_escolha",
+      "enunciado": "Calcule `20 − 2 × (3² − 4) + 8 ÷ 4`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "14"
+        },
+        {
+          "id": "b",
+          "texto": "92"
+        },
+        {
+          "id": "c",
+          "texto": "12"
+        },
+        {
+          "id": "d",
+          "texto": "8"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "d": "Troca o sinal do `+2` final.",
+        "a": "Usa `8 ÷ 2` em vez de `8 ÷ 4`.",
+        "b": "Multiplica o resultado do parêntese inteiro por `20 − 2`."
+      },
+      "solucao": "`3² = 9`, `9 − 4 = 5`, `2 × 5 = 10`, `8 ÷ 4 = 2`, então `20 − 10 + 2 = 12`.",
+      "conceitos": [
+        "ordem-de-operacoes"
+      ],
+      "origem": {
+        "estacao": 1,
+        "questao": "Questão 7"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-01-q08",
+      "nivel": 3,
+      "formato": "multipla_escolha",
+      "enunciado": "Se `a = 2`, `b = 3` e `c = 4`, calcule `a + b² − c × a`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "1"
+        },
+        {
+          "id": "b",
+          "texto": "11"
+        },
+        {
+          "id": "c",
+          "texto": "3"
+        },
+        {
+          "id": "d",
+          "texto": "0"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "d": "Calcula `3² = 6`, erro comum.",
+        "b": "Esquece de subtrair o produto.",
+        "a": "Troca o sinal do `9`."
+      },
+      "solucao": "`b² = 9`, `c × a = 8`, então `2 + 9 − 8 = 3`.",
+      "conceitos": [
+        "ordem-de-operacoes"
+      ],
+      "origem": {
+        "estacao": 1,
+        "questao": "Questão 8"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-01-q09",
+      "nivel": 4,
+      "formato": "multipla_escolha",
+      "enunciado": "Um estudante calculou `100 ÷ 10 × 2` e obteve 5. Outro obteve 20. Qual raciocínio está correto?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "5, porque devemos calcular `10 × 2 = 20` antes de dividir."
+        },
+        {
+          "id": "b",
+          "texto": "5, porque a divisão tem prioridade sobre a multiplicação."
+        },
+        {
+          "id": "c",
+          "texto": "20, porque a multiplicação tem prioridade sobre a divisão."
+        },
+        {
+          "id": "d",
+          "texto": "20, porque multiplicação e divisão têm a mesma prioridade e resolvem-se da esquerda para a direita."
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "b": "Esta é uma das que aplicam uma prioridade que não existe.",
+        "c": "Esta é uma das que aplicam uma prioridade que não existe.",
+        "a": "Chega ao mesmo número por raciocínio incorreto."
+      },
+      "solucao": "Multiplicação e divisão pertencem ao mesmo nível. Resolve-se `100 ÷ 10 = 10` primeiro e depois `10 × 2 = 20`.",
+      "conceitos": [
+        "ordem-de-operacoes"
+      ],
+      "origem": {
+        "estacao": 1,
+        "questao": "Questão 9"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-01-q10",
+      "nivel": 4,
+      "formato": "multipla_escolha",
+      "enunciado": "Em uma compra, o valor total é dado por `3 × 12 + 5 × 8 − 10`. Qual o total?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "56"
+        },
+        {
+          "id": "b",
+          "texto": "66"
+        },
+        {
+          "id": "c",
+          "texto": "76"
+        },
+        {
+          "id": "d",
+          "texto": "46"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "c": "Soma 10 em vez de subtrair.",
+        "a": "Esta é uma das que subtraem valores errados.",
+        "d": "Esta é uma das que subtraem valores errados."
+      },
+      "solucao": "`3 × 12 = 36`, `5 × 8 = 40`, `36 + 40 − 10 = 66`.",
+      "conceitos": [
+        "ordem-de-operacoes"
+      ],
+      "origem": {
+        "estacao": 1,
+        "questao": "Questão 10"
+      }
+    },
+    {
+      "tipo": "desafio",
+      "bloco_id": "mb-01-desafio",
+      "nivel": 5,
+      "enunciado": "Calcule:\n\n`2 + 3 × {4 + 5 × [6 − 2 × (3 − 1)]}`",
+      "formato": "numerico",
+      "gabarito": {
+        "valor": 44.0,
+        "tolerancia": 0.044
+      },
+      "solucao": "- `(3 − 1) = 2`\n- `2 × 2 = 4`, então `[6 − 4] = 2`\n- `5 × 2 = 10`, então `{4 + 10} = 14`\n- `3 × 14 = 42`\n- `2 + 42 = 44`"
+    }
+  ]
+}

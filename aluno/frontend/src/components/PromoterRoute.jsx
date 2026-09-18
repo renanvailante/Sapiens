@@ -1,0 +1,32 @@
+import { Navigate, useLocation } from "react-router-dom";
+import { useAuth } from "../lib/auth";
+import { ShieldOff } from "lucide-react";
+
+export default function PromoterRoute({ children }) {
+  const { user, loading } = useAuth();
+  const location = useLocation();
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full border-2 border-white/15 border-t-sapiens-accent animate-spin" />
+      </div>
+    );
+  }
+  if (!user) return <Navigate to="/login" state={{ from: location }} replace />;
+  if (!user.is_promoter) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-zinc-50 px-6">
+        <div className="max-w-sm text-center" data-testid="promoter-forbidden">
+          <div className="w-14 h-14 mx-auto rounded-full bg-rose-50 flex items-center justify-center">
+            <ShieldOff className="w-6 h-6 text-rose-600" />
+          </div>
+          <div className="mt-6 font-display text-2xl font-bold tracking-tight text-zinc-950">Área restrita</div>
+          <p className="mt-2 text-zinc-500 text-sm">
+            Este painel é acessível apenas por promoters com um cupom vinculado à sua conta.
+          </p>
+        </div>
+      </div>
+    );
+  }
+  return children;
+}

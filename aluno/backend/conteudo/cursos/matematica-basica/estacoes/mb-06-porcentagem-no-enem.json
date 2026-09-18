@@ -1,0 +1,518 @@
+{
+  "schema_version": "1.0",
+  "estacao_id": "mb-06-porcentagem-no-enem",
+  "titulo": "Porcentagem no ENEM",
+  "objetivo": "Você vai aplicar porcentagem em problemas contextualizados no estilo ENEM: população, preços, pesquisas, tabelas, gráficos e variações sucessivas.",
+  "versao": "2026-09-16",
+  "duracao_minutos": 12,
+  "numero": 6,
+  "conceitos": [
+    "porcentagem",
+    "variacao-percentual",
+    "interpretacao-de-dados"
+  ],
+  "conclusao": {
+    "tipo": "minimo_de_acertos",
+    "minimo": 7
+  },
+  "fonte": {
+    "arquivo": "mat basica 4.md",
+    "pasta": "cursos/matemática básica"
+  },
+  "blocos": [
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-06-c-01",
+      "variante": "padrao",
+      "markdown": "No ENEM, porcentagem raramente aparece isolada. Ela vem embutida em:\n\n- **gráficos de barras e setores** (participação percentual)\n- **tabelas com valores e totais** (cálculo de proporção)\n- **séries temporais** (variação entre anos)\n- **comparação de grupos** (aumento/diminuição relativa)\n- **reajustes e inflação** (variações sucessivas)"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-06-c-02",
+      "variante": "padrao",
+      "markdown": "1. **Leia o comando primeiro.** O que exatamente ele quer?\n2. **Localize os dados.** Onde está o valor inicial? Onde está o percentual?\n3. **Verifique a base.** Porcentagem “de” algo. Esse algo é o denominador.\n4. **Decida se é parte, total ou taxa.** O problema pede o valor final, o percentual ou o valor inicial?\n5. **Cheque a plausibilidade.** Percentual maior que 100% é possível; valor final negativo, quase nunca.",
+      "titulo": "Roteiro para resolver qualquer questão do ENEM com porcentagem"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-06-c-03",
+      "variante": "padrao",
+      "markdown": "- O enunciado costuma trazer **informação em excesso**. Nem tudo será usado.\n- A resposta pode depender da **leitura correta de um gráfico**, não de conta difícil.\n- Muitas questões cobram **comparação de percentuais** entre grupos com totais diferentes.\n- Muitas trazem **reajustes sucessivos**. Não some percentuais; multiplique fatores.",
+      "titulo": "Cuidados com o ENEM"
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-06-ex-01",
+      "enunciado": "Em 2018, uma cidade tinha 250.000 habitantes. Em 2020, passou a 275.000. Qual foi o crescimento percentual?",
+      "passos": [
+        {
+          "texto": "`(275.000 − 250.000)/250.000 = 25.000/250.000 = 0,10 = 10%`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-06-ex-02",
+      "enunciado": "Um produto teve aumento de 8% em janeiro e de 5% em fevereiro. Qual o acumulado?",
+      "passos": [
+        {
+          "texto": "`1,08 × 1,05 = 1,134` → 13,4%"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-06-ex-03",
+      "enunciado": "Em uma turma de 40 alunos, 25% tiraram nota máxima. Quantos alunos?",
+      "passos": [
+        {
+          "texto": "`40 × 0,25 = 10`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-06-ex-04",
+      "enunciado": "Uma gráfico mostra que a taxa de desemprego caiu de 12% para 9,6%. Qual a redução relativa?",
+      "passos": [
+        {
+          "texto": "`(12 − 9,6)/12 = 2,4/12 = 0,20 = 20%`"
+        },
+        {
+          "texto": "Redução de 2,4 pontos percentuais, 20% em termos relativos."
+        }
+      ]
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-06-es-01",
+      "variante": "destaque",
+      "markdown": "- Em problemas com **grupos diferentes** (homens/mulheres, urbano/rural), calcule separadamente e só depois compare.\n- Em problemas com **reajustes sucessivos**, multiplique fatores. Nunca some.\n- Em problemas com **redução**, cuidado: “caiu 20%” significa fator `0,80`.\n- Em gráficos de setores, a soma dos percentuais deve dar 100%. Use isso para encontrar dados faltantes."
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-06-er-01",
+      "variante": "atencao",
+      "markdown": "- **Confundir ponto percentual com percentual.** De 10% para 13% são 3 pontos percentuais, mas 30% de aumento relativo.\n- **Somar percentuais de reajustes sucessivos.**\n- **Usar o valor final como base da variação.**\n- **Ignorar totais diferentes ao comparar grupos.** 5% de 10.000 é mais gente do que 10% de 3.000."
+    },
+    {
+      "tipo": "video",
+      "bloco_id": "mb-06-video",
+      "titulo": "Porcentagem no ENEM — aula em vídeo",
+      "provedor": "youtube",
+      "ref": null,
+      "resumo": "Aula conduzida pelo 1º colocado de Medicina da USP."
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-06-q01",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Uma cidade tinha 250.000 habitantes em 2018 e 275.000 em 2020. O crescimento percentual foi:",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "10%"
+        },
+        {
+          "id": "b",
+          "texto": "8%"
+        },
+        {
+          "id": "c",
+          "texto": "25%"
+        },
+        {
+          "id": "d",
+          "texto": "12,5%"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "c": "Lê o valor absoluto.",
+        "b": "Usa outro valor.",
+        "d": "Divide errado."
+      },
+      "solucao": "`25.000/250.000 = 0,10 = 10%`.",
+      "conceitos": [
+        "variacao-percentual"
+      ],
+      "origem": {
+        "estacao": 6,
+        "questao": "Questão 1"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-06-q02",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Uma turma tem 40 alunos. 25% tiraram nota máxima. Quantos alunos?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "10"
+        },
+        {
+          "id": "b",
+          "texto": "12"
+        },
+        {
+          "id": "c",
+          "texto": "8"
+        },
+        {
+          "id": "d",
+          "texto": "15"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "b": "Esta é uma das que vêm de percentuais diferentes.",
+        "c": "Esta é uma das que vêm de percentuais diferentes.",
+        "d": "Esta é uma das que vêm de percentuais diferentes."
+      },
+      "solucao": "`40 × 0,25 = 10`.",
+      "conceitos": [
+        "porcentagem"
+      ],
+      "origem": {
+        "estacao": 6,
+        "questao": "Questão 2"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-06-q03",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "A taxa de desemprego caiu de 12% para 9,6%. A redução em pontos percentuais e em termos relativos é, respectivamente:",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "2,4 pontos e 20%"
+        },
+        {
+          "id": "b",
+          "texto": "2,4 pontos e 24%"
+        },
+        {
+          "id": "c",
+          "texto": "20 pontos e 20%"
+        },
+        {
+          "id": "d",
+          "texto": "2,4 pontos e 2,4%"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "d": "Confunde as duas leituras.",
+        "c": "Esta é uma das que calculam errado.",
+        "b": "Esta é uma das que calculam errado."
+      },
+      "solucao": "Diferença: `12 − 9,6 = 2,4` pontos. Relativa: `2,4/12 = 0,20 = 20%`.",
+      "conceitos": [
+        "variacao-percentual"
+      ],
+      "origem": {
+        "estacao": 6,
+        "questao": "Questão 3"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-06-q04",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Um produto teve aumento de 8% em janeiro e de 5% em fevereiro. O aumento acumulado foi de aproximadamente:",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "13%"
+        },
+        {
+          "id": "b",
+          "texto": "13,5%"
+        },
+        {
+          "id": "c",
+          "texto": "14%"
+        },
+        {
+          "id": "d",
+          "texto": "13,4%"
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "a": "Soma.",
+        "b": "Esta é uma das que são aproximações populares incorretas.",
+        "c": "Esta é uma das que são aproximações populares incorretas."
+      },
+      "solucao": "`1,08 × 1,05 = 1,134` → 13,4%.",
+      "conceitos": [
+        "variacao-percentual"
+      ],
+      "origem": {
+        "estacao": 6,
+        "questao": "Questão 4"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-06-q05",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Uma cidade tem 60% de sua população com acesso à internet. Se a população total é 450.000, quantas pessoas têm acesso?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "270.000"
+        },
+        {
+          "id": "b",
+          "texto": "250.000"
+        },
+        {
+          "id": "c",
+          "texto": "180.000"
+        },
+        {
+          "id": "d",
+          "texto": "300.000"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "b": "Esta é uma das que são aproximações.",
+        "d": "Esta é uma das que são aproximações.",
+        "c": "Corresponde a 40%."
+      },
+      "solucao": "`450.000 × 0,60 = 270.000`.",
+      "conceitos": [
+        "porcentagem"
+      ],
+      "origem": {
+        "estacao": 6,
+        "questao": "Questão 5"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-06-q06",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Uma pesquisa mostra que 25% dos entrevistados preferem a marca A. Se foram entrevistadas 2.000 pessoas e 300 escolheram a marca B, qual a diferença percentual entre as preferências A e B?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "15 pontos percentuais"
+        },
+        {
+          "id": "b",
+          "texto": "5 pontos percentuais"
+        },
+        {
+          "id": "c",
+          "texto": "10 pontos percentuais"
+        },
+        {
+          "id": "d",
+          "texto": "20 pontos percentuais"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "a": "Esta é uma das que vêm de cálculo incorreto do percentual de B.",
+        "d": "Esta é uma das que vêm de cálculo incorreto do percentual de B.",
+        "b": "Esta é uma das que vêm de cálculo incorreto do percentual de B."
+      },
+      "solucao": "A: 25% de 2.000 = 500. B: 300/2000 = 15%. Diferença: `25% − 15% = 10` pontos.",
+      "conceitos": [
+        "interpretacao-de-dados"
+      ],
+      "origem": {
+        "estacao": 6,
+        "questao": "Questão 6"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-06-q07",
+      "nivel": 3,
+      "formato": "multipla_escolha",
+      "enunciado": "Uma gráfico mostra que uma empresa faturou R$ 80.000 em 2019 e R$ 96.000 em 2020. Qual o crescimento percentual?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "18%"
+        },
+        {
+          "id": "b",
+          "texto": "25%"
+        },
+        {
+          "id": "c",
+          "texto": "16%"
+        },
+        {
+          "id": "d",
+          "texto": "20%"
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "c": "Usa o valor final como base.",
+        "a": "Esta é uma das que são arbitrários.",
+        "b": "Esta é uma das que são arbitrários."
+      },
+      "solucao": "`16.000/80.000 = 0,20 = 20%`.",
+      "conceitos": [
+        "variacao-percentual"
+      ],
+      "origem": {
+        "estacao": 6,
+        "questao": "Questão 7"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-06-q08",
+      "nivel": 3,
+      "formato": "multipla_escolha",
+      "enunciado": "Uma população cresceu 30% em uma década. Se a população inicial era 200.000, qual a final?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "300.000"
+        },
+        {
+          "id": "b",
+          "texto": "240.000"
+        },
+        {
+          "id": "c",
+          "texto": "260.000"
+        },
+        {
+          "id": "d",
+          "texto": "230.000"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "d": "Soma 30 mil.",
+        "b": "Esta é uma das que aplicam fatores errados.",
+        "a": "Esta é uma das que aplicam fatores errados."
+      },
+      "solucao": "`200.000 × 1,30 = 260.000`.",
+      "conceitos": [
+        "porcentagem"
+      ],
+      "origem": {
+        "estacao": 6,
+        "questao": "Questão 8"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-06-q09",
+      "nivel": 4,
+      "formato": "multipla_escolha",
+      "enunciado": "Um produto sofreu aumento de 25% em razão da inflação e, depois, um desconto promocional de 20%. Em relação ao preço original, o preço final:",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "aumentou 45%"
+        },
+        {
+          "id": "b",
+          "texto": "é igual"
+        },
+        {
+          "id": "c",
+          "texto": "caiu 5%"
+        },
+        {
+          "id": "d",
+          "texto": "aumentou 5%"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "d": "Esta é uma das que tentam somar percentuais.",
+        "c": "Esta é uma das que tentam somar percentuais.",
+        "a": "Soma tudo."
+      },
+      "solucao": "`1,25 × 0,80 = 1,00`. O preço final é igual ao original.",
+      "conceitos": [
+        "variacao-percentual"
+      ],
+      "origem": {
+        "estacao": 6,
+        "questao": "Questão 9"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-06-q10",
+      "nivel": 4,
+      "formato": "multipla_escolha",
+      "enunciado": "Em uma cidade, 30% das pessoas usam ônibus e 40% usam carro. Se 10% dos que usam ônibus também usam carro, quantos por cento da população usa pelo menos um dos dois meios?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "60%"
+        },
+        {
+          "id": "b",
+          "texto": "67%"
+        },
+        {
+          "id": "c",
+          "texto": "70%"
+        },
+        {
+          "id": "d",
+          "texto": "68%"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "c": "Soma simples.",
+        "d": "Esta é uma das que ignoram ou erram a interseção.",
+        "a": "Esta é uma das que ignoram ou erram a interseção."
+      },
+      "solucao": "`30% + 40% − (30% × 10%) = 70% − 3% = 67%`. A interseção deve ser subtraída uma vez.",
+      "conceitos": [
+        "interpretacao-de-dados"
+      ],
+      "origem": {
+        "estacao": 6,
+        "questao": "Questão 10 (versão corrigida)"
+      }
+    },
+    {
+      "tipo": "desafio",
+      "bloco_id": "mb-06-desafio",
+      "nivel": 5,
+      "enunciado": "Em uma cidade, a população cresceu 20% em 2018, caiu 10% em 2019 e cresceu 25% em 2020. Sobre a população inicial, a população final corresponde a:",
+      "formato": "numerico",
+      "gabarito": {
+        "valor": 135,
+        "tolerancia": 0.5
+      },
+      "unidade": "%",
+      "solucao": "- `1,20 × 0,90 = 1,08`\n- `1,08 × 1,25 = 1,35`\n- Crescimento acumulado de 35%."
+    }
+  ],
+  "habilidades": [
+    "HAB-05",
+    "HAB-42"
+  ],
+  "pre_requisitos": [
+    "mb-04-regra-de-tres",
+    "mb-05-porcentagem"
+  ]
+}

@@ -393,3 +393,78 @@ class TestAcaoDeNavegacao:
             assert alvo["rota"].startswith("/"), chave
             assert not alvo["rota"].startswith("//"), chave
             assert alvo["rotulo"], chave
+
+
+# ===================================== correção da dissertativa de curso (20)
+
+class TestDissertativa:
+    """O veredito é do SERVIDOR. A Mentis diz quais critérios a resposta
+    atende; quem soma e decide se a estação avança é a aritmética daqui —
+    senão "acertou" dependeria do humor do modelo naquela chamada."""
+
+    def _resposta_do_modelo(self, atendidos: list[bool]):
+        async def _gerar(*a, **k):
+            return {
+                "criterios": [{"atendido": v, "comentario": f"c{i}"} for i, v in enumerate(atendidos)],
+                "devolutiva": "Você explicou a ideia central com suas palavras.",
+                "proximo_passo": "Releia o trecho sobre energia.",
+            }
+        return _gerar
+
+    def _corrigir(self, monkeypatch, fake_db, atendidos, criterios=None):
+        mr.set_db(fake_db)
+        carteira = _SparksFalso().instalar(monkeypatch)
+        monkeypatch.setattr(fs, "tem_mentis_ilimitada", lambda uid: False)
+        monkeypatch.setattr(mr.ai_service, "generate_json_resiliente", self._resposta_do_modelo(atendidos))
+        criterios = criterios or ["Cita a energia", "Relaciona luz e glicose", "Usa as próprias palavras"]
+        saida = asyncio.run(mr.corrigir_dissertativa(
+            "U1", enunciado="Por que a planta precisa de luz?",
+            criterios=criterios, referencia="A luz dá energia.",
+            resposta="A planta usa a luz como energia para fabricar glicose.",
+        ))
+        return saida, carteira
+
+    def test_cobra_20_e_o_veredito_sai_da_regua_e_nao_do_modelo(self, monkeypatch, fake_db):
+        saida, carteira = self._corrigir(monkeypatch, fake_db, [True, True, False])
+        assert carteira.debitos == [20]
+        assert saida["atendidos"] == 2 and saida["total"] == 3
+        assert saida["minimo"] == 2
+        assert saida["acertou"] is True
+
+    def test_meia_resposta_nao_conclui_a_estacao(self, monkeypatch, fake_db):
+        saida, _ = self._corrigir(monkeypatch, fake_db, [True, False, False])
+        assert saida["acertou"] is False
+
+    def test_criterio_que_o_modelo_esqueceu_conta_como_nao_atendido(self, monkeypatch, fake_db):
+        """Completar o que faltou com "atendido" seria dar acerto por falha do
+        modelo."""
+        saida, _ = self._corrigir(monkeypatch, fake_db, [True], criterios=["a", "b", "c"])
+        assert saida["atendidos"] == 1
+        assert saida["acertou"] is False
+
+    def test_falha_do_modelo_devolve_os_sparks(self, monkeypatch, fake_db):
+        mr.set_db(fake_db)
+        carteira = _SparksFalso().instalar(monkeypatch)
+        monkeypatch.setattr(fs, "tem_mentis_ilimitada", lambda uid: False)
+
+        async def _explode(*a, **k):
+            raise RuntimeError("gemini fora do ar")
+
+        monkeypatch.setattr(mr.ai_service, "generate_json_resiliente", _explode)
+        with pytest.raises(HTTPException) as erro:
+            asyncio.run(mr.corrigir_dissertativa(
+                "U1", enunciado="e", criterios=["a"], referencia="", resposta="minha resposta",
+            ))
+        assert erro.value.status_code == 503
+        assert carteira.reembolsos == [20]
+
+    def test_resposta_vazia_nao_cobra_nada(self, monkeypatch, fake_db):
+        mr.set_db(fake_db)
+        carteira = _SparksFalso().instalar(monkeypatch)
+        monkeypatch.setattr(fs, "tem_mentis_ilimitada", lambda uid: False)
+        with pytest.raises(HTTPException) as erro:
+            asyncio.run(mr.corrigir_dissertativa(
+                "U1", enunciado="e", criterios=["a"], referencia="", resposta="   ",
+            ))
+        assert erro.value.status_code == 400
+        assert carteira.debitos == []

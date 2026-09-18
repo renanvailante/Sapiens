@@ -176,8 +176,8 @@ export default function AdminAnnotations() {
   return (
     <div className="min-h-screen">
       <Nav />
-      <div className="max-w-5xl mx-auto px-6 md:px-10 py-12">
-        <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-white/50 mb-3">Admin · Anotações cognitivas</div>
+      <div className="max-w-5xl mx-auto px-5 py-7 md:px-10 md:py-10">
+        <div className="secao-olho">Admin · Anotações cognitivas</div>
         <h1 className="font-display text-4xl font-extrabold tracking-tighter text-white" data-testid="ann-admin-title">
           Importar anotação cognitiva
         </h1>

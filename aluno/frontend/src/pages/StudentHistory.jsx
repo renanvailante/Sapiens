@@ -220,9 +220,9 @@ export default function StudentHistory() {
   return (
     <div className="min-h-screen">
       <Nav />
-      <div className="max-w-6xl mx-auto px-6 md:px-10 py-12">
-        <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-white/50 mb-3">Admin · Histórico do Aluno</div>
-        <h1 className="font-display text-4xl md:text-5xl font-extrabold tracking-tighter text-white" data-testid="hist-title">
+      <div className="max-w-6xl mx-auto px-5 py-7 md:px-10 md:py-10">
+        <div className="secao-olho">Admin · Histórico do Aluno</div>
+        <h1 className="titulo-tela" data-testid="hist-title">
           Behavior Event Store
         </h1>
         <p className="mt-3 text-white/60 max-w-2xl">

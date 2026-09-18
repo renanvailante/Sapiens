@@ -1,0 +1,512 @@
+{
+  "schema_version": "1.0",
+  "estacao_id": "mb-04-regra-de-tres",
+  "titulo": "Regra de três",
+  "objetivo": "Você vai resolver problemas de regra de três simples identificando corretamente se as grandezas são diretas ou inversamente proporcionais.",
+  "versao": "2026-09-16",
+  "duracao_minutos": 12,
+  "numero": 4,
+  "conceitos": [
+    "regra-de-tres",
+    "proporcao-direta",
+    "proporcao-inversa"
+  ],
+  "conclusao": {
+    "tipo": "minimo_de_acertos",
+    "minimo": 7
+  },
+  "fonte": {
+    "arquivo": "mat basica 6.md",
+    "pasta": "cursos/matemática básica"
+  },
+  "blocos": [
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-04-c-01",
+      "variante": "padrao",
+      "markdown": "A regra de três é o nome prático da proporção aplicada a três valores conhecidos e um desconhecido."
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-04-c-02",
+      "variante": "padrao",
+      "markdown": "Antes de montar a conta, responda:\n\n- Se uma grandeza **aumenta**, a outra **aumenta junto**? → grandezas **diretamente** proporcionais.\n- Se uma grandeza **aumenta**, a outra **diminui**? → grandezas **inversamente** proporcionais.",
+      "titulo": "Duas grandezas, duas perguntas"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-04-c-03",
+      "variante": "padrao",
+      "markdown": "Mantém a mesma ordem nas duas razões.\n\n`a/b = c/d`",
+      "titulo": "Direta"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-04-c-04",
+      "variante": "padrao",
+      "markdown": "Inverte uma das razões antes de igualar.\n\n`a × b = c × x` (produto constante)",
+      "titulo": "Inversa"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-04-c-05",
+      "variante": "padrao",
+      "markdown": "Resolva em etapas, ou monte a proporção composta multiplicando as razões diretas e invertendo as inversas.",
+      "titulo": "Quando há mais de duas grandezas"
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-04-ex-01",
+      "enunciado": "3 kg de arroz custam R$ 15. Quanto custam 5 kg?",
+      "passos": [
+        {
+          "texto": "Grandezas diretas."
+        },
+        {
+          "texto": "`3/5 = 15/x → 3x = 75 → x = 25`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-04-ex-02",
+      "enunciado": "4 operários fazem uma obra em 12 dias. Em quantos dias 6 operários fazem a mesma obra?",
+      "passos": [
+        {
+          "texto": "Mais operários, menos dias → inversa."
+        },
+        {
+          "texto": "`4 × 12 = 6 × x → 48 = 6x → x = 8`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-04-ex-03",
+      "enunciado": "6 pessoas consomem 12 kg de alimento em 4 dias. Quantos kg 9 pessoas consomem em 6 dias?",
+      "passos": [
+        {
+          "texto": "Pessoas: 6 → 9 (direta, fator 1,5)"
+        },
+        {
+          "texto": "Dias: 4 → 6 (direta, fator 1,5)"
+        },
+        {
+          "texto": "`12 × 1,5 × 1,5 = 27 kg`"
+        }
+      ]
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-04-es-01",
+      "variante": "destaque",
+      "markdown": "- Sempre comece perguntando: **as grandezas crescem juntas ou não?**\n- Escreva a regra de três com as unidades ao lado. Isso reduz erro de montagem.\n- Em problemas compostos, resolva em etapas. Uma variável de cada vez.\n- Desconfie de resultados que contrariam o bom senso (ex.: mais trabalhadores demorando mais)."
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-04-er-01",
+      "variante": "atencao",
+      "markdown": "- **Tratar inversa como direta.** O erro mais comum. Sempre verifique a relação.\n- **Misturar unidades.** Horas com minutos, metros com centímetros.\n- **Multiplicar em vez de dividir em problemas compostos.** Cada grandeza entra como fator multiplicativo.\n- **Esquecer que velocidade e tempo são inversamente proporcionais.**"
+    },
+    {
+      "tipo": "video",
+      "bloco_id": "mb-04-video",
+      "titulo": "Regra de três — aula em vídeo",
+      "provedor": "youtube",
+      "ref": null,
+      "resumo": "Aula conduzida pelo 1º colocado de Medicina da USP."
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-04-q01",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Se 4 kg de arroz custam R$ 24, quanto custam 7 kg?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "R$ 48"
+        },
+        {
+          "id": "b",
+          "texto": "R$ 42"
+        },
+        {
+          "id": "c",
+          "texto": "R$ 36"
+        },
+        {
+          "id": "d",
+          "texto": "R$ 40"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "c": "Esta é uma das que vêm de proporções mal montadas.",
+        "a": "Esta é uma das que vêm de proporções mal montadas.",
+        "d": "Esta é uma das que vêm de proporções mal montadas."
+      },
+      "solucao": "Direta. `24/4 = 6` por kg. `7 × 6 = 42`.",
+      "conceitos": [
+        "regra-de-tres"
+      ],
+      "origem": {
+        "estacao": 4,
+        "questao": "Questão 1"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-04-q02",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Um carro percorre 240 km em 3 h. Mantendo a velocidade, quantos km percorre em 5 h?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "450"
+        },
+        {
+          "id": "b",
+          "texto": "400"
+        },
+        {
+          "id": "c",
+          "texto": "300"
+        },
+        {
+          "id": "d",
+          "texto": "360"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "d": "Esta é uma das que são proporções invertidas.",
+        "c": "Esta é uma das que são proporções invertidas.",
+        "a": "Esta é uma das que são proporções invertidas."
+      },
+      "solucao": "Direta. `240/3 = 80` km/h. `5 × 80 = 400`.",
+      "conceitos": [
+        "regra-de-tres"
+      ],
+      "origem": {
+        "estacao": 4,
+        "questao": "Questão 2"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-04-q03",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "5 operários fazem uma obra em 12 dias. Em quantos dias 6 operários, no mesmo ritmo, fazem a mesma obra?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "10"
+        },
+        {
+          "id": "b",
+          "texto": "8"
+        },
+        {
+          "id": "c",
+          "texto": "14,4"
+        },
+        {
+          "id": "d",
+          "texto": "12"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "c": "Trata como direta.",
+        "d": "Mantém o número original.",
+        "b": "Usa proporção errada."
+      },
+      "solucao": "Inversa. `5 × 12 = 6 × x → x = 10`.",
+      "conceitos": [
+        "proporcao-inversa"
+      ],
+      "origem": {
+        "estacao": 4,
+        "questao": "Questão 3"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-04-q04",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Se 8 m de tecido custam R$ 200, quanto custam 12 m?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "R$ 350"
+        },
+        {
+          "id": "b",
+          "texto": "R$ 250"
+        },
+        {
+          "id": "c",
+          "texto": "R$ 280"
+        },
+        {
+          "id": "d",
+          "texto": "R$ 300"
+        }
+      ],
+      "gabarito": "d",
+      "solucao": "Direta. `200/8 = 25` por metro. `12 × 25 = 300`.",
+      "conceitos": [
+        "regra-de-tres"
+      ],
+      "origem": {
+        "estacao": 4,
+        "questao": "Questão 4"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-04-q05",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "3 torneiras enchem um tanque em 8 h. 4 torneiras, com a mesma vazão, enchem o mesmo tanque em quanto tempo?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "10,67 h"
+        },
+        {
+          "id": "b",
+          "texto": "6 h"
+        },
+        {
+          "id": "c",
+          "texto": "4 h"
+        },
+        {
+          "id": "d",
+          "texto": "8 h"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "a": "Trata como direta.",
+        "d": "Mantém.",
+        "c": "Dobra."
+      },
+      "solucao": "Inversa. `3 × 8 = 4 × x → x = 6`.",
+      "conceitos": [
+        "proporcao-inversa"
+      ],
+      "origem": {
+        "estacao": 4,
+        "questao": "Questão 5"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-04-q06",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Uma máquina produz 150 peças em 5 h. Quantas peças produz em 8 h?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "250"
+        },
+        {
+          "id": "b",
+          "texto": "200"
+        },
+        {
+          "id": "c",
+          "texto": "240"
+        },
+        {
+          "id": "d",
+          "texto": "300"
+        }
+      ],
+      "gabarito": "c",
+      "solucao": "Direta. `150/5 = 30` peças/h. `8 × 30 = 240`.",
+      "conceitos": [
+        "regra-de-tres"
+      ],
+      "origem": {
+        "estacao": 4,
+        "questao": "Questão 6"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-04-q07",
+      "nivel": 3,
+      "formato": "multipla_escolha",
+      "enunciado": "6 pessoas consomem 12 kg de alimento em 4 dias. Quantos kg 9 pessoas consomem em 6 dias?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "32"
+        },
+        {
+          "id": "b",
+          "texto": "36"
+        },
+        {
+          "id": "c",
+          "texto": "24"
+        },
+        {
+          "id": "d",
+          "texto": "27"
+        }
+      ],
+      "gabarito": "d",
+      "solucao": "Composta direta. Fator pessoas: `9/6 = 1,5`. Fator dias: `6/4 = 1,5`. `12 × 1,5 × 1,5 = 27`.",
+      "conceitos": [
+        "regra-de-tres"
+      ],
+      "origem": {
+        "estacao": 4,
+        "questao": "Questão 7"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-04-q08",
+      "nivel": 3,
+      "formato": "multipla_escolha",
+      "enunciado": "Um carro a 60 km/h percorre um trajeto em 4 h. A 80 km/h, quanto tempo leva?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "5,33 h"
+        },
+        {
+          "id": "b",
+          "texto": "2,5 h"
+        },
+        {
+          "id": "c",
+          "texto": "4,5 h"
+        },
+        {
+          "id": "d",
+          "texto": "3 h"
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "a": "Trata como direta.",
+        "b": "Esta é uma das que usam valores arbitrários.",
+        "c": "Esta é uma das que usam valores arbitrários."
+      },
+      "solucao": "Inversa. `60 × 4 = 80 × x → x = 3`.",
+      "conceitos": [
+        "proporcao-inversa"
+      ],
+      "origem": {
+        "estacao": 4,
+        "questao": "Questão 8"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-04-q09",
+      "nivel": 4,
+      "formato": "multipla_escolha",
+      "enunciado": "Uma torneira com vazão de 20 L/min enche um tanque em 30 min. Se a vazão for 25 L/min, em quanto tempo o tanque enche?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "25 min"
+        },
+        {
+          "id": "b",
+          "texto": "20 min"
+        },
+        {
+          "id": "c",
+          "texto": "36 min"
+        },
+        {
+          "id": "d",
+          "texto": "24 min"
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "c": "Trata como direta."
+      },
+      "solucao": "Inversa. `20 × 30 = 25 × x → 600 = 25x → x = 24`.",
+      "conceitos": [
+        "proporcao-inversa"
+      ],
+      "origem": {
+        "estacao": 4,
+        "questao": "Questão 9"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-04-q10",
+      "nivel": 4,
+      "formato": "multipla_escolha",
+      "enunciado": "20 máquinas produzem 1200 peças em 6 h. Quantas peças 10 máquinas produzem em 9 h, mantendo o ritmo?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "900"
+        },
+        {
+          "id": "b",
+          "texto": "1200"
+        },
+        {
+          "id": "c",
+          "texto": "750"
+        },
+        {
+          "id": "d",
+          "texto": "600"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "d": "Usa metade das máquinas sem ajustar as horas.",
+        "b": "Mantém o valor original.",
+        "c": "Dobra as horas e reduz as máquinas pela metade sem consistência."
+      },
+      "solucao": "Composta. Ritmo: `1200/(20 × 6) = 10` peças por máquina-hora. `10 × 9 × 10 = 900`.",
+      "conceitos": [
+        "regra-de-tres"
+      ],
+      "origem": {
+        "estacao": 4,
+        "questao": "Questão 10"
+      }
+    },
+    {
+      "tipo": "desafio",
+      "bloco_id": "mb-04-desafio",
+      "nivel": 5,
+      "enunciado": "5 impressoras imprimem 3000 páginas em 4 h. Quantas impressoras são necessárias para imprimir 9000 páginas em 6 h, mantendo o mesmo ritmo?",
+      "formato": "numerico",
+      "gabarito": {
+        "valor": 10.0,
+        "tolerancia": 0.01
+      },
+      "solucao": "- Ritmo por impressora: `3000 / (5 × 4) = 150` páginas por hora por impressora.\n- Volume necessário por hora: `9000 / 6 = 1500` páginas/h.\n- Número de impressoras: `1500 / 150 = 10`."
+    }
+  ],
+  "habilidades": [
+    "HAB-03",
+    "HAB-04"
+  ],
+  "pre_requisitos": [
+    "mb-03-razao-e-proporcao"
+  ]
+}

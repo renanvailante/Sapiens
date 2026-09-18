@@ -1,0 +1,538 @@
+{
+  "schema_version": "1.0",
+  "estacao_id": "mb-23-revisao-geral",
+  "titulo": "Revisão geral",
+  "objetivo": "Você vai revisar as principais habilidades do curso resolvendo problemas que combinam diferentes estações, e vai identificar onde ainda há lacunas.",
+  "versao": "2026-09-16",
+  "duracao_minutos": 10,
+  "numero": 23,
+  "conceitos": [
+    "revisao-geral",
+    "integracao",
+    "raciocinio-multi-etapas"
+  ],
+  "conclusao": {
+    "tipo": "minimo_de_acertos",
+    "minimo": 7
+  },
+  "fonte": {
+    "arquivo": "deepseek_markdown_20260916_bba832.md",
+    "pasta": "cursos/matemática básica"
+  },
+  "blocos": [
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-23-c-01",
+      "variante": "padrao",
+      "markdown": "Esta estação funciona como **revisão ativa**. Cada questão traz um conceito de uma estação anterior. Se errar, volte à estação correspondente."
+    },
+    {
+      "tipo": "tabela",
+      "bloco_id": "mb-23-c-02",
+      "colunas": [
+        "Tema",
+        "Estação"
+      ],
+      "linhas": [
+        [
+          "Ordem de operações",
+          "01"
+        ],
+        [
+          "Frações",
+          "02"
+        ],
+        [
+          "Razão e proporção",
+          "03"
+        ],
+        [
+          "Regra de três",
+          "04"
+        ],
+        [
+          "Porcentagem",
+          "05 e 06"
+        ],
+        [
+          "Potenciação",
+          "07"
+        ],
+        [
+          "Radiciação",
+          "08"
+        ],
+        [
+          "Notação científica",
+          "09"
+        ],
+        [
+          "Expressões algébricas",
+          "10"
+        ],
+        [
+          "Equações do 1º grau",
+          "11"
+        ],
+        [
+          "Sistemas",
+          "12"
+        ],
+        [
+          "Proporcionalidade",
+          "13"
+        ],
+        [
+          "Equações do 2º grau",
+          "14"
+        ],
+        [
+          "Produtos notáveis",
+          "15"
+        ],
+        [
+          "Inequações",
+          "16"
+        ],
+        [
+          "Unidades",
+          "17"
+        ],
+        [
+          "Médias",
+          "18"
+        ],
+        [
+          "Gráficos e tabelas",
+          "19 e 20"
+        ],
+        [
+          "Problemas integrados",
+          "21"
+        ],
+        [
+          "Matemática financeira",
+          "22"
+        ]
+      ],
+      "titulo": "Mapa de revisão"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-23-es-01",
+      "variante": "destaque",
+      "markdown": "- Em cada questão, identifique **qual habilidade** ela testa antes de resolver.\n- Se errar, volte à estação correspondente.\n- Use estas questões como **diagnóstico**."
+    },
+    {
+      "tipo": "video",
+      "bloco_id": "mb-23-video",
+      "titulo": "Revisão geral — aula em vídeo",
+      "provedor": "youtube",
+      "ref": null,
+      "resumo": "Aula conduzida pelo 1º colocado de Medicina da USP."
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-23-q01",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Calcule `5 + 2 × 4 − 3`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "13"
+        },
+        {
+          "id": "b",
+          "texto": "10"
+        },
+        {
+          "id": "c",
+          "texto": "25"
+        },
+        {
+          "id": "d",
+          "texto": "8"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "a": "Resolve da esquerda para a direita.",
+        "c": "Esta é uma das que erram prioridade.",
+        "d": "Esta é uma das que erram prioridade."
+      },
+      "solucao": "`5 + 8 − 3 = 10`.",
+      "conceitos": [
+        "revisao-geral"
+      ],
+      "origem": {
+        "estacao": 23,
+        "questao": "Questão 1"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-23-q02",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Calcule `2/3 + 1/6`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "1/2"
+        },
+        {
+          "id": "b",
+          "texto": "5/6"
+        },
+        {
+          "id": "c",
+          "texto": "2/9"
+        },
+        {
+          "id": "d",
+          "texto": "3/9"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "d": "Soma numeradores e denominadores.",
+        "a": "Esta é uma das que erram.",
+        "c": "Esta é uma das que erram."
+      },
+      "solucao": "MMC(3,6)=6, `4/6 + 1/6 = 5/6`.",
+      "conceitos": [
+        "revisao-geral"
+      ],
+      "origem": {
+        "estacao": 23,
+        "questao": "Questão 2"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-23-q03",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Um produto de R$ 150 tem desconto de 20%. Qual o preço final?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "R$ 30"
+        },
+        {
+          "id": "b",
+          "texto": "R$ 135"
+        },
+        {
+          "id": "c",
+          "texto": "R$ 120"
+        },
+        {
+          "id": "d",
+          "texto": "R$ 130"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "d": "Subtrai 20.",
+        "b": "Usa 10%.",
+        "a": "É o desconto."
+      },
+      "solucao": "`150 × 0,80 = 120`.",
+      "conceitos": [
+        "revisao-geral"
+      ],
+      "origem": {
+        "estacao": 23,
+        "questao": "Questão 3"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-23-q04",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Calcule `(2²)³`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "64"
+        },
+        {
+          "id": "b",
+          "texto": "32"
+        },
+        {
+          "id": "c",
+          "texto": "128"
+        },
+        {
+          "id": "d",
+          "texto": "16"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "b": "Calcula `2⁵`.",
+        "d": "Calcula `2⁴`.",
+        "c": "Usa `2⁷`."
+      },
+      "solucao": "`2⁶ = 64`.",
+      "conceitos": [
+        "revisao-geral"
+      ],
+      "origem": {
+        "estacao": 23,
+        "questao": "Questão 4"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-23-q05",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Resolva `3x + 5 = 20`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "x = 5"
+        },
+        {
+          "id": "b",
+          "texto": "x = 25/3"
+        },
+        {
+          "id": "c",
+          "texto": "x = 15"
+        },
+        {
+          "id": "d",
+          "texto": "x = 3"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "b": "Não subtrai 5.",
+        "c": "Não divide.",
+        "d": "Erra."
+      },
+      "solucao": "`3x = 15`, `x = 5`.",
+      "conceitos": [
+        "revisao-geral"
+      ],
+      "origem": {
+        "estacao": 23,
+        "questao": "Questão 5"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-23-q06",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Calcule `(3 + 2)² ÷ 5`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "10"
+        },
+        {
+          "id": "b",
+          "texto": "5"
+        },
+        {
+          "id": "c",
+          "texto": "1"
+        },
+        {
+          "id": "d",
+          "texto": "25"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "d": "Não divide.",
+        "c": "Erra.",
+        "a": "Soma."
+      },
+      "solucao": "`5² = 25`, `25/5 = 5`.",
+      "conceitos": [
+        "revisao-geral"
+      ],
+      "origem": {
+        "estacao": 23,
+        "questao": "Questão 6"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-23-q07",
+      "nivel": 3,
+      "formato": "multipla_escolha",
+      "enunciado": "Simplifique `√50`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "10√5"
+        },
+        {
+          "id": "b",
+          "texto": "5√2"
+        },
+        {
+          "id": "c",
+          "texto": "25√2"
+        },
+        {
+          "id": "d",
+          "texto": "2√5"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "d": "Esta é uma das que erram.",
+        "a": "Esta é uma das que erram.",
+        "c": "Esta é uma das que erram."
+      },
+      "solucao": "`√(25×2) = 5√2`.",
+      "conceitos": [
+        "revisao-geral"
+      ],
+      "origem": {
+        "estacao": 23,
+        "questao": "Questão 7"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-23-q08",
+      "nivel": 3,
+      "formato": "multipla_escolha",
+      "enunciado": "Resolva `x² − 7x + 12 = 0`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "x = −1 ou x = −12"
+        },
+        {
+          "id": "b",
+          "texto": "x = 3 ou x = 4"
+        },
+        {
+          "id": "c",
+          "texto": "x = −3 ou x = −4"
+        },
+        {
+          "id": "d",
+          "texto": "x = 1 ou x = 12"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "c": "Troca sinais.",
+        "d": "Esta é uma das que fatoração errada.",
+        "a": "Esta é uma das que fatoração errada."
+      },
+      "solucao": "`Δ = 49 − 48 = 1`, `x = (7 ± 1)/2`.",
+      "conceitos": [
+        "revisao-geral"
+      ],
+      "origem": {
+        "estacao": 23,
+        "questao": "Questão 8"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-23-q09",
+      "nivel": 4,
+      "formato": "multipla_escolha",
+      "enunciado": "Um carro percorre 150 km em 2 h. Qual a velocidade média em m/s?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "41,7 m/s"
+        },
+        {
+          "id": "b",
+          "texto": "75 m/s"
+        },
+        {
+          "id": "c",
+          "texto": "Aproximadamente 20,8 m/s"
+        },
+        {
+          "id": "d",
+          "texto": "25 m/s"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "b": "Para em km/h.",
+        "d": "Esta é uma das que erram.",
+        "a": "Esta é uma das que erram."
+      },
+      "solucao": "`150/2 = 75 km/h`. `75/3,6 ≈ 20,83 m/s`.",
+      "conceitos": [
+        "revisao-geral"
+      ],
+      "origem": {
+        "estacao": 23,
+        "questao": "Questão 9"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-23-q10",
+      "nivel": 4,
+      "formato": "multipla_escolha",
+      "enunciado": "Juros simples de R$ 800 a 2,5% ao mês por 8 meses. Qual o montante?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "R$ 880"
+        },
+        {
+          "id": "b",
+          "texto": "R$ 960"
+        },
+        {
+          "id": "c",
+          "texto": "R$ 1.000"
+        },
+        {
+          "id": "d",
+          "texto": "R$ 900"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "a": "Esta é uma das que erram.",
+        "d": "Esta é uma das que erram.",
+        "c": "Esta é uma das que erram."
+      },
+      "solucao": "`J = 800 × 0,025 × 8 = 160`, `M = 960`.",
+      "conceitos": [
+        "revisao-geral"
+      ],
+      "origem": {
+        "estacao": 23,
+        "questao": "Questão 10"
+      }
+    },
+    {
+      "tipo": "desafio",
+      "bloco_id": "mb-23-desafio",
+      "nivel": 5,
+      "enunciado": "Um produto de R$ 500 sofre desconto de 10%, depois aumento de 20%. Qual o preço final?",
+      "formato": "numerico",
+      "gabarito": {
+        "valor": 540.0,
+        "tolerancia": 0.54
+      },
+      "unidade": "reais",
+      "solucao": "- `500 × 0,90 = 450`\n- `450 × 1,20 = 540`"
+    }
+  ]
+}

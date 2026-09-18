@@ -8,6 +8,7 @@ import { ResumoDaFila } from "../components/FilaDeRevisao";
 import Nav, { EVENTO_SPARKS } from "../components/Nav";
 import PainelDeProgresso from "../components/PainelDeProgresso";
 import ProximoPasso from "../components/ProximoPasso";
+import PortaisDaJornada from "../components/PortaisDaJornada";
 import EsqueletoDoPainel from "../components/Esqueleto";
 import OnboardingTour from "../components/OnboardingTour";
 import PainelDeConquistas from "../components/PainelDeConquistas";
@@ -173,47 +174,52 @@ function ChamadaDaLive({ inclusa = false, argumento = null }) {
   return (
     <Link
       to="/aula-ao-vivo"
-      className="lift flex flex-wrap items-center gap-4 rounded-[26px] border border-rose-400/25 bg-gradient-to-r from-rose-500/[0.12] via-amber-400/[0.07] to-transparent p-5 transition-colors hover:border-rose-400/50"
+      className="lift flex flex-col items-stretch gap-4 rounded-[26px] border border-rose-400/25 bg-gradient-to-r from-rose-500/[0.12] via-amber-400/[0.07] to-transparent p-5 transition-colors hover:border-rose-400/50 sm:flex-row sm:items-center"
       data-testid="dash-live"
       data-tour="dash-live"
     >
-      {/* O ROSTO, e não um ícone: quem dá a aula é o argumento. */}
-      <span className="relative shrink-0">
-        <MentorUSP tamanho="p" comSelo={false} testid="dash-live-mentor" />
-        <span className="absolute -right-1 -top-1 flex h-3 w-3">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-500 opacity-80" />
-          <span className="relative inline-flex h-3 w-3 rounded-full bg-rose-500" />
+      {/* O rosto e o texto continuam LADO A LADO no celular — é o botão que
+          desce para a linha de baixo. Eles em coluna dariam um card de meia
+          tela de altura com um retrato solto no topo. */}
+      <div className="flex min-w-0 flex-1 items-start gap-4 sm:items-center">
+        {/* O ROSTO, e não um ícone: quem dá a aula é o argumento. */}
+        <span className="relative shrink-0">
+          <MentorUSP tamanho="p" comSelo={false} testid="dash-live-mentor" />
+          <span className="absolute -right-1 -top-1 flex h-3 w-3">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-500 opacity-80" />
+            <span className="relative inline-flex h-3 w-3 rounded-full bg-rose-500" />
+          </span>
         </span>
-      </span>
-      <div className="min-w-0 flex-1">
-        <div className="secao-olho text-rose-300/85">
-          {aoVivoAgora ? "Acontecendo agora" : "Ao vivo · toda quinta"}
-        </div>
-        <div className="mt-1 font-display text-base font-bold leading-tight tracking-tight text-white md:text-lg">
-          Aula ao vivo com {MENTOR.nome}
-        </div>
-        <div className="mt-0.5 text-xs text-white/50">
-          {aoVivoAgora
-            ? "A sala está aberta. Entre agora."
-            : `${quando}, às ${hora} · ${dias === 0 ? "é hoje" : dias === 1 ? "amanhã" : `faltam ${dias} dias`}`}
-          {inclusa ? " · inclusa no seu pacote" : !jaTenho ? " · 200 Sparks" : ""}
-        </div>
-        {/* O motivo de ESTE aluno entrar — feito do que ele mesmo respondeu
-            (ver `lib/venda.js`). Custa zero: os sinais já estão carregados
-            nesta página. Para quem já tem a vaga, o mesmo argumento deixa de
-            vender e passa a convocar. */}
-        {argumento && (
-          <div
-            className="mt-2 border-l-2 border-rose-400/40 pl-2.5 text-xs leading-relaxed text-white/70"
-            data-testid="dash-live-argumento"
-          >
-            <span className="font-semibold text-white/90">{argumento.titulo}.</span>{" "}
-            {argumento.texto}
+        <div className="min-w-0 flex-1">
+          <div className="secao-olho text-rose-300/85">
+            {aoVivoAgora ? "Acontecendo agora" : "Ao vivo · toda quinta"}
           </div>
-        )}
+          <div className="mt-1 font-display text-base font-bold leading-tight tracking-tight text-white md:text-lg">
+            Aula ao vivo com {MENTOR.nome}
+          </div>
+          <div className="mt-0.5 text-xs text-white/50">
+            {aoVivoAgora
+              ? "A sala está aberta. Entre agora."
+              : `${quando}, às ${hora} · ${dias === 0 ? "é hoje" : dias === 1 ? "amanhã" : `faltam ${dias} dias`}`}
+            {inclusa ? " · inclusa no seu pacote" : !jaTenho ? " · 200 Sparks" : ""}
+          </div>
+          {/* O motivo de ESTE aluno entrar — feito do que ele mesmo respondeu
+              (ver `lib/venda.js`). Custa zero: os sinais já estão carregados
+              nesta página. Para quem já tem a vaga, o mesmo argumento deixa de
+              vender e passa a convocar. */}
+          {argumento && (
+            <div
+              className="mt-2 border-l-2 border-rose-400/40 pl-2.5 text-xs leading-relaxed text-white/70"
+              data-testid="dash-live-argumento"
+            >
+              <span className="font-semibold text-white/90">{argumento.titulo}.</span>{" "}
+              {argumento.texto}
+            </div>
+          )}
+        </div>
       </div>
       <span
-        className={`pill inline-flex shrink-0 items-center gap-2 rounded-full px-5 py-3 text-xs font-bold ${
+        className={`pill inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-full px-5 py-3 text-xs font-bold sm:w-auto ${
           jaTenho ? "btn-vidro" : "btn-calor"
         }`}
       >
@@ -249,29 +255,31 @@ function ChamadaDaMentoria() {
   return (
     <Link
       to="/mentoria"
-      className="lift group relative flex flex-wrap items-center gap-5 overflow-hidden rounded-[26px] border border-amber-300/35 bg-gradient-to-r from-amber-400/[0.14] via-[#4FD9FF]/[0.07] to-transparent p-5 transition-colors hover:border-amber-300/70 md:p-6"
+      className="lift group relative flex flex-col items-stretch gap-5 overflow-hidden rounded-[26px] border border-amber-300/35 bg-gradient-to-r from-amber-400/[0.14] via-[#4FD9FF]/[0.07] to-transparent p-5 transition-colors hover:border-amber-300/70 sm:flex-row sm:items-center md:p-6"
       data-testid="dash-mentoria"
       data-tour="dash-mentoria"
     >
-      <MentorUSP tamanho="m" comSelo={false} testid="dash-mentoria-mentor" />
+      <div className="flex min-w-0 flex-1 items-start gap-4 sm:items-center sm:gap-5">
+        <MentorUSP tamanho="m" comSelo={false} testid="dash-mentoria-mentor" />
 
-      <div className="min-w-0 flex-1">
-        <div className="secao-olho inline-flex items-center gap-1.5 text-amber-200/90">
-          <Medal className="h-3.5 w-3.5" /> O mais valioso que o Sapiens tem
+        <div className="min-w-0 flex-1">
+          <div className="secao-olho inline-flex items-center gap-1.5 text-amber-200/90">
+            <Medal className="h-3.5 w-3.5" /> O mais valioso que o Sapiens tem
+          </div>
+          <div className="mt-1.5 font-display text-lg font-bold leading-snug tracking-tight text-white sm:text-xl md:text-2xl">
+            Mentoria um a um com {MENTOR.nome}
+          </div>
+          <p className="mt-1.5 max-w-xl text-[13px] leading-relaxed text-white/80 sm:text-sm">
+            {MENTOR.titulo}. Ele olha a <strong className="font-semibold text-white">sua</strong> semana,
+            diz o que cortar e o que você está estudando à toa.
+          </p>
+          <p className="mt-1.5 text-[13px] text-amber-100/80 sm:text-sm">
+            É uma pessoa só, com agenda finita — por isso é lista de espera, não agendamento.
+          </p>
         </div>
-        <div className="mt-1.5 font-display text-xl font-bold leading-snug tracking-tight text-white md:text-2xl">
-          Mentoria um a um com {MENTOR.nome}
-        </div>
-        <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-white/80">
-          {MENTOR.titulo}. Ele olha a <strong className="font-semibold text-white">sua</strong> semana,
-          diz o que cortar e o que você está estudando à toa.
-        </p>
-        <p className="mt-1.5 text-sm text-amber-100/80">
-          É uma pessoa só, com agenda finita — por isso é lista de espera, não agendamento.
-        </p>
       </div>
 
-      <span className="pill btn-calor inline-flex shrink-0 items-center gap-2 rounded-full px-6 py-3.5 text-sm font-bold">
+      <span className="pill btn-calor inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-full px-6 py-3.5 text-sm font-bold sm:w-auto">
         Entrar na lista
         <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
       </span>
@@ -672,16 +680,18 @@ export default function Dashboard() {
 
         {falhou && (
           <div
-            className="superficie mb-4 flex flex-wrap items-center gap-3 border-amber-300/30 bg-amber-400/[0.08] px-5 py-4"
+            className="superficie mb-4 flex flex-col items-stretch gap-3 border-amber-300/30 bg-amber-400/[0.08] px-5 py-4 sm:flex-row sm:items-center"
             data-testid="dash-erro-parcial"
           >
-            <CloudOff className="h-5 w-5 shrink-0 text-amber-300" />
-            <div className="min-w-0 flex-1 text-sm text-amber-100">
-              <strong>Não conseguimos carregar tudo.</strong> É falha de conexão nossa, não perda do seu progresso.
+            <div className="flex min-w-0 flex-1 items-center gap-3">
+              <CloudOff className="h-5 w-5 shrink-0 text-amber-300" />
+              <div className="min-w-0 flex-1 text-sm text-amber-100">
+                <strong>Não conseguimos carregar tudo.</strong> É falha de conexão nossa, não perda do seu progresso.
+              </div>
             </div>
             <button
               onClick={carregar}
-              className="pill inline-flex shrink-0 items-center gap-2 rounded-full bg-amber-950 px-4 py-2 text-xs font-semibold text-amber-50 hover:brightness-110"
+              className="pill inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-full bg-amber-950 px-4 py-2 text-xs font-semibold text-amber-50 hover:brightness-110 sm:w-auto"
               data-testid="dash-erro-retry"
             >
               <RotateCw className="h-3.5 w-3.5" /> Tentar de novo
@@ -694,7 +704,30 @@ export default function Dashboard() {
             rolagem numa espera. */}
         <div className="cascata space-y-7">
           {/* -------------------------------------------------------------
-              1. O PRÓXIMO PASSO. Uma ação, sobre a vitrine do Mapa.
+              1. AS PORTAS. A primeira coisa da primeira tela.
+
+              Antes o Painel abria pelo mapa de missões — uma peça bonita e
+              FECHADA: um caminho único, já traçado, para quem ainda não sabe
+              o que o produto tem. Caminho único não convida, estreita. As
+              portas fazem o contrário: dez entradas visíveis de uma vez, cada
+              uma com uma pergunta que só o clique responde e com o quanto já
+              foi feito ali. É como Khan Academy e Duolingo abrem, e é a razão
+              de o mapa ter descido uma posição — ele continua aqui, logo
+              abaixo, como o passo RECOMENDADO, que é o papel dele.
+              ------------------------------------------------------------- */}
+          <PortaisDaJornada
+            habilidades={habilidades}
+            revisoes={revisoes}
+            cronograma={cronograma}
+            redacoes={redacoes}
+            engajamento={engajamento}
+            conquistas={conquistas}
+            totalRespondidas={totalRespondidas}
+            testid="dash-portais"
+          />
+
+          {/* -------------------------------------------------------------
+              2. O PRÓXIMO PASSO. Uma ação, sobre a vitrine do Mapa.
               ------------------------------------------------------------- */}
           <ProximoPasso
             habilidades={habilidades}
@@ -706,7 +739,7 @@ export default function Dashboard() {
           />
 
           {/* -------------------------------------------------------------
-              2. A TIRA DE PROGRESSO E AS MISSÕES DO DIA
+              3. A TIRA DE PROGRESSO E AS MISSÕES DO DIA
               `id="missoes"`: a Mentis e o guia levam direto até aqui.
               ------------------------------------------------------------- */}
           <div className="scroll-mt-24" id="missoes" data-tour="dash-missoes">

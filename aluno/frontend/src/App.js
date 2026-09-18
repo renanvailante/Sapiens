@@ -11,6 +11,7 @@ import AdminRoute from "./components/AdminRoute";
 import PromoterRoute from "./components/PromoterRoute";
 import FirestoreStudentProvisioner from "./components/FirestoreStudentProvisioner";
 import MentisWidget from "./components/MentisWidget";
+import LembrarComAMentis from "./components/LembrarComAMentis";
 import BarraInferior from "./components/BarraInferior";
 import BrandMark from "./components/BrandMark";
 import { InstalacaoProvider } from "./components/InstalarApp";
@@ -42,11 +43,13 @@ const MinhasQuestoes = lazy(() => import("./pages/MinhasQuestoes"));
 const MentisChat = lazy(() => import("./pages/MentisChat"));
 const BemVindo = lazy(() => import("./pages/BemVindo"));
 const Conquistas = lazy(() => import("./pages/Conquistas"));
+const CompletarCadastro = lazy(() => import("./pages/CompletarCadastro"));
 const Mentoria = lazy(() => import("./pages/Mentoria"));
 const Cursos = lazy(() => import("./pages/Cursos"));
 const AulaAoVivo = lazy(() => import("./pages/AulaAoVivo"));
 const CursoTrilha = lazy(() => import("./pages/CursoTrilha"));
 const CursoEstacao = lazy(() => import("./pages/CursoEstacao"));
+const EbookLeitor = lazy(() => import("./pages/EbookLeitor"));
 const SparksStore = lazy(() => import("./pages/SparksStore"));
 const Indicar = lazy(() => import("./pages/Indicar"));
 const Feed = lazy(() => import("./pages/Feed"));
@@ -126,7 +129,12 @@ function Pagina({ titulo, children }) {
 function AppRouter() {
   return (
     <Routes>
-      <Route path="/" element={<Pagina titulo="Descubra por que você erra"><Landing /></Pagina>} />
+      {/* O título da landing é o que o Google MOSTRA no resultado: o buscador
+          renderiza o JavaScript, então este texto vence o `<title>` do
+          index.html. Por isso ele carrega as palavras que o aluno digita
+          ("plano de estudos", "ENEM", "vestibular") e não o slogan, que
+          ninguém pesquisa — o slogan continua sendo o `h1` da tela. */}
+      <Route path="/" element={<Pagina titulo="Plano de estudos personalizado para o ENEM e vestibular"><Landing /></Pagina>} />
       <Route path="/login" element={<Pagina titulo="Entrar"><Login /></Pagina>} />
       <Route path="/esqueci-senha" element={<Pagina titulo="Recuperar senha"><EsqueciSenha /></Pagina>} />
       <Route path="/redefinir-senha" element={<Pagina titulo="Nova senha"><RedefinirSenha /></Pagina>} />
@@ -143,6 +151,10 @@ function AppRouter() {
           particular" em 2026-09-15: não é mais um pedido de aula avulsa, é a
           LISTA DE ESPERA de uma mentoria com uma pessoa só. `/aulas` continua
           existindo como redirect porque o endereço antigo circulou. */}
+      {/* O portão de dados de contato. Protegida (precisa da sessão) e SEM
+          `Pagina` com título de ferramenta: ela não é uma ferramenta, é a
+          segunda metade de um cadastro. Ver `ProtectedRoute`. */}
+      <Route path="/completar-cadastro" element={<ProtectedRoute><Pagina titulo="Completar cadastro"><CompletarCadastro /></Pagina></ProtectedRoute>} />
       <Route path="/mentoria" element={<ProtectedRoute><Pagina titulo="Mentoria com o 1º colocado de Medicina da USP"><Mentoria /></Pagina></ProtectedRoute>} />
       <Route path="/aulas" element={<Navigate to="/mentoria" replace />} />
       {/* A AULA AO VIVO DE QUINTA tem tela própria desde 2026-09-16. Ela
@@ -157,6 +169,9 @@ function AppRouter() {
           Só chega aqui quem tem acesso — a porta é do servidor, não da rota. */}
       <Route path="/cursos/:cursoId" element={<ProtectedRoute><Pagina titulo="Curso"><CursoTrilha /></Pagina></ProtectedRoute>} />
       <Route path="/cursos/:cursoId/estacao/:estacaoId" element={<ProtectedRoute><Pagina titulo="Estação"><CursoEstacao /></Pagina></ProtectedRoute>} />
+      {/* O e-book por dentro: lê-se aqui, página por página — nenhum aluno
+          baixa nada do Sapiens. */}
+      <Route path="/cursos/ebooks/:ebookId" element={<ProtectedRoute><Pagina titulo="E-book"><EbookLeitor /></Pagina></ProtectedRoute>} />
       <Route path="/exams" element={<ProtectedRoute><Pagina titulo="Praticar questões"><ExamSelect /></Pagina></ProtectedRoute>} />
       <Route path="/exam/:examId" element={<ProtectedRoute><Pagina titulo="Registrar respostas"><AnswerInput /></Pagina></ProtectedRoute>} />
       <Route path="/analysis/:analysisId" element={<ProtectedRoute><Pagina titulo="Diagnóstico"><Diagnostic /></Pagina></ProtectedRoute>} />
@@ -240,6 +255,12 @@ export default function App() {
             {/* Ícone sempre visível, em toda página logada — ver
                 `MentisWidget.jsx` para por que ele se esconde em /mentis. */}
             <MentisWidget />
+            {/* "Lembrar-me com a Mentis": o aluno seleciona qualquer trecho,
+                em qualquer tela, e guarda aquilo na fila de Revisões. Mora
+                aqui pelo mesmo motivo da barra de baixo — uma funcionalidade
+                que vale para o produto inteiro, implementada tela a tela, é
+                uma funcionalidade que a próxima tela nova não vai ter. */}
+            <LembrarComAMentis />
             {/* A navegação do celular. Mora aqui, e não dentro de cada tela,
                 porque as 37 páginas do produto montam a própria `<Nav />` e
                 acrescentar uma linha em cada uma garantiria que a próxima

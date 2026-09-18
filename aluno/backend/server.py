@@ -36,7 +36,9 @@ import exam_images_routes as exam_images_module
 import feed_routes as feed_module
 import annotation_routes as annotation_module
 import admin_routes as admin_module
+import indicacoes_routes as indicacoes_module
 import promo_codes_routes as promo_codes_module
+import promoter_routes as promoter_module
 import events_routes as events_module
 import firestore_routes as firestore_module
 import skills_map_routes as skills_map_module
@@ -46,6 +48,10 @@ import perfil_cognitivo_service
 import mentis_routes as mentis_module
 import mentoria_routes as mentoria_module
 import cursos_routes as cursos_module
+import cursos_estudo_routes as cursos_estudo_module
+import cursos_conteudo
+import ebooks_conteudo
+import cursos_publicados
 import sparks_payments_service
 import sparks_routes as sparks_module
 import redacao_routes as redacao_module
@@ -55,6 +61,7 @@ import client_errors_routes as client_errors_module
 import question_reports_routes as question_reports_module
 import sugestoes_routes as sugestoes_module
 import revisao_routes as revisao_module
+import lembretes_routes as lembretes_module
 import curadoria_routes as curadoria_module
 import dados_pessoais_routes as dados_pessoais_module
 import cronograma_routes as cronograma_module
@@ -78,11 +85,14 @@ exam_images_module.set_db(db)
 feed_module.set_db(db)
 annotation_module.set_db(db)
 admin_module.set_db(db)
+indicacoes_module.set_db(db)
 promo_codes_module.set_db(db)
+promoter_module.set_db(db)
 firestore_module.set_db(db)
 mentis_module.set_db(db)
 mentoria_module.set_db(db)
 cursos_module.set_db(db)
+cursos_estudo_module.set_db(db)
 sparks_module.set_db(db)
 redacao_module.set_db(db)
 treino_module.set_db(db)
@@ -91,7 +101,11 @@ question_reports_module.set_db(db)
 sugestoes_module.set_db(db)
 dados_pessoais_module.set_db(db)
 cronograma_module.set_db(db)
+lembretes_module.set_db(db)
 onboarding_module.set_db(db)
+# O painel do perfil lê as correções de redação do aluno (nota e competências)
+# para desenhar a evolução dela — só o Mongo, nunca o texto da redação.
+perfil_publico_module.set_db(db)
 # Engajamento e comunidade vivem INTEIROS no Mongo (XP, missões, liga, mural);
 # o Firestore só entra para pagar Sparks. Ver o cabeçalho de
 # `engajamento_service.py` — uma liga semanal em Firestore é a cota do dia.
@@ -142,6 +156,7 @@ async def list_questoes_publico(
     numero_min: int | None = None,
     numero_max: int | None = None,
     area: str | None = None,
+    item_ids: str | None = None,
     _: User = Depends(require_user),
 ):
     """Questões para a prática do aluno — **exige sessão** e nunca inclui o
@@ -165,6 +180,10 @@ async def list_questoes_publico(
     `fonte.disciplina`, cruzando cadernos — usado pela prática de lacuna
     recomendada no painel (uma área fraca, não um caderno específico). Sem
     nenhum filtro, devolve tudo (comportamento anterior, preservado).
+
+    `item_ids` (lista separada por vírgula) restringe às questões exatas —
+    usado pela fila de revisão espaçada, que já sabe QUAIS itens exercitam o
+    processo marcado e não quer devolver o aluno pro cardápio genérico.
     """
     try:
         limit = max(1, min(int(limit), 500))
@@ -190,6 +209,10 @@ async def list_questoes_publico(
             filtro["fonte.disciplina"] = {"$regex": "|".join(pistas), "$options": "i"}
         else:
             filtro["fonte.disciplina"] = area  # área desconhecida: match exato, devolve vazio se não bater
+    if item_ids:
+        ids = [i.strip() for i in item_ids.split(",") if i.strip()]
+        if ids:
+            filtro["item_id"] = {"$in": ids}
     cursor = db.questoes_public.find(
         filtro, PROJECAO_SEM_GABARITO
     ).sort("fonte.numero", 1).limit(limit)
@@ -317,7 +340,9 @@ api_router.include_router(exam_images_module.router)
 api_router.include_router(feed_module.router)
 api_router.include_router(annotation_module.router)
 api_router.include_router(admin_module.router)
+api_router.include_router(indicacoes_module.router)
 api_router.include_router(promo_codes_module.router)
+api_router.include_router(promoter_module.router)
 api_router.include_router(events_module.router)
 api_router.include_router(firestore_module.router)
 api_router.include_router(skills_map_module.router)
@@ -327,6 +352,8 @@ api_router.include_router(mentis_module.router)
 api_router.include_router(mentoria_module.router)
 api_router.include_router(cursos_module.router)
 api_router.include_router(cursos_module.router_admin)
+api_router.include_router(cursos_estudo_module.router)
+api_router.include_router(cursos_estudo_module.router_admin)
 api_router.include_router(sparks_module.router)
 api_router.include_router(redacao_module.router)
 api_router.include_router(treino_module.router)
@@ -335,6 +362,7 @@ api_router.include_router(client_errors_module.router)
 api_router.include_router(question_reports_module.router)
 api_router.include_router(sugestoes_module.router)
 api_router.include_router(revisao_module.router)
+api_router.include_router(lembretes_module.router)
 api_router.include_router(curadoria_module.router)
 api_router.include_router(dados_pessoais_module.router)
 api_router.include_router(cronograma_module.router)
@@ -602,6 +630,47 @@ async def _startup():
         "Índices MongoDB: %d criados/confirmados, %d falharam.",
         resultado_indices["criados"], resultado_indices["falhas"],
     )
+
+    # Conteúdo pedagógico dos cursos (trilhas/estações/blocos), lido do disco
+    # UMA vez e mantido em memória — abrir uma trilha não pode custar I/O.
+    # Pasta ausente é o estado normal enquanto o conteúdo está sendo escrito;
+    # curso com problema de validação fica fora do ar e aparece em
+    # `/admin/cursos/conteudo`, que é onde quem produz o conteúdo olha.
+    biblioteca = cursos_conteudo.recarregar()
+    if biblioteca.problemas:
+        logger.warning(
+            "Conteúdo de cursos: %d curso(s) publicado(s), %d problema(s) de validação — "
+            "veja /admin/cursos/conteudo.",
+            len(biblioteca.cursos), len(biblioteca.problemas),
+        )
+    else:
+        logger.info("Conteúdo de cursos: %d curso(s) publicado(s).", len(biblioteca.cursos))
+
+    # Mesma disciplina para o conteúdo dos e-books: disco, uma vez, em
+    # memória. Sem pasta (ou sem página) é "em breve", não erro.
+    biblioteca_ebooks = ebooks_conteudo.recarregar()
+    if biblioteca_ebooks.problemas:
+        logger.warning(
+            "Conteúdo de e-books: %d publicado(s), %d problema(s) de validação.",
+            len(biblioteca_ebooks.ebooks), len(biblioteca_ebooks.problemas),
+        )
+    else:
+        logger.info("Conteúdo de e-books: %d publicado(s).", len(biblioteca_ebooks.ebooks))
+
+    # E, por cima do disco, o que foi publicado pelo PAINEL (Mongo). Estações
+    # escritas em texto no admin não sobreviveriam a um deploy se morassem em
+    # arquivo — o disco do Fly é efêmero e há mais de uma máquina.
+    try:
+        recusados = await cursos_publicados.recarregar()
+        if recusados:
+            logger.warning(
+                "Conteúdo publicado pelo painel com problema em %d curso(s): %s",
+                len(recusados), ", ".join(recusados),
+            )
+    except Exception as exc:  # noqa: BLE001
+        # O app sobe mesmo assim: sem isto, o conteúdo de arquivo continua
+        # servindo, que é o estado de antes desta funcionalidade existir.
+        logger.warning("Não foi possível carregar o conteúdo publicado pelo painel: %s", exc)
 
     if settings.SEED_DEMO_DATA:
         # Gabaritos de exemplo e conteúdo de feed autoral. Em produção isso

@@ -85,17 +85,19 @@ export default function PublicarLinkDaLive({ compacto = false, testid = "publica
       className={`card-sapiens rounded-2xl ${compacto ? "p-5" : "p-6"}`}
       data-testid={testid}
     >
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-sapiens-accent to-sapiens-navy text-white">
-          <Radio className="h-5 w-5" strokeWidth={1.7} />
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="font-display text-lg font-bold tracking-tight text-zinc-950">
-            Link do Meet da quinta · {live.edicao || "—"}
+      <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+        <div className="flex min-w-0 w-full flex-1 items-center gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-sapiens-accent to-sapiens-navy text-white">
+            <Radio className="h-5 w-5" strokeWidth={1.7} />
           </div>
-          <div className="text-sm text-zinc-500">
-            {quando} · {live.duracao_minutos} min · {live.inscritos_count}{" "}
-            {live.inscritos_count === 1 ? "inscrito" : "inscritos"}
+          <div className="min-w-0 flex-1">
+            <div className="font-display text-lg font-bold tracking-tight text-zinc-950">
+              Link do Meet da quinta · {live.edicao || "—"}
+            </div>
+            <div className="text-sm text-zinc-500">
+              {quando} · {live.duracao_minutos} min · {live.inscritos_count}{" "}
+              {live.inscritos_count === 1 ? "inscrito" : "inscritos"}
+            </div>
           </div>
         </div>
         <span

@@ -1,0 +1,537 @@
+{
+  "schema_version": "1.0",
+  "estacao_id": "mb-10-expressoes-algebricas",
+  "titulo": "Expressões algébricas",
+  "objetivo": "Você vai manipular expressões com variáveis, reduzir termos semelhantes, aplicar a distributiva e reorganizar expressões sem alterar seu valor.",
+  "versao": "2026-09-16",
+  "duracao_minutos": 12,
+  "numero": 10,
+  "conceitos": [
+    "expressoes-algebricas",
+    "reducao-de-termos",
+    "distributiva"
+  ],
+  "conclusao": {
+    "tipo": "minimo_de_acertos",
+    "minimo": 7
+  },
+  "fonte": {
+    "arquivo": "deepseek_markdown_20260916_3f3b75.md",
+    "pasta": "cursos/matemática básica"
+  },
+  "blocos": [
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-10-c-01",
+      "variante": "padrao",
+      "markdown": "Uma **expressão algébrica** é uma combinação de números, variáveis e operações.\n\n`3x + 2y − 5`\n\n- `x` e `y` são **variáveis**\n- `3x` e `2y` são **termos**\n- `3` e `2` são **coeficientes**\n- `−5` é um **termo constante**"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-10-c-02",
+      "variante": "padrao",
+      "markdown": "Dois termos são semelhantes quando têm a **mesma parte literal** (mesma variável, mesmo expoente). Só termos semelhantes podem ser somados ou subtraídos.\n\n- `3x + 5x = 8x`\n- `3x + 5y` **não** se reduz.",
+      "titulo": "Termos semelhantes"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-10-c-03",
+      "variante": "padrao",
+      "markdown": "`a(b + c) = ab + ac`\n\nFunciona também com subtração e com termos negativos.\n\n`−2(x − 3) = −2x + 6`",
+      "titulo": "Propriedade distributiva"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-10-c-04",
+      "variante": "padrao",
+      "markdown": "`ab + ac = a(b + c)`\n\nÚtil para simplificar e para resolver equações.",
+      "titulo": "Fator comum"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-10-c-05",
+      "variante": "padrao",
+      "markdown": "Substituir as variáveis por números e calcular.\n\nEm `2x + 3y` com `x = 4` e `y = −1`: `8 − 3 = 5`",
+      "titulo": "Valor numérico"
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-10-ex-01",
+      "enunciado": "Reduza `5x + 3y − 2x + y`.",
+      "passos": [
+        {
+          "texto": "`5x − 2x = 3x`"
+        },
+        {
+          "texto": "`3y + y = 4y`"
+        },
+        {
+          "texto": "Resultado: `3x + 4y`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-10-ex-02",
+      "enunciado": "Aplique a distributiva em `3(x + 4)`.",
+      "passos": [
+        {
+          "texto": "`3x + 12`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-10-ex-03",
+      "enunciado": "Simplifique `−2(x − 3) + 4x`.",
+      "passos": [
+        {
+          "texto": "`−2x + 6 + 4x`"
+        },
+        {
+          "texto": "`2x + 6`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-10-ex-04",
+      "enunciado": "Fatore `6x + 9`.",
+      "passos": [
+        {
+          "texto": "Fator comum `3`: `3(2x + 3)`"
+        }
+      ]
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-10-es-01",
+      "variante": "destaque",
+      "markdown": "- **Marque termos semelhantes** com cores ou símbolos diferentes antes de reduzir.\n- Distribua primeiro, reduza depois.\n- Ao distribuir sinal negativo, troque **todos** os sinais dentro do parêntese.\n- Em problemas, escreva a expressão com clareza antes de substituir valores."
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-10-er-01",
+      "variante": "atencao",
+      "markdown": "- **Reduzir termos não semelhantes.** `2x + 3y` **não** é `5xy`.\n- **Distribuir só o primeiro termo.** `−2(x − 3) = −2x − 3` está errado.\n- **Esquecer o sinal negativo** ao distribuir.\n- **Substituir valores sem parênteses.** `x²` com `x = −2` é `4`, não `−4`."
+    },
+    {
+      "tipo": "video",
+      "bloco_id": "mb-10-video",
+      "titulo": "Expressões algébricas — aula em vídeo",
+      "provedor": "youtube",
+      "ref": null,
+      "resumo": "Aula conduzida pelo 1º colocado de Medicina da USP."
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-10-q01",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Reduza `5x + 3x`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "5x + 3"
+        },
+        {
+          "id": "b",
+          "texto": "8x"
+        },
+        {
+          "id": "c",
+          "texto": "8x²"
+        },
+        {
+          "id": "d",
+          "texto": "15x"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "d": "Multiplica.",
+        "c": "Eleva ao quadrado.",
+        "a": "Não reduz."
+      },
+      "solucao": "Termos semelhantes: soma coeficientes, mantém a variável.",
+      "conceitos": [
+        "reducao-de-termos"
+      ],
+      "origem": {
+        "estacao": 10,
+        "questao": "Questão 1"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-10-q02",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Reduza `7a + 2b − 3a`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "4a + 2b"
+        },
+        {
+          "id": "b",
+          "texto": "9a − 3a"
+        },
+        {
+          "id": "c",
+          "texto": "4a + 2b − 3"
+        },
+        {
+          "id": "d",
+          "texto": "6ab"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "d": "Mistura termos não semelhantes.",
+        "c": "Esta é uma das que erram a redução.",
+        "b": "Esta é uma das que erram a redução."
+      },
+      "solucao": "`7a − 3a = 4a`, `2b` permanece.",
+      "conceitos": [
+        "reducao-de-termos"
+      ],
+      "origem": {
+        "estacao": 10,
+        "questao": "Questão 2"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-10-q03",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Aplique a distributiva em `3(x + 4)`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "x + 12"
+        },
+        {
+          "id": "b",
+          "texto": "3x + 12"
+        },
+        {
+          "id": "c",
+          "texto": "3x + 4"
+        },
+        {
+          "id": "d",
+          "texto": "3x + 7"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "c": "Multiplica só o `x`.",
+        "d": "Soma `3+4`.",
+        "a": "Ignora o 3."
+      },
+      "solucao": "`3x + 12`.",
+      "conceitos": [
+        "distributiva"
+      ],
+      "origem": {
+        "estacao": 10,
+        "questao": "Questão 3"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-10-q04",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Simplifique `−2(x − 3)`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "−2x − 3"
+        },
+        {
+          "id": "b",
+          "texto": "−2x − 6"
+        },
+        {
+          "id": "c",
+          "texto": "−2x + 6"
+        },
+        {
+          "id": "d",
+          "texto": "2x + 6"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "b": "Troca o sinal do segundo termo.",
+        "a": "Multiplica só o `x`.",
+        "d": "Troca o sinal do coeficiente."
+      },
+      "solucao": "`−2 × x = −2x`, `−2 × (−3) = +6`.",
+      "conceitos": [
+        "distributiva"
+      ],
+      "origem": {
+        "estacao": 10,
+        "questao": "Questão 4"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-10-q05",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Simplifique `4(x + 2) − 3x`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "7x + 2"
+        },
+        {
+          "id": "b",
+          "texto": "x + 8"
+        },
+        {
+          "id": "c",
+          "texto": "7x + 8"
+        },
+        {
+          "id": "d",
+          "texto": "x + 2"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "c": "Soma `4x + 3x`.",
+        "d": "Ignora o termo constante.",
+        "a": "Soma coeficientes errados."
+      },
+      "solucao": "`4x + 8 − 3x = x + 8`.",
+      "conceitos": [
+        "distributiva"
+      ],
+      "origem": {
+        "estacao": 10,
+        "questao": "Questão 5"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-10-q06",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Calcule o valor de `2x² − 3x + 1` para `x = 2`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "3"
+        },
+        {
+          "id": "b",
+          "texto": "11"
+        },
+        {
+          "id": "c",
+          "texto": "1"
+        },
+        {
+          "id": "d",
+          "texto": "7"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "b": "Calcula `(2x)²`.",
+        "c": "Ignora o `−3x`.",
+        "d": "Erra a ordem."
+      },
+      "solucao": "`2(4) − 3(2) + 1 = 8 − 6 + 1 = 3`.",
+      "conceitos": [
+        "expressoes-algebricas"
+      ],
+      "origem": {
+        "estacao": 10,
+        "questao": "Questão 6"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-10-q07",
+      "nivel": 3,
+      "formato": "multipla_escolha",
+      "enunciado": "Simplifique `2(x + 3) + 3(x − 1)`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "5x + 3"
+        },
+        {
+          "id": "b",
+          "texto": "5x + 6"
+        },
+        {
+          "id": "c",
+          "texto": "5x − 3"
+        },
+        {
+          "id": "d",
+          "texto": "x + 3"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "b": "Não subtrai o 3.",
+        "c": "Esquece o `+6`.",
+        "d": "Soma mal."
+      },
+      "solucao": "`2x + 6 + 3x − 3 = 5x + 3`.",
+      "conceitos": [
+        "distributiva"
+      ],
+      "origem": {
+        "estacao": 10,
+        "questao": "Questão 7"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-10-q08",
+      "nivel": 3,
+      "formato": "multipla_escolha",
+      "enunciado": "Fatore `12x + 18`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "2(6x + 9)"
+        },
+        {
+          "id": "b",
+          "texto": "6(2x + 3)"
+        },
+        {
+          "id": "c",
+          "texto": "3(4x + 6)"
+        },
+        {
+          "id": "d",
+          "texto": "6(2x + 18)"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "c": "Esta é uma das que são fatorações parciais.",
+        "a": "Esta é uma das que são fatorações parciais.",
+        "d": "Mantém 18 sem dividir por 6."
+      },
+      "solucao": "MDC(12,18) = 6 → `6(2x + 3)`.",
+      "conceitos": [
+        "distributiva"
+      ],
+      "origem": {
+        "estacao": 10,
+        "questao": "Questão 8"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-10-q09",
+      "nivel": 4,
+      "formato": "multipla_escolha",
+      "enunciado": "Se `a + b = 10` e `a − b = 4`, quanto vale `a² − b²`?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "14"
+        },
+        {
+          "id": "b",
+          "texto": "16"
+        },
+        {
+          "id": "c",
+          "texto": "100"
+        },
+        {
+          "id": "d",
+          "texto": "40"
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "a": "Soma.",
+        "c": "É `(a+b)²`.",
+        "b": "É `(a−b)²`."
+      },
+      "solucao": "`a² − b² = (a+b)(a−b) = 10 × 4 = 40`.",
+      "conceitos": [
+        "expressoes-algebricas"
+      ],
+      "origem": {
+        "estacao": 10,
+        "questao": "Questão 9"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-10-q10",
+      "nivel": 4,
+      "formato": "multipla_escolha",
+      "enunciado": "O custo de produção de uma fábrica é dado por `C(x) = 200 + 5x`, em que `x` é o número de peças. Qual o custo de produzir 60 peças?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "R$ 1.200"
+        },
+        {
+          "id": "b",
+          "texto": "R$ 500"
+        },
+        {
+          "id": "c",
+          "texto": "R$ 200"
+        },
+        {
+          "id": "d",
+          "texto": "R$ 300"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "d": "Considera só o termo variável.",
+        "a": "Multiplica `200 × 6`.",
+        "c": "Ignora o `5x`."
+      },
+      "solucao": "`C(60) = 200 + 5 × 60 = 200 + 300 = 500`.",
+      "conceitos": [
+        "expressoes-algebricas"
+      ],
+      "origem": {
+        "estacao": 10,
+        "questao": "Questão 10"
+      }
+    },
+    {
+      "tipo": "desafio",
+      "bloco_id": "mb-10-desafio",
+      "nivel": 5,
+      "enunciado": "Simplifique:\n\n`3(2x − 1) − 2(x − 4) + 5`",
+      "formato": "texto_curto",
+      "gabarito": {
+        "aceitos": [
+          "10 + 4x",
+          "10+4x",
+          "4x + 10",
+          "4x+10"
+        ]
+      },
+      "solucao": "- `6x − 3 − 2x + 8 + 5`\n- `(6x − 2x) + (−3 + 8 + 5)`\n- `4x + 10`"
+    }
+  ],
+  "pre_requisitos": [
+    "mb-01-operacoes-fundamentais",
+    "mb-07-potenciacao"
+  ]
+}

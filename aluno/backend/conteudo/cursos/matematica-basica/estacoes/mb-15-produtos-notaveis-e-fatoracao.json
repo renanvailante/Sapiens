@@ -1,0 +1,546 @@
+{
+  "schema_version": "1.0",
+  "estacao_id": "mb-15-produtos-notaveis-e-fatoracao",
+  "titulo": "Produtos notáveis e fatoração",
+  "objetivo": "Você vai reconhecer e aplicar os produtos notáveis, fatorar expressões algébricas e usar esses padrões para simplificar cálculos.",
+  "versao": "2026-09-16",
+  "duracao_minutos": 11,
+  "numero": 15,
+  "conceitos": [
+    "produtos-notaveis",
+    "fatoracao"
+  ],
+  "conclusao": {
+    "tipo": "minimo_de_acertos",
+    "minimo": 7
+  },
+  "fonte": {
+    "arquivo": "deepseek_markdown_20260916_13a3ab.md",
+    "pasta": "cursos/matemática básica"
+  },
+  "blocos": [
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-15-c-01",
+      "variante": "padrao",
+      "markdown": "**Quadrado da soma:**\n\n`(a + b)² = a² + 2ab + b²`\n\n**Quadrado da diferença:**\n\n`(a − b)² = a² − 2ab + b²`\n\n**Produto da soma pela diferença:**\n\n`(a + b)(a − b) = a² − b²`",
+      "titulo": "Os três produtos notáveis fundamentais"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-15-c-02",
+      "variante": "padrao",
+      "markdown": "Fatorar é escrever a expressão como produto. Os padrões mais frequentes:",
+      "titulo": "Fatoração"
+    },
+    {
+      "tipo": "tabela",
+      "bloco_id": "mb-15-c-03",
+      "colunas": [
+        "Forma fatorada",
+        "Forma expandida"
+      ],
+      "linhas": [
+        [
+          "`(a + b)²`",
+          "`a² + 2ab + b²`"
+        ],
+        [
+          "`(a − b)²`",
+          "`a² − 2ab + b²`"
+        ],
+        [
+          "`(a + b)(a − b)`",
+          "`a² − b²`"
+        ],
+        [
+          "`a(x + y)`",
+          "`ax + ay` (fator comum)"
+        ]
+      ]
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-15-c-04",
+      "variante": "padrao",
+      "markdown": "- Três termos, primeiro e último quadrados perfeitos, termo do meio é `± 2ab` → **quadrado perfeito**.\n- Dois termos, ambos quadrados, subtração → **diferença de quadrados**.\n- Todos os termos com fator comum → **fator comum em evidência**.",
+      "titulo": "Quando usar cada padrão"
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-15-ex-01",
+      "enunciado": "Expanda `(x + 3)²`.",
+      "passos": [
+        {
+          "texto": "`x² + 6x + 9`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-15-ex-02",
+      "enunciado": "Expanda `(x − 5)²`.",
+      "passos": [
+        {
+          "texto": "`x² − 10x + 25`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-15-ex-03",
+      "enunciado": "Expanda `(x + 4)(x − 4)`.",
+      "passos": [
+        {
+          "texto": "`x² − 16`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-15-ex-04",
+      "enunciado": "Fatore `x² − 9`.",
+      "passos": [
+        {
+          "texto": "`(x + 3)(x − 3)`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-15-ex-05",
+      "enunciado": "Calcule `51²` usando produto notável.",
+      "passos": [
+        {
+          "texto": "`(50 + 1)² = 2500 + 100 + 1 = 2601`"
+        }
+      ]
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-15-es-01",
+      "variante": "destaque",
+      "markdown": "- Antes de expandir, verifique se o padrão se aplica. Reconhecer economiza contas.\n- Em cálculos grandes, produtos notáveis substituem multiplicações longas.\n- Ao fatorar, sempre comece pelo fator comum. Só depois tente padrões mais específicos.\n- Diferença de quadrados aparece em questões de simplificação de frações algébricas."
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-15-er-01",
+      "variante": "atencao",
+      "markdown": "- **Achar que `(a + b)² = a² + b²`.** Falta o termo `2ab`.\n- **Sinal errado no termo do meio.** `(a − b)²` tem `−2ab`, não `+2ab`.\n- **Confundir diferença de quadrados com quadrado da diferença.** São coisas diferentes.\n- **Fatorar `x² + 4`.** Não é diferença de quadrados (é soma)."
+    },
+    {
+      "tipo": "video",
+      "bloco_id": "mb-15-video",
+      "titulo": "Produtos notáveis e fatoração — aula em vídeo",
+      "provedor": "youtube",
+      "ref": null,
+      "resumo": "Aula conduzida pelo 1º colocado de Medicina da USP."
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-15-q01",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Expanda `(x + 3)²`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "x² + 3x + 9"
+        },
+        {
+          "id": "b",
+          "texto": "x² + 6x + 6"
+        },
+        {
+          "id": "c",
+          "texto": "x² + 6x + 9"
+        },
+        {
+          "id": "d",
+          "texto": "x² + 9"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "d": "Esquece o termo do meio.",
+        "a": "Multiplica errado.",
+        "b": "Erra o último termo."
+      },
+      "solucao": "`x² + 2 × 3x + 3² = x² + 6x + 9`.",
+      "conceitos": [
+        "produtos-notaveis"
+      ],
+      "origem": {
+        "estacao": 15,
+        "questao": "Questão 1"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-15-q02",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Expanda `(x − 5)²`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "x² + 10x + 25"
+        },
+        {
+          "id": "b",
+          "texto": "x² − 25"
+        },
+        {
+          "id": "c",
+          "texto": "x² − 5x + 25"
+        },
+        {
+          "id": "d",
+          "texto": "x² − 10x + 25"
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "b": "Esquece o termo do meio.",
+        "c": "Esta é uma das que têm coeficientes errados.",
+        "a": "Esta é uma das que têm coeficientes errados."
+      },
+      "solucao": "`x² − 10x + 25`.",
+      "conceitos": [
+        "produtos-notaveis"
+      ],
+      "origem": {
+        "estacao": 15,
+        "questao": "Questão 2"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-15-q03",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Expanda `(x + 4)(x − 4)`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "x² + 16"
+        },
+        {
+          "id": "b",
+          "texto": "x² − 4"
+        },
+        {
+          "id": "c",
+          "texto": "x² − 16"
+        },
+        {
+          "id": "d",
+          "texto": "x² − 8x + 16"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "a": "Troca o sinal.",
+        "d": "Confunde com quadrado da diferença.",
+        "b": "Erra o termo."
+      },
+      "solucao": "Produto da soma pela diferença: `x² − 16`.",
+      "conceitos": [
+        "produtos-notaveis"
+      ],
+      "origem": {
+        "estacao": 15,
+        "questao": "Questão 3"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-15-q04",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Fatore `x² − 9`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "(x − 9)(x + 1)"
+        },
+        {
+          "id": "b",
+          "texto": "(x + 3)(x − 3)"
+        },
+        {
+          "id": "c",
+          "texto": "(x + 3)²"
+        },
+        {
+          "id": "d",
+          "texto": "(x − 3)²"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "d": "Esta é uma das que são quadrados perfeitos (dariam `x² ∓ 6x + 9`).",
+        "c": "Esta é uma das que são quadrados perfeitos (dariam `x² ∓ 6x + 9`).",
+        "a": "Dá `x² − 8x − 9`."
+      },
+      "solucao": "Diferença de quadrados.",
+      "conceitos": [
+        "fatoracao"
+      ],
+      "origem": {
+        "estacao": 15,
+        "questao": "Questão 4"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-15-q05",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Fatore `x² + 8x + 16`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "(x + 8)(x + 2)"
+        },
+        {
+          "id": "b",
+          "texto": "(x + 2)²"
+        },
+        {
+          "id": "c",
+          "texto": "(x − 4)²"
+        },
+        {
+          "id": "d",
+          "texto": "(x + 4)²"
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "c": "Troca o sinal.",
+        "a": "Dá `x² + 10x + 16`.",
+        "b": "Dá `x² + 4x + 4`."
+      },
+      "solucao": "`x² + 8x + 16 = (x + 4)²`.",
+      "conceitos": [
+        "fatoracao"
+      ],
+      "origem": {
+        "estacao": 15,
+        "questao": "Questão 5"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-15-q06",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Expanda `(2x + 3)²`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "4x² + 12x + 9"
+        },
+        {
+          "id": "b",
+          "texto": "4x² + 6x + 9"
+        },
+        {
+          "id": "c",
+          "texto": "4x² + 9"
+        },
+        {
+          "id": "d",
+          "texto": "2x² + 6x + 9"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "c": "Esquece o termo do meio.",
+        "d": "Eleva o 2 mal.",
+        "b": "Erra o termo do meio."
+      },
+      "solucao": "`(2x)² + 2(2x)(3) + 3² = 4x² + 12x + 9`.",
+      "conceitos": [
+        "produtos-notaveis"
+      ],
+      "origem": {
+        "estacao": 15,
+        "questao": "Questão 6"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-15-q07",
+      "nivel": 3,
+      "formato": "multipla_escolha",
+      "enunciado": "Expanda `(3x − 2)(3x + 2)`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "3x² − 4"
+        },
+        {
+          "id": "b",
+          "texto": "9x² + 4"
+        },
+        {
+          "id": "c",
+          "texto": "9x² − 12x + 4"
+        },
+        {
+          "id": "d",
+          "texto": "9x² − 4"
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "b": "Troca o sinal.",
+        "c": "Confunde com quadrado da diferença.",
+        "a": "Não eleva o coeficiente."
+      },
+      "solucao": "Diferença de quadrados: `(3x)² − 2² = 9x² − 4`.",
+      "conceitos": [
+        "produtos-notaveis"
+      ],
+      "origem": {
+        "estacao": 15,
+        "questao": "Questão 7"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-15-q08",
+      "nivel": 3,
+      "formato": "multipla_escolha",
+      "enunciado": "Fatore `x² − 6x + 9`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "(x − 9)(x − 1)"
+        },
+        {
+          "id": "b",
+          "texto": "(x + 3)²"
+        },
+        {
+          "id": "c",
+          "texto": "(x − 3)(x + 3)"
+        },
+        {
+          "id": "d",
+          "texto": "(x − 3)²"
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "b": "Troca o sinal.",
+        "a": "Dá `x² − 10x + 9`.",
+        "c": "Dá `x² − 9`."
+      },
+      "solucao": "`x² − 6x + 9 = (x − 3)²`.",
+      "conceitos": [
+        "fatoracao"
+      ],
+      "origem": {
+        "estacao": 15,
+        "questao": "Questão 8"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-15-q09",
+      "nivel": 4,
+      "formato": "multipla_escolha",
+      "enunciado": "Calcule `51²` usando produtos notáveis.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "2601"
+        },
+        {
+          "id": "b",
+          "texto": "2551"
+        },
+        {
+          "id": "c",
+          "texto": "2501"
+        },
+        {
+          "id": "d",
+          "texto": "2511"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "c": "Esta é uma das que vêm de erros no termo do meio.",
+        "b": "Esta é uma das que vêm de erros no termo do meio.",
+        "d": "Esta é uma das que vêm de erros no termo do meio."
+      },
+      "solucao": "`(50 + 1)² = 2500 + 100 + 1 = 2601`.",
+      "conceitos": [
+        "produtos-notaveis"
+      ],
+      "origem": {
+        "estacao": 15,
+        "questao": "Questão 9"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-15-q10",
+      "nivel": 4,
+      "formato": "multipla_escolha",
+      "enunciado": "Um terreno quadrado tem lado `x + 5` metros. Qual a área?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "x² + 10x + 10"
+        },
+        {
+          "id": "b",
+          "texto": "x² + 10x + 25"
+        },
+        {
+          "id": "c",
+          "texto": "x² + 25"
+        },
+        {
+          "id": "d",
+          "texto": "x² + 5x + 25"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "c": "Esquece o termo do meio.",
+        "d": "Esta é uma das que erram coeficientes.",
+        "a": "Esta é uma das que erram coeficientes."
+      },
+      "solucao": "`(x + 5)² = x² + 10x + 25`.",
+      "conceitos": [
+        "produtos-notaveis"
+      ],
+      "origem": {
+        "estacao": 15,
+        "questao": "Questão 10"
+      }
+    },
+    {
+      "tipo": "desafio",
+      "bloco_id": "mb-15-desafio",
+      "nivel": 5,
+      "enunciado": "Calcule `999²` usando produto notável.",
+      "formato": "numerico",
+      "gabarito": {
+        "valor": 998001.0,
+        "tolerancia": 998.001
+      },
+      "solucao": "- `(1000 − 1)² = 1000² − 2 × 1000 × 1 + 1²`\n- `= 1.000.000 − 2.000 + 1`\n- `= 998.001`"
+    }
+  ],
+  "pre_requisitos": [
+    "mb-10-expressoes-algebricas",
+    "mb-14-equacoes-do-2o-grau"
+  ]
+}

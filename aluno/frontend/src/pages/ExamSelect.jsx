@@ -149,6 +149,7 @@ function QuestionRunner({ filtro, onExit }) {
     if (filtro?.numero_min) params.set("numero_min", filtro.numero_min);
     if (filtro?.numero_max) params.set("numero_max", filtro.numero_max);
     if (filtro?.area) params.set("area", filtro.area);
+    if (filtro?.item_ids?.length) params.set("item_ids", filtro.item_ids.join(","));
 
     Promise.all([
       api.get(`/questoes?${params.toString()}`),
@@ -633,10 +634,10 @@ function QuestionRunner({ filtro, onExit }) {
               >
                 <Mentis className="w-4 h-4" variante="icone" estado={explicacao?.loading ? "analise" : "neutra"} />
                 {explicacao?.loading
-                  ? "A Mentis está lendo a questão…"
+                  ? "Mentis está pensando…"
                   : sparks != null && sparks < MENTIS_COST
                   ? `Saldo insuficiente (${MENTIS_COST} Sparks)`
-                  : `Saiba mais com a Mentis · ${MENTIS_COST} Sparks`}
+                  : `Solução da Mentis · ${MENTIS_COST} Sparks`}
               </button>
             )}
             {explicacao?.erro && (
@@ -1145,9 +1146,16 @@ function ExamsByYear() {
 export default function ExamSelect() {
   const [params] = useSearchParams();
   const areaParam = params.get("area");
+  const itemIdsParam = params.get("item_ids");
   const nav = useNavigate();
-  const [mode, setMode] = useState(areaParam ? "practice" : "hub"); // 'hub' | 'provas' | 'practice'
-  const [filtro, setFiltro] = useState(areaParam ? { area: areaParam } : null); // { banca, ano, prova, disciplinas, count } | { area }
+  const [mode, setMode] = useState(areaParam || itemIdsParam ? "practice" : "hub"); // 'hub' | 'provas' | 'practice'
+  const [filtro, setFiltro] = useState(
+    itemIdsParam
+      ? { item_ids: itemIdsParam.split(",").filter(Boolean), origem: "revisao" }
+      : areaParam
+        ? { area: areaParam }
+        : null,
+  ); // { banca, ano, prova, disciplinas, count } | { area } | { item_ids, origem }
 
   const escolherProva = (p, opts) => { setFiltro({ ...p, reiniciar: !!opts?.reiniciar }); setMode("practice"); };
 
@@ -1163,8 +1171,17 @@ export default function ExamSelect() {
             </h1>
           </div>
         )}
+        {mode === "practice" && filtro?.origem === "revisao" && (
+          <div className="mb-6" data-testid="practice-revisao-header">
+            <div className="secao-olho">Revisão espaçada</div>
+            <h1 className="titulo-tela">A questão que estava marcada para hoje.</h1>
+          </div>
+        )}
         {mode === "practice" ? (
-          <QuestionRunner filtro={filtro} onExit={() => (filtro?.area ? nav("/dashboard") : setMode("provas"))} />
+          <QuestionRunner
+            filtro={filtro}
+            onExit={() => (filtro?.area ? nav("/dashboard") : filtro?.origem === "revisao" ? nav("/revisoes") : setMode("provas"))}
+          />
         ) : mode === "provas" ? (
           <>
             <div className="mb-10">
@@ -1181,7 +1198,7 @@ export default function ExamSelect() {
             <div className="mb-10">
               <div className="secao-olho">Provas</div>
               <h1 className="titulo-tela" data-testid="exam-select-title">
-                Pratique questões
+                Cada questão aqui vira informação sobre você.
               </h1>
               <p className="mt-3 text-white/60 max-w-lg">Questões auditadas, uma de cada vez. Suas respostas são registradas para revelar seus padrões cognitivos.</p>
             </div>

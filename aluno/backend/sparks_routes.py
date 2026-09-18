@@ -13,6 +13,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, EmailStr
 
+import cursos
 import mercadopago_client as mp
 import settings
 import sparks_payments_service as svc
@@ -85,6 +86,17 @@ async def list_packages(_: User = Depends(require_user)):
         ],
         "auto_recharge_frequencies_days": list(sparks_store.AUTO_RECHARGE_FREQUENCIES_DAYS),
         "default_baseline": sparks_store.DEFAULT_BASELINE,
+        # O preço AVULSO do que os direitos incluem. A loja precisa disto para
+        # dizer o que o pacote substitui ("as 8 quintas que faltam custam
+        # 1.600 Sparks avulsas") sem escrever 200 e 500 no JavaScript: preço é
+        # decisão de produto e sai do mesmo `cursos.py` que cobra. Vem no
+        # catálogo, e não numa chamada a `/cursos`, porque a loja não tem por
+        # que carregar a aba de cursos inteira para escrever uma frase.
+        "precos_avulsos": {
+            "live_sparks": cursos.LIVE_CUSTO_SPARKS,
+            "curso_sparks": cursos.CURSO_CUSTO_SPARKS,
+            "total_cursos": len(cursos.CURSOS),
+        },
     }
 
 

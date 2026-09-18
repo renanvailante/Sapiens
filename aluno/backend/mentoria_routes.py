@@ -24,8 +24,12 @@ foi o RÓTULO que o admin lê ("na fila", "conversando", "virou mentoria",
 """
 from __future__ import annotations
 
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException
 
+import firestore_service as fs
+import whatsapp as wa
 from auth import require_admin, require_user
 from models import (
     MENTORIA_AREAS,
@@ -37,10 +41,31 @@ from models import (
     _now_iso,
 )
 
+logger = logging.getLogger("sapiens.mentoria")
+
 router = APIRouter(prefix="/mentoria", tags=["mentoria"])
 
 # Ver o docstring: nome interno preservado para não perder o histórico.
 COLECAO = "aulas_particulares"
+
+# ---------------------------------------------------------------------------
+# O preço da fila
+# ---------------------------------------------------------------------------
+#
+# Entrar na lista de espera custa Sparks desde 2026-09-17. Não é monetização
+# da fila: é o filtro que faz a fila significar alguma coisa.
+#
+# Uma lista de espera de graça enche de gente que clicou "por via das dúvidas",
+# e quem atende — UMA pessoa — passa a gastar o tempo escasso dela ligando para
+# quem não queria mentoria nenhuma. Quem está na frente da fila espera mais por
+# causa disso. Um preço pequeno faz a fila voltar a ser uma fila de gente que
+# quer entrar.
+#
+# **Cobra-se UMA vez, na ENTRADA.** Corrigir os próprios dados depois é de
+# graça, para sempre: cobrar por uma correção seria transformar um erro de
+# digitação num segundo débito, e faria o aluno preferir deixar o telefone
+# errado — que é exatamente o dado que a fila existe para ter.
+ENTRADA_COST = 50
 
 _db = None
 def set_db(db):
@@ -48,43 +73,158 @@ def set_db(db):
     _db = db
 
 
+def _cobrar(uid: str, custo: int) -> int:
+    fs.ensure_sparks_balance(uid)
+    try:
+        return fs.deduct_sparks(uid, custo)
+    except fs.InsufficientSparksError as exc:
+        raise HTTPException(
+            status_code=402,
+            detail=f"Sparks insuficientes: saldo {exc.balance}, custo {exc.needed}.",
+        ) from exc
+
+
+def _safe_reembolso(uid: str, custo: int):
+    try:
+        return fs.refund_sparks(uid, custo)
+    except Exception:  # noqa: BLE001
+        logger.exception("REEMBOLSO FALHOU (mentoria): %d Sparks devidos a %s.", custo, uid)
+        return None
+
+
+async def _gravar_whatsapp_na_conta(user: User, bruto: str) -> None:
+    """O número informado na fila também vira o WhatsApp da CONTA, quando ela
+    ainda não tem um.
+
+    Desde 2026-09-17 o WhatsApp é pedido no cadastro e os cartões que o pediam
+    depois foram removidos das telas. Sobram as contas antigas e as criadas
+    pelo botão do Google a partir da tela de login, que não passam por
+    formulário nenhum — para elas, esta é a única porta. Não sobrescreve um
+    número já existente: a fila é um pedido, não uma tela de perfil.
+    """
+    if user.whatsapp:
+        return
+    try:
+        digitado, e164 = wa.normalizar(bruto)
+    except wa.WhatsAppInvalido:
+        return
+    try:
+        await _db.users.update_one(
+            {"user_id": user.user_id},
+            {"$set": {"whatsapp": digitado, "whatsapp_e164": e164}},
+        )
+    except Exception:  # noqa: BLE001
+        logger.exception("mentoria: não consegui gravar o WhatsApp na conta de %s.", user.user_id)
+
+
+@router.get("/precos")
+async def precos(_: User = Depends(require_user)):
+    """O frontend nunca decide preço — só o exibe e desabilita botão."""
+    return {"custo_entrada": ENTRADA_COST}
+
+
 @router.post("")
 async def entrar_na_fila(payload: CreateMentoriaEsperaRequest, user: User = Depends(require_user)):
+    """Entra na fila (cobra `ENTRADA_COST`) ou CORRIGE o pedido (de graça).
+
+    A diferença entre as duas é o aluno já estar ou não na fila, e ela é
+    decidida no servidor — o cliente não manda nada que influencie o preço.
+
+    **Um aluno, um lugar.** O `user_id` é a chave: o segundo envio atualiza o
+    pedido existente em vez de criar um segundo, então nem o duplo clique nem
+    o aluno que reabre a página entram duas vezes na lista do admin. É também
+    o que impede a cobrança dupla, porque quem já está na fila não é cobrado.
+    """
     if not payload.areas:
         raise HTTPException(status_code=422, detail="Selecione ao menos uma área.")
     invalidas = [a for a in payload.areas if a not in MENTORIA_AREAS]
     if invalidas:
         raise HTTPException(status_code=422, detail=f"Área(s) inválida(s): {', '.join(invalidas)}")
-    if not payload.nome_completo.strip() or not payload.whatsapp.strip():
-        raise HTTPException(status_code=422, detail="Nome completo e WhatsApp são obrigatórios.")
 
-    # Um aluno, um lugar na fila. Entrar duas vezes não avança ninguém e
-    # ainda faria a lista do admin mostrar a mesma pessoa duas vezes — o
-    # segundo envio ATUALIZA o pedido em vez de criar outro.
+    nome = payload.nome_completo.strip()
+    bruto = payload.whatsapp.strip()
+    # Nome, e-mail e WhatsApp são o que o admin recebe — e a fila sem eles é
+    # uma linha que ninguém consegue atender. O e-mail vem da CONTA e sempre
+    # existe (nenhum caminho de cadastro cria conta sem ele); os outros dois
+    # são checados aqui, ANTES de qualquer débito, para o aluno nunca pagar
+    # por uma entrada que não vai acontecer.
+    if not nome or not bruto:
+        raise HTTPException(status_code=422, detail="Nome completo e WhatsApp são obrigatórios.")
+    try:
+        whatsapp_digitado, _e164 = wa.normalizar(bruto)
+    except wa.WhatsAppInvalido as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    if not user.email:
+        raise HTTPException(
+            status_code=422,
+            detail="Sua conta está sem e-mail. Fale com a equipe antes de entrar na fila.",
+        )
+
     existente = await _db[COLECAO].find_one({"user_id": user.user_id}, {"_id": 0})
     if existente:
+        # CORREÇÃO DO PEDIDO — de graça, e sem mexer no lugar na fila.
         await _db[COLECAO].update_one(
             {"request_id": existente["request_id"]},
             {"$set": {
-                "nome_completo": payload.nome_completo.strip(),
-                "whatsapp": payload.whatsapp.strip(),
+                "nome_completo": nome,
+                "email": user.email,
+                "whatsapp": whatsapp_digitado,
                 "areas": payload.areas,
                 "descricao": payload.descricao.strip(),
                 "updated_at": _now_iso(),
             }},
         )
         atualizado = await _db[COLECAO].find_one({"request_id": existente["request_id"]}, {"_id": 0})
-        return {**atualizado, "ja_estava_na_fila": True, "posicao": await _posicao(existente["request_id"])}
+        await _gravar_whatsapp_na_conta(user, whatsapp_digitado)
+        return {
+            **atualizado,
+            "ja_estava_na_fila": True,
+            "cobrado": 0,
+            "sparks_balance": _saldo(user.user_id),
+            "posicao": await _posicao(existente["request_id"]),
+        }
 
+    # ENTRADA NOVA — cobra primeiro, grava depois. Se a gravação falhar, os
+    # Sparks voltam: um débito sem lugar na fila é o pior resultado possível.
+    saldo = _cobrar(user.user_id, ENTRADA_COST)
     req = MentoriaEspera(
         user_id=user.user_id,
-        nome_completo=payload.nome_completo.strip(),
-        whatsapp=payload.whatsapp.strip(),
+        nome_completo=nome,
+        email=user.email,
+        whatsapp=whatsapp_digitado,
         areas=payload.areas,
         descricao=payload.descricao.strip(),
+        sparks_cobrados=ENTRADA_COST,
     )
-    await _db[COLECAO].insert_one(req.model_dump())
-    return {**req.model_dump(), "ja_estava_na_fila": False, "posicao": await _posicao(req.request_id)}
+    try:
+        await _db[COLECAO].insert_one(req.model_dump())
+    except Exception as exc:  # noqa: BLE001
+        saldo = _safe_reembolso(user.user_id, ENTRADA_COST)
+        logger.exception(
+            "mentoria: entrada na fila falhou para %s — %d Sparks devolvidos.",
+            user.user_id, ENTRADA_COST,
+        )
+        raise HTTPException(
+            status_code=503,
+            detail="Não consegui te colocar na fila agora. Seus Sparks foram devolvidos.",
+        ) from exc
+
+    await _gravar_whatsapp_na_conta(user, whatsapp_digitado)
+    return {
+        **req.model_dump(),
+        "ja_estava_na_fila": False,
+        "cobrado": ENTRADA_COST,
+        "sparks_balance": saldo,
+        "posicao": await _posicao(req.request_id),
+    }
+
+
+def _saldo(uid: str) -> int | None:
+    try:
+        return fs.read_sparks_balance(uid)
+    except Exception:  # noqa: BLE001
+        logger.exception("mentoria: leitura de saldo falhou — resposta segue sem saldo")
+        return None
 
 
 async def _posicao(request_id: str) -> int | None:
@@ -105,11 +245,28 @@ async def _posicao(request_id: str) -> int | None:
 
 @router.get("/me")
 async def meu_lugar_na_fila(user: User = Depends(require_user)):
-    """O pedido deste aluno, se existir, com a posição atual."""
+    """O pedido deste aluno, se existir, com a posição atual.
+
+    Vem junto o que a tela precisa para decidir se pede dados antes de cobrar:
+    o preço da entrada e o que a CONTA já tem de nome, e-mail e WhatsApp.
+    Numa resposta só — a alternativa seria a tela abrir com três requisições
+    para desenhar um formulário.
+    """
+    conta = {
+        "nome": user.name,
+        "email": user.email,
+        "whatsapp": user.whatsapp,
+    }
     doc = await _db[COLECAO].find_one({"user_id": user.user_id}, {"_id": 0})
     if not doc:
-        return {"na_fila": False}
-    return {"na_fila": True, **doc, "posicao": await _posicao(doc["request_id"])}
+        return {"na_fila": False, "custo_entrada": ENTRADA_COST, "conta": conta}
+    return {
+        "na_fila": True,
+        **doc,
+        "custo_entrada": ENTRADA_COST,
+        "conta": conta,
+        "posicao": await _posicao(doc["request_id"]),
+    }
 
 
 @router.get("")

@@ -34,7 +34,7 @@ export default function LearningMap() {
   if (erro || !a) return (
     <div className="min-h-screen">
       <Nav />
-      <div className="max-w-3xl mx-auto px-6 md:px-10 py-14">
+      <div className="max-w-3xl mx-auto px-5 py-7 md:px-10 md:py-10">
         <EstadoDeErro
           mensagem={erro || "Este mapa não existe mais ou o link está incompleto."}
           aoTentarNovamente={recarregar}
@@ -48,9 +48,9 @@ export default function LearningMap() {
   return (
     <div className="min-h-screen">
       <Nav />
-      <div className="max-w-5xl mx-auto px-6 md:px-10 py-12">
+      <div className="max-w-5xl mx-auto px-5 py-7 md:px-10 md:py-10">
         <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-white/50 mb-4">Mapa de aprendizagem</div>
-        <h1 className="font-display text-4xl md:text-5xl font-extrabold tracking-tighter text-white" data-testid="map-title">
+        <h1 className="titulo-tela" data-testid="map-title">
           A causa-raiz por trás do erro.
         </h1>
         <p className="mt-3 text-white/60 max-w-lg">Você errou no sintoma. Estude aqui a raiz. Nós conectamos o problema à cadeia de pré-requisitos.</p>

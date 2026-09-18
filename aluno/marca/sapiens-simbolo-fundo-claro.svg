@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+<defs><linearGradient id="tinta-s" gradientUnits="userSpaceOnUse" x1="14" y1="14" x2="86" y2="84"><stop offset="0%" stop-color="#4A85E3"/><stop offset="55%" stop-color="#23509B"/><stop offset="100%" stop-color="#0C1C3A"/></linearGradient>
+<radialGradient id="brilho-s" cx="50%" cy="42%" r="58%">
+  <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.2"/>
+  <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+</radialGradient>
+<radialGradient id="aureola-s" cx="50%" cy="50%" r="50%">
+  <stop offset="42%" stop-color="#4FD9FF" stop-opacity="0"/>
+  <stop offset="76%" stop-color="#4FD9FF" stop-opacity="0.32"/>
+  <stop offset="100%" stop-color="#8B7BFF" stop-opacity="0"/>
+</radialGradient>
+<clipPath id="massaD-s"><circle cx="66" cy="49" r="20"/><circle cx="57" cy="28" r="12"/><circle cx="71" cy="30" r="12"/><circle cx="80" cy="41" r="10.5"/><circle cx="79" cy="55" r="11"/><circle cx="71" cy="66" r="11.5"/><circle cx="57" cy="70" r="11.5"/></clipPath><clipPath id="massaE-s"><circle cx="34" cy="49" r="20"/><circle cx="43" cy="28" r="12"/><circle cx="29" cy="30" r="12"/><circle cx="20" cy="41" r="10.5"/><circle cx="21" cy="55" r="11"/><circle cx="29" cy="66" r="11.5"/><circle cx="43" cy="70" r="11.5"/></clipPath>
+<clipPath id="meiaD-s"><rect x="51.4" y="0" width="48.6" height="100"/></clipPath>
+<clipPath id="meiaE-s"><rect x="0" y="0" width="48.6" height="100"/></clipPath></defs>
+<g clip-path="url(#meiaD-s)">
+  <g clip-path="url(#massaD-s)">
+    <rect x="0" y="0" width="100" height="100" fill="url(#tinta-s)"/>
+    <ellipse cx="64" cy="32" rx="23" ry="17" fill="url(#brilho-s)"/>
+  </g>
+  <path d="M 59 31 L 59 71" fill="none" stroke="#DCEAFD" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" opacity="0.94"/>
+  <path d="M 59 37 L 66 30 L 77 30" fill="none" stroke="#DCEAFD" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" opacity="0.94"/>
+  <path d="M 59 49 L 68 49 L 74 43" fill="none" stroke="#DCEAFD" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" opacity="0.94"/>
+  <path d="M 68 49 L 75 55" fill="none" stroke="#DCEAFD" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" opacity="0.94"/>
+  <path d="M 59 60 L 67 68 L 75 68" fill="none" stroke="#DCEAFD" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" opacity="0.94"/>
+  <circle cx="59" cy="31" r="2.1" fill="#DCEAFD"/><circle cx="77" cy="30" r="2.1" fill="#DCEAFD"/><circle cx="74" cy="43" r="2.1" fill="#DCEAFD"/><circle cx="75" cy="55" r="2.1" fill="#DCEAFD"/><circle cx="75" cy="68" r="2.1" fill="#DCEAFD"/><circle cx="59" cy="71" r="2.1" fill="#DCEAFD"/>
+</g><g clip-path="url(#meiaE-s)">
+  <g clip-path="url(#massaE-s)">
+    <rect x="0" y="0" width="100" height="100" fill="url(#tinta-s)"/>
+    <ellipse cx="36" cy="32" rx="23" ry="17" fill="url(#brilho-s)"/>
+  </g>
+  <path d="M 59 31 L 59 71" transform="translate(100,0) scale(-1,1)" fill="none" stroke="#DCEAFD" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" opacity="0.94"/>
+  <path d="M 59 37 L 66 30 L 77 30" transform="translate(100,0) scale(-1,1)" fill="none" stroke="#DCEAFD" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" opacity="0.94"/>
+  <path d="M 59 49 L 68 49 L 74 43" transform="translate(100,0) scale(-1,1)" fill="none" stroke="#DCEAFD" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" opacity="0.94"/>
+  <path d="M 68 49 L 75 55" transform="translate(100,0) scale(-1,1)" fill="none" stroke="#DCEAFD" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" opacity="0.94"/>
+  <path d="M 59 60 L 67 68 L 75 68" transform="translate(100,0) scale(-1,1)" fill="none" stroke="#DCEAFD" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" opacity="0.94"/>
+  <circle cx="41" cy="31" r="2.1" fill="#DCEAFD"/><circle cx="23" cy="30" r="2.1" fill="#DCEAFD"/><circle cx="26" cy="43" r="2.1" fill="#DCEAFD"/><circle cx="25" cy="55" r="2.1" fill="#DCEAFD"/><circle cx="25" cy="68" r="2.1" fill="#DCEAFD"/><circle cx="41" cy="71" r="2.1" fill="#DCEAFD"/>
+</g>
+</svg>

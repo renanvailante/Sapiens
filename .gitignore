@@ -37,3 +37,6 @@ test_reports/
 # Claude Code: a configuracao de execucao e do projeto e vai versionada;
 # settings.local.json e permissao da maquina de cada um.
 .claude/settings.local.json
+
+# graft's local graph cache — regenerable, not committed (run `graft build`).
+/graft/

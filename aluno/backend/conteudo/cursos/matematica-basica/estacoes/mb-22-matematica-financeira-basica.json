@@ -1,0 +1,531 @@
+{
+  "schema_version": "1.0",
+  "estacao_id": "mb-22-matematica-financeira-basica",
+  "titulo": "Matemática financeira básica",
+  "objetivo": "Você vai calcular juros simples, montantes, descontos e aumentos, e vai resolver problemas financeiros do cotidiano.",
+  "versao": "2026-09-16",
+  "duracao_minutos": 12,
+  "numero": 22,
+  "conceitos": [
+    "juros-simples",
+    "descontos",
+    "montante"
+  ],
+  "conclusao": {
+    "tipo": "minimo_de_acertos",
+    "minimo": 7
+  },
+  "fonte": {
+    "arquivo": "deepseek_markdown_20260916_7598b3.md",
+    "pasta": "cursos/matemática básica"
+  },
+  "blocos": [
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-22-c-01",
+      "variante": "padrao",
+      "markdown": "`J = C × i × t`\n\n- `C` = capital inicial\n- `i` = taxa (decimal, por período)\n- `t` = tempo (no mesmo período da taxa)",
+      "titulo": "Juros simples"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-22-c-02",
+      "variante": "padrao",
+      "markdown": "`M = C + J = C(1 + i·t)`",
+      "titulo": "Montante"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-22-c-03",
+      "variante": "padrao",
+      "markdown": "- Desconto de `p%`: multiplicar por `(1 − p/100)`\n- Aumento de `p%`: multiplicar por `(1 + p/100)`",
+      "titulo": "Descontos e aumentos"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-22-c-04",
+      "variante": "padrao",
+      "markdown": "A taxa e o tempo devem estar na **mesma unidade**. Se a taxa é “ao mês”, o tempo é em meses.\n\nSe a taxa é “ao ano” e o tempo em meses, converta antes:\n\n- 1 ano = 12 meses\n- taxa ao mês = taxa ao ano / 12 (em juros simples)",
+      "titulo": "Cuidados com a taxa"
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-22-ex-01",
+      "enunciado": "Juros simples de R$ 1.000 a 2% ao mês por 6 meses.",
+      "passos": [
+        {
+          "texto": "`J = 1000 × 0,02 × 6 = 120`"
+        },
+        {
+          "texto": "`M = 1.120`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-22-ex-02",
+      "enunciado": "Um produto de R$ 500 com desconto de 10%.",
+      "passos": [
+        {
+          "texto": "`500 × 0,90 = 450`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-22-ex-03",
+      "enunciado": "Qual a taxa mensal que faz R$ 500 render R$ 60 em 4 meses?",
+      "passos": [
+        {
+          "texto": "`60 = 500 × i × 4`"
+        },
+        {
+          "texto": "`i = 60/2000 = 0,03 = 3% ao mês`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-22-ex-04",
+      "enunciado": "Em quanto tempo R$ 1.000 a 1,5% ao mês rendem R$ 90?",
+      "passos": [
+        {
+          "texto": "`90 = 1000 × 0,015 × t`"
+        },
+        {
+          "texto": "`t = 90/15 = 6 meses`"
+        }
+      ]
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-22-es-01",
+      "variante": "destaque",
+      "markdown": "- Antes de usar a fórmula, **converta a taxa para decimal**.\n- Sempre verifique se taxa e tempo estão no mesmo período.\n- Em problemas de “qual o montante”, use `M = C(1 + i·t)`.\n- Em problemas de “qual o capital”, isole `C`."
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-22-er-01",
+      "variante": "atencao",
+      "markdown": "- **Usar a taxa em percentual sem dividir por 100.** `2%` → `0,02`.\n- **Misturar período.** Taxa ao mês com tempo em anos.\n- **Confundir juros com montante.** Juros é o rendimento; montante é o total.\n- **Achar que juros simples e compostos dão o mesmo resultado.** Não dão."
+    },
+    {
+      "tipo": "video",
+      "bloco_id": "mb-22-video",
+      "titulo": "Matemática financeira básica — aula em vídeo",
+      "provedor": "youtube",
+      "ref": null,
+      "resumo": "Aula conduzida pelo 1º colocado de Medicina da USP."
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-22-q01",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Juros simples de R$ 1.000 a 2% ao mês por 6 meses. Qual o juro?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "R$ 200"
+        },
+        {
+          "id": "b",
+          "texto": "R$ 12"
+        },
+        {
+          "id": "c",
+          "texto": "R$ 120"
+        },
+        {
+          "id": "d",
+          "texto": "R$ 60"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "b": "Erra fator.",
+        "a": "Usa 20%.",
+        "d": "Usa 3 meses."
+      },
+      "solucao": "`J = 1000 × 0,02 × 6 = 120`.",
+      "conceitos": [
+        "juros-simples"
+      ],
+      "origem": {
+        "estacao": 22,
+        "questao": "Questão 1"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-22-q02",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Um produto de R$ 500 com desconto de 10%.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "R$ 450"
+        },
+        {
+          "id": "b",
+          "texto": "R$ 400"
+        },
+        {
+          "id": "c",
+          "texto": "R$ 550"
+        },
+        {
+          "id": "d",
+          "texto": "R$ 490"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "d": "Subtrai 10 reais.",
+        "b": "Esta é uma das que erram.",
+        "c": "Esta é uma das que erram."
+      },
+      "solucao": "`500 × 0,90 = 450`.",
+      "conceitos": [
+        "descontos"
+      ],
+      "origem": {
+        "estacao": 22,
+        "questao": "Questão 2"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-22-q03",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Um produto de R$ 800 com aumento de 20%.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "R$ 1.000"
+        },
+        {
+          "id": "b",
+          "texto": "R$ 960"
+        },
+        {
+          "id": "c",
+          "texto": "R$ 900"
+        },
+        {
+          "id": "d",
+          "texto": "R$ 820"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "d": "Soma 20.",
+        "a": "Esta é uma das que erram.",
+        "c": "Esta é uma das que erram."
+      },
+      "solucao": "`800 × 1,20 = 960`.",
+      "conceitos": [
+        "descontos"
+      ],
+      "origem": {
+        "estacao": 22,
+        "questao": "Questão 3"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-22-q04",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Qual o montante de R$ 1.000 a 2% ao mês por 6 meses (juros simples)?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "R$ 1.100"
+        },
+        {
+          "id": "b",
+          "texto": "R$ 1.200"
+        },
+        {
+          "id": "c",
+          "texto": "R$ 1.120"
+        },
+        {
+          "id": "d",
+          "texto": "R$ 1.150"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "b": "Erra taxa.",
+        "a": "Esta é uma das que são aproximações.",
+        "d": "Esta é uma das que são aproximações."
+      },
+      "solucao": "`J = 120`, `M = 1.120`.",
+      "conceitos": [
+        "montante"
+      ],
+      "origem": {
+        "estacao": 22,
+        "questao": "Questão 4"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-22-q05",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Qual a taxa mensal que faz R$ 500 render R$ 60 em 4 meses?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "2%"
+        },
+        {
+          "id": "b",
+          "texto": "4%"
+        },
+        {
+          "id": "c",
+          "texto": "5%"
+        },
+        {
+          "id": "d",
+          "texto": "3%"
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "a": "Esta é uma das que erram.",
+        "b": "Esta é uma das que erram.",
+        "c": "Esta é uma das que erram."
+      },
+      "solucao": "`60 = 500 × i × 4`, `i = 60/2000 = 0,03 = 3%`.",
+      "conceitos": [
+        "juros-simples"
+      ],
+      "origem": {
+        "estacao": 22,
+        "questao": "Questão 5"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-22-q06",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Em quanto tempo R$ 1.000 a 1,5% ao mês rendem R$ 90?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "8 meses"
+        },
+        {
+          "id": "b",
+          "texto": "4 meses"
+        },
+        {
+          "id": "c",
+          "texto": "5 meses"
+        },
+        {
+          "id": "d",
+          "texto": "6 meses"
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "b": "Esta é uma das que erram.",
+        "c": "Esta é uma das que erram.",
+        "a": "Esta é uma das que erram."
+      },
+      "solucao": "`90 = 1000 × 0,015 × t`, `t = 90/15 = 6`.",
+      "conceitos": [
+        "juros-simples"
+      ],
+      "origem": {
+        "estacao": 22,
+        "questao": "Questão 6"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-22-q07",
+      "nivel": 3,
+      "formato": "multipla_escolha",
+      "enunciado": "Um produto tem preço final R$ 224 com 12% de aumento. Qual o preço original?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "R$ 212"
+        },
+        {
+          "id": "b",
+          "texto": "R$ 210"
+        },
+        {
+          "id": "c",
+          "texto": "R$ 202"
+        },
+        {
+          "id": "d",
+          "texto": "R$ 200"
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "a": "Esta é uma das que erram.",
+        "b": "Esta é uma das que erram.",
+        "c": "Esta é uma das que erram."
+      },
+      "solucao": "`224 = C × 1,12`, `C = 200`.",
+      "conceitos": [
+        "juros-simples"
+      ],
+      "origem": {
+        "estacao": 22,
+        "questao": "Questão 7"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-22-q08",
+      "nivel": 3,
+      "formato": "multipla_escolha",
+      "enunciado": "Uma loja oferece 15% de desconto para pagamento à vista e 5% de desconto adicional sobre o valor já descontado para clientes fiéis. Qual o desconto acumulado sobre o preço original?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "20%"
+        },
+        {
+          "id": "b",
+          "texto": "19%"
+        },
+        {
+          "id": "c",
+          "texto": "19,25%"
+        },
+        {
+          "id": "d",
+          "texto": "18%"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "a": "Soma.",
+        "d": "Esta é uma das que são aproximações.",
+        "b": "Esta é uma das que são aproximações."
+      },
+      "solucao": "`0,85 × 0,95 = 0,8075` → desconto de `19,25%`.",
+      "conceitos": [
+        "descontos"
+      ],
+      "origem": {
+        "estacao": 22,
+        "questao": "Questão 8"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-22-q09",
+      "nivel": 4,
+      "formato": "multipla_escolha",
+      "enunciado": "Um investimento de R$ 2.000 a juros simples de 3% ao mês, durante 1 ano, gera juros de:",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "R$ 7200"
+        },
+        {
+          "id": "b",
+          "texto": "R$ 600"
+        },
+        {
+          "id": "c",
+          "texto": "R$ 60"
+        },
+        {
+          "id": "d",
+          "texto": "R$ 720"
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "b": "Usa 10 meses.",
+        "a": "Erra expoente.",
+        "c": "Usa 1 mês."
+      },
+      "solucao": "`J = 2000 × 0,03 × 12 = 720`.",
+      "conceitos": [
+        "juros-simples"
+      ],
+      "origem": {
+        "estacao": 22,
+        "questao": "Questão 9"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-22-q10",
+      "nivel": 4,
+      "formato": "multipla_escolha",
+      "enunciado": "Uma loja anuncia “leve 3, pague 2”. Qual o desconto percentual efetivo por unidade?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "25%"
+        },
+        {
+          "id": "b",
+          "texto": "30%"
+        },
+        {
+          "id": "c",
+          "texto": "Aproximadamente 33,3%"
+        },
+        {
+          "id": "d",
+          "texto": "50%"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "d": "Esta é uma das que erram.",
+        "a": "Esta é uma das que erram.",
+        "b": "Esta é uma das que erram."
+      },
+      "solucao": "Pagando 2 de 3, o desconto é `1/3 ≈ 33,3%`.",
+      "conceitos": [
+        "descontos"
+      ],
+      "origem": {
+        "estacao": 22,
+        "questao": "Questão 10"
+      }
+    },
+    {
+      "tipo": "desafio",
+      "bloco_id": "mb-22-desafio",
+      "nivel": 5,
+      "enunciado": "Um capital de R$ 3.000 é aplicado a juros simples de 2% ao mês. Após quanto tempo o montante será R$ 3.720?",
+      "formato": "numerico",
+      "gabarito": {
+        "valor": 12.0,
+        "tolerancia": 0.012
+      },
+      "unidade": "meses",
+      "solucao": "- Juro: `3.720 − 3.000 = 720`\n- `720 = 3000 × 0,02 × t`\n- `720 = 60t`\n- `t = 12` meses"
+    }
+  ],
+  "habilidades": [
+    "HAB-05"
+  ],
+  "pre_requisitos": [
+    "mb-05-porcentagem",
+    "mb-11-equacoes-do-1o-grau"
+  ]
+}

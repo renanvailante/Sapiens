@@ -101,11 +101,11 @@ export function escolherPasso({ revisoes, cronograma, habilidades }) {
   return {
     chave: "praticar",
     icone: PlayCircle,
-    olho: "Comece por aqui",
-    titulo: "Responda uma prova do ENEM",
+    olho: "Seu primeiro passo",
+    titulo: "Responda uma prova e descubra o seu padrão",
     porque: "É a partir das suas respostas que o mapa, as missões e o seu perfil existem.",
     rota: "/exams",
-    cta: "Praticar agora",
+    cta: "Descobrir agora",
     testid: "passo-praticar",
   };
 }

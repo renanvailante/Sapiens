@@ -105,8 +105,8 @@ export default function AdminComunidade() {
   return (
     <div className="min-h-screen">
       <Nav />
-      <div className="mx-auto max-w-3xl px-6 py-12 md:px-10">
-        <div className="font-mono-alt mb-3 flex items-center gap-2 text-xs uppercase tracking-[0.35em] text-white/50">
+      <div className="mx-auto max-w-3xl px-5 py-7 md:px-10 md:py-10">
+        <div className="secao-olho flex items-center gap-1.5">
           <ShieldCheck className="h-3.5 w-3.5" /> Admin · Comunidade
         </div>
         <h1 className="font-display text-4xl font-extrabold tracking-tighter text-white" data-testid="admin-comunidade-title">

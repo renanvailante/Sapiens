@@ -194,9 +194,9 @@ class TestProfessorInvisivel:
     def test_vaga_unica_e_liberada_ao_dispensar(self, ambiente):
         _responder("B")
         _responder("B")
-        assert _bloco(ambiente)["intervencao_ativa"] is not None
-        revisao_service.dispensar_intervencao("U1", dispensada=True)
-        assert _bloco(ambiente)["intervencao_ativa"] is None
+        assert PROC in _bloco(ambiente)["intervencoes_ativas"]
+        revisao_service.dispensar_intervencao("U1", processo_id=PROC, dispensada=True)
+        assert PROC not in _bloco(ambiente)["intervencoes_ativas"]
         assert _bloco(ambiente)["processos"][PROC]["dispensas"] == 1
 
 

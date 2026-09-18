@@ -88,10 +88,10 @@ export default function AdminSugestoes() {
   return (
     <div className="min-h-screen">
       <Nav />
-      <div className="max-w-4xl mx-auto px-6 md:px-10 py-12">
+      <div className="max-w-4xl mx-auto px-5 py-7 md:px-10 md:py-10">
         <div className="flex items-center gap-3 mb-3">
           <MessageSquareWarning className="w-4 h-4 text-sapiens-accent" />
-          <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-white/50">
+          <div className="secao-olho">
             Admin · Reclamações e sugestões
           </div>
         </div>

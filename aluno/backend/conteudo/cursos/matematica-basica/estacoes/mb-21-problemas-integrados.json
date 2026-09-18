@@ -1,0 +1,532 @@
+{
+  "schema_version": "1.0",
+  "estacao_id": "mb-21-problemas-integrados",
+  "titulo": "Problemas integrados",
+  "objetivo": "Você vai resolver problemas que combinam várias habilidades das estações anteriores, exigindo leitura, planejamento e execução em múltiplas etapas.",
+  "versao": "2026-09-16",
+  "duracao_minutos": 12,
+  "numero": 21,
+  "conceitos": [
+    "problemas-integrados",
+    "interpretacao",
+    "raciocinio-multi-etapas"
+  ],
+  "conclusao": {
+    "tipo": "minimo_de_acertos",
+    "minimo": 7
+  },
+  "fonte": {
+    "arquivo": "deepseek_markdown_20260916_946c9a.md",
+    "pasta": "cursos/matemática básica"
+  },
+  "blocos": [
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-21-c-01",
+      "variante": "padrao",
+      "markdown": "Problemas integrados combinam duas ou mais habilidades:\n\n- conversão de unidades + regra de três\n- porcentagem + equação do 1º grau\n- razão + sistema de equações\n- média + tabela + porcentagem"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-21-c-02",
+      "variante": "padrao",
+      "markdown": "1. **Leia até o fim.** O comando pode estar no meio.\n2. **Liste os dados.** Com unidades.\n3. **Identifique o que falta.** Qual grandeza precisa ser calculada primeiro?\n4. **Divida em etapas.** Uma conta por vez.\n5. **Revise.** A resposta responde ao que foi pedido?",
+      "titulo": "Roteiro"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-21-c-03",
+      "variante": "padrao",
+      "markdown": "- **Porcentagem + equação**: “o preço final, após 20% de desconto, é R$ 320. Qual o original?”\n- **Regra de três + conversão**: “uma torneira vaza 2 L por minuto. Quantos m³ vazam em 1 dia?”\n- **Média + tabela**: dados em tabela, pede-se a média geral.\n- **Razão + sistema**: quantidade e valores diferentes.",
+      "titulo": "Combinações frequentes"
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-21-ex-01",
+      "enunciado": "Um produto de R$ 200 sofre desconto de 15% e, em seguida, aumento de 10%. Qual o preço final?",
+      "passos": [
+        {
+          "texto": "`200 × 0,85 = 170`"
+        },
+        {
+          "texto": "`170 × 1,10 = 187`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-21-ex-02",
+      "enunciado": "Uma torneira vaza 3 L/min. Quantos m³ vaza em 2 horas?",
+      "passos": [
+        {
+          "texto": "`3 × 120 = 360 L`"
+        },
+        {
+          "texto": "`360 / 1000 = 0,36 m³`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-21-ex-03",
+      "enunciado": "Um carro percorre 240 km em 3 h. A quantos m/s?",
+      "passos": [
+        {
+          "texto": "`240/3 = 80 km/h`"
+        },
+        {
+          "texto": "`80/3,6 ≈ 22,2 m/s`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-21-ex-04",
+      "enunciado": "Um aluno tem média 6 em 3 provas. Precisa de média 7 com 4 provas. Que nota precisa na última?",
+      "passos": [
+        {
+          "texto": "Soma atual: `3 × 6 = 18`"
+        },
+        {
+          "texto": "Soma necessária: `4 × 7 = 28`"
+        },
+        {
+          "texto": "Nota: `28 − 18 = 10`"
+        }
+      ]
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-21-es-01",
+      "variante": "destaque",
+      "markdown": "- Escreva cada etapa com clareza. Não tente fazer de cabeça.\n- Verifique a unidade final desejada antes de calcular.\n- Em problemas com etapas, marque quais já foram concluídas.\n- Confira sempre se o resultado faz sentido."
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-21-er-01",
+      "variante": "atencao",
+      "markdown": "- **Responder uma etapa intermediária** em vez do que foi pedido.\n- **Misturar unidades.**\n- **Aplicar percentuais fora da ordem correta.**\n- **Esquecer de usar o resultado anterior** na próxima etapa."
+    },
+    {
+      "tipo": "video",
+      "bloco_id": "mb-21-video",
+      "titulo": "Problemas integrados — aula em vídeo",
+      "provedor": "youtube",
+      "ref": null,
+      "resumo": "Aula conduzida pelo 1º colocado de Medicina da USP."
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-21-q01",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Um produto de R$ 200 sofre 15% de desconto e 10% de aumento. Qual o preço final?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "R$ 185"
+        },
+        {
+          "id": "b",
+          "texto": "R$ 195"
+        },
+        {
+          "id": "c",
+          "texto": "R$ 190"
+        },
+        {
+          "id": "d",
+          "texto": "R$ 187"
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "c": "Esta é uma das que aplicam etapas isoladas ou somam percentuais.",
+        "a": "Esta é uma das que aplicam etapas isoladas ou somam percentuais.",
+        "b": "Esta é uma das que aplicam etapas isoladas ou somam percentuais."
+      },
+      "solucao": "`200 × 0,85 × 1,10 = 187`.",
+      "conceitos": [
+        "problemas-integrados"
+      ],
+      "origem": {
+        "estacao": 21,
+        "questao": "Questão 1"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-21-q02",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Uma torneira vaza 3 L/min. Quantos litros vaza em 30 min?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "120 L"
+        },
+        {
+          "id": "b",
+          "texto": "90 L"
+        },
+        {
+          "id": "c",
+          "texto": "60 L"
+        },
+        {
+          "id": "d",
+          "texto": "30 L"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "d": "Esta é uma das que multiplicam errado.",
+        "c": "Esta é uma das que multiplicam errado.",
+        "a": "Esta é uma das que multiplicam errado."
+      },
+      "solucao": "`3 × 30 = 90`.",
+      "conceitos": [
+        "problemas-integrados"
+      ],
+      "origem": {
+        "estacao": 21,
+        "questao": "Questão 2"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-21-q03",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Um carro percorre 240 km em 3 h. Qual a velocidade média em km/h?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "60 km/h"
+        },
+        {
+          "id": "b",
+          "texto": "90 km/h"
+        },
+        {
+          "id": "c",
+          "texto": "80 km/h"
+        },
+        {
+          "id": "d",
+          "texto": "100 km/h"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "a": "Esta é uma das que erram a divisão.",
+        "d": "Esta é uma das que erram a divisão.",
+        "b": "Esta é uma das que erram a divisão."
+      },
+      "solucao": "`240/3 = 80`.",
+      "conceitos": [
+        "problemas-integrados"
+      ],
+      "origem": {
+        "estacao": 21,
+        "questao": "Questão 3"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-21-q04",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Um produto de R$ 80 sofre desconto de 20% e depois aumento de 25%. Qual o preço final?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "R$ 90"
+        },
+        {
+          "id": "b",
+          "texto": "R$ 84"
+        },
+        {
+          "id": "c",
+          "texto": "R$ 76"
+        },
+        {
+          "id": "d",
+          "texto": "R$ 80"
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "b": "Esta é uma das que vêm de erros.",
+        "c": "Esta é uma das que vêm de erros.",
+        "a": "Esta é uma das que vêm de erros."
+      },
+      "solucao": "`80 × 0,80 × 1,25 = 80`.",
+      "conceitos": [
+        "problemas-integrados"
+      ],
+      "origem": {
+        "estacao": 21,
+        "questao": "Questão 4"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-21-q05",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Uma torneira vaza 3 L/min. Quantos m³ vaza em 2 horas?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "0,036 m³"
+        },
+        {
+          "id": "b",
+          "texto": "3,6 m³"
+        },
+        {
+          "id": "c",
+          "texto": "0,36 m³"
+        },
+        {
+          "id": "d",
+          "texto": "36 m³"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "b": "Esta é uma das que erram a conversão.",
+        "d": "Esta é uma das que erram a conversão.",
+        "a": "Esta é uma das que erram a conversão."
+      },
+      "solucao": "`3 × 120 = 360 L = 0,36 m³`.",
+      "conceitos": [
+        "problemas-integrados"
+      ],
+      "origem": {
+        "estacao": 21,
+        "questao": "Questão 5"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-21-q06",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Um aluno tem média 6 em 3 provas. Precisa de média 7 com 4 provas. Que nota precisa?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "7"
+        },
+        {
+          "id": "b",
+          "texto": "9"
+        },
+        {
+          "id": "c",
+          "texto": "8"
+        },
+        {
+          "id": "d",
+          "texto": "10"
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "c": "Esta é uma das que não fecham.",
+        "b": "Esta é uma das que não fecham.",
+        "a": "Esta é uma das que não fecham."
+      },
+      "solucao": "`3 × 6 = 18`, `4 × 7 = 28`, nota = `10`.",
+      "conceitos": [
+        "problemas-integrados"
+      ],
+      "origem": {
+        "estacao": 21,
+        "questao": "Questão 6"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-21-q07",
+      "nivel": 3,
+      "formato": "multipla_escolha",
+      "enunciado": "Uma loja vende um produto por R$ 240, que corresponde a 20% de lucro sobre o custo. Qual o custo?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "R$ 220"
+        },
+        {
+          "id": "b",
+          "texto": "R$ 200"
+        },
+        {
+          "id": "c",
+          "texto": "R$ 192"
+        },
+        {
+          "id": "d",
+          "texto": "R$ 180"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "c": "Esta é uma das que vêm de erros.",
+        "a": "Esta é uma das que vêm de erros.",
+        "d": "Esta é uma das que vêm de erros."
+      },
+      "solucao": "`240 = 1,20 × C`, então `C = 200`.",
+      "conceitos": [
+        "problemas-integrados"
+      ],
+      "origem": {
+        "estacao": 21,
+        "questao": "Questão 7"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-21-q08",
+      "nivel": 3,
+      "formato": "multipla_escolha",
+      "enunciado": "Um carro percorre 180 km a 60 km/h, depois 120 km a 80 km/h. Qual a velocidade média no percurso todo?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "65 km/h"
+        },
+        {
+          "id": "b",
+          "texto": "75 km/h"
+        },
+        {
+          "id": "c",
+          "texto": "70 km/h"
+        },
+        {
+          "id": "d",
+          "texto": "66,7 km/h"
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "c": "Esta é uma das que não ponderam corretamente.",
+        "b": "Esta é uma das que não ponderam corretamente.",
+        "a": "Esta é uma das que não ponderam corretamente."
+      },
+      "solucao": "Tempo 1: `180/60 = 3 h`. Tempo 2: `120/80 = 1,5 h`. Total: `300 km em 4,5 h`. Média: `300/4,5 ≈ 66,7 km/h`.",
+      "conceitos": [
+        "problemas-integrados"
+      ],
+      "origem": {
+        "estacao": 21,
+        "questao": "Questão 8"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-21-q09",
+      "nivel": 4,
+      "formato": "multipla_escolha",
+      "enunciado": "Uma empresa aumentou 20% no primeiro ano, 25% no segundo. Qual o crescimento acumulado?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "40%"
+        },
+        {
+          "id": "b",
+          "texto": "50%"
+        },
+        {
+          "id": "c",
+          "texto": "45%"
+        },
+        {
+          "id": "d",
+          "texto": "55%"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "c": "Soma.",
+        "a": "Esta é uma das que são erros.",
+        "d": "Esta é uma das que são erros."
+      },
+      "solucao": "`1,20 × 1,25 = 1,50` → 50%.",
+      "conceitos": [
+        "problemas-integrados"
+      ],
+      "origem": {
+        "estacao": 21,
+        "questao": "Questão 9"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-21-q10",
+      "nivel": 4,
+      "formato": "multipla_escolha",
+      "enunciado": "Uma conta de luz foi R$ 200 em janeiro. Em fevereiro, aumentou 10%. Em março, caiu 20% em relação a fevereiro. Qual o valor em março?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "R$ 176"
+        },
+        {
+          "id": "b",
+          "texto": "R$ 180"
+        },
+        {
+          "id": "c",
+          "texto": "R$ 170"
+        },
+        {
+          "id": "d",
+          "texto": "R$ 184"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "b": "Esta é uma das que vêm de erros.",
+        "d": "Esta é uma das que vêm de erros.",
+        "c": "Esta é uma das que vêm de erros."
+      },
+      "solucao": "`200 × 1,10 = 220`, `220 × 0,80 = 176`.",
+      "conceitos": [
+        "problemas-integrados"
+      ],
+      "origem": {
+        "estacao": 21,
+        "questao": "Questão 10"
+      }
+    },
+    {
+      "tipo": "desafio",
+      "bloco_id": "mb-21-desafio",
+      "nivel": 5,
+      "enunciado": "Um produto sofre duas variações sucessivas de 20% de desconto cada. O desconto final acumulado, em relação ao preço original, é de:",
+      "formato": "numerico",
+      "gabarito": {
+        "valor": 36.0,
+        "tolerancia": 0.036000000000000004
+      },
+      "unidade": "%",
+      "solucao": "- `0,80 × 0,80 = 0,64`\n- Valor final: 64% do original\n- Desconto: `100% − 64% = 36%`"
+    }
+  ],
+  "habilidades": [
+    "HAB-42",
+    "HAB-47"
+  ],
+  "pre_requisitos": [
+    "mb-04-regra-de-tres",
+    "mb-05-porcentagem",
+    "mb-11-equacoes-do-1o-grau",
+    "mb-17-unidades-e-conversoes"
+  ]
+}

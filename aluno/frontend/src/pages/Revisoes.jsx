@@ -4,9 +4,10 @@ import Nav from "../components/Nav";
 import EstadoDeErro from "../components/EstadoDeErro";
 import FilaDeRevisao from "../components/FilaDeRevisao";
 import Trajetoria from "../components/Trajetoria";
+import ListaDeLembretes from "../components/ListaDeLembretes";
 import { useCarregamento } from "../hooks/useCarregamento";
 import { useDeclararContextoMentis } from "../lib/mentisContexto";
-import { CalendarClock, Loader2, LineChart } from "lucide-react";
+import { BookmarkPlus, CalendarClock, Loader2, LineChart } from "lucide-react";
 
 /**
  * Revisões — a tela onde o ciclo aparece inteiro.
@@ -108,7 +109,7 @@ export default function Revisoes() {
     return (
       <div className="min-h-screen">
         <Nav />
-        <div className="mx-auto max-w-3xl px-6 py-14 md:px-10">
+        <div className="mx-auto max-w-3xl px-5 py-7 md:px-10 md:py-10">
           <EstadoDeErro mensagem={erro} aoTentarNovamente={recarregar} voltarPara="/dashboard" voltarLabel="Ir para o Painel" />
         </div>
       </div>
@@ -118,24 +119,37 @@ export default function Revisoes() {
   return (
     <div className="min-h-screen">
       <Nav />
-      <div className="mx-auto max-w-3xl px-6 py-12 md:px-10">
+      <div className="mx-auto max-w-3xl px-5 py-7 md:px-10 md:py-10">
         <div className="mb-3 flex items-center gap-2 font-mono-alt text-xs uppercase tracking-[0.35em] text-white/50">
           <CalendarClock className="h-3.5 w-3.5" /> Revisões
         </div>
         <h1
-          className="font-display text-4xl font-extrabold tracking-tighter text-white md:text-5xl"
+          className="titulo-tela"
           data-testid="revisoes-title"
         >
           O que voltar a estudar hoje.
         </h1>
         <p className="mt-3 max-w-xl text-white/60">
           Esta fila não é uma lista de matérias. Cada linha veio de um erro seu que o Sapiens
-          conseguiu explicar — e a data de voltar a cobrar cada uma sai daí.
+          conseguiu explicar — e a data de voltar a cobrar cada uma sai daí. Mais abaixo ficam os
+          pontos que <strong className="font-semibold text-white/80">você</strong> marcou pelo app.
         </p>
 
         <div className="mt-8">
           <FilaDeRevisao fila={fila} />
         </div>
+
+        <Secao
+          icone={BookmarkPlus}
+          titulo="O que você marcou"
+          descricao={
+            "Os pontos que você mesmo separou pelo app com \"Lembrar-me com a Mentis\" — " +
+            "o que a fila de cima não tem como adivinhar."
+          }
+          testid="revisoes-lembretes"
+        >
+          <ListaDeLembretes />
+        </Secao>
 
         <Secao
           icone={LineChart}

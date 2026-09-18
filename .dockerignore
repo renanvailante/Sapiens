@@ -39,6 +39,9 @@
 !**/.env.example
 
 # artefatos pesados e código que o backend do aluno não usa
+# (o banco local de desenvolvimento sozinho são 377 MB subindo a cada deploy —
+#  é a mesma classe de peso morto que causou o timeout de 2026-09-04)
+.mongodb-data
 pipeline/backend/_storage
 pipeline/annotation_audit
 pipeline/frontend

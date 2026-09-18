@@ -1,0 +1,556 @@
+{
+  "schema_version": "1.0",
+  "estacao_id": "mb-17-unidades-e-conversoes",
+  "titulo": "Unidades e conversões",
+  "objetivo": "Você vai converter unidades de comprimento, área, volume, massa, tempo e velocidade com segurança, e vai identificar quando um problema exige conversão antes do cálculo.",
+  "versao": "2026-09-16",
+  "duracao_minutos": 11,
+  "numero": 17,
+  "conceitos": [
+    "unidades",
+    "conversoes",
+    "velocidade"
+  ],
+  "conclusao": {
+    "tipo": "minimo_de_acertos",
+    "minimo": 7
+  },
+  "fonte": {
+    "arquivo": "deepseek_markdown_20260916_077731.md",
+    "pasta": "cursos/matemática básica"
+  },
+  "blocos": [
+    {
+      "tipo": "tabela",
+      "bloco_id": "mb-17-c-01",
+      "colunas": [
+        "Unidade",
+        "Relação"
+      ],
+      "linhas": [
+        [
+          "1 km",
+          "1.000 m"
+        ],
+        [
+          "1 m",
+          "100 cm"
+        ],
+        [
+          "1 cm",
+          "10 mm"
+        ]
+      ],
+      "titulo": "Comprimento"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-17-c-02",
+      "variante": "padrao",
+      "markdown": "Área é comprimento ao quadrado, então cada salto na unidade vale **100**:\n\n- 1 m² = 10.000 cm²\n- 1 km² = 1.000.000 m²",
+      "titulo": "Área"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-17-c-03",
+      "variante": "padrao",
+      "markdown": "Volume é comprimento ao cubo. Cada salto vale **1000**:\n\n- 1 m³ = 1.000 L\n- 1 L = 1.000 mL\n- 1 cm³ = 1 mL",
+      "titulo": "Volume"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-17-c-04",
+      "variante": "padrao",
+      "markdown": "- 1 kg = 1.000 g\n- 1 t = 1.000 kg",
+      "titulo": "Massa"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-17-c-05",
+      "variante": "padrao",
+      "markdown": "- 1 h = 60 min\n- 1 min = 60 s\n- 1 h = 3.600 s",
+      "titulo": "Tempo"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-17-c-06",
+      "variante": "padrao",
+      "markdown": "- km/h → m/s: **divida por 3,6**\n- m/s → km/h: **multiplique por 3,6**",
+      "titulo": "Velocidade"
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-17-ex-01",
+      "enunciado": "Converta 2,5 km em metros.",
+      "passos": [
+        {
+          "texto": "`2,5 × 1000 = 2.500 m`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-17-ex-02",
+      "enunciado": "Converta 72 km/h em m/s.",
+      "passos": [
+        {
+          "texto": "`72 ÷ 3,6 = 20 m/s`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-17-ex-03",
+      "enunciado": "Converta 1,5 m³ em litros.",
+      "passos": [
+        {
+          "texto": "`1,5 × 1000 = 1.500 L`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-17-ex-04",
+      "enunciado": "Converta 3 h 15 min em segundos.",
+      "passos": [
+        {
+          "texto": "`3 h = 10.800 s`, `15 min = 900 s`"
+        },
+        {
+          "texto": "Total: `11.700 s`"
+        }
+      ]
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-17-es-01",
+      "variante": "destaque",
+      "markdown": "- Antes de qualquer cálculo, **verifique as unidades** dos dados. Converta para uma única unidade.\n- Em área, cada salto multiplica ou divide por 100. Em volume, por 1000.\n- Em velocidade, memorize o fator 3,6. É o mais cobrado.\n- Em problemas de tempo, cuidado com a base 60 (não é decimal)."
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-17-er-01",
+      "variante": "atencao",
+      "markdown": "- **Tratar área como comprimento.** 1 m² **não** é 100 cm², é 10.000 cm².\n- **Esquecer o fator 3,6** em conversão de velocidade.\n- **Misturar horas e minutos** em uma mesma conta.\n- **Converter volume como comprimento.** 1 m³ = 1.000 L, não 100 L."
+    },
+    {
+      "tipo": "video",
+      "bloco_id": "mb-17-video",
+      "titulo": "Unidades e conversões — aula em vídeo",
+      "provedor": "youtube",
+      "ref": null,
+      "resumo": "Aula conduzida pelo 1º colocado de Medicina da USP."
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-17-q01",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Converta 2,5 km em metros.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "25 m"
+        },
+        {
+          "id": "b",
+          "texto": "25.000 m"
+        },
+        {
+          "id": "c",
+          "texto": "250 m"
+        },
+        {
+          "id": "d",
+          "texto": "2.500 m"
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "c": "Divide por 10.",
+        "b": "Multiplica por 10.000.",
+        "a": "Erra fator."
+      },
+      "solucao": "`2,5 × 1000 = 2.500 m`.",
+      "conceitos": [
+        "conversoes"
+      ],
+      "origem": {
+        "estacao": 17,
+        "questao": "Questão 1"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-17-q02",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Converta 4.500 m em km.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "45 km"
+        },
+        {
+          "id": "b",
+          "texto": "0,45 km"
+        },
+        {
+          "id": "c",
+          "texto": "450 km"
+        },
+        {
+          "id": "d",
+          "texto": "4,5 km"
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "a": "Esta é uma das que erram o fator.",
+        "b": "Esta é uma das que erram o fator.",
+        "c": "Esta é uma das que erram o fator."
+      },
+      "solucao": "`4.500 ÷ 1000 = 4,5 km`.",
+      "conceitos": [
+        "conversoes"
+      ],
+      "origem": {
+        "estacao": 17,
+        "questao": "Questão 2"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-17-q03",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Converta 3 h em minutos.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "300 min"
+        },
+        {
+          "id": "b",
+          "texto": "30 min"
+        },
+        {
+          "id": "c",
+          "texto": "90 min"
+        },
+        {
+          "id": "d",
+          "texto": "180 min"
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "a": "Usa 100.",
+        "b": "Divide.",
+        "c": "Multiplica por 30."
+      },
+      "solucao": "`3 × 60 = 180`.",
+      "conceitos": [
+        "conversoes"
+      ],
+      "origem": {
+        "estacao": 17,
+        "questao": "Questão 3"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-17-q04",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Converta 72 km/h em m/s.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "36 m/s"
+        },
+        {
+          "id": "b",
+          "texto": "25 m/s"
+        },
+        {
+          "id": "c",
+          "texto": "20 m/s"
+        },
+        {
+          "id": "d",
+          "texto": "72 m/s"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "b": "Esta é uma das que erram o fator.",
+        "d": "Esta é uma das que erram o fator.",
+        "a": "Esta é uma das que erram o fator."
+      },
+      "solucao": "`72 ÷ 3,6 = 20 m/s`.",
+      "conceitos": [
+        "velocidade"
+      ],
+      "origem": {
+        "estacao": 17,
+        "questao": "Questão 4"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-17-q05",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Converta 5 m² em cm².",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "5.000 cm²"
+        },
+        {
+          "id": "b",
+          "texto": "50.000 cm²"
+        },
+        {
+          "id": "c",
+          "texto": "500.000 cm²"
+        },
+        {
+          "id": "d",
+          "texto": "500 cm²"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "d": "Esta é uma das que confundem com comprimento.",
+        "a": "Esta é uma das que confundem com comprimento.",
+        "c": "Esta é uma das que confundem com comprimento."
+      },
+      "solucao": "`5 × 10.000 = 50.000 cm²`.",
+      "conceitos": [
+        "conversoes"
+      ],
+      "origem": {
+        "estacao": 17,
+        "questao": "Questão 5"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-17-q06",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Converta 2 L em mL.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "20 mL"
+        },
+        {
+          "id": "b",
+          "texto": "20.000 mL"
+        },
+        {
+          "id": "c",
+          "texto": "2.000 mL"
+        },
+        {
+          "id": "d",
+          "texto": "200 mL"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "d": "Esta é uma das que erram fator.",
+        "a": "Esta é uma das que erram fator.",
+        "b": "Esta é uma das que erram fator."
+      },
+      "solucao": "`2 × 1000 = 2.000 mL`.",
+      "conceitos": [
+        "conversoes"
+      ],
+      "origem": {
+        "estacao": 17,
+        "questao": "Questão 6"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-17-q07",
+      "nivel": 3,
+      "formato": "multipla_escolha",
+      "enunciado": "Converta 1,5 m³ em litros.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "15.000 L"
+        },
+        {
+          "id": "b",
+          "texto": "1.500 L"
+        },
+        {
+          "id": "c",
+          "texto": "150 L"
+        },
+        {
+          "id": "d",
+          "texto": "150.000 L"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "c": "Esta é uma das que erram fator.",
+        "a": "Esta é uma das que erram fator.",
+        "d": "Esta é uma das que erram fator."
+      },
+      "solucao": "`1,5 × 1000 = 1.500 L`.",
+      "conceitos": [
+        "conversoes"
+      ],
+      "origem": {
+        "estacao": 17,
+        "questao": "Questão 7"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-17-q08",
+      "nivel": 3,
+      "formato": "multipla_escolha",
+      "enunciado": "Um carro a 90 km/h está a quantos m/s?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "90 m/s"
+        },
+        {
+          "id": "b",
+          "texto": "30 m/s"
+        },
+        {
+          "id": "c",
+          "texto": "25 m/s"
+        },
+        {
+          "id": "d",
+          "texto": "20 m/s"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "b": "Esta é uma das que erram o fator.",
+        "d": "Esta é uma das que erram o fator.",
+        "a": "Esta é uma das que erram o fator."
+      },
+      "solucao": "`90 ÷ 3,6 = 25 m/s`.",
+      "conceitos": [
+        "velocidade"
+      ],
+      "origem": {
+        "estacao": 17,
+        "questao": "Questão 8"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-17-q09",
+      "nivel": 4,
+      "formato": "multipla_escolha",
+      "enunciado": "Um atleta corre 400 m em 50 s. Qual a velocidade média em km/h?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "28,8 km/h"
+        },
+        {
+          "id": "b",
+          "texto": "20 km/h"
+        },
+        {
+          "id": "c",
+          "texto": "40 km/h"
+        },
+        {
+          "id": "d",
+          "texto": "8 km/h"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "d": "Para em m/s.",
+        "b": "Esta é uma das que erram o fator.",
+        "c": "Esta é uma das que erram o fator."
+      },
+      "solucao": "`400/50 = 8 m/s`. `8 × 3,6 = 28,8 km/h`.",
+      "conceitos": [
+        "velocidade"
+      ],
+      "origem": {
+        "estacao": 17,
+        "questao": "Questão 9"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-17-q10",
+      "nivel": 4,
+      "formato": "multipla_escolha",
+      "enunciado": "Um tanque tem 1,5 m³ de água. Considerando a densidade da água 1 kg/L, qual a massa de água, em kg?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "1.500 kg"
+        },
+        {
+          "id": "b",
+          "texto": "15.000 kg"
+        },
+        {
+          "id": "c",
+          "texto": "150 kg"
+        },
+        {
+          "id": "d",
+          "texto": "1,5 kg"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "c": "Esta é uma das que erram a conversão.",
+        "b": "Esta é uma das que erram a conversão.",
+        "d": "Esta é uma das que erram a conversão."
+      },
+      "solucao": "`1,5 m³ = 1.500 L`. `1.500 L × 1 kg/L = 1.500 kg`.",
+      "conceitos": [
+        "conversoes"
+      ],
+      "origem": {
+        "estacao": 17,
+        "questao": "Questão 10"
+      }
+    },
+    {
+      "tipo": "desafio",
+      "bloco_id": "mb-17-desafio",
+      "nivel": 5,
+      "enunciado": "Um carro percorre 180 km em 2 h 30 min. Qual a velocidade média em m/s?",
+      "formato": "numerico",
+      "gabarito": {
+        "valor": 20.0,
+        "tolerancia": 0.02
+      },
+      "unidade": "m/s",
+      "solucao": "- `2 h 30 min = 2,5 h`\n- `180 ÷ 2,5 = 72 km/h`\n- `72 ÷ 3,6 = 20 m/s`"
+    }
+  ],
+  "habilidades": [
+    "HAB-08",
+    "HAB-09"
+  ],
+  "pre_requisitos": [
+    "mb-01-operacoes-fundamentais",
+    "mb-04-regra-de-tres"
+  ]
+}

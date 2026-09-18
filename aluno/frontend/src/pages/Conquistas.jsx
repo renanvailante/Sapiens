@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Trophy } from "lucide-react";
+import { Trophy, Medal, ArrowRight } from "lucide-react";
 import { api } from "../lib/api";
-import Nav from "../components/Nav";
+import Tela from "../components/Tela";
+import AnelDeProgresso from "../components/AnelDeProgresso";
+import { Bloco } from "../components/Esqueleto";
 import PainelDeConquistas from "../components/PainelDeConquistas";
 import { avaliarConquistas } from "../lib/conquistas";
 import { computeStreak, computeWeek } from "../lib/atividade";
@@ -51,41 +53,65 @@ export default function Conquistas() {
   useDeclararContextoMentis("Na tela de Conquistas.");
 
   return (
-    <div className="min-h-screen">
-      <Nav />
-      <div className="mx-auto max-w-4xl px-6 py-10 md:px-10">
-        <Link
-          to="/dashboard"
-          className="inline-flex items-center gap-1.5 text-xs text-white/45 hover:text-white"
-          data-testid="conquistas-voltar"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" /> Painel
-        </Link>
-
-        <div className="mt-4 flex flex-wrap items-end justify-between gap-4">
-          <h1
-            className="font-display text-4xl font-extrabold tracking-tighter text-white md:text-5xl"
-            data-testid="conquistas-title"
+    <Tela
+      olho={<><Trophy className="h-3 w-3" /> Conquistas</>}
+      titulo="O que você já provou que sabe."
+      subtitulo="Cada medalha abre com o seu progresso, a condição exata e o caminho até ela."
+      voltar="/dashboard"
+      testid="conquistas"
+      acoes={
+        // O anel no lugar do contador em pílula. O mesmo par de números —
+        // feitas e total — mas agora o olho lê a PROPORÇÃO antes de ler o
+        // número, que é a única coisa que interessa numa tela de coleção.
+        <div className="flex items-center gap-3" data-testid="conquistas-contagem">
+          <AnelDeProgresso
+            valor={avaliadas.length ? (100 * feitas) / avaliadas.length : 0}
+            tamanho={62}
+            espessura={6}
           >
-            Conquistas
-          </h1>
-          <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2">
-            <Trophy className="h-4 w-4 text-[#7FD8FF]" />
-            <span className="font-mono-alt text-sm font-bold text-white" data-testid="conquistas-contagem">
-              {feitas}
-              <span className="text-white/40">/{avaliadas.length}</span>
-            </span>
+            <span className="medida-n text-lg">{feitas}</span>
+          </AnelDeProgresso>
+          <div>
+            <div className="font-mono-alt text-sm font-bold text-white">de {avaliadas.length}</div>
+            <div className="medida-rotulo">desbloqueadas</div>
           </div>
         </div>
-
-        <div className="mt-8">
-          {ctx ? (
-            <PainelDeConquistas contexto={ctx} agrupado testid="conquistas-grade" />
-          ) : (
-            <div className="text-sm text-white/45">Contando o que você já fez…</div>
-          )}
+      }
+    >
+      {/* A PONTE PARA A LIGA. As duas telas respondem a mesma pergunta — "o
+          que o meu esforço rendeu" — e a partir de 2026-09-17 elas dividem uma
+          linha só no menu, em vez de duas. Dividir a linha só é honesto se o
+          caminho continuar existindo, e é este link que o garante: sem ele, a
+          Liga ficaria alcançável apenas pelo azulejo do Painel. */}
+      <Link
+        to="/liga"
+        className="lift mb-5 flex items-center gap-3.5 rounded-2xl border border-amber-300/25 bg-amber-400/[0.07] p-4 hover:border-amber-300/55"
+        data-testid="conquistas-para-liga"
+      >
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-amber-300/30 bg-amber-400/15 text-amber-200">
+          <Medal className="h-5 w-5" strokeWidth={1.8} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="font-display text-base font-bold tracking-tight text-white">
+            Liga da semana
+          </div>
+          <div className="text-xs text-white/45">
+            Troféu é o que você já provou. A liga é onde você está agora, contra os outros
+            alunos — e ela zera toda segunda.
+          </div>
         </div>
-      </div>
-    </div>
+        <ArrowRight className="h-4 w-4 shrink-0 text-white/30" />
+      </Link>
+
+      {ctx ? (
+        <PainelDeConquistas contexto={ctx} agrupado testid="conquistas-grade" />
+      ) : (
+        <div className="grid grid-cols-4 gap-2.5 sm:grid-cols-6">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <Bloco key={i} className="aspect-square rounded-[22px]" />
+          ))}
+        </div>
+      )}
+    </Tela>
   );
 }

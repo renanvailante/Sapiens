@@ -1,0 +1,515 @@
+{
+  "schema_version": "1.0",
+  "estacao_id": "mb-19-graficos",
+  "titulo": "Gráficos",
+  "objetivo": "Você vai ler e interpretar gráficos de barras, linhas e setores, identificar tendências, comparar valores e reconhecer quando a escala distorce a leitura.",
+  "versao": "2026-09-16",
+  "duracao_minutos": 12,
+  "numero": 19,
+  "conceitos": [
+    "leitura-de-graficos",
+    "tendencias",
+    "escalas"
+  ],
+  "conclusao": {
+    "tipo": "minimo_de_acertos",
+    "minimo": 7
+  },
+  "fonte": {
+    "arquivo": "deepseek_markdown_20260916_23e188.md",
+    "pasta": "cursos/matemática básica"
+  },
+  "blocos": [
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-19-c-01",
+      "variante": "padrao",
+      "markdown": "- **Barras**: comparar valores entre categorias.\n- **Linhas**: mostrar evolução ao longo do tempo.\n- **Setores (pizza)**: mostrar participação percentual de cada parte.\n- **Dispersão**: relação entre duas variáveis.",
+      "titulo": "Tipos de gráfico"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-19-c-02",
+      "variante": "padrao",
+      "markdown": "1. **Título e legenda** — do que se trata.\n2. **Eixos** — quais grandezas, em que unidade.\n3. **Escala** — quanto vale cada marcação.\n4. **Valores lidos** — anote antes de calcular.\n5. **Tendência** — crescente, decrescente, estável.",
+      "titulo": "O que observar"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-19-c-03",
+      "variante": "padrao",
+      "markdown": "Um eixo que **não começa em zero** exagera diferenças. Uma subida aparentemente grande pode ser pequena em valores absolutos.",
+      "titulo": "O perigo da escala"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-19-c-04",
+      "variante": "padrao",
+      "markdown": "Entre dois pontos do gráfico, a variação percentual é:\n\n`(valor final − valor inicial) / valor inicial × 100`\n\nSempre use o **valor inicial** como base.",
+      "titulo": "Variação entre pontos"
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-19-ex-01",
+      "enunciado": "Um gráfico mostra vendas de 100 em 2018, 150 em 2019, 200 em 2020. Qual a variação total?",
+      "passos": [
+        {
+          "texto": "`(200 − 100)/100 = 1 = 100%`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-19-ex-02",
+      "enunciado": "Um gráfico de setores tem 40% A, 30% B, 20% C, 10% D, total 1.000 unidades. Quanto é A?",
+      "passos": [
+        {
+          "texto": "`1.000 × 0,40 = 400`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-19-ex-03",
+      "enunciado": "Uma temperatura subiu de 20°C para 25°C. Qual a variação percentual?",
+      "passos": [
+        {
+          "texto": "`(25 − 20)/20 = 0,25 = 25%`"
+        }
+      ]
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-19-v-01",
+      "variante": "padrao",
+      "markdown": "Para a Estação 19, seria útil incluir quatro gráficos:\n\n- Barras com vendas anuais de 2018 a 2022.\n- Linha com a evolução de temperatura ao longo de 12 meses.\n- Setores com participação de mercado de 4 marcas.\n- Barras com eixo começando em 90 (exemplo didático de distorção)."
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-19-es-01",
+      "variante": "destaque",
+      "markdown": "- Anote os valores em uma tabela antes de calcular.\n- Nunca confie em “parece maior”. Use os números.\n- Verifique se o eixo y começa em zero.\n- Em séries temporais, compare períodos de **mesma duração**."
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-19-er-01",
+      "variante": "atencao",
+      "markdown": "- **Ler o gráfico pela altura visual** sem checar a escala.\n- **Usar o valor final como base** da variação percentual.\n- **Somar percentuais de setores** sem verificar se o total é 100%.\n- **Confundir tendência com valor absoluto.** Um gráfico pode ter crescimento relativo grande e valor absoluto pequeno."
+    },
+    {
+      "tipo": "video",
+      "bloco_id": "mb-19-video",
+      "titulo": "Gráficos — aula em vídeo",
+      "provedor": "youtube",
+      "ref": null,
+      "resumo": "Aula conduzida pelo 1º colocado de Medicina da USP."
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-19-q01",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Um gráfico mostra vendas de 100 em 2018 e 200 em 2020. A variação percentual foi:",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "100%"
+        },
+        {
+          "id": "b",
+          "texto": "200%"
+        },
+        {
+          "id": "c",
+          "texto": "20%"
+        },
+        {
+          "id": "d",
+          "texto": "50%"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "d": "Usa o valor final como base.",
+        "b": "Esta é uma das que erram.",
+        "c": "Esta é uma das que erram."
+      },
+      "solucao": "`(200 − 100)/100 = 1 = 100%`.",
+      "conceitos": [
+        "leitura-de-graficos"
+      ],
+      "origem": {
+        "estacao": 19,
+        "questao": "Questão 1"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-19-q02",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Em um gráfico de setores, A representa 40% de um total de 1.000. Quanto vale A?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "40"
+        },
+        {
+          "id": "b",
+          "texto": "4000"
+        },
+        {
+          "id": "c",
+          "texto": "60"
+        },
+        {
+          "id": "d",
+          "texto": "400"
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "a": "Multiplica por 0,04.",
+        "b": "Multiplica por 4.",
+        "c": "Calcula o complementar."
+      },
+      "solucao": "`1000 × 0,40 = 400`.",
+      "conceitos": [
+        "leitura-de-graficos"
+      ],
+      "origem": {
+        "estacao": 19,
+        "questao": "Questão 2"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-19-q03",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "A temperatura subiu de 20°C para 25°C. A variação percentual é:",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "5%"
+        },
+        {
+          "id": "b",
+          "texto": "20%"
+        },
+        {
+          "id": "c",
+          "texto": "25%"
+        },
+        {
+          "id": "d",
+          "texto": "50%"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "b": "Usa final como base.",
+        "a": "Só subtrai.",
+        "d": "Dobra."
+      },
+      "solucao": "`(25−20)/20 = 0,25 = 25%`.",
+      "conceitos": [
+        "leitura-de-graficos"
+      ],
+      "origem": {
+        "estacao": 19,
+        "questao": "Questão 3"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-19-q04",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Em uma série temporal, as vendas caíram de 500 para 400. Qual a variação percentual?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "−20%"
+        },
+        {
+          "id": "b",
+          "texto": "−100%"
+        },
+        {
+          "id": "c",
+          "texto": "−10%"
+        },
+        {
+          "id": "d",
+          "texto": "−25%"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "d": "Usa o final como base.",
+        "b": "Esta é uma das que erram.",
+        "c": "Esta é uma das que erram."
+      },
+      "solucao": "`(400−500)/500 = −0,20 = −20%`.",
+      "conceitos": [
+        "leitura-de-graficos"
+      ],
+      "origem": {
+        "estacao": 19,
+        "questao": "Questão 4"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-19-q05",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Um gráfico de setores apresenta 45% A, 25% B, 20% C. Quanto representa D?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "15%"
+        },
+        {
+          "id": "b",
+          "texto": "5%"
+        },
+        {
+          "id": "c",
+          "texto": "10%"
+        },
+        {
+          "id": "d",
+          "texto": "20%"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "a": "Esta é uma das que não fecham em 100%.",
+        "b": "Esta é uma das que não fecham em 100%.",
+        "d": "Esta é uma das que não fecham em 100%."
+      },
+      "solucao": "`100 − (45+25+20) = 10%`.",
+      "conceitos": [
+        "leitura-de-graficos"
+      ],
+      "origem": {
+        "estacao": 19,
+        "questao": "Questão 5"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-19-q06",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Por que um gráfico de barras que começa em 90 distorce a leitura?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "Porque a escala decimal é invertida"
+        },
+        {
+          "id": "b",
+          "texto": "Porque a barra maior fica negativa"
+        },
+        {
+          "id": "c",
+          "texto": "Porque exagera visualmente pequenas diferenças"
+        },
+        {
+          "id": "d",
+          "texto": "Porque os valores absolutos ficam errados"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "d": "Esta é uma das que descrevem erros que não ocorrem.",
+        "a": "Esta é uma das que descrevem erros que não ocorrem.",
+        "b": "Esta é uma das que descrevem erros que não ocorrem."
+      },
+      "solucao": "O corte no eixo amplia visualmente diferenças pequenas.",
+      "conceitos": [
+        "escalas"
+      ],
+      "origem": {
+        "estacao": 19,
+        "questao": "Questão 6"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-19-q07",
+      "nivel": 3,
+      "formato": "multipla_escolha",
+      "enunciado": "Em 2019, o lucro foi R$ 60.000. Em 2020, R$ 90.000. Qual o crescimento percentual?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "30%"
+        },
+        {
+          "id": "b",
+          "texto": "50%"
+        },
+        {
+          "id": "c",
+          "texto": "60%"
+        },
+        {
+          "id": "d",
+          "texto": "40%"
+        }
+      ],
+      "gabarito": "b",
+      "feedback": {
+        "a": "Usa o final como base.",
+        "c": "Esta é uma das que erram.",
+        "d": "Esta é uma das que erram."
+      },
+      "solucao": "`30.000/60.000 = 0,50 = 50%`.",
+      "conceitos": [
+        "leitura-de-graficos"
+      ],
+      "origem": {
+        "estacao": 19,
+        "questao": "Questão 7"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-19-q08",
+      "nivel": 3,
+      "formato": "multipla_escolha",
+      "enunciado": "Um gráfico de barras mostra quatro trimestres com 100, 120, 90 e 130. Qual o trimestre com maior valor e a média?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "1º trimestre, média 100"
+        },
+        {
+          "id": "b",
+          "texto": "2º trimestre, média 115"
+        },
+        {
+          "id": "c",
+          "texto": "4º trimestre, média 110"
+        },
+        {
+          "id": "d",
+          "texto": "3º trimestre, média 130"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "a": "Esta é uma das que erram.",
+        "b": "Esta é uma das que erram.",
+        "d": "Esta é uma das que erram."
+      },
+      "solucao": "Maior valor: 130 (4º tri). Média: `(100+120+90+130)/4 = 440/4 = 110`.",
+      "conceitos": [
+        "leitura-de-graficos"
+      ],
+      "origem": {
+        "estacao": 19,
+        "questao": "Questão 8"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-19-q09",
+      "nivel": 4,
+      "formato": "multipla_escolha",
+      "enunciado": "Uma empresa cresceu 200% entre 2018 e 2021. Isso significa que o valor:",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "triplicou"
+        },
+        {
+          "id": "b",
+          "texto": "dobrou"
+        },
+        {
+          "id": "c",
+          "texto": "aumentou 200 unidades"
+        },
+        {
+          "id": "d",
+          "texto": "cresceu 20%"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "b": "Corresponde a crescer 100%.",
+        "c": "Esta é uma das que interpretam errado.",
+        "d": "Esta é uma das que interpretam errado."
+      },
+      "solucao": "Crescer 200% = multiplicar por 3 (o valor original + 200% dele).",
+      "conceitos": [
+        "leitura-de-graficos"
+      ],
+      "origem": {
+        "estacao": 19,
+        "questao": "Questão 9"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-19-q10",
+      "nivel": 4,
+      "formato": "multipla_escolha",
+      "enunciado": "Um gráfico mostra produção crescente de 50 para 75 unidades. Em outro, o crescimento é de 500 para 600. Qual cresceu mais em termos relativos?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "O segundo, 100%"
+        },
+        {
+          "id": "b",
+          "texto": "O primeiro, 50%"
+        },
+        {
+          "id": "c",
+          "texto": "O segundo, 20%"
+        },
+        {
+          "id": "d",
+          "texto": "Ambos iguais"
+        }
+      ],
+      "gabarito": "b",
+      "solucao": "Primeiro: `(75−50)/50 = 50%`. Segundo: `(600−500)/500 = 20%`. O primeiro cresceu mais em termos relativos, mesmo sendo menor em valor absoluto.",
+      "conceitos": [
+        "leitura-de-graficos"
+      ],
+      "origem": {
+        "estacao": 19,
+        "questao": "Questão 10"
+      }
+    },
+    {
+      "tipo": "desafio",
+      "bloco_id": "mb-19-desafio",
+      "nivel": 5,
+      "enunciado": "Um gráfico mostra a produção de três anos consecutivos: 2019 com 200 unidades, 2020 com 260 e 2021 com 325. Qual a taxa de crescimento média anual aproximada?",
+      "formato": "numerico",
+      "gabarito": {
+        "valor": 27.5,
+        "tolerancia": 0.6
+      },
+      "unidade": "% ao ano",
+      "solucao": "- `2020/2019 = 260/200 = 1,30` → +30%\n- `2021/2020 = 325/260 = 1,25` → +25%\n- Média geométrica: `√(1,30 × 1,25) = √1,625 ≈ 1,2749` → cerca de 27,5% ao ano."
+    }
+  ],
+  "habilidades": [
+    "HAB-19",
+    "HAB-44",
+    "HAB-46"
+  ],
+  "pre_requisitos": [
+    "mb-05-porcentagem",
+    "mb-18-medias"
+  ]
+}

@@ -1,0 +1,540 @@
+{
+  "schema_version": "1.0",
+  "estacao_id": "mb-08-radiciacao",
+  "titulo": "Radiciação",
+  "objetivo": "Você vai simplificar raízes, operá-las com segurança e relacioná-las com potências de expoente fracionário.",
+  "versao": "2026-09-16",
+  "duracao_minutos": 11,
+  "numero": 8,
+  "conceitos": [
+    "radiciacao",
+    "simplificacao-de-raizes",
+    "propriedades-de-raizes"
+  ],
+  "conclusao": {
+    "tipo": "minimo_de_acertos",
+    "minimo": 7
+  },
+  "fonte": {
+    "arquivo": "mat basica 8.md",
+    "pasta": "cursos/matemática básica"
+  },
+  "blocos": [
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-08-c-01",
+      "variante": "padrao",
+      "markdown": "A raiz é a operação inversa da potência.\n\n`ⁿ√a = b` significa que `bⁿ = a`\n\n- `√9 = 3`\n- `³√8 = 2`\n- `⁴√16 = 2`"
+    },
+    {
+      "tipo": "tabela",
+      "bloco_id": "mb-08-c-02",
+      "colunas": [
+        "Propriedade",
+        "Exemplo"
+      ],
+      "linhas": [
+        [
+          "`√(a × b) = √a × √b`",
+          "`√(4 × 9) = 2 × 3 = 6`"
+        ],
+        [
+          "`√(a/b) = √a / √b`",
+          "`√(16/4) = 4/2 = 2`"
+        ],
+        [
+          "`(√a)² = a`",
+          "`(√7)² = 7`"
+        ],
+        [
+          "`√(a²) = |a|`",
+          "`√((−3)²) = 3`"
+        ],
+        [
+          "`ⁿ√(aᵐ) = a^(m/n)`",
+          "`³√(2⁶) = 2² = 4`"
+        ]
+      ],
+      "titulo": "Propriedades"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-08-c-03",
+      "variante": "padrao",
+      "markdown": "Fatore o radicando em fatores primos e retire os que aparecem com expoente igual ao índice.\n\n`√72 = √(36 × 2) = √36 × √2 = 6√2`",
+      "titulo": "Simplificação de raízes"
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-08-c-04",
+      "variante": "padrao",
+      "markdown": "Eliminar a raiz do denominador, multiplicando numerador e denominador pelo conjugado ou pela raiz apropriada.\n\n`1/√2 = √2/2`",
+      "titulo": "Racionalização"
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-08-ex-01",
+      "enunciado": "Simplifique `√50`.",
+      "passos": [
+        {
+          "texto": "`√50 = √(25 × 2) = 5√2`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-08-ex-02",
+      "enunciado": "Calcule `√2 × √8`.",
+      "passos": [
+        {
+          "texto": "`√(2 × 8) = √16 = 4`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-08-ex-03",
+      "enunciado": "Calcule `√18 / √2`.",
+      "passos": [
+        {
+          "texto": "`√(18/2) = √9 = 3`"
+        }
+      ]
+    },
+    {
+      "tipo": "exemplo",
+      "bloco_id": "mb-08-ex-04",
+      "enunciado": "Racionalize `3/√5`.",
+      "passos": [
+        {
+          "texto": "`3/√5 × √5/√5 = 3√5/5`"
+        }
+      ]
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-08-es-01",
+      "variante": "destaque",
+      "markdown": "- Antes de calcular, tente fatorar o radicando por quadrados perfeitos: `4, 9, 16, 25, 36, 49, 64, 81, 100`.\n- Raiz de produto se transforma em produto de raízes — use isso para simplificar.\n- Em expressões com radicais, agrupe tudo sob a mesma raiz sempre que possível.\n- `√a + √b ≠ √(a + b)`. Não existe propriedade para soma."
+    },
+    {
+      "tipo": "texto",
+      "bloco_id": "mb-08-er-01",
+      "variante": "atencao",
+      "markdown": "- **Somar radicais indevidamente.** `√4 + √9 = 2 + 3 = 5`, mas `√(4+9) = √13 ≈ 3,6`.\n- **Esquecer o módulo.** `√(x²) = |x|`, não `x`, quando `x` pode ser negativo.\n- **Cancelar raízes com termos somados.** `√(a + b) ≠ √a + √b`.\n- **Deixar a raiz no denominador** quando o problema pede forma simplificada."
+    },
+    {
+      "tipo": "video",
+      "bloco_id": "mb-08-video",
+      "titulo": "Radiciação — aula em vídeo",
+      "provedor": "youtube",
+      "ref": null,
+      "resumo": "Aula conduzida pelo 1º colocado de Medicina da USP."
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-08-q01",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Calcule `√81`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "40,5"
+        },
+        {
+          "id": "b",
+          "texto": "18"
+        },
+        {
+          "id": "c",
+          "texto": "9"
+        },
+        {
+          "id": "d",
+          "texto": "8"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "d": "Confunde com `2³`.",
+        "b": "Esta é uma das que aplicam operações erradas.",
+        "a": "Esta é uma das que aplicam operações erradas."
+      },
+      "solucao": "`9² = 81`.",
+      "conceitos": [
+        "radiciacao"
+      ],
+      "origem": {
+        "estacao": 8,
+        "questao": "Questão 1"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-08-q02",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Calcule `√4 + √9`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "5"
+        },
+        {
+          "id": "b",
+          "texto": "6"
+        },
+        {
+          "id": "c",
+          "texto": "13"
+        },
+        {
+          "id": "d",
+          "texto": "√13"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "d": "Soma os radicandos.",
+        "c": "Eleva ao quadrado.",
+        "b": "Soma sem extrair raízes corretamente."
+      },
+      "solucao": "`2 + 3 = 5`.",
+      "conceitos": [
+        "radiciacao"
+      ],
+      "origem": {
+        "estacao": 8,
+        "questao": "Questão 2"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-08-q03",
+      "nivel": 1,
+      "formato": "multipla_escolha",
+      "enunciado": "Simplifique `√50`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "5√2"
+        },
+        {
+          "id": "b",
+          "texto": "10√5"
+        },
+        {
+          "id": "c",
+          "texto": "25√2"
+        },
+        {
+          "id": "d",
+          "texto": "2√5"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "d": "Confunde a ordem.",
+        "c": "Usa o quadrado de 5 fora da raiz.",
+        "b": "Multiplica por 2."
+      },
+      "solucao": "`√(25 × 2) = 5√2`.",
+      "conceitos": [
+        "simplificacao-de-raizes"
+      ],
+      "origem": {
+        "estacao": 8,
+        "questao": "Questão 3"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-08-q04",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Calcule `√2 × √8`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "4"
+        },
+        {
+          "id": "b",
+          "texto": "2√2"
+        },
+        {
+          "id": "c",
+          "texto": "√16 (mesmo valor: 4)"
+        },
+        {
+          "id": "d",
+          "texto": "16"
+        }
+      ],
+      "gabarito": "a",
+      "feedback": {
+        "c": "Também está numericamente correta, mas a forma simplificada é 4.",
+        "d": "Não extrai a raiz.",
+        "b": "Erra a multiplicação."
+      },
+      "solucao": "`√(2 × 8) = √16 = 4`. Use sempre a forma final simplificada.",
+      "conceitos": [
+        "propriedades-de-raizes"
+      ],
+      "origem": {
+        "estacao": 8,
+        "questao": "Questão 4"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-08-q05",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Calcule `√18 / √2`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "2√3"
+        },
+        {
+          "id": "b",
+          "texto": "9"
+        },
+        {
+          "id": "c",
+          "texto": "3"
+        },
+        {
+          "id": "d",
+          "texto": "√16"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "b": "Eleva ao quadrado.",
+        "a": "Fatore errado.",
+        "d": "Calcula outra raiz."
+      },
+      "solucao": "`√(18/2) = √9 = 3`.",
+      "conceitos": [
+        "propriedades-de-raizes"
+      ],
+      "origem": {
+        "estacao": 8,
+        "questao": "Questão 5"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-08-q06",
+      "nivel": 2,
+      "formato": "multipla_escolha",
+      "enunciado": "Racionalize `1/√2`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "1/2"
+        },
+        {
+          "id": "b",
+          "texto": "2/√2"
+        },
+        {
+          "id": "c",
+          "texto": "√2/2"
+        },
+        {
+          "id": "d",
+          "texto": "√2"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "b": "Não racionaliza.",
+        "d": "Multiplica só por √2, alterando o valor.",
+        "a": "Divide por 2 sem multiplicar."
+      },
+      "solucao": "`1/√2 × √2/√2 = √2/2`.",
+      "conceitos": [
+        "radiciacao"
+      ],
+      "origem": {
+        "estacao": 8,
+        "questao": "Questão 6"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-08-q07",
+      "nivel": 3,
+      "formato": "multipla_escolha",
+      "enunciado": "Simplifique `√72 + √18`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "6√2"
+        },
+        {
+          "id": "b",
+          "texto": "√90"
+        },
+        {
+          "id": "c",
+          "texto": "3√2"
+        },
+        {
+          "id": "d",
+          "texto": "9√2"
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "a": "Ignora o segundo termo.",
+        "b": "Soma os radicandos.",
+        "c": "É apenas o segundo termo."
+      },
+      "solucao": "`√72 = 6√2`, `√18 = 3√2`, soma `9√2`.",
+      "conceitos": [
+        "simplificacao-de-raizes"
+      ],
+      "origem": {
+        "estacao": 8,
+        "questao": "Questão 7"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-08-q08",
+      "nivel": 3,
+      "formato": "multipla_escolha",
+      "enunciado": "Calcule `(√3 + √2)²`.",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "√5"
+        },
+        {
+          "id": "b",
+          "texto": "5"
+        },
+        {
+          "id": "c",
+          "texto": "5 + 2√6"
+        },
+        {
+          "id": "d",
+          "texto": "3 + 2√6 + 2"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "b": "Esquece o termo cruzado.",
+        "d": "Não soma `3+2`.",
+        "a": "Aplica raiz na soma."
+      },
+      "solucao": "Pelo quadrado da soma: `(√3)² + 2√3√2 + (√2)² = 3 + 2√6 + 2 = 5 + 2√6`.",
+      "conceitos": [
+        "propriedades-de-raizes"
+      ],
+      "origem": {
+        "estacao": 8,
+        "questao": "Questão 8"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-08-q09",
+      "nivel": 4,
+      "formato": "multipla_escolha",
+      "enunciado": "Em um quadrado de área `32 cm²`, qual o comprimento do lado, na forma simplificada?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "8 cm"
+        },
+        {
+          "id": "b",
+          "texto": "√32 cm"
+        },
+        {
+          "id": "c",
+          "texto": "4√2 cm"
+        },
+        {
+          "id": "d",
+          "texto": "16 cm"
+        }
+      ],
+      "gabarito": "c",
+      "feedback": {
+        "a": "É o dobro do correto.",
+        "d": "Dobra a área.",
+        "b": "Não simplifica."
+      },
+      "solucao": "Lado = `√32 = √(16 × 2) = 4√2`.",
+      "conceitos": [
+        "simplificacao-de-raizes"
+      ],
+      "origem": {
+        "estacao": 8,
+        "questao": "Questão 9"
+      }
+    },
+    {
+      "tipo": "exercicio",
+      "bloco_id": "mb-08-q10",
+      "nivel": 4,
+      "formato": "multipla_escolha",
+      "enunciado": "Um objeto cai em queda livre de uma altura `h`, e a velocidade ao atingir o solo é dada por `v = √(2gh)`, com `g = 10 m/s²`. Se `h = 20 m`, qual a velocidade?",
+      "alternativas": [
+        {
+          "id": "a",
+          "texto": "200 m/s"
+        },
+        {
+          "id": "b",
+          "texto": "40 m/s"
+        },
+        {
+          "id": "c",
+          "texto": "10 m/s"
+        },
+        {
+          "id": "d",
+          "texto": "20 m/s"
+        }
+      ],
+      "gabarito": "d",
+      "feedback": {
+        "a": "Não extrai a raiz.",
+        "c": "Divide por 2.",
+        "b": "Dobra."
+      },
+      "solucao": "`v = √(2 × 10 × 20) = √400 = 20 m/s`.",
+      "conceitos": [
+        "radiciacao"
+      ],
+      "origem": {
+        "estacao": 8,
+        "questao": "Questão 10"
+      }
+    },
+    {
+      "tipo": "desafio",
+      "bloco_id": "mb-08-desafio",
+      "nivel": 5,
+      "enunciado": "Simplifique:\n\n`(√12 + √27) / √3`",
+      "formato": "numerico",
+      "gabarito": {
+        "valor": 5.0,
+        "tolerancia": 0.01
+      },
+      "solucao": "- `√12 = 2√3`\n- `√27 = 3√3`\n- `2√3 + 3√3 = 5√3`\n- `5√3 / √3 = 5`"
+    }
+  ],
+  "pre_requisitos": [
+    "mb-07-potenciacao"
+  ]
+}

@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Check, Star, Lock, Play } from "lucide-react";
 import Mentis from "./Mentis";
+import { ordenarMissoes } from "../lib/trilha";
 
 /**
  * A trilha — as próximas missões do Mapa de Treino desenhadas como um caminho.
@@ -75,16 +76,10 @@ const ESTILO = {
 export default function TrilhaDeMissoes({ habilidades, limite = 5, testid = "trilha" }) {
   const nav = useNavigate();
 
-  const nos = useMemo(() => {
-    // Mesma ordem das missões do Painel: o que já foi praticado e não está
-    // dominado primeiro, depois o que ainda não foi tocado.
-    const fracas = (habilidades || [])
-      .filter((h) => h.respondidas > 0 && h.classificacao !== "forte")
-      .sort((a, b) => (a.percentual ?? 100) - (b.percentual ?? 100));
-    const dominadas = (habilidades || []).filter((h) => h.classificacao === "forte").slice(0, 1);
-    const intocadas = (habilidades || []).filter((h) => !h.respondidas);
-    return [...dominadas, ...fracas, ...intocadas].slice(0, limite);
-  }, [habilidades, limite]);
+  // A ordem mora em `lib/trilha.js` desde 2026-09-16: o Painel usa a mesma
+  // função para dizer QUAL é o próximo passo, e o desenho aqui e a frase lá
+  // têm de apontar para o mesmo nó.
+  const nos = useMemo(() => ordenarMissoes(habilidades, limite), [habilidades, limite]);
 
   const primeiroNaoDominado = nos.findIndex((h) => h.classificacao !== "forte");
 

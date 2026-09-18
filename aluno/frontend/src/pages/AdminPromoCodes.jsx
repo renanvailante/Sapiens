@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { api, errMsg } from "../lib/api";
 import Nav from "../components/Nav";
-import { Ticket, Plus, Trash2, Users, ChevronDown, ChevronRight } from "lucide-react";
+import { Ticket, Plus, Trash2, Users, ChevronDown, ChevronRight, Megaphone, Check } from "lucide-react";
 
 function formatDate(iso) {
   try {
@@ -12,11 +12,62 @@ function formatDate(iso) {
   }
 }
 
+/** A caixa de e-mail do promoter, ao lado de cada cupom. É este campo —
+ *  gravado em `promo_codes.promoter_email` — que decide quem vê o painel
+ *  de `/promoter`: a própria conta com este e-mail, ao logar, sem precisar
+ *  de nenhum cadastro de "promoter" à parte. Estado próprio por linha
+ *  (rascunho local até salvar) para digitar sem disparar um PATCH a cada tecla. */
+function PromoterEmailField({ code, valor, onSalvo }) {
+  const [rascunho, setRascunho] = useState(valor || "");
+  const [salvando, setSalvando] = useState(false);
+  const sujo = rascunho.trim().toLowerCase() !== (valor || "").trim().toLowerCase();
+
+  const salvar = async () => {
+    setSalvando(true);
+    try {
+      const { data } = await api.patch(`/admin/promo-codes/${code}`, {
+        promoter_email: rascunho.trim() || null,
+      });
+      onSalvo(data);
+      toast.success(data.promoter_email ? "Promoter vinculado ao cupom." : "Promoter removido do cupom.");
+    } catch (e) {
+      toast.error(errMsg(e, "Falha ao salvar o e-mail do promoter."));
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  return (
+    <div className="mt-3 flex items-center gap-2">
+      <Megaphone className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+      <input
+        type="email"
+        value={rascunho}
+        onChange={(e) => setRascunho(e.target.value)}
+        placeholder="e-mail do promoter (opcional)"
+        className="flex-1 min-w-0 border border-zinc-200 rounded-lg px-3 py-1.5 text-xs focus:border-sapiens-accent outline-none"
+        data-testid={`admin-promo-promoter-email-${code}`}
+      />
+      {sujo && (
+        <button
+          onClick={salvar}
+          disabled={salvando}
+          className="pill inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-400/30 text-emerald-700 px-2.5 py-1.5 text-[11px] font-medium disabled:opacity-50"
+          data-testid={`admin-promo-promoter-save-${code}`}
+        >
+          <Check className="w-3 h-3" /> {salvando ? "Salvando…" : "Salvar"}
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function AdminPromoCodes() {
   const [codes, setCodes] = useState([]);
   const [loaded, setLoaded] = useState(false);
   const [code, setCode] = useState("");
   const [amount, setAmount] = useState("");
+  const [promoterEmail, setPromoterEmail] = useState("");
   const [creating, setCreating] = useState(false);
   const [aberto, setAberto] = useState(null);
   const [totalComCupom, setTotalComCupom] = useState(null);
@@ -41,10 +92,13 @@ export default function AdminPromoCodes() {
     }
     setCreating(true);
     try {
-      const { data } = await api.post("/admin/promo-codes", { code: code.trim(), sparks_amount: valor });
+      const { data } = await api.post("/admin/promo-codes", {
+        code: code.trim(), sparks_amount: valor, promoter_email: promoterEmail.trim() || undefined,
+      });
       setCodes((prev) => [{ ...data, alunos: [], alunos_count: 0, usos_sem_vinculo: 0 }, ...prev]);
       setCode("");
       setAmount("");
+      setPromoterEmail("");
       toast.success(`Código ${data.code} criado.`);
     } catch (e2) {
       toast.error(errMsg(e2, "Falha ao criar código."));
@@ -77,10 +131,10 @@ export default function AdminPromoCodes() {
   return (
     <div className="min-h-screen">
       <Nav />
-      <div className="max-w-4xl mx-auto px-6 md:px-10 py-12">
+      <div className="max-w-4xl mx-auto px-5 py-7 md:px-10 md:py-10">
         <div className="flex items-center gap-3 mb-3">
           <Ticket className="w-4 h-4 text-sapiens-accent" />
-          <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-white/50">Admin · Códigos de promoção</div>
+          <div className="secao-olho">Admin · Códigos de promoção</div>
         </div>
         <h1 className="font-display text-4xl font-extrabold tracking-tighter text-white" data-testid="admin-promo-title">
           Códigos de promoção
@@ -113,6 +167,15 @@ export default function AdminPromoCodes() {
               placeholder="200"
               className="w-full border border-zinc-200 rounded-xl px-4 py-2.5 text-sm focus:border-sapiens-accent outline-none"
               data-testid="admin-promo-input-amount"
+            />
+          </div>
+          <div className="flex-1">
+            <label className="block text-xs font-medium text-zinc-500 mb-1">E-mail do promoter (opcional)</label>
+            <input
+              type="email" value={promoterEmail} onChange={(e) => setPromoterEmail(e.target.value)}
+              placeholder="quem_divulga@exemplo.com"
+              className="w-full border border-zinc-200 rounded-xl px-4 py-2.5 text-sm focus:border-sapiens-accent outline-none"
+              data-testid="admin-promo-input-promoter-email"
             />
           </div>
           <button
@@ -176,6 +239,15 @@ export default function AdminPromoCodes() {
                       </div>
                     ))}
                   </div>
+                )}
+                {!c.excluido && (
+                  <PromoterEmailField
+                    code={c.code}
+                    valor={c.promoter_email}
+                    onSalvo={(atualizado) =>
+                      setCodes((prev) => prev.map((x) => (x.code === c.code ? { ...x, ...atualizado } : x)))
+                    }
+                  />
                 )}
               </div>
               <div className="flex items-center gap-2 shrink-0">

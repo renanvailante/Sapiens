@@ -7,8 +7,8 @@ O que estes testes protegem, na ordem em que doeria:
    retry do axios e duas abas caem na mesma reivindicação.
 2. **Ninguém fica sem Sparks e sem vaga.** Saldo insuficiente ou Firestore
    instável desfazem a reivindicação inteira.
-3. **Curso em pré-venda cobra UMA vez, para sempre** — 500 Sparks compram
-   acesso vitalício, e clicar de novo daqui a um ano não cobra segunda vez.
+3. **Curso em pré-venda cobra UMA vez, para sempre** — `CURSO_CUSTO_SPARKS`
+   compra acesso vitalício, e clicar de novo daqui a um ano não cobra segunda vez.
    Entrar na lista de avisados continua de graça.
 4. **A edição vendida é a mesma para todos**: o cálculo de "próxima quinta"
    mora num lugar só e não vira a semana seguinte no meio da aula.
@@ -110,21 +110,53 @@ def db(fake_db):
 
 
 class TestCatalogo:
-    def test_os_quatro_cursos_existem_e_estao_todos_em_breve(self, db, carteira):
+    def test_o_catalogo_sai_inteiro_na_ordem_do_servidor(self, db, carteira):
+        """A tela desenha o que o servidor manda, na ordem em que ele manda.
+
+        A versão anterior cravava os quatro ids do catálogo de 2026-09-15 —
+        ou seja, acrescentar um curso quebrava o teste sem que nada estivesse
+        errado. O que precisa ser verdade é outra coisa: a rota entrega o
+        catálogo INTEIRO, na mesma ordem de `cursos.CURSOS`, e nenhum curso se
+        perde entre o módulo e a resposta.
+        """
         dados = _run(routes.listar(user=_user()))
         ids = [c["curso_id"] for c in dados["cursos"]]
-        assert ids == [
+        assert ids == [c.curso_id for c in cursos.CURSOS]
+        # Os quatro primeiros são os originais e continuam onde estavam: a
+        # ordem é decisão de produto, e um curso novo entra no fim.
+        assert ids[:4] == [
             "matematica-basica",
             "redacao-0-1000",
             "hackeando-a-tri",
             "compreensao-interpretacao-texto",
         ]
-        assert all(c["status"] == cursos.EM_BREVE for c in dados["cursos"])
+
+    def test_todo_curso_tem_area_conhecida_e_capa(self, db, carteira):
+        """Duas invariantes que fazem o catálogo crescer sem quebrar a tela:
+        um curso sem área conhecida não aparece em grupo nenhum (some da
+        vitrine em silêncio), e um sem capa vira um retângulo sem identidade
+        no meio de outros sete."""
+        dados = _run(routes.listar(user=_user()))
+        areas = {a["area_id"] for a in dados["areas"]}
+        for c in dados["cursos"]:
+            assert c["area"] in areas, c["curso_id"]
+            assert c["capa"]["de"] and c["capa"]["para"] and c["capa"]["glifo"], c["curso_id"]
+
+    def test_toda_area_do_catalogo_tem_ao_menos_um_curso(self, db, carteira):
+        """Área vazia é cabeçalho sem nada embaixo. `listar_areas` já filtra;
+        isto trava a garantia."""
+        dados = _run(routes.listar(user=_user()))
+        assert all(a["cursos"] for a in dados["areas"])
+
+    def test_os_cursos_novos_de_setembro_estao_no_catalogo(self, db, carteira):
+        dados = _run(routes.listar(user=_user()))
+        ids = {c["curso_id"] for c in dados["cursos"]}
+        assert {"calculos-quimicos", "cinematica", "atualidades"} <= ids
 
     def test_todo_curso_tem_o_mesmo_preco_de_tabela(self, db, carteira):
         dados = _run(routes.listar(user=_user()))
         assert {c["custo_sparks"] for c in dados["cursos"]} == {cursos.CURSO_CUSTO_SPARKS}
-        assert cursos.CURSO_CUSTO_SPARKS == 500
+        assert cursos.CURSO_CUSTO_SPARKS == 200
 
     def test_marcar_interesse_nao_custa_sparks(self, db, carteira):
         _run(routes.marcar_interesse("redacao-0-1000", user=_user()))
@@ -157,11 +189,11 @@ class TestCatalogo:
 class TestCompraDeCurso:
     """Pré-venda: cobra uma vez e o acesso é vitalício."""
 
-    def test_primeira_compra_debita_500(self, db, carteira):
+    def test_primeira_compra_debita_o_preco_de_tabela(self, db, carteira):
         resposta = _run(routes.comprar_curso("redacao-0-1000", user=_user(), _=None))
         assert resposta["cobrado"] is True
         assert resposta["vitalicio"] is True
-        assert carteira.debitos == [500]
+        assert carteira.debitos == [cursos.CURSO_CUSTO_SPARKS]
 
     def test_o_curso_comprado_ainda_nao_esta_disponivel_e_a_resposta_diz_isso(self, db, carteira):
         """O aluno comprou o acesso, não a aula de hoje. Prometer `disponivel`
@@ -176,13 +208,13 @@ class TestCompraDeCurso:
         segunda = _run(routes.comprar_curso("redacao-0-1000", user=_user(), _=None))
         assert segunda["cobrado"] is False
         assert segunda["tenho_acesso"] is True
-        assert carteira.debitos == [500]
+        assert carteira.debitos == [cursos.CURSO_CUSTO_SPARKS]
         assert _run(db.cursos_acessos.count_documents({})) == 1
 
     def test_cursos_diferentes_sao_compras_diferentes(self, db, carteira):
         _run(routes.comprar_curso("redacao-0-1000", user=_user(), _=None))
         _run(routes.comprar_curso("hackeando-a-tri", user=_user(), _=None))
-        assert carteira.debitos == [500, 500]
+        assert carteira.debitos == [cursos.CURSO_CUSTO_SPARKS, cursos.CURSO_CUSTO_SPARKS]
 
     def test_saldo_insuficiente_e_402_e_nao_deixa_acesso(self, db, carteira):
         carteira.saldo = 100
@@ -203,6 +235,17 @@ class TestCompraDeCurso:
         por_id = {c["curso_id"]: c for c in dados["cursos"]}
         assert por_id["matematica-basica"]["tenho_acesso"] is True
         assert por_id["redacao-0-1000"]["tenho_acesso"] is False
+
+    def test_o_admin_ja_entra_sem_comprar(self, db, carteira):
+        """A vitrine e a sala de aula precisam dar a MESMA resposta para
+        "posso entrar?". Enquanto discordavam, o admin via "comprar por
+        Sparks" num curso em que `cursos_estudo_routes` o deixaria entrar — e
+        o card do curso publicado não levava a lugar nenhum, que é justamente
+        como se valida conteúdo novo em produção."""
+        dados = _run(routes.listar(user=_admin()))
+        por_id = {c["curso_id"]: c for c in dados["cursos"]}
+        assert all(c["tenho_acesso"] for c in por_id.values())
+        assert _run(db.cursos_acessos.count_documents({})) == 0
 
     def test_o_acesso_e_por_aluno(self, db, carteira):
         _run(routes.comprar_curso("matematica-basica", user=_user("a"), _=None))
@@ -382,7 +425,7 @@ class TestPainelDoAdmin:
         painel = _run(routes.painel(admin=_admin()))
         por_id = {c["curso_id"]: c for c in painel["cursos"]}
         assert por_id["redacao-0-1000"]["compradores"] == 2
-        assert por_id["redacao-0-1000"]["sparks_arrecadados"] == 1000
+        assert por_id["redacao-0-1000"]["sparks_arrecadados"] == 2 * cursos.CURSO_CUSTO_SPARKS
         assert por_id["matematica-basica"]["compradores"] == 0
         nomes = {c["nome"] for c in painel["compradores_por_curso"]["redacao-0-1000"]}
         assert "Maria" in nomes
@@ -411,7 +454,7 @@ class TestDireitosDePacote:
     (R$119,90) desde 2026-09-16:
 
     * `lives_inclusas` — toda quinta, sem os 200 Sparks da edição;
-    * `cursos_inclusos` — os quatro cursos gravados, sem os 500 de cada.
+    * `cursos_inclusos` — os quatro cursos gravados, sem o preço de cada.
 
     Eles são concedidos juntos mas são SEPARADOS no backend, e os testes
     abaixo seguram justamente isso: um não pode abrir a porta do outro. O dia
@@ -706,3 +749,71 @@ class TestOAdminPublicaOLinkDaSemana:
                 routes.PublicarLiveRequest(link="https://zoom.us/j/123"), admin=_admin(),
             ))
         assert exc.value.status_code == 422
+
+
+# ============================================================ e-books
+
+
+class TestEbooks:
+    """A prateleira de e-books — mesma mecânica de compra dos cursos.
+
+    O que estes testes travam é o que separa um e-book de um curso na TELA:
+    ele se lê dentro do app, página por página — nenhum aluno baixa nada do
+    Sapiens — e enquanto as páginas não existem a resposta precisa dizer
+    isso. Um link que não abre é pior do que um "em breve".
+    """
+
+    def test_a_prateleira_sai_na_listagem(self, db, carteira):
+        dados = _run(routes.listar(user=_user()))
+        ids = [e["ebook_id"] for e in dados["ebooks"]]
+        assert ids == [e.ebook_id for e in cursos.EBOOKS]
+        assert dados["custo_ebook"] == cursos.EBOOK_CUSTO_SPARKS
+
+    def test_comprar_ebook_cobra_uma_vez_e_o_acesso_e_vitalicio(self, db, carteira):
+        primeira = _run(routes.comprar_ebook("formulario-matematica", user=_user()))
+        segunda = _run(routes.comprar_ebook("formulario-matematica", user=_user()))
+        assert primeira["cobrado"] is True
+        assert segunda["cobrado"] is False
+        assert segunda["tenho_acesso"] is True
+        assert carteira.debitos == [cursos.EBOOK_CUSTO_SPARKS]
+
+    def test_ebook_inexistente_e_404(self, db, carteira):
+        with pytest.raises(HTTPException) as exc:
+            _run(routes.comprar_ebook("nao-existe", user=_user()))
+        assert exc.value.status_code == 404
+        assert carteira.debitos == []
+
+    def test_o_pacote_inclui_a_prateleira_inteira(self, db, carteira):
+        """O mesmo direito que libera os cursos libera os e-books: quem comprou
+        o pacote comprou os dois, e não pode ser cobrado de novo."""
+        carteira.direitos["cursos_inclusos"] = True
+        resposta = _run(routes.comprar_ebook("repertorio-redacao", user=_user()))
+        assert resposta["cobrado"] is False
+        assert resposta["incluso_no_plano"] is True
+        assert carteira.debitos == []
+        dados = _run(routes.listar(user=_user()))
+        assert all(e["tenho_acesso"] for e in dados["ebooks"])
+
+    def test_sem_saldo_nao_compra_e_nao_deixa_registro(self, db, carteira):
+        carteira.saldo = cursos.EBOOK_CUSTO_SPARKS - 1
+        with pytest.raises(HTTPException) as exc:
+            _run(routes.comprar_ebook("formulario-matematica", user=_user()))
+        assert exc.value.status_code == 402
+        assert _run(db.ebooks_acessos.count_documents({})) == 0
+
+    def test_ebook_sem_conteudo_nao_promete_leitura(self, db, carteira):
+        """`disponivel` é o que separa "é meu" de "dá para ler agora". Enquanto
+        as páginas não existem, a tela mostra "avisamos quando entrar no ar"
+        em vez de um leitor vazio — e em nenhum caso aparece link de download:
+        nenhum aluno baixa nada do Sapiens."""
+        resposta = _run(routes.comprar_ebook("mapa-de-estudo-90-dias", user=_user()))
+        assert resposta["tenho_acesso"] is True
+        assert resposta["disponivel"] is False
+        assert "arquivo" not in resposta
+
+    def test_o_preco_do_ebook_nao_mora_no_conteudo(self):
+        """Mesma regra dos cursos e dos temas de redação: nenhum campo textual
+        do catálogo pode citar preço."""
+        for e in cursos.listar_ebooks():
+            corpo = f"{e['titulo']} {e['chamada']} {e['descricao']}".lower()
+            assert "spark" not in corpo and "r$" not in corpo

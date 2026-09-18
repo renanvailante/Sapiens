@@ -22,6 +22,14 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY aluno/backend/ /app/
 
+# NOTA: `aluno/backend/conteudo/` (trilhas, estações e blocos dos cursos) entra
+# na imagem por esta linha, sem precisar de COPY própria — ao contrário do
+# canon do Enem e do banco de treino, que moram fora de `aluno/backend/`. Se um
+# dia alguém restringir o COPY acima ou excluir `conteudo/` no `.dockerignore`
+# da raiz, o app SOBE e a aba de estudo dos cursos fica vazia sem erro nenhum,
+# que é exatamente a classe de bug descrita logo abaixo. `CURSOS_CONTEUDO_DIR`
+# é a válvula para apontar a raiz para outro lugar (volume, bucket).
+
 # Corpus canônico e validador compartilhado, resolvidos por variável.
 COPY pipeline/docs/ontology/ontology_v1.4.json /app/contracts/ontology/ontology_v1.4.json
 COPY pipeline/backend/ontology_validator.py    /app/contracts/ontology_validator.py
