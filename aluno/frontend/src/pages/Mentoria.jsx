@@ -1,13 +1,14 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Medal, Radio, ArrowRight, Target, Route, Brain, MessageCircleMore, Users, Clock,
 } from "lucide-react";
-import Nav from "../components/Nav";
 import MentorUSP from "../components/MentorUSP";
 import ListaDeEsperaMentoria from "../components/ListaDeEsperaMentoria";
 import VideoDoMentor from "../components/VideoDoMentor";
 import { MENTOR } from "../lib/mentor";
 import ContagemEnem from "../components/ContagemEnem";
+import { api } from "../lib/api";
 import { useDeclararContextoMentis } from "../lib/mentisContexto";
 
 /**
@@ -55,9 +56,18 @@ export default function Mentoria() {
     `Na página da mentoria, vendo a lista de espera da mentoria com ${MENTOR.nome}, ${MENTOR.titulo}.`,
   );
 
+  // Preço nunca escrito à mão: os dois números desta página vêm dos mesmos
+  // `/precos` que `ListaDeEsperaMentoria` e `Hoje` já usam para as mesmas
+  // cobranças (`mentoria_routes.ENTRADA_COST`, `cursos.LIVE_CUSTO_SPARKS`).
+  const [custoEntrada, setCustoEntrada] = useState(null);
+  const [custoLive, setCustoLive] = useState(null);
+  useEffect(() => {
+    api.get("/mentoria/precos").then(({ data }) => setCustoEntrada(data.custo_entrada)).catch(() => {});
+    api.get("/cursos/precos").then(({ data }) => setCustoLive(data.custo_live)).catch(() => {});
+  }, []);
+
   return (
     <div className="min-h-screen">
-      <Nav />
       <div className="mx-auto max-w-5xl px-6 py-8 md:px-10 md:py-10">
         <div className="mb-6">
           <ContagemEnem comCta={false} testid="mentoria-contagem-enem" />
@@ -110,7 +120,9 @@ export default function Mentoria() {
                   <Users className="h-4 w-4" /> Entrar na lista de espera
                 </a>
                 <span className="inline-flex items-center gap-1.5 text-xs text-white/40">
-                  <Clock className="h-3.5 w-3.5" /> 50 Sparks · respondemos em até 2 dias úteis
+                  <Clock className="h-3.5 w-3.5" />
+                  {custoEntrada != null ? `${custoEntrada} Sparks` : "Sparks"} · respondemos em até 2
+                  dias úteis
                 </span>
               </div>
             </div>
@@ -187,7 +199,8 @@ export default function Mentoria() {
               Não quer esperar? {MENTOR.nome} dá aula ao vivo toda quinta.
             </div>
             <div className="text-xs text-white/45">
-              Mesma pessoa, 60 minutos, com perguntas abertas no fim — por 200 Sparks.
+              Mesma pessoa, 60 minutos, com perguntas abertas no fim
+              {custoLive != null ? ` — por ${custoLive} Sparks.` : "."}
             </div>
           </div>
           <ArrowRight className="h-4 w-4 shrink-0 text-white/30" />

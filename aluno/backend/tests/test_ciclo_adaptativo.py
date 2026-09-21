@@ -513,9 +513,18 @@ class TestNaoObjetivos:
 
     def test_o_plano_antigo_continua_existindo(self):
         """`/plan/:analysisId` está no histórico de todo aluno que já fez uma
-        prova. Histórico não pode quebrar."""
-        app_js = (BACKEND.parent / "frontend" / "src" / "App.js").read_text(encoding="utf-8")
-        assert '/plan/:analysisId' in app_js
+        prova. Histórico não pode quebrar.
+
+        Desde 2026-09-18 o `App.js` não escreve rota à mão — ele lê a tabela
+        única (`lib/rotas.js`). A asserção segue a rota para onde ela foi, em
+        vez de afrouxar: o que importa é que o endereço continue existindo e
+        que a tela que o desenha continue montada.
+        """
+        frontend = BACKEND.parent / "frontend" / "src"
+        rotas_js = (frontend / "lib" / "rotas.js").read_text(encoding="utf-8")
+        app_js = (frontend / "App.js").read_text(encoding="utf-8")
+        assert 'PLANO: "/plan/:analysisId"' in rotas_js
+        assert "ROTAS.PLANO" in app_js
         assert "StudyPlan" in app_js
 
     def test_a_fila_do_aluno_nao_carrega_id_de_catalogo_no_texto(self):

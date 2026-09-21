@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MENTOR } from "../lib/mentor";
 import { VOZ } from "../lib/historia";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { useAuth } from "../lib/auth";
-import { errMsg } from "../lib/api";
+import { api, errMsg } from "../lib/api";
 import { googleDisponivel, mensagemDeErroGoogle } from "../lib/firebase";
+import { salvarAtribuicao, lerAtribuicao } from "../lib/atribuicao";
 import { toast } from "sonner";
-import { Brain, Compass, Radio, Loader2 } from "lucide-react";
+import { Brain, Compass, Radio, Loader2, Gift } from "lucide-react";
 import Logo from "../components/Logo";
 import ContagemEnem from "../components/ContagemEnem";
 
@@ -70,7 +71,15 @@ export default function Login() {
   // clica num convite não está voltando; está chegando, e abrir no formulário
   // de login é pedir uma senha que essa pessoa ainda não tem.
   const [params] = useSearchParams();
-  const convite = (params.get("convite") || "").trim().toUpperCase();
+  const conviteDaUrl = (params.get("convite") || "").trim().toUpperCase();
+  const bonusDaUrl = parseInt(params.get("bonus"), 10) || null;
+  // Sem `?convite=` na URL, ainda pode existir um clique de até 30 dias atrás
+  // guardado pelo navegador (ver `lib/atribuicao.js`) — a janela de
+  // atribuição do programa de afiliados/campanhas. Sem isso, quem clica no
+  // link, fecha a aba e volta depois pra se cadastrar perderia a atribuição.
+  const atribuicaoSalva = !conviteDaUrl ? lerAtribuicao() : null;
+  const convite = conviteDaUrl || atribuicaoSalva?.codigo || "";
+  const bonus = bonusDaUrl || atribuicaoSalva?.bonus || null;
   // `?novo=1` é a porta do "Começar agora" da landing. Mesma razão do
   // convite: quem clicou em começar não está voltando, está chegando, e abrir
   // no formulário de login é pedir uma senha que essa pessoa ainda não tem.
@@ -87,6 +96,17 @@ export default function Login() {
   const [responsavelNome, setResponsavelNome] = useState("");
   const [responsavelWhatsapp, setResponsavelWhatsapp] = useState("");
   const [promoCode, setPromoCode] = useState(convite);
+
+  // Guarda o convite da URL para sobreviver 30 dias (e conta o clique, uma
+  // vez, sem bloquear nada se a rota pública falhar). `bonus` é só o número
+  // que a tela EXIBE — quem decide de verdade é sempre `/auth/signup` lendo
+  // o catálogo, nunca este parâmetro.
+  useEffect(() => {
+    if (!conviteDaUrl) return;
+    salvarAtribuicao(conviteDaUrl, bonusDaUrl);
+    api.post("/track/click", { codigo: conviteDaUrl }).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conviteDaUrl]);
   const [busy, setBusy] = useState(false);
   const [busyGoogle, setBusyGoogle] = useState(false);
   const [aceitouTermos, setAceitouTermos] = useState(false);
@@ -116,7 +136,7 @@ export default function Login() {
         criando ? whatsapp : undefined,
         criando ? { menorDeIdade, responsavelNome, responsavelWhatsapp } : undefined,
       );
-      nav("/dashboard");
+      nav("/hoje");
     } catch (e) {
       // Fechar o popup NÃO é erro quando foi rápido: é cancelamento
       // deliberado, e um toast ali seria ruído sobre uma decisão da pessoa.
@@ -164,7 +184,7 @@ export default function Login() {
         });
       }
       toast.success("Bem-vindo ao Sapiens.");
-      nav("/dashboard", { replace: true });
+      nav("/hoje", { replace: true });
     } catch (err) {
       toast.error(errMsg(err, "Não foi possível entrar."));
     } finally {
@@ -259,6 +279,20 @@ export default function Login() {
           <p className="mt-1.5 text-sm text-white/50">
             {criando ? VOZ.promessa : "Bem-vindo de volta."}
           </p>
+
+          {/* Só aparece com um convite reconhecido (URL ou janela de 30 dias
+              guardada no navegador — ver `lib/atribuicao.js`). O número é
+              cosmético: quem decide de verdade é sempre `/auth/signup` lendo
+              o catálogo no backend, nunca este texto. */}
+          {criando && convite && bonus && (
+            <div
+              className="mt-4 flex items-center gap-2.5 rounded-xl border border-emerald-400/25 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-200"
+              data-testid="login-banner-convite"
+            >
+              <Gift className="h-4 w-4 shrink-0" />
+              Você foi convidado! Ganhe {bonus} Sparks de bônus ao criar sua conta.
+            </div>
+          )}
 
           {/* O cupom e o WhatsApp ficam ACIMA do botão do Google, e não no meio
               do formulário de e-mail: eles valem para os DOIS caminhos de

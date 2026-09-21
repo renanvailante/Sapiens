@@ -26,16 +26,21 @@ Se nada aqui casar, vá direto ao código (`graft ask "<tarefa>"`) — o Cerebro
 | escrever **leitura nova do Firestore** | [[custo-de-leitura]] |
 | criar **coleção ou campo novo** | [[dados]] |
 | mexer em **CSS, cor, tema escuro** | [[sistema-visual]] |
-| **acrescentar item à barra** de navegação | [[navegacao]] |
+| **acrescentar área, item de menu ou ROTA** | [[navegacao]] |
 | criar **tela nova** | [[padroes-de-tela]] · [[sistema-visual]] |
 | mexer em algo que o **celular** toca | [[mobile]] |
 | mexer em **gamificação, liga, mural, venda** | [[engajamento]] |
 | mexer em **copy, landing, logo, mentor** | [[marca]] |
 | mexer em **cadastro, login, WhatsApp** | [[contas-e-acesso]] |
+| mexer em **influencer, afiliado, comissão, tracking/atribuição, campanha, UTM** | [[afiliados]] |
+| mexer no **Pesquisador IA de Aquisição, lead de Instagram/WhatsApp/Telegram, grounding do Gemini** | [[aquisicao]] |
+| fazer a **IA pesquisar a web** (grounding, custo de chamada de IA) | [[custo-de-ia]] |
+| mexer em **activation, TTFV, cohort, marco de produto, primeira compra/recompra/microvitória** | [[analytics-de-produto]] |
 | mexer no **pipeline, ontologia, schema, corpus** | [[pipeline-e-corpus]] · [[canon-pedagogico]] |
 | rodar **testes ou o app local** | [[ambiente-local]] |
 | **restaurar** algo que "parece errado" no produto | [[superado]] |
 | entender o projeto pela primeira vez | [[ecossistema]] |
+| saber o que falta para o funil de ativação/monetização | [[ROADMAP_EXECUCAO]] |
 
 ## Por sintoma
 
@@ -48,6 +53,8 @@ Se nada aqui casar, vá direto ao código (`graft ask "<tarefa>"`) — o Cerebro
 | Página preta e lisa, sem brilho nos cantos | algo entre `html` e o conteúdo ganhou fundo opaco | [[sistema-visual]] |
 | CORS no console em desenvolvimento | o `craco.config.js` anula `.env.development.local` | [[ambiente-local]] |
 | Texto espremido a uma palavra por linha no celular | `flex-wrap` com filho `flex-1 min-w-0` | [[mobile]] |
+| Rótulo cortado na barra do celular, sem estouro nem quebra | `ellipsis` silencioso a 320px | [[mobile]] |
+| Regra de CSS casa a media query e não pinta | bloco de celular vem antes da definição | [[mobile]] |
 | Dado fantasma no Mongo depois de rodar testes | módulo com `set_db` fora da fixture | [[ambiente-local]] |
 | Pagamento entrou e Sparks não | ver o laço de reconciliação e `/admin/sparks/pendentes` | [[pagamentos]] |
 | Correção só no Mongo "não pega" | o Firestore é a fonte da verdade e reconstrói tudo | [[dados]] |
@@ -65,17 +72,36 @@ E um que vale sempre que você for **escrever** neste repo:
 
 - [[sessoes-concorrentes]] — outras sessões editam esta mesma árvore agora.
 
+Se você é um **agente** (`.claude/agents/`) e é a primeira vez que toca no
+Cerebro nesta sessão: leia a seção "Para agentes" do [[README]] — ela explica
+a liberdade que você tem para criar/editar/reorganizar aqui, e a diferença
+entre conhecimento permanente, decisão, hipótese e log (o que **não** entra).
+
+## Áreas sem nó ainda — não é omissão
+
+Dez agentes especializados (marketing, cost, analytics, conversion, content,
+observability, devops, data-quality, research, legal-privacy — ver
+`.claude/agents/orchestrator.md`) cobrem domínios que o Sapiens ainda não tem
+nó dedicado no Cerebro, porque até 2026-09-20 ninguém tinha registrado
+conhecimento durável real sobre eles aqui. **Isso é deliberado** — o
+[[README]] explica por que não se pré-cria pasta vazia. Se sua tarefa é numa
+dessas áreas e você encontrar algo durável, você cria o primeiro nó (e a
+pasta, se fizer sentido) e acrescenta a linha aqui. Se ainda não achou nada
+que sobreviva à sessão, não force um nó só para preencher a lacuna.
+
 ## O mapa inteiro
 
 ```
 Cerebro/
-├── INDICE.md              ← você está aqui
-├── README.md              ← como este cérebro funciona e se mantém
+├── INDICE.md               ← você está aqui
+├── README.md                ← como este cérebro funciona e se mantém, e como agentes devem usá-lo
+├── ROADMAP_EXECUCAO.md      ← plano de execução datado (não é nó de conhecimento)
 ├── regras/     inviolaveis · decisoes-do-dono
 ├── operacao/   deploy · ambiente-local · sessoes-concorrentes · incidentes
 ├── produto/    ecossistema · economia-de-sparks · catalogo · mentis
-│               marca · engajamento · contas-e-acesso
-├── arquitetura/ dados · custo-de-leitura · pagamentos · motor-cognitivo
+│               marca · engajamento · contas-e-acesso · afiliados · aquisicao
+│               analytics-de-produto
+├── arquitetura/ dados · custo-de-leitura · custo-de-ia · pagamentos · motor-cognitivo
 │               cursos-conteudo · redacao · canon-pedagogico · pipeline-e-corpus
 ├── ux/         sistema-visual · navegacao · padroes-de-tela · mobile
 └── historico/  superado

@@ -89,7 +89,7 @@ export default function EbookLeitor() {
       olho="E-book"
       titulo={dados?.titulo || "E-book"}
       subtitulo={atual?.titulo}
-      voltar="/cursos#ebooks"
+      voltar="/estudar/cursos#ebooks"
       voltarLabel="Meus e-books"
       largura="md"
       testid="ebook-leitor"
@@ -100,7 +100,7 @@ export default function EbookLeitor() {
         <EstadoDeErro
           mensagem={erro}
           aoTentarNovamente={carregar}
-          voltarPara="/cursos#ebooks"
+          voltarPara="/estudar/cursos#ebooks"
           voltarLabel="Voltar aos e-books"
         />
       )}

@@ -27,6 +27,7 @@ from typing import Any
 
 import engajamento as eng
 import firestore_service as fs
+import product_analytics
 
 logger = logging.getLogger("sapiens.engajamento")
 
@@ -364,6 +365,10 @@ async def resgatar_missao(uid: str, missao_id: str) -> dict[str, Any]:
         meta={"titulo": missao["titulo"]},
     )
     await registrar_acao(uid, ["missao_concluida"])
+    try:
+        await product_analytics.registrar(_db, uid, "primeira_microvitoria")
+    except Exception:  # noqa: BLE001
+        logger.exception("Marco de analytics (primeira_microvitoria) não registrado para %s.", uid)
     saldo = await asyncio.to_thread(fs.read_sparks_balance, uid)
     return {
         "ok": True,

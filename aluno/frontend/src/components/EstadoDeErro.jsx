@@ -1,12 +1,13 @@
 import { AlertCircle, RotateCw, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
+import { ROTAS } from "../lib/rotas";
 
 /**
  * Estado de erro padrão das telas de conteúdo. Diz o que aconteceu e oferece
  * uma saída — as duas coisas que faltavam quando a tela simplesmente ficava
  * girando para sempre.
  */
-export default function EstadoDeErro({ mensagem, aoTentarNovamente, voltarPara = "/dashboard", voltarLabel = "Ir para o painel" }) {
+export default function EstadoDeErro({ mensagem, aoTentarNovamente, voltarPara = ROTAS.HOJE, voltarLabel = "Ir para o Hoje" }) {
   return (
     <div className="card-sapiens rounded-2xl p-8 md:p-10 text-center" data-testid="estado-de-erro">
       <div className="w-12 h-12 mx-auto rounded-full bg-amber-50 flex items-center justify-center">

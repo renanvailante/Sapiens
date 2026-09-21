@@ -2,6 +2,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { MENTOR } from "../lib/mentor";
 import { Link } from "react-router-dom";
 import Tela from "../components/Tela";
+import Indicacao from "../components/sparks/Indicacao";
+import { useAncora } from "../components/SecaoDaAba";
+import { ANCORAS } from "../lib/rotas";
 import { Bloco } from "../components/Esqueleto";
 import { api, errMsg } from "../lib/api";
 import { formatBRL } from "../lib/utils";
@@ -424,6 +427,10 @@ function AutoRechargeBrick({ publicKey, pkg, frequencyDays, baseline, onSuccess,
 }
 
 export default function SparksStore() {
+  // `/indicar` redireciona para `/sparks#indicar`. Sem isto, o link antigo
+  // abre a loja no topo e o aluno precisa procurar a seção que ele pediu.
+  useAncora();
+
   const [sparks, setSparks] = useState(null);
   // O direito permanente do pacote de R$119,90. Vem do MESMO GET do saldo —
   // as duas informações aparecem juntas na tela e buscá-las em duas chamadas
@@ -733,7 +740,7 @@ export default function SparksStore() {
           lado de cá do balcão, que põe o preço antes do motivo. Ver `lib/historia`. */
       titulo="Sparks são o combustível do seu plano."
       subtitulo="Você ganha praticando — e compra quando quiser acelerar. Cada Spark vira uma resposta da Mentis, uma correção de redação ou uma semana montada para você."
-      voltar="/dashboard"
+      voltar="/hoje"
       testid="sparks"
     >
       <>
@@ -772,27 +779,28 @@ export default function SparksStore() {
             primeira compra dele") vem na mesma frase da promessa: sem ela, a
             linha vira propaganda, e quem indicar dez amigos que não compram
             descobre a regra do jeito errado. */}
-        <Link
-          to="/indicar"
-          className="superficie lift mt-3 flex items-center gap-4 p-5"
-          data-testid="sparks-indicar"
-        >
-          <Gift className="h-6 w-6 shrink-0 text-sapiens-accent" />
-          <div className="min-w-0 flex-1">
-            <div className="font-display text-base font-bold tracking-tight text-white">
+        <section id={ANCORAS.SPARKS_INDICAR} className="mt-8 scroll-mt-24" data-testid="sparks-indicar">
+          <div className="flex items-center gap-2">
+            <Gift className="h-[18px] w-[18px] shrink-0 text-sapiens-accent" />
+            <h2 className="font-display text-xl font-bold tracking-tight text-white">
               Indique um amigo e ganhe Sparks
-            </div>
-            <div className="text-sm text-white/55">
-              Ele cria a conta com o seu código; na primeira compra dele, metade dos Sparks
-              daquele pacote cai no seu saldo.
-            </div>
+            </h2>
           </div>
-          <span className="shrink-0 text-xs font-semibold text-white/45">Ver meu código</span>
-        </Link>
+          <p className="mt-1.5 max-w-2xl text-sm text-white/55">
+            Ele cria a conta com o seu código; na primeira compra dele, metade dos Sparks
+            daquele pacote cai no seu saldo.
+          </p>
+          <div className="mt-5">
+            <Indicacao />
+          </div>
+        </section>
 
         {/* O ARGUMENTO PRINCIPAL DA LOJA, antes da grade de pacotes: o de
-            R$119,90 não é "mais Sparks", é a Mentis parar de cobrar para
-            sempre. Quem já comprou vê a confirmação no lugar do anúncio —
+            R$119,90 não é "mais Sparks", é a Mentis parar de cobrar por 30
+            dias (decisão do dono, 2026-09-21 — reverte a promessa anterior
+            de "para sempre", ver `Cerebro/regras/inviolaveis.md`). Cursos,
+            lives e Comunidade VIP continuam permanentes, só a Mentis tem
+            prazo. Quem já comprou vê a confirmação no lugar do anúncio —
             vender de novo o que a pessoa já tem é o jeito mais rápido de
             fazer ela duvidar do que comprou. */}
         {mentisIlimitada ? (
@@ -803,13 +811,14 @@ export default function SparksStore() {
             <InfinityIcon className="h-7 w-7 shrink-0 text-violet-300" />
             <div className="min-w-0 flex-1">
               <div className="font-display text-lg font-bold tracking-tight text-violet-100">
-                Mentis ilimitada, cursos, lives e Comunidade VIP: são seus.
+                Mentis ilimitada por 30 dias, cursos, lives e Comunidade VIP: são seus.
               </div>
               <div className="text-sm text-violet-200/70">
-                Chat, explicação de questão e intervenção da causa raiz não gastam Spark —
-                para sempre. Os quatro cursos e as aulas ao vivo de quinta também já estão
-                inclusos. Seu saldo serve para o resto do produto.{" "}
-                <Link to="/cursos" className="font-semibold text-violet-100 underline">
+                Chat, explicação de questão e intervenção da causa raiz não gastam Spark
+                por 30 dias a partir da compra. Os quatro cursos e as aulas ao vivo de
+                quinta são permanentes e já estão inclusos. Seu saldo serve para o resto
+                do produto.{" "}
+                <Link to="/estudar/cursos" className="font-semibold text-violet-100 underline">
                   Ver os cursos
                 </Link>{" "}
                 ·{" "}
@@ -833,11 +842,11 @@ export default function SparksStore() {
                   {formatBRL(pacoteIlimitado.price_cents)} · {pacoteIlimitado.sparks_amount} Sparks
                 </div>
                 <div className="mt-0.5 font-display text-xl font-extrabold tracking-tight text-white md:text-2xl">
-                  A Mentis para de cobrar. E os cursos já vêm inclusos.
+                  A Mentis para de cobrar por 30 dias. E os cursos já vêm inclusos.
                 </div>
                 <div className="mt-1 text-sm leading-relaxed text-white/60">
-                  Uma compra e o chat, as explicações de questão e as intervenções da causa raiz
-                  deixam de gastar Spark por um mês, sem limite de mensagens. Junto vêm{" "}
+                  Uma compra e, por 30 dias, o chat, as explicações de questão e as intervenções
+                  da causa raiz deixam de gastar Spark, sem limite de mensagens. Junto vêm{" "}
                   <strong className="font-semibold text-white/85">todos os cursos</strong> e{" "}
                   <strong className="font-semibold text-white/85">todas as aulas ao vivo de
                   quinta</strong> com o {MENTOR.nome}, a{" "}

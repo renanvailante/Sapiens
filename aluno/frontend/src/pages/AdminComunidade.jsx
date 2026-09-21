@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import Nav from "../components/Nav";
 import { api, errMsg } from "../lib/api";
 import { ShieldCheck, Loader2, Check, Trash2, Flag } from "lucide-react";
 
@@ -104,7 +103,6 @@ export default function AdminComunidade() {
 
   return (
     <div className="min-h-screen">
-      <Nav />
       <div className="mx-auto max-w-3xl px-5 py-7 md:px-10 md:py-10">
         <div className="secao-olho flex items-center gap-1.5">
           <ShieldCheck className="h-3.5 w-3.5" /> Admin · Comunidade

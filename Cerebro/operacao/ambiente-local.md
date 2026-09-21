@@ -71,5 +71,16 @@ no Browser pane, **sem login**, injetar por `javascript_tool` um clone do elemen
 usando as classes reais do bundle, fora da tela, e medir. O CSS já está carregado
 para qualquer visitante; só o **dado** exige sessão.
 
+Duas coisas mais que dá para provar sem sessão, e que valeram a pena em 18/09:
+
+- **Os redirects.** `history.pushState` + `PopStateEvent` para cada endereço
+  antigo, conferindo que nenhum cai na tela de "não encontrada". Deslogado,
+  todos param em `/login`, que é a resposta certa: a rota existe e exige auth.
+- **A barra, nos três viewports.** Ver a receita em [[navegacao]].
+
+> **Armadilha do clone:** `c.querySelector("span:last-child")` devolve o
+> primeiro casamento em ordem de documento, que pode ser um span aninhado
+> dentro do ícone — não o rótulo. Meça o elemento pelo nome da classe.
+
 ---
 Relacionado: [[deploy]] · [[sessoes-concorrentes]] · [[sistema-visual]] · [[mobile]]

@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field
 import comunidade
 import firestore_service as fs
 import rate_limit
+import sparks_store
 from auth import require_admin, require_user
 from models import User
 
@@ -27,9 +28,10 @@ class DuvidaRequest(BaseModel):
     titulo: str = Field(..., min_length=8, max_length=160)
     corpo: str = Field(..., min_length=10, max_length=4000)
     item_id: str | None = Field(default=None, max_length=120)
-    # "geral" (todo aluno) ou "vip" (só quem comprou o pacote de R$119,90).
-    # O padrão é a geral: um cliente que não conhece a VIP nunca publica
-    # sem querer numa sala fechada.
+    # "geral" (todo aluno) ou "vip" (só quem comprou o pacote que dá
+    # `comunidade_vip` — hoje o mais barato é `spark_4000`, ver
+    # `sparks_store.pacote_com_direito`). O padrão é a geral: um cliente que
+    # não conhece a VIP nunca publica sem querer numa sala fechada.
     sala: str = Field(default="geral", max_length=10)
 
 
@@ -47,14 +49,21 @@ def _ehVip(user: User) -> bool:
     return bool(user.is_admin) or fs.tem_comunidade_vip(user.user_id)
 
 
+def _pacote_vip() -> sparks_store.SparksPackage | None:
+    return sparks_store.pacote_com_direito("comunidade_vip")
+
+
 def _exigir_vip(user: User) -> None:
     if not _ehVip(user):
         # 403 e não 404: esconder a existência da sala seria esconder também
         # o motivo de ela estar fechada, e o motivo é justamente o que a
         # tela precisa dizer para vender o acesso.
+        pacote = _pacote_vip()
+        valor = f"{pacote.price_cents / 100:.2f}".replace(".", ",") if pacote else ""
+        preco = f" do pacote de {pacote.label} (R${valor})" if pacote else ""
         raise HTTPException(
             status_code=403,
-            detail="A Comunidade VIP é do pacote de 4.000 Sparks (R$119,90).",
+            detail=f"A Comunidade VIP é{preco}.",
         )
 
 
@@ -76,8 +85,18 @@ async def mural(
 @router.get("/vip/acesso")
 async def acesso_vip(user: User = Depends(require_user)):
     """A tela pergunta ANTES de tentar abrir a sala — assim ela mostra o
-    convite de compra em vez de um erro 403 no meio da navegação."""
-    return {"vip": _ehVip(user)}
+    convite de compra em vez de um erro 403 no meio da navegação.
+
+    `pacote` vem junto para a tela escrever o preço sem repeti-lo à mão —
+    mesma fonte que `_exigir_vip` usa para o 403."""
+    pacote = _pacote_vip()
+    return {
+        "vip": _ehVip(user),
+        "pacote": (
+            {"label": pacote.label, "price_cents": pacote.price_cents}
+            if pacote else None
+        ),
+    }
 
 
 @router.get("/duvidas/{duvida_id}")
@@ -90,7 +109,7 @@ async def uma_duvida(duvida_id: str, user: User = Depends(require_user)):
     # `{duvida, respostas, meus_votos}` — a sala está no documento de dentro.
     if (dados.get("duvida") or {}).get("sala") == comunidade.SALA_VIP:
         _exigir_vip(user)
-    return dados
+    return {**dados, "custo_destaque": comunidade.CUSTO_DESTAQUE}
 
 
 @router.post("/duvidas")

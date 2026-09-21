@@ -46,7 +46,7 @@ const EDITAVEIS = new Set(["INPUT", "TEXTAREA", "SELECT", "OPTION"]);
 const ROTAS_SEM_CAPTURA = [
   "/mentis",
   "/bem-vindo",
-  "/feed",
+  "/estudar/folhear",
   "/login",
   "/cadastro",
   "/esqueci-senha",

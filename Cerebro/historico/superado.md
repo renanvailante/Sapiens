@@ -28,16 +28,59 @@ Era **cobertura** (processos tocados / processos do domínio), passada por
 Snapshot anterior a 2026-09-15 não tem `acertos`, volta zerado e marcado
 `escala_antiga: true`.
 
-## A barra de navegação — cinco passadas
+## A barra de navegação — seis passadas
 
 1. **09/09** — Painel · Treino · Redação · Mentis (4 abas).
 2. **09/15** — Comunidade entrou como 6ª; o orçamento acabou.
 3. **09/17** — convergência desktop↔celular: Painel · Treino · Praticar · Mentis + Menu.
 4. **09/18** — Praticar + Cursos viraram **Estudar**; 6 abas.
-5. **09/18 (atual)** — Redação volta como primária; **7 abas**. Ver [[navegacao]].
+5. **09/18** — Redação volta como primária; 7 abas, 52px de folga.
+6. **09/18 (atual)** — **cinco áreas por PERGUNTA**: Hoje · Agenda · Estudar ·
+   Progresso · Comunidade. Ver [[navegacao]].
 
 Junto disso: a **auto-medição** (`quantasCabem` + `ResizeObserver`) nasceu em 17/09 e
 **saiu** em 18/09, trocada por lista fixa + orçamento de projeto.
+
+## Onze telas viraram seções (2026-09-18)
+
+Nenhuma perdeu conteúdo; todas perderam o endereço próprio. Os redirects estão
+em `lib/rotas.LEGADO` e **não devem ser removidos** — são links de WhatsApp e
+favoritos de aluno.
+
+| Era | Virou |
+|---|---|
+| `/revisoes` (fila + lembretes) | seções da **Agenda** |
+| `/revisoes` (trajetória) | seção do **Progresso** |
+| `/conquistas` + `/liga` | uma seção do Progresso |
+| `/history` + `/trash` | Histórico do Progresso, lixeira como **filtro** |
+| `/minhas-questoes` | fonte "geradas" do Treino (`?fonte=geradas`) |
+| `/indicar` | seção da carteira (`/sparks#indicar`) |
+| `/feed` | modo "folhear" de Estudar |
+| `/map/:analysisId` | **eliminada** — redirect para `/analysis/:id` |
+
+A `/revisoes` era o caso mais claro: o cronograma gerava blocos apontando para
+ela, e ela desenhava a fila que o cronograma tinha acabado de agendar. Uma tela
+apontando para a outra e de volta, com o aluno no meio.
+
+## Componentes de navegação removidos (2026-09-18)
+
+`Nav.jsx`, `BarraInferior.jsx`, `LancadorDeFerramentas.jsx`, `lib/atalhos.js` e
+`lib/atalhos.test.js`. Os quatro foram substituídos por `components/Navegacao.jsx`
++ `components/Menu.jsx` + `lib/navegacao.js`.
+
+**As 39 montagens manuais de `<Nav/>` sumiram junto**: a navegação é montada
+uma vez no `App.js`, como a barra inferior e a camada de continuidade já eram.
+Era essa montagem tela a tela que garantia que a próxima tela nova nasceria sem
+barra — e foi assim que o celular passou meses sem navegação nenhuma.
+
+`Tela.jsx` perdeu a prop `semNav` junto (ninguém a usava).
+
+## O mapa radial de uma análise
+
+`LearningMap.jsx` desenhava um grafo radial à mão sobre uma análise antiga,
+alcançável por um único botão dentro de `/analysis/:id`. O produto já tem UM
+mapa — o do Treino, que é vivo. Dois mapas com nomes parecidos e conteúdos
+diferentes fazem o aluno duvidar do que está olhando.
 
 ## O tour de boas-vindas
 

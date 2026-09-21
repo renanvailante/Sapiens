@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import Grafico, { Balao, SemDado } from "./Grafico";
 import { EIXO, GRADE, SERIES, TINTA, ESTADO, DIVERGENTE, pct, questoes } from "./paleta";
+import { ROTAS } from "../../lib/rotas";
+import { faixaDeDominio } from "../../lib/dominio";
 
 /**
  * AS FRENTES DA PROVA — Matemática, Biologia, Redação…
@@ -117,10 +119,23 @@ export function AcertoPorFrente({ linhas, destacado }) {
               ))}
               {/* Rótulo direto na ponta: o valor não pode morar só no balão,
                   que no celular não existe. */}
+              {/* O rótulo direto na ponta: o valor não pode morar só no
+                  balão, que no celular não existe.
+
+                  Ele traz o NOME da faixa junto do número desde 2026-09-18
+                  (`lib/dominio.js`, empréstimo declarado da Khan Academy):
+                  "41%" não diz ao aluno se ele está bem ou mal — ele inventa a
+                  régua sozinho, e normalmente inventa a da escola, em que
+                  abaixo de 60 é vermelho. Não é esta.
+
+                  A faixa morava numa grade separada no Painel, que era a
+                  terceira representação de "como vou por área" na mesma
+                  rolagem. A grade saiu; a régua ficou, no gráfico que já
+                  mostrava o número. */}
               <LabelList
                 dataKey="taxa_acerto"
                 position="right"
-                formatter={(v) => pct(v)}
+                formatter={(v) => `${pct(v)} · ${faixaDeDominio(v).nome}`}
                 fill={TINTA.forte}
                 fontSize={11}
               />
@@ -173,7 +188,7 @@ export function OndeRendeMais({ linhas, destacado }) {
                 negrito fazia a frase dizer "Matemática — Matemática é...". */}
             <p className="min-w-0 text-xs leading-relaxed text-amber-900">{topo.porque}</p>
             <Link
-              to={topo.rota || "/exams"}
+              to={topo.rota || ROTAS.PROVAS}
               className="pill btn-sapiens inline-flex min-h-[32px] shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium"
               data-testid="perfil-ir-prioridade"
             >

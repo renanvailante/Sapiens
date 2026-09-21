@@ -44,31 +44,32 @@ Matemática e Redação — que é exatamente onde ele deveria começar.
 from __future__ import annotations
 
 from typing import Any, Optional
+import rotas_do_app as rotas
 
 # Peso de cada frente na nota final. Ver o cabeçalho: é decisão de produto,
 # não estimativa estatística — e por isso mora aqui, num lugar só, em vez de
 # reaparecer como número mágico em cada tela.
 DISCIPLINAS: list[dict[str, Any]] = [
     {"chave": "matematica", "nome": "Matemática", "peso": 1.00,
-     "area_enem": "Matemática", "rota": "/exams?area=Matemática"},
+     "area_enem": "Matemática", "rota": f"{rotas.PROVAS}?area=Matemática"},
     {"chave": "redacao", "nome": "Redação", "peso": 1.00,
-     "area_enem": None, "rota": "/redacao"},
+     "area_enem": None, "rota": rotas.REDACAO},
     {"chave": "biologia", "nome": "Biologia", "peso": 0.70,
-     "area_enem": "Ciências da Natureza", "rota": "/exams?area=Ciências da Natureza"},
+     "area_enem": "Ciências da Natureza", "rota": f"{rotas.PROVAS}?area=Ciências da Natureza"},
     {"chave": "quimica", "nome": "Química", "peso": 0.70,
-     "area_enem": "Ciências da Natureza", "rota": "/exams?area=Ciências da Natureza"},
+     "area_enem": "Ciências da Natureza", "rota": f"{rotas.PROVAS}?area=Ciências da Natureza"},
     {"chave": "fisica", "nome": "Física", "peso": 0.70,
-     "area_enem": "Ciências da Natureza", "rota": "/exams?area=Ciências da Natureza"},
+     "area_enem": "Ciências da Natureza", "rota": f"{rotas.PROVAS}?area=Ciências da Natureza"},
     # O acervo nem sempre diz QUAL ciência da natureza é o item: muita fonte
     # traz só o rótulo da área ("Ciências da Natureza e suas Tecnologias").
     # Inventar Biologia ali seria fabricar medida, então essas respostas
     # contam numa frente própria, com o mesmo peso das três.
     {"chave": "natureza", "nome": "Ciências da Natureza", "peso": 0.70,
-     "area_enem": "Ciências da Natureza", "rota": "/exams?area=Ciências da Natureza"},
+     "area_enem": "Ciências da Natureza", "rota": f"{rotas.PROVAS}?area=Ciências da Natureza"},
     {"chave": "humanas", "nome": "Ciências Humanas", "peso": 0.50,
-     "area_enem": "Ciências Humanas", "rota": "/exams?area=Ciências Humanas"},
+     "area_enem": "Ciências Humanas", "rota": f"{rotas.PROVAS}?area=Ciências Humanas"},
     {"chave": "linguagens", "nome": "Linguagens e Códigos", "peso": 0.50,
-     "area_enem": "Linguagens e Códigos", "rota": "/exams?area=Linguagens e Códigos"},
+     "area_enem": "Linguagens e Códigos", "rota": f"{rotas.PROVAS}?area=Linguagens e Códigos"},
 ]
 
 _POR_CHAVE = {d["chave"]: d for d in DISCIPLINAS}

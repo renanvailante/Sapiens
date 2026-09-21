@@ -7,7 +7,6 @@ import {
   Loader2, X,
 } from "lucide-react";
 import { api, errMsg } from "../lib/api";
-import Nav from "../components/Nav";
 import PublicarLinkDaLive from "../components/PublicarLinkDaLive";
 
 /**
@@ -810,6 +809,8 @@ export default function AdminCursos() {
   const [dados, setDados] = useState(null);
   const [copiado, setCopiado] = useState(false);
   const [aberto, setAberto] = useState(null);
+  const [custoLive, setCustoLive] = useState(null);
+  const [pacoteLivesInclusas, setPacoteLivesInclusas] = useState(null);
 
   const carregar = useCallback(() => {
     api
@@ -819,6 +820,12 @@ export default function AdminCursos() {
   }, []);
 
   useEffect(() => { carregar(); }, [carregar]);
+  useEffect(() => {
+    api.get("/cursos/precos").then(({ data }) => {
+      setCustoLive(data.custo_live);
+      setPacoteLivesInclusas(data.pacote_lives_inclusas);
+    }).catch(() => {});
+  }, []);
 
   const live = dados?.live || {};
   const inscritos = dados?.inscritos || [];
@@ -843,7 +850,6 @@ export default function AdminCursos() {
 
   return (
     <div className="min-h-screen">
-      <Nav />
       <div className="mx-auto max-w-5xl px-5 py-7 md:px-10 md:py-10">
         <div className="mb-3 font-mono-alt text-xs uppercase tracking-[0.35em] text-white/50">
           Admin · Cursos e live
@@ -861,10 +867,11 @@ export default function AdminCursos() {
         {/* A regra de cobrança escrita onde ela é executada: quem publica o
             link é quem responde ao aluno que perguntar por que pagou de novo. */}
         <p className="mt-2 max-w-2xl text-sm text-white/40">
-          A aula custa 200 Sparks <strong className="font-semibold text-white/60">por
-          edição</strong> — toda quinta de novo. A única exceção é quem comprou o pacote de
-          4.000 Sparks: esses entram em todas sem pagar, e aparecem na lista abaixo com 0
-          Sparks.
+          A aula custa {custoLive ?? "—"} Sparks{" "}
+          <strong className="font-semibold text-white/60">por edição</strong> — toda quinta de
+          novo. A única exceção é quem comprou o pacote de{" "}
+          {pacoteLivesInclusas || "maior Spark"}: esses entram em todas sem pagar, e
+          aparecem na lista abaixo com 0 Sparks.
         </p>
 
         {/* Estado da edição */}

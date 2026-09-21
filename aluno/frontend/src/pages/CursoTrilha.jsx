@@ -9,6 +9,7 @@ import EstadoDeErro from "../components/EstadoDeErro";
 import { Bloco as Esqueleto, Linha } from "../components/Esqueleto";
 import CaminhoDoCurso from "../components/curso/CaminhoDoCurso";
 import { useDeclararContextoMentis } from "../lib/mentisContexto";
+import { ROTAS } from "../lib/rotas";
 
 /**
  * `/cursos/:cursoId` — O MAPA DO CURSO.
@@ -48,14 +49,14 @@ function EsqueletoDaTrilha() {
 function Trilho({ curso }) {
   return (
     <nav className="mb-3 flex items-center gap-1.5 text-xs text-white/40" aria-label="Você está em">
-      <Link to="/cursos" className="rounded px-1 py-0.5 transition-colors hover:text-white">
+      <Link to="/estudar/cursos" className="rounded px-1 py-0.5 transition-colors hover:text-white">
         Cursos
       </Link>
       {curso?.area && (
         <>
           <ChevronRight className="h-3 w-3 shrink-0 opacity-50" />
           <Link
-            to={`/cursos#area-${curso.area}`}
+            to={`${ROTAS.CURSOS}#area-${curso.area}`}
             className="rounded px-1 py-0.5 capitalize transition-colors hover:text-white"
           >
             {curso.area}
@@ -134,7 +135,7 @@ export default function CursoTrilha() {
         <EstadoDeErro
           mensagem={erro}
           aoTentarNovamente={carregar}
-          voltarPara="/cursos"
+          voltarPara="/estudar/cursos"
           voltarLabel="Voltar para Cursos"
         />
       )}
@@ -192,7 +193,7 @@ export default function CursoTrilha() {
           {/* O PRÓXIMO PASSO — a peça viva da tela, e só ela. */}
           {proxima ? (
             <Link
-              to={`/cursos/${cursoId}/estacao/${proxima.estacao_id}`}
+              to={`${ROTAS.CURSOS}/${cursoId}/estacao/${proxima.estacao_id}`}
               className="superficie superficie-viva lift block rounded-3xl p-5 md:p-6"
               data-testid="proximo-passo"
             >

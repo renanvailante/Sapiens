@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { api, errMsg } from "../lib/api";
-import Nav from "../components/Nav";
 import { Check, X, ChevronDown, ChevronRight, Filter, RefreshCw, Stethoscope } from "lucide-react";
 import { RankingsPorNivel, PadraoCard, semDadosReais } from "../components/PerfilCognitivoView";
 import { toast } from "sonner";
@@ -219,7 +218,6 @@ export default function StudentHistory() {
 
   return (
     <div className="min-h-screen">
-      <Nav />
       <div className="max-w-6xl mx-auto px-5 py-7 md:px-10 md:py-10">
         <div className="secao-olho">Admin · Histórico do Aluno</div>
         <h1 className="titulo-tela" data-testid="hist-title">

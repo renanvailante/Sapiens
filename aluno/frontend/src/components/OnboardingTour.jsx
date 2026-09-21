@@ -25,8 +25,8 @@ import { ArrowRight, X } from "lucide-react";
 // pedindo desculpa por ter vinte portas.
 //
 // Cinco passos: quem está falando, onde você está, o que fazer agora, onde
-// pedir ajuda, onde mora o resto. O resto se descobre USANDO — é para isso
-// que existem a seção "Explorar" no Painel e o Menu agrupado por intenção.
+// pedir ajuda, onde ficam as suas coisas. O resto se descobre USANDO — é para
+// isso que existe a seção "Explorar" no Hoje.
 //
 // Uma frase por passo, sempre.
 const STEPS = [
@@ -39,13 +39,13 @@ const STEPS = [
   // ONDE ELE ESTÁ. A mesma barra nos dois aparelhos desde 2026-09-17, então
   // este passo finalmente diz a mesma coisa no celular e no computador.
   {
-    target: "nav-primarios",
-    title: "Sua barra",
-    text: "Painel, Praticar, Semana, Desempenho, Cursos e eu. A aba acesa é onde você está agora.",
+    target: "nav-areas",
+    title: "Cinco lugares, cinco perguntas",
+    text: "Hoje (e agora?), Agenda (quando?), Estudar (o que eu faço?), Progresso (estou evoluindo?) e Comunidade (quem me responde?). A aba acesa é onde você está.",
     mobile: {
       target: "barra-inferior",
-      title: "Sua barra",
-      text: "Ela te segue em toda tela. O botão elevado do meio é praticar — é por ele que quase tudo começa.",
+      title: "Cinco lugares, cinco perguntas",
+      text: "Ela te segue em toda tela, com os mesmos cinco lugares do computador. O botão elevado do meio é estudar — é por ele que quase tudo começa.",
     },
   },
   // O QUE FAZER. O único passo que importa de verdade no primeiro minuto.
@@ -62,11 +62,15 @@ const STEPS = [
     text: "Este ícone me chama de qualquer lugar do Sapiens, sem você perder o que estava fazendo.",
   },
   // ONDE ESTÁ O RESTO. Não o que É o resto — só onde ele mora.
+  // ONDE ESTÃO AS SUAS COISAS. Não é mais "onde mora o resto do produto":
+  // desde 2026-09-18 as cinco áreas cobrem tudo o que é estudo, e a gaveta
+  // guarda só carteira, suporte e as aulas com Vitor Lara. Quem nunca abrir
+  // este menu não perde ferramenta pedagógica nenhuma — ver `lib/navegacao.js`.
   {
-    target: "nav-more",
-    title: "O resto mora aqui",
-    text: "Treino, redação, revisões, mural, conquistas e a aula ao vivo. Vá descobrindo conforme precisar — não precisa saber tudo hoje.",
-    mobile: { target: "barra-mais" },
+    target: "nav-menu",
+    title: "Suas coisas ficam aqui",
+    text: "Seus Sparks, a aula ao vivo de quinta, a mentoria e o canal com a equipe. Toque na marca, no canto, que ele abre.",
+    mobile: { target: "nav-menu-celular" },
   },
 ];
 
@@ -85,7 +89,7 @@ const larguraBalao = () => Math.min(BUBBLE_MAX, window.innerWidth - MARGIN * 2);
 /** Resolve a sequência para a largura atual: cada passo pode trazer um
  *  `mobile` com alvo e texto próprios, ou `mobile: null` para sumir no
  *  celular. Nada disso é enfeite — abaixo de `lg` metade dos alvos do tour
- *  (`nav-primarios`, `nav-more`) simplesmente não está na página. */
+ *  (`nav-areas`, `nav-menu`) simplesmente não está na página. */
 function passosPara(estreito) {
   if (!estreito) return STEPS.map(({ mobile, ...passo }) => passo);
   return STEPS.map(({ mobile, ...passo }) => (mobile === undefined ? passo : mobile && { ...passo, ...mobile }))

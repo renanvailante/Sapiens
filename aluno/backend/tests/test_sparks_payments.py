@@ -208,6 +208,10 @@ class FakeDB:
         self.sparks_auto_recharge = FakeCollection()
         self.webhook_events = FakeCollection(unique_field="dedupe_key")
         self.webhook_recebimentos = FakeCollection()
+        # Analytics de produto (2026-09-21) — `product_analytics.registrar`
+        # usa `_id` determinístico pra "uma vez na vida"; `unique_field` aqui
+        # simula a MESMA garantia que o índice/`_id` real do Mongo dá.
+        self.product_events = FakeCollection(unique_field="_id")
 
 
 # ======================================================= compra avulsa
@@ -659,6 +663,37 @@ class TestProcessPaymentWebhook:
         stored = _run(db.sparks_payments.find_one({"mp_payment_id": "mp-orfao-1"}))
         assert stored["unmatched"] is True
         assert stored["credited"] is False
+
+    def test_primeira_compra_registra_marco_e_a_segunda_vira_recompra(self, monkeypatch):
+        """Analytics de produto (`product_analytics.py`): o crédito de Sparks
+        nunca depende disto — mesmo que o marco falhasse, `credited` teria
+        que continuar `True` (ver o `try/except` isolado no serviço)."""
+        calls: list[str] = []
+        self._fake_credit(monkeypatch, calls)
+        monkeypatch.setattr(svc.mp, "get_payment", lambda pid: {"id": pid, "status": "approved", "metadata": {}})
+
+        db = FakeDB()
+        _run(db.sparks_payments.insert_one({
+            "purchase_id": "p1", "user_id": "user-1", "package_id": "spark_200",
+            "sparks_amount": 200, "price_cents": 1990, "currency": "BRL", "source": "manual",
+            "mp_payment_id": "mp-1", "status": "pending", "credited": False,
+        }))
+        resultado_1 = _run(svc.process_payment_webhook(db, "mp-1"))
+        assert resultado_1["credited"] is True
+        marco = _run(db.product_events.find_one({"_id": "user-1:primeira_compra"}))
+        assert marco is not None and marco["tipo"] == "primeira_compra"
+
+        _run(db.sparks_payments.insert_one({
+            "purchase_id": "p2", "user_id": "user-1", "package_id": "spark_200",
+            "sparks_amount": 200, "price_cents": 1990, "currency": "BRL", "source": "manual",
+            "mp_payment_id": "mp-2", "status": "pending", "credited": False,
+        }))
+        resultado_2 = _run(svc.process_payment_webhook(db, "mp-2"))
+        assert resultado_2["credited"] is True
+        recompra = _run(db.product_events.find_one({"_id": "user-1:recompra:mp-2"}))
+        assert recompra is not None and recompra["tipo"] == "recompra"
+        # não duplica o marco de primeira compra
+        assert _run(db.product_events.find_one({"_id": "user-1:primeira_compra"})) is not None
 
 
 class TestReconciliacao:

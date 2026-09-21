@@ -2,6 +2,7 @@ import { useMemo, useRef, useLayoutEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Check, Lock, Play, Star, SkipForward, Zap, Trophy, Clock, Target } from "lucide-react";
 import SaltoAteAqui from "./SaltoAteAqui";
+import { ROTAS } from "../../lib/rotas";
 
 /**
  * O MAPA DE UMA TRILHA, desenhado como caminho — não como lista.
@@ -187,7 +188,7 @@ function CartaoDaEstacao({ cursoId, estacao, aoFechar, aoSaltar }) {
       <div className="mt-4 flex flex-wrap items-center gap-2">
         {!bloqueada && (
           <Link
-            to={`/cursos/${cursoId}/estacao/${estacao.estacao_id}`}
+            to={`${ROTAS.CURSOS}/${cursoId}/estacao/${estacao.estacao_id}`}
             className="pill btn-sapiens inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold"
             data-testid={`estacao-abrir-${estacao.estacao_id}`}
           >

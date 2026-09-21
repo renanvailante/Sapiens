@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import Nav from "../components/Nav";
 import { api, errMsg } from "../lib/api";
 import { useDeclararContextoMentis } from "../lib/mentisContexto";
 import { Users, MessageCircle, CheckCircle2, ArrowUp, Sparkles, Loader2, PenLine, Filter, Lock } from "lucide-react";
+import { ROTAS } from "../lib/rotas";
+import { formatBRL } from "../lib/utils";
 
 /**
  * O mural de dúvidas.
@@ -42,7 +43,7 @@ function CardDeDuvida({ duvida }) {
   const destacada = duvida.destacada_ate && duvida.destacada_ate > new Date().toISOString();
   return (
     <Link
-      to={`/comunidade/${duvida.duvida_id}`}
+      to={`${ROTAS.COMUNIDADE}/${duvida.duvida_id}`}
       className="lift card-sapiens block rounded-2xl p-5"
       data-testid={`duvida-${duvida.duvida_id}`}
     >
@@ -203,16 +204,21 @@ export default function Comunidade() {
   const [params, setParams] = useSearchParams();
   const sala = params.get("sala") === "vip" ? "vip" : "geral";
   const [souVip, setSouVip] = useState(null);
+  const [pacoteVip, setPacoteVip] = useState(null);
 
   useDeclararContextoMentis(
     sala === "vip" ? "Na sala VIP da comunidade." : "No mural de dúvidas da comunidade.",
   );
 
   // Pergunta ANTES de tentar abrir a sala: assim quem não comprou vê o convite
-  // em vez de um 403 no meio da navegação.
+  // em vez de um 403 no meio da navegação. `pacote` vem na mesma resposta —
+  // preço nunca escrito à mão, mesma fonte que `sparks_store` usa no 403.
   useEffect(() => {
     api.get("/comunidade/vip/acesso")
-      .then(({ data }) => setSouVip(Boolean(data.vip)))
+      .then(({ data }) => {
+        setSouVip(Boolean(data.vip));
+        setPacoteVip(data.pacote || null);
+      })
       .catch(() => setSouVip(false));
   }, []);
 
@@ -244,7 +250,6 @@ export default function Comunidade() {
 
   return (
     <div className="min-h-screen">
-      <Nav />
       <div className="mx-auto max-w-3xl px-5 py-7 md:px-10 md:py-10">
         <div className="secao-olho flex items-center gap-1.5">
           <Users className="h-3.5 w-3.5" /> Comunidade
@@ -296,9 +301,12 @@ export default function Comunidade() {
               <Lock className="h-5 w-5" /> Esta sala é fechada.
             </div>
             <p className="mt-2 max-w-xl text-sm leading-relaxed text-violet-100/70">
-              A Comunidade VIP vem com o pacote de 4.000 Sparks (R$119,90) — o mesmo que deixa a
-              Mentis ilimitada para sempre. É a sala com menos gente e resposta mais rápida, e a
-              equipe lê todas as dúvidas que entram aqui.
+              A Comunidade VIP vem com o pacote
+              {pacoteVip
+                ? ` de ${pacoteVip.label} (${formatBRL(pacoteVip.price_cents)})`
+                : ""}{" "}
+              — o mesmo que deixa a Mentis ilimitada por 30 dias. É a sala com menos gente e
+              resposta mais rápida, e a equipe lê todas as dúvidas que entram aqui.
             </p>
             <Link
               to="/sparks"

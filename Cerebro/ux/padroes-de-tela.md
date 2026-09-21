@@ -9,18 +9,31 @@ O que já é sistema. Se você está prestes a desenhar algo desta lista à mão
 
 ## A casca: `Tela.jsx`
 
-Barra + container + cabeçalho. Nasceu porque havia **4 larguras, 3 respiros e 2
-tamanhos de título** espalhados. Aceita `voltar`/`voltarLabel` — a saída "a qualquer
-momento para o mapa", sempre visível no cabeçalho.
+Container + cabeçalho. Nasceu porque havia **4 larguras, 3 respiros e 2 tamanhos
+de título** espalhados. Aceita `voltar`/`voltarLabel`.
 
-Só 7 das 52 páginas usam a casca comum; 45 montam a própria. **É por isso que tudo o
-que precisa valer para todas mora no `App.js`.**
+> **A barra saiu daqui em 18/09.** `Tela` montava `<Nav/>` e as outras 38
+> páginas montavam a delas à mão — era a razão estrutural de o produto ter
+> quatro sistemas de navegação. Hoje `Tela` é só a moldura do conteúdo.
+
+## Uma seção de área: `SecaoDaAba.jsx`
+
+As cinco áreas absorveram onze telas, cada uma com o seu cabeçalho. Empilhá-los
+como vieram reproduziria dentro de uma aba a mesma colcha de retalhos que a
+arquitetura nova existe para acabar. `SecaoDaAba` dá olho, título, explicação e
+**a âncora**.
+
+> A âncora não é decoração: `/conquistas` redireciona para
+> `/progresso#conquistas`, e um redirect que despeja a pessoa no topo de uma aba
+> de cinco seções é o mesmo que não ter redirecionado. Quem executa o salto é
+> `useAncora` — numa SPA o navegador não rola sozinho, porque o elemento com
+> aquele `id` ainda não existe quando a URL muda.
 
 ## O que é global e mora no `App.js`
 
 Montado uma vez, ao lado das rotas — **tela nova não precisa fazer nada**:
 
-- `BarraInferior` (ver [[navegacao]])
+- `Navegacao` — as duas barras e o Menu (ver [[navegacao]])
 - `LembrarComAMentis` — a captura global de trecho (ver [[mentis]])
 - `MentisWidget` — o ícone flutuante
 - `ContinuidadeDaPagina` — a pista de continuidade
@@ -67,14 +80,26 @@ afirme que uma letra é a correta sem saber** — ver [[inviolaveis]].
 Não migrados de propósito: `Feed.jsx` e `components/curso/Blocos.jsx` (já usava o CSS
 certo).
 
-## O Painel abre pela AÇÃO
+## O Hoje abre pela AÇÃO
 
 `ProximoPasso.jsx` é a primeira coisa: **uma** ação, escolhida numa escada de
 prioridade sobre dados que a página **já carregou** (revisão vencida > bloco de hoje
 no cronograma > missão atual da trilha > praticar). **Custa zero requisição.**
 
-Ordem hoje: Agora → Seu ritmo → Seu foco → Hoje → Com o mentor → Explorar →
-Conquistas → rodapé.
+Ordem desde 18/09, cinco seções: **Próximo Passo → O que mudou → Sua sequência
+→ Com o mentor → Explorar**.
+
+Saíram quatro blocos que eram, cada um, o resumo de outra aba: a tira da semana
+(Agenda), o aviso de revisão (Agenda de novo), a grade de focos e domínio
+(Progresso) e a fileira de conquistas (Progresso de novo). Eram ~12 blocos
+simultâneos e vitrines de vitrines — quem clicasse em qualquer uma achava a
+MESMA informação maior do lado de lá.
+
+`components/OQueMudou.jsx` os substituiu por **eventos**, não resumos: um
+resumo ("você tem 12 blocos na semana") existe sempre e por isso não chama
+atenção; um evento ("sua redação foi corrigida") só existe quando aconteceu.
+Mesma disciplina do Próximo Passo — **zero requisição nova**, teto de quatro
+linhas, e nada genérico (toda linha cita um número do próprio aluno).
 
 As 10 Portas (`PortaisDaJornada.jsx`) moram na seção **Explorar**
 (`ExplorarOSapiens.jsx`), **fechada por padrão** e aberta só para quem nunca
@@ -127,8 +152,8 @@ sequência: o balão centraliza.**
 
 ## Duas apresentações de catálogo, de propósito
 
-**Ladrilhos** quadrados (`LadrilhoDeCatalogo`, abrem no cursor) em `/estudar`;
-**cards completos** em `/cursos`. O ladrilho cresce **só para baixo** — crescer para
+**Ladrilhos** quadrados (`LadrilhoDeCatalogo`, abrem no cursor) na coluna "Aprender" de `/estudar`;
+**cards completos** em `/estudar/cursos`. O ladrilho cresce **só para baixo** — crescer para
 os lados entra no respiro do contêiner e empurra a régua horizontal da página.
 
 O curso em andamento ganha `curso/CartaoDestaque.jsx` + `curso/CaminhoMini.jsx` —

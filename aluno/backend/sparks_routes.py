@@ -62,6 +62,32 @@ def _require_mp_configured():
 
 # ---------------------------------------------------------------- catálogo
 
+@router.get("/packages/vitrine")
+async def list_packages_publico():
+    """Versão pública (sem login) do catálogo, só para a landing anunciar
+    preço real sem hardcode. Mesma fonte que `/sparks/packages` autenticado
+    — preço é decisão de produto e vive só em `sparks_store.py` ("preço nunca
+    é escrito à mão", ver `Cerebro/produto/economia-de-sparks.md`). Devolve
+    só os pacotes NÃO ocultos (o pacote de teste de pagamento real nunca
+    aparece aqui) e nenhum dado de aluno — é a mesma informação que qualquer
+    visitante veria na loja um minuto depois de criar conta."""
+    return {
+        "packages": [
+            {
+                "package_id": p.package_id,
+                "label": p.label,
+                "sparks_amount": p.sparks_amount,
+                "price_cents": p.price_cents,
+                "currency": p.currency,
+                "highlight": p.highlight,
+                "beneficios": list(p.beneficios),
+            }
+            for p in sparks_store.list_packages()
+            if not p.oculto
+        ],
+    }
+
+
 @router.get("/packages")
 async def list_packages(_: User = Depends(require_user)):
     return {

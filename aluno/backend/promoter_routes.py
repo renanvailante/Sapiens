@@ -23,6 +23,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException
 
 import firestore_service as fs
+import influencers
 from auth import require_user
 from models import User
 
@@ -56,9 +57,27 @@ async def _saldo_de(uid: str) -> int | None:
 async def dashboard(promoter: User = Depends(require_promoter)):
     email = promoter.email.strip().lower()
     cupons = await _db.promo_codes.find(
-        {"promoter_email": email}, {"_id": 0, "code": 1, "sparks_amount": 1, "active": 1, "created_at": 1},
+        {"promoter_email": email},
+        {"_id": 0, "code": 1, "sparks_amount": 1, "active": 1, "created_at": 1, "influencer_id": 1},
     ).sort("created_at", -1).to_list(200)
     codigos = [c["code"] for c in cupons]
+
+    # Se algum cupom deste e-mail nasceu do programa de influencers (tem
+    # `influencer_id`), soma a comissão dele ao painel — o mesmo painel serve
+    # tanto o promoter "clássico" (só cupom, sem comissão) quanto o
+    # influencer (cupom + comissão), sem duas telas.
+    influencer_ids = sorted({c["influencer_id"] for c in cupons if c.get("influencer_id")})
+    comissao_acumulada_cents = 0
+    comissao_paga_cents = 0
+    influencer_kit = None
+    if influencer_ids:
+        for inf_id in influencer_ids:
+            resumo_inf = await influencers.resumo(_db, inf_id)
+            if resumo_inf:
+                comissao_acumulada_cents += resumo_inf["comissao_acumulada_cents"]
+                comissao_paga_cents += resumo_inf["comissao_paga_cents"]
+                if influencer_kit is None:
+                    influencer_kit = influencers.gerar_kit(resumo_inf)
 
     alunos = await _db.users.find(
         {"promo_code": {"$in": codigos}},
@@ -109,4 +128,11 @@ async def dashboard(promoter: User = Depends(require_promoter)):
         "cupons": cupons_view,
         "total_alunos": len(alunos),
         "total_gasto_centavos": sum(c["gasto_total_centavos"] for c in cupons_view),
+        # Programa de influencers — `None`/zero para um promoter "clássico"
+        # que nunca foi ativado como afiliado (comissão só existe a partir
+        # de `influencers.ativar`).
+        "eh_influencer": bool(influencer_ids),
+        "comissao_acumulada_centavos": comissao_acumulada_cents,
+        "comissao_paga_centavos": comissao_paga_cents,
+        "kit_divulgacao": influencer_kit,
     }

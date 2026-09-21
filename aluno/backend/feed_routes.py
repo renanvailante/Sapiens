@@ -18,6 +18,7 @@ from pydantic import BaseModel, Field
 import feed_comportamento as fb
 import feed_conteudo as fc
 import feed_ingestao as fi
+import rate_limit
 from auth import require_admin, require_user
 from feed_models import FeedInteractionIn, FeedProgressIn, FeedItem, FeedItemIn
 from models import User
@@ -41,12 +42,18 @@ def _now() -> str:
 async def get_feed(
     cursor: int = Query(0, ge=0),
     limit: int = Query(6, ge=1, le=30),
+    _limite: None = Depends(rate_limit.por_ip("acervo")),
 ):
     """Cursor-based infinite feed.
 
     `cursor` is the last sequence_order the client has already consumed.
     Returns items strictly after it, up to `limit`. Client should preload
     a few items ahead of the visible one to make swipe transitions instant.
+
+    Deliberadamente sem `require_user` — Folhear é a porta de degustação sem
+    login (ver `Estudar.jsx`, "três minutos e nenhuma intenção"). O limite por
+    IP (mesma régua de `acervo`: 120/min, generoso para uso normal) é o que
+    impede um `cursor` crescendo em loop de baixar o acervo inteiro sem conta.
     """
     q = {"sequence_order": {"$gt": cursor}, "published": True}
     items = await _db.feed_items.find(q, {"_id": 0}).sort("sequence_order", 1).limit(limit).to_list(limit)

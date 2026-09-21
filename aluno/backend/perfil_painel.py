@@ -41,6 +41,7 @@ from typing import Any, Optional
 
 import annotation_service
 import prioridade_enem
+import rotas_do_app as rotas
 
 # ---------------------------------------------------------------------------
 # Amostras mínimas. Um gráfico bonito sobre 4 respostas é uma mentira bonita:
@@ -768,7 +769,7 @@ def _leituras(
                 f"Nas suas primeiras {inicio['respondidas']} respostas você acertava "
                 f"{inicio['taxa']:.0f}%. Nas {agora['respondidas']} mais recentes, "
                 f"{agora['taxa']:.0f}%. Isso é a sua curva, medida — não é estimativa minha.",
-                _acao_ir("Continuar praticando", "/exams"),
+                _acao_ir("Continuar praticando", rotas.PROVAS),
             ))
         elif delta <= -3:
             leituras.append(_leitura(
@@ -778,7 +779,7 @@ def _leituras(
                 f"respostas e está em {agora['taxa']:.0f}% nas {agora['respondidas']} últimas. "
                 "Cair depois de avançar de assunto é comum — o que muda o número de volta é "
                 "revisar o que ficou para trás.",
-                _acao_ir("Ver minhas revisões", "/revisoes"),
+                _acao_ir("Ver minhas revisões", rotas.AGENDA_REVISOES),
             ))
         else:
             leituras.append(_leitura(
@@ -787,7 +788,7 @@ def _leituras(
                 f"{inicio['taxa']:.0f}% no começo, {agora['taxa']:.0f}% agora, em "
                 f"{resumo['respondidas']} respostas. Estável com volume subindo é bom sinal: "
                 "você está acertando o mesmo em questão mais difícil.",
-                _acao_ir("Praticar agora", "/exams"),
+                _acao_ir("Praticar agora", rotas.PROVAS),
             ))
 
     # 1b. Em QUÊ mudou. A curva geral diz que subiu; esta diz onde, e é essa
@@ -813,7 +814,7 @@ def _leituras(
             f"De {alvo['antes']['taxa']:.0f}% ({alvo['antes']['respondidas']} questões) para "
             f"{alvo['agora']['taxa']:.0f}% ({alvo['agora']['respondidas']}) nas últimas quatro "
             "semanas. Costuma ser assunto novo dentro da mesma matéria, não conteúdo perdido.",
-            _acao_ir(f"Praticar {alvo['nome']}", "/exams"),
+            _acao_ir(f"Praticar {alvo['nome']}", rotas.PROVAS),
         ))
 
     # 2. Onde a próxima hora rende mais. Mesma fonte que o cronograma e o
@@ -824,7 +825,7 @@ def _leituras(
             "prioridade", "prioridade", "atencao",
             f"{topo['nome']} é onde a sua próxima hora rende mais",
             topo.get("porque") or "",
-            _acao_ir(f"Praticar {topo['nome']}", topo.get("rota") or "/exams"),
+            _acao_ir(f"Praticar {topo['nome']}", topo.get("rota") or rotas.PROVAS),
         ))
 
     # 2b. Redação. Mil pontos num componente só: o painel não pode passar por
@@ -844,7 +845,7 @@ def _leituras(
                 f"{pior['media']} de {pior['maxima']} em média."
                 if pior else ""
             ),
-            _acao_ir("Escrever outra redação", "/redacao"),
+            _acao_ir("Escrever outra redação", rotas.REDACAO),
         ))
     elif redacao is not None and not redacao.get("corrigidas"):
         leituras.append(_leitura(
@@ -852,7 +853,7 @@ def _leituras(
             "Você ainda não corrigiu nenhuma redação aqui",
             "A redação vale 1000 pontos sozinha e é a nota que mais sobe com treino. É também a "
             "única parte da prova em que eu não tenho nada medido sobre você.",
-            _acao_ir("Corrigir uma redação", "/redacao"),
+            _acao_ir("Corrigir uma redação", rotas.REDACAO),
         ))
 
     # 3. Horário. Só fala quando os dois blocos comparados têm amostra.
@@ -869,7 +870,7 @@ def _leituras(
                 f"{melhor['respondidas']} questões. {pior['rotulo']} ({pior['faixa']}): "
                 f"{pior['taxa']:.0f}% em {pior['respondidas']}. São {diferenca:.0f} pontos de "
                 "diferença — vale marcar o estudo pesado no horário em que você já vai melhor.",
-                _acao_ir("Montar minha semana", "/cronograma"),
+                _acao_ir("Montar minha semana", rotas.AGENDA),
             ))
 
     # 4. Pressa. A leitura mais acionável que existe numa prova cronometrada.
@@ -901,7 +902,7 @@ def _leituras(
                 f"{longo['taxa']:.0f}% em "
                 f"{longo['respondidas']}. Travar muito tempo numa questão costuma ser sinal de "
                 "conteúdo faltando, não de falta de atenção.",
-                _acao_ir("Ver onde focar", "/treino"),
+                _acao_ir("Ver onde focar", rotas.TREINO),
             ))
 
     # 5. Mudar de resposta.
@@ -946,7 +947,7 @@ def _leituras(
                 + " Frequência move mais nota do que maratona: dez minutos hoje contam mais "
                 "que três horas no domingo."
             ),
-            _acao_ir("Ver meu cronograma", "/cronograma"),
+            _acao_ir("Ver meu cronograma", rotas.AGENDA),
         ))
 
     # 7. A frente nunca medida. É o buraco que o aluno não vê sozinho.
@@ -959,7 +960,7 @@ def _leituras(
             f"Você respondeu {alvo['respondidas']} questões de {alvo['nome']} por aqui — abaixo "
             f"de {prioridade_enem.AMOSTRA_MINIMA} eu não afirmo nada. Umas poucas questões e eu "
             "troco o palpite por medida.",
-            _acao_ir(f"Responder {alvo['nome']}", alvo.get("rota") or "/exams"),
+            _acao_ir(f"Responder {alvo['nome']}", alvo.get("rota") or rotas.PROVAS),
         ))
 
     # 8. Força e ponto a desenvolver, nas palavras que o aluno pode ler — sem
@@ -994,7 +995,7 @@ def _leituras(
                     if atual["respondidas"] > passada["respondidas"]
                     else "A semana ainda não fechou — dá tempo de virar o número."
                 ),
-                _acao_ir("Praticar agora", "/exams"),
+                _acao_ir("Praticar agora", rotas.PROVAS),
             ))
     return leituras
 

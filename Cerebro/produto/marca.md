@@ -19,6 +19,18 @@ A copy mora em `aluno/frontend/src/lib/historia.js` (`PROBLEMA`, `DOR_INTERNA`,
 `EMBASAMENTO`, `PLANO`, `APOSTAS`, `DEPOIMENTOS`, `FAQ`, `VOZ`); `Landing.jsx` só
 renderiza na ordem da história.
 
+**Bloco de oferta acrescentado em 2026-09-21** (achado da auditoria de
+rebranding: até então só existia a linha solta "grátis para começar", sem
+preço nenhum dito). Fica entre "O que você recebe" e o FAQ — depois do
+plano/prova social, antes da objeção. **Preço nunca é escrito à mão aqui**:
+`Landing.jsx` busca `GET /sparks/packages/vitrine` (rota pública nova, sem
+login, em `sparks_routes.py` — mesma fonte que a loja autenticada,
+`sparks_store.py`) e a seção some sozinha se a chamada falhar. É a PRIMEIRA
+vez que a landing fala com o backend — antes disso ela rodava inteiramente
+estática; a exceção só existe porque a regra "preço nunca hardcoded" pesa
+mais que "landing sem backend", e a falha é silenciosa de propósito
+(a landing não trava por causa de uma chamada de preço).
+
 **Por quê:** a landing antiga abria com três elogios ao produto antes de qualquer
 frase sobre a vida de quem lê. Quem chega por link de WhatsApp tem cinco segundos e
 está com medo de não passar, não procurando recursos.

@@ -23,12 +23,15 @@ não aplicações.
 
 ## O app aluno
 
-React (CRA + craco) + Tailwind no frontend, FastAPI no backend. ~52 telas.
+React (CRA + craco) + Tailwind no frontend, FastAPI no backend. ~40 telas em
+**cinco áreas** (Hoje · Agenda · Estudar · Progresso · Comunidade — ver
+[[navegacao]]).
 Firestore para acervo/eventos/saldo, Mongo para o resto ([[dados]]).
 
 O aluno entra, responde questões, e o sistema mede: **onde** ele vai mal
-(`/diagnostico`), **por quê** (`/motor`, o Error Trace) e **o que fazer agora**
-(`/prioridades`). Em volta disso há cursos, e-books, redação corrigida, aula ao
+(`GET /diagnostico`), **por quê** (`GET /motor/*`, o Error Trace) e **o que
+fazer agora** (`GET /prioridades`) — três endpoints, que a aba **Progresso** e o
+cronograma consomem. Em volta disso há cursos, e-books, redação corrigida, aula ao
 vivo, mentoria, comunidade e gamificação — tudo pago em **Sparks**
 ([[economia-de-sparks]]).
 

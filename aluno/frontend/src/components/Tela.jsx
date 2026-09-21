@@ -1,9 +1,8 @@
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-import Nav from "./Nav";
 
 /**
- * A CASCA DE UMA TELA — barra, container e cabeçalho, uma vez só.
+ * A CASCA DE UMA TELA — container e cabeçalho, uma vez só.
  *
  * Quinze telas do produto abriam com a mesma construção copiada à mão:
  *
@@ -24,6 +23,20 @@ import Nav from "./Nav";
  *
  * Aqui a casca é uma peça. O que quem usa escolhe é o que MUDA de tela para
  * tela: o texto, a largura útil e as ações do canto.
+ *
+ * ---------------------------------------------------------------------------
+ * A BARRA SAIU DAQUI (2026-09-18)
+ * ---------------------------------------------------------------------------
+ *
+ * `Tela` montava `<Nav/>`, e as outras 38 páginas montavam a delas à mão. Era
+ * a razão estrutural de o produto ter quatro sistemas de navegação: uma tela
+ * nova nascia sem barra a menos que lembrasse de montar uma, e quando alguém
+ * lembrava, montava a que conhecia.
+ *
+ * Agora a navegação é `components/Navegacao.jsx`, montada **uma vez** no
+ * `App.js` ao lado das rotas — como a barra inferior, a captura de trecho e a
+ * camada de continuidade, e pelo mesmo motivo. `Tela` voltou a ser o que o
+ * nome dela diz: a moldura do conteúdo.
  *
  * Duas decisões embutidas:
  *
@@ -49,11 +62,8 @@ export default function Tela({
   subtitulo = null,
   acoes = null,
   voltar = null,
-  voltarLabel = "Painel",
+  voltarLabel = "Hoje",
   largura = "lg",
-  // `semNav` existe para as telas que desenham a própria barra por cima de um
-  // conteúdo em sangria (o mapa 3D do treino é a única hoje).
-  semNav = false,
   className = "",
   testid,
   children,
@@ -62,7 +72,6 @@ export default function Tela({
 
   return (
     <div className="min-h-screen">
-      {!semNav && <Nav />}
       <div className={`mx-auto ${LARGURAS[largura] || LARGURAS.lg} px-5 py-7 md:px-10 md:py-10 ${className}`} data-testid={testid}>
         {temCabeca && (
           <header className="mb-7">

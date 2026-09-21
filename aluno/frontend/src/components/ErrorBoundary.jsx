@@ -79,7 +79,7 @@ export default class ErrorBoundary extends Component {
               <RotateCw className="w-4 h-4" /> Tentar de novo
             </button>
             <a
-              href="/dashboard"
+              href="/hoje"
               className="pill inline-flex items-center gap-2 border border-zinc-200 text-sapiens-navy hover:border-sapiens-accent px-5 py-2.5 rounded-full text-sm font-medium"
               data-testid="error-boundary-home"
             >

@@ -104,5 +104,16 @@ o atalho vive em `mentis_routes._cobrar`, **antes** do débito. "Ilimitada" tem 
 significar que o saldo nem é tocado, não um desconto aplicado depois. Ver
 [[catalogo]].
 
+## Bônus de cadastro por influencer, e a comissão que sai por fora
+
+300 Sparks (em vez dos 100 padrão) para quem se cadastra pelo código de um
+influencer ativo — é só mais um valor de `promo_codes.sparks_amount`, a
+mesma constante que qualquer cupom do admin já usa, não um sistema novo de
+preço. Configurável por influencer, não fixo em 300. O que É novo é a
+COMISSÃO: 30% (configurável) da receita das compras desses alunos vai para o
+influencer, em dinheiro, por fora da plataforma — a única saída de dinheiro
+da economia de Sparks que não é custo de infraestrutura nem prêmio em Sparks.
+Mecânica completa, atribuição e antiabuso em [[afiliados]].
+
 ---
-Relacionado: [[catalogo]] · [[pagamentos]] · [[mentis]] · [[inviolaveis]]
+Relacionado: [[catalogo]] · [[pagamentos]] · [[mentis]] · [[inviolaveis]] · [[afiliados]]

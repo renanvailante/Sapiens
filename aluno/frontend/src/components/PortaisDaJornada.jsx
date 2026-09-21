@@ -5,6 +5,8 @@ import {
   Users, Trophy, Gauge, Shuffle, ArrowRight, Sparkles,
 } from "lucide-react";
 import Mentis from "./Mentis";
+import { ROTAS, ANCORAS, com } from "../lib/rotas";
+import { NOMES, nomeDoDestino } from "../lib/navegacao";
 
 /**
  * OS PORTAIS — a vitrine de descoberta do produto.
@@ -113,27 +115,27 @@ export default function PortaisDaJornada({
     () => [
       {
         id: "praticar",
-        rota: "/exams",
+        rota: ROTAS.PROVAS,
         icone: PlayCircle,
-        nome: "Praticar",
+        nome: NOMES[ROTAS.PROVAS],
         pergunta: "Qual erro você repete sem perceber?",
         estado: totalRespondidas > 0 ? `${totalRespondidas} respondidas` : null,
         cor: "#7FD8FF",
       },
       {
         id: "treino",
-        rota: "/treino",
+        rota: ROTAS.TREINO,
         icone: Compass,
-        nome: "Mapa de treino",
+        nome: NOMES[ROTAS.TREINO],
         pergunta: `${TOTAL_TERRITORIOS} territórios. Você pisou em ${tocados}.`,
         progresso: { feito: tocados, total: TOTAL_TERRITORIOS },
         cor: "#8B7BFF",
       },
       {
         id: "revisoes",
-        rota: "/revisoes",
+        rota: com(ROTAS.AGENDA, ANCORAS.AGENDA_REVISOES),
         icone: RotateCw,
-        nome: "Revisões",
+        nome: nomeDoDestino(com(ROTAS.AGENDA, ANCORAS.AGENDA_REVISOES)),
         pergunta:
           vencidas > 0
             ? "O que você aprendeu ontem ainda está aí?"
@@ -144,9 +146,9 @@ export default function PortaisDaJornada({
       },
       {
         id: "redacao",
-        rota: "/redacao",
+        rota: ROTAS.REDACAO,
         icone: PenLine,
-        nome: "Redação",
+        nome: NOMES[ROTAS.REDACAO],
         pergunta:
           ultimaNota != null
             ? "Dá para subir da última nota. Onde exatamente?"
@@ -156,18 +158,18 @@ export default function PortaisDaJornada({
       },
       {
         id: "mentis",
-        rota: "/mentis",
+        rota: ROTAS.MENTIS,
         icone: null,
         mentis: true,
-        nome: "Falar com a Mentis",
+        nome: NOMES[ROTAS.MENTIS],
         pergunta: "Pergunte por que você erra o que erra.",
         cor: "#7FD8FF",
       },
       {
         id: "cronograma",
-        rota: "/cronograma",
+        rota: ROTAS.AGENDA,
         icone: CalendarDays,
-        nome: "Sua semana",
+        nome: NOMES[ROTAS.AGENDA],
         pergunta: "A decisão do que estudar hoje já está tomada.",
         estado: blocosTotal > 0 ? `${blocosFeitos}/${blocosTotal} feitos` : null,
         progresso: blocosTotal > 0 ? { feito: blocosFeitos, total: blocosTotal } : null,
@@ -175,34 +177,34 @@ export default function PortaisDaJornada({
       },
       {
         id: "perfil",
-        rota: "/desempenho",
+        rota: ROTAS.PROGRESSO,
         icone: Gauge,
-        nome: "Seu perfil",
+        nome: NOMES[ROTAS.PROGRESSO],
         pergunta: "No que você já é bom — e ninguém te disse.",
         cor: "#7FE8C0",
       },
       {
         id: "live",
-        rota: "/aula-ao-vivo",
+        rota: ROTAS.AULA_AO_VIVO,
         icone: Radio,
-        nome: "Aula ao vivo",
+        nome: NOMES[ROTAS.AULA_AO_VIVO],
         pergunta: "Quinta, 20h, com quem passou em 1º na USP.",
         urgente: true,
         cor: "#FF8FA8",
       },
       {
         id: "comunidade",
-        rota: "/comunidade",
+        rota: ROTAS.COMUNIDADE,
         icone: Users,
-        nome: "Mural de dúvidas",
+        nome: NOMES[ROTAS.COMUNIDADE],
         pergunta: "Ninguém trava sozinho.",
         cor: "#FFB86B",
       },
       {
         id: "conquistas",
-        rota: "/conquistas",
+        rota: com(ROTAS.PROGRESSO, ANCORAS.PROGRESSO_CONQUISTAS),
         icone: Trophy,
-        nome: "Conquistas",
+        nome: nomeDoDestino(com(ROTAS.PROGRESSO, ANCORAS.PROGRESSO_CONQUISTAS)),
         pergunta: "A próxima medalha está a quantos acertos?",
         estado: conquistas.length ? `${medalhas}/${conquistas.length}` : null,
         progresso: conquistas.length ? { feito: medalhas, total: conquistas.length } : null,

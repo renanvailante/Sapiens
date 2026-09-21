@@ -10,7 +10,7 @@ import {
 import { api, errMsg } from "../lib/api";
 import { formatBRL } from "../lib/utils";
 import { argumentoDaLive } from "../lib/venda";
-import Nav, { avisarSparksMudou } from "../components/Nav";
+import { avisarSparksMudou } from "../components/Navegacao";
 import MentorUSP from "../components/MentorUSP";
 import VideoDoMentor from "../components/VideoDoMentor";
 import ContagemEnem from "../components/ContagemEnem";
@@ -254,7 +254,6 @@ export default function AulaAoVivo() {
 
   return (
     <div className="min-h-screen">
-      <Nav />
       <div className="mx-auto max-w-5xl px-5 py-7 md:px-10 md:py-10">
         {erro && (
           <div className="mb-6 rounded-2xl border border-amber-300/30 bg-amber-500/10 px-5 py-4 text-sm text-amber-100">
@@ -520,7 +519,7 @@ export default function AulaAoVivo() {
             sem hora marcada da mesma pessoa. A ponte entre as duas telas fica
             aqui, no fim — não no topo, disputando com a compra. */}
         <Link
-          to="/cursos"
+          to="/estudar/cursos"
           className="lift mt-10 flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.035] p-5 hover:border-white/25"
           data-testid="aula-ir-cursos"
         >

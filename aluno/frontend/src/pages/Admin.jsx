@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { api, errMsg} from "../lib/api";
-import Nav from "../components/Nav";
 import { toast } from "sonner";
 
 const SAMPLE = `QUESTÃO GABARITO
@@ -42,7 +41,6 @@ export default function Admin() {
 
   return (
     <div className="min-h-screen">
-      <Nav />
       <div className="max-w-4xl mx-auto px-5 py-7 md:px-10 md:py-10">
         <div className="secao-olho">Admin</div>
         <h1 className="font-display text-4xl font-extrabold tracking-tighter text-white" data-testid="admin-title">Importar gabarito do INEP</h1>

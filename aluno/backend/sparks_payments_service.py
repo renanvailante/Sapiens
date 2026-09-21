@@ -26,7 +26,9 @@ import pymongo.errors
 
 import firestore_service as fs
 import indicacoes
+import influencers
 import mercadopago_client as mp
+import product_analytics
 import sparks_store
 from models import User
 
@@ -627,8 +629,10 @@ async def process_payment_webhook(db, mp_payment_id: str) -> dict:
         # ler o Firestore uma vez por linha da tabela. `.get()` e não índice:
         # pagamentos creditados ANTES desta feature não têm os campos, e a
         # tela mostra "—" para eles em vez de inventar um número.
-        # Os direitos permanentes do pacote (hoje: Mentis ilimitada e
-        # Comunidade VIP, em `spark_4000`) são concedidos AQUI, no mesmo ponto
+        # Os direitos do pacote (hoje: cursos/lives inclusos, Mentis
+        # ilimitada — com prazo desde 2026-09-21, ver `sparks_store.
+        # PRAZO_MENTIS_ILIMITADA_DIAS` — e Comunidade VIP, permanente, em
+        # `spark_4000`) são concedidos AQUI, no mesmo ponto
         # do crédito e sob a mesma condição — pagamento aprovado. Falhar aqui
         # não pode desfazer o crédito que já entrou: o log é o que resta para
         # a conciliação à mão.
@@ -660,6 +664,23 @@ async def process_payment_webhook(db, mp_payment_id: str) -> dict:
                 mp_payment_id, existing["user_id"],
             )
 
+        # Comissão do programa de influencers: diferente da indicação acima,
+        # roda em TODA compra (não só a primeira) de quem tem
+        # `influenciado_por` — ver `influencers.creditar_comissao`. Mesma
+        # disciplina: nunca pode derrubar o crédito que já entrou.
+        try:
+            await influencers.creditar_comissao(
+                db,
+                comprador_id=existing["user_id"],
+                mp_payment_id=mp_payment_id,
+                price_cents=existing["price_cents"],
+            )
+        except Exception:  # noqa: BLE001
+            logger.exception(
+                "COMISSÃO DE INFLUENCER NÃO LANÇADA na compra %s de %s — lançar à mão.",
+                mp_payment_id, existing["user_id"],
+            )
+
         atualizacao = {"credited": True, "updated_at": _now_iso()}
         if resultado.get("saldo_antes") is not None:
             atualizacao["saldo_antes"] = resultado["saldo_antes"]
@@ -667,7 +688,38 @@ async def process_payment_webhook(db, mp_payment_id: str) -> dict:
         await db.sparks_payments.update_one(
             {"mp_payment_id": mp_payment_id}, {"$set": atualizacao}
         )
+
+        # Analytics de produto: primeira compra é um marco de ativação;
+        # a partir da segunda é recompra. `_id` determinístico decide sozinho
+        # qual das duas é — mesma disciplina de "nunca pode derrubar o
+        # crédito que já entrou" dos blocos acima.
+        try:
+            foi_primeira = await product_analytics.registrar(db, existing["user_id"], "primeira_compra")
+            if not foi_primeira:
+                await product_analytics.registrar(
+                    db, existing["user_id"], "recompra", chave=mp_payment_id,
+                    meta={"package_id": existing["package_id"]},
+                )
+        except Exception:  # noqa: BLE001
+            logger.exception(
+                "MARCO DE ANALYTICS NÃO REGISTRADO na compra %s de %s — não afeta o crédito.",
+                mp_payment_id, existing["user_id"],
+            )
+
         return {"matched": True, "credited": True, "ja_creditado": resultado.get("ja_creditado", False)}
+
+    # Reembolso/estorno de um pagamento que já tinha lançado comissão de
+    # influencer: o Mercado Pago pode notificar isso bem depois do crédito
+    # original, num webhook separado. Não desfaz os Sparks já concedidos
+    # (mesma filosofia do resto do produto — "hoje entregamos mais do que
+    # deveríamos" é o lado seguro), mas a comissão sobre dinheiro que voltou
+    # não pode continuar acumulada. Ver seção 1 do programa de afiliados:
+    # "considerar reembolso/estorno antes de contabilizar comissão".
+    if status in ("refunded", "charged_back") and existing.get("credited"):
+        try:
+            await influencers.estornar_comissao(db, mp_payment_id)
+        except Exception:  # noqa: BLE001
+            logger.exception("Falha ao estornar comissão de influencer do pagamento %s.", mp_payment_id)
 
     return {"matched": True, "credited": False, "status": status}
 

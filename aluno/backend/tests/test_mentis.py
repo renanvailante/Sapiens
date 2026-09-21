@@ -375,7 +375,7 @@ class TestAcaoDeNavegacao:
         assert acao == {
             "tipo": "ir",
             "destino": "mapa_treino",
-            "rota": "/treino",
+            "rota": "/estudar/treino",
             "rotulo": "Abrir o Mapa de Treino",
         }
 

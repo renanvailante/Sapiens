@@ -6,7 +6,7 @@ import { BookmarkPlus, Check, Loader2, Zap } from "lucide-react";
 import { api, errMsg } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { useContextoMentisAtual } from "../lib/mentisContexto";
-import { avisarSparksMudou } from "./Nav";
+import { avisarSparksMudou } from "./Navegacao";
 import {
   avisarLembretesMudou,
   dentroDeCampo,

@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { ArrowRight, Sparkles, Target, Layers } from "lucide-react";
 import AnelDeProgresso from "../AnelDeProgresso";
 import { emAndamento, recomendar } from "../../lib/recomendacao";
+import { ROTAS } from "../../lib/rotas";
 
 /**
  * O TOPO DA HOME DE CURSOS: onde você parou, e qual é o próximo passo.
@@ -25,7 +26,7 @@ function CardDeCurso({ curso }) {
   const proxima = p.proxima;
   return (
     <Link
-      to={`/cursos/${curso.curso_id}`}
+      to={`${ROTAS.CURSOS}/${curso.curso_id}`}
       className="superficie lift flex items-center gap-4 rounded-3xl p-4"
       data-testid={`continuar-${curso.curso_id}`}
     >

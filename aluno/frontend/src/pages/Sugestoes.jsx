@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { toast } from "sonner";
 import { api, errMsg } from "../lib/api";
-import Nav from "../components/Nav";
 import Mentis from "../components/Mentis";
 import { useDeclararContextoMentis } from "../lib/mentisContexto";
 import { MessageSquareWarning, Lightbulb, Bug, Heart, Send, Loader2, CheckCircle2 } from "lucide-react";
@@ -99,7 +98,6 @@ export default function Sugestoes() {
 
   return (
     <div className="min-h-screen">
-      <Nav />
       <div className="max-w-3xl mx-auto px-5 py-7 md:px-10 md:py-10">
         <div className="secao-olho flex items-center gap-1.5">
           <MessageSquareWarning className="w-3.5 h-3.5" /> Reclamações e sugestões

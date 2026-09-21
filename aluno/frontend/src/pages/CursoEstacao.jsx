@@ -15,7 +15,8 @@ import {
   dividirEmEtapas, etapaCumprida, etapaParaRetomar, progressoDasEtapas,
 } from "../lib/etapas";
 import { useDeclararContextoMentis } from "../lib/mentisContexto";
-import { avisarSparksMudou } from "../components/Nav";
+import { avisarSparksMudou } from "../components/Navegacao";
+import { ROTAS } from "../lib/rotas";
 
 /**
  * `/cursos/:cursoId/estacao/:estacaoId` — A SALA DE AULA, uma tela por vez.
@@ -232,7 +233,7 @@ export default function CursoEstacao() {
       olho="Estação"
       titulo={estacao?.titulo || "Estação"}
       subtitulo={etapa === 0 ? estacao?.objetivo : null}
-      voltar={`/cursos/${cursoId}`}
+      voltar={`${ROTAS.CURSOS}/${cursoId}`}
       voltarLabel="Mapa do curso"
       largura="xl"
       testid="curso-estacao"
@@ -244,7 +245,7 @@ export default function CursoEstacao() {
         <EstadoDeErro
           mensagem={erro}
           aoTentarNovamente={carregar}
-          voltarPara={`/cursos/${cursoId}`}
+          voltarPara={`${ROTAS.CURSOS}/${cursoId}`}
           voltarLabel="Voltar ao mapa do curso"
         />
       )}
@@ -357,14 +358,14 @@ export default function CursoEstacao() {
                 <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
                   {seguinte && (concluida || pulada) ? (
                     <button
-                      onClick={() => navegar(`/cursos/${cursoId}/estacao/${seguinte.estacao_id}`)}
+                      onClick={() => navegar(`${ROTAS.CURSOS}/${cursoId}/estacao/${seguinte.estacao_id}`)}
                       className="pill btn-sapiens inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-bold"
                       data-testid="ir-para-seguinte"
                     >
                       {seguinte.titulo} <ArrowRight className="h-4 w-4" />
                     </button>
                   ) : null}
-                  <Link to={`/cursos/${cursoId}`} className="chip">Voltar ao mapa</Link>
+                  <Link to={`${ROTAS.CURSOS}/${cursoId}`} className="chip">Voltar ao mapa</Link>
                 </div>
               </section>
             )}
@@ -383,7 +384,7 @@ export default function CursoEstacao() {
                 </button>
               ) : anterior ? (
                 <Link
-                  to={`/cursos/${cursoId}/estacao/${anterior.estacao_id}`}
+                  to={`${ROTAS.CURSOS}/${cursoId}/estacao/${anterior.estacao_id}`}
                   className="chip inline-flex items-center gap-1.5"
                   data-testid="estacao-anterior"
                 >
@@ -392,7 +393,7 @@ export default function CursoEstacao() {
               ) : <span />}
               {ultima && seguinte ? (
                 <Link
-                  to={`/cursos/${cursoId}/estacao/${seguinte.estacao_id}`}
+                  to={`${ROTAS.CURSOS}/${cursoId}/estacao/${seguinte.estacao_id}`}
                   className="chip inline-flex items-center gap-1.5"
                   data-testid="estacao-seguinte"
                 >

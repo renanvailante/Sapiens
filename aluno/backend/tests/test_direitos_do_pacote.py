@@ -1,4 +1,9 @@
-"""Os direitos que os pacotes vendem, além de saldo — todos para sempre.
+"""Os direitos que os pacotes vendem, além de saldo.
+
+`cursos_inclusos`/`lives_inclusas`/`comunidade_vip` são para sempre.
+`mentis_ilimitada` tem prazo desde 2026-09-21 (`sparks_store.
+PRAZO_MENTIS_ILIMITADA_DIAS`, decisão do dono que reverte a regra anterior de
+"permanente") — ver `TestMentisIlimitadaComPrazo` mais abaixo.
 
 **Um único pacote concede direito hoje** (desde 2026-09-16): o de
 **R$119,90 (4.000 Sparks)**, que dá `cursos_inclusos` (os quatro cursos do
@@ -28,6 +33,7 @@ buraco, dos dois lados:
 from __future__ import annotations
 
 import sys
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -253,7 +259,10 @@ class TestOhDireitoNaoVazaPorFalha:
                 class _Snap:
                     @staticmethod
                     def to_dict():
-                        return {"mentis_ilimitada": True}
+                        # `mentis_ilimitada_ate` no futuro — sem isso `True`
+                        # sozinho não basta mais (prazo desde 2026-09-21).
+                        futuro = (datetime.now(timezone.utc) + timedelta(days=10)).isoformat()
+                        return {"mentis_ilimitada": True, "mentis_ilimitada_ate": futuro}
                 return _Snap()
 
         class _Cliente:
@@ -270,3 +279,127 @@ class TestOhDireitoNaoVazaPorFalha:
         assert direitos["comunidade_vip"] is False
         assert direitos["cursos_inclusos"] is False
         assert direitos["lives_inclusas"] is False
+
+
+class TestMentisIlimitadaComPrazo:
+    """Decisão do dono, 2026-09-21: `mentis_ilimitada` deixou de ser
+    permanente e passou a valer `sparks_store.PRAZO_MENTIS_ILIMITADA_DIAS`
+    (30) dias — reverte a regra anterior (`Cerebro/regras/inviolaveis.md`
+    chegou a travar o oposto: "não afirme que um direito expira"). Os outros
+    três direitos do pacote de R$119,90 continuam sem prazo."""
+
+    def test_mentis_ilimitada_valida_exige_ate_no_futuro(self):
+        futuro = (datetime.now(timezone.utc) + timedelta(days=1)).isoformat()
+        passado = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
+        assert fs._mentis_ilimitada_valida({"mentis_ilimitada": True, "mentis_ilimitada_ate": futuro}) is True
+        assert fs._mentis_ilimitada_valida({"mentis_ilimitada": True, "mentis_ilimitada_ate": passado}) is False
+
+    def test_true_sem_ate_e_tratado_como_expirado_nao_como_permanente(self):
+        """Holder de antes da migração (ou falha de escrita): na dúvida,
+        cobra — mesma disciplina de falha de leitura inteira."""
+        assert fs._mentis_ilimitada_valida({"mentis_ilimitada": True}) is False
+
+    def test_false_nunca_fica_valido_mesmo_com_ate_no_futuro(self):
+        futuro = (datetime.now(timezone.utc) + timedelta(days=1)).isoformat()
+        assert fs._mentis_ilimitada_valida({"mentis_ilimitada": False, "mentis_ilimitada_ate": futuro}) is False
+
+    def test_data_ilegivel_nao_quebra_e_vira_expirado(self):
+        assert fs._mentis_ilimitada_valida({"mentis_ilimitada": True, "mentis_ilimitada_ate": "lixo"}) is False
+
+    def test_ler_direitos_rebaixa_true_expirado_para_false(self, monkeypatch):
+        passado = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
+
+        class _Doc:
+            def get(self):
+                class _Snap:
+                    @staticmethod
+                    def to_dict():
+                        return {"mentis_ilimitada": True, "mentis_ilimitada_ate": passado, "comunidade_vip": True}
+                return _Snap()
+
+        class _Cliente:
+            def collection(self, *_a):
+                return self
+
+            def document(self, *_a):
+                return _Doc()
+
+        monkeypatch.setattr(fs, "get_firestore", lambda *a, **k: _Cliente())
+        direitos = fs.ler_direitos("aluno-1")
+        assert direitos["mentis_ilimitada"] is False  # expirado
+        assert direitos["comunidade_vip"] is True  # este continua sem prazo
+
+    def test_conceder_direitos_grava_ate_trinta_dias_a_frente(self, monkeypatch):
+        gravado: dict = {}
+
+        class _Doc:
+            def set(self, campos, merge=True):
+                gravado.update(campos)
+
+        class _Cliente:
+            def collection(self, *_a):
+                return self
+
+            def document(self, *_a):
+                return _Doc()
+
+        monkeypatch.setattr(fs, "get_firestore", lambda *a, **k: _Cliente())
+        antes = datetime.now(timezone.utc)
+        fs.conceder_direitos("aluno-1", ("mentis_ilimitada", "comunidade_vip"))
+
+        assert gravado["mentis_ilimitada"] is True
+        assert gravado["comunidade_vip"] is True
+        assert "comunidade_vip_ate" not in gravado  # só mentis_ilimitada tem prazo
+        ate = datetime.fromisoformat(gravado["mentis_ilimitada_ate"])
+        dias = (ate - antes).total_seconds() / 86400
+        assert sparks_store.PRAZO_MENTIS_ILIMITADA_DIAS - 0.01 <= dias <= sparks_store.PRAZO_MENTIS_ILIMITADA_DIAS + 0.01
+
+    def test_migracao_da_janela_nova_a_partir_de_hoje_nao_da_compra_original(self, monkeypatch):
+        """Decisão explícita do dono: quem já tinha o direito permanente
+        ganha 30 dias A PARTIR DE HOJE, não a partir de quando comprou —
+        ninguém perde acesso no minuto em que a migração roda."""
+        class _Snap:
+            def __init__(self, id_, dados):
+                self.id = id_
+                self._dados = dados
+                self.reference = self
+
+            def to_dict(self):
+                return self._dados
+
+            def set(self, campos, merge=True):
+                self._dados.update(campos)
+
+        antigo = {"mentis_ilimitada": True}  # sem `_ate` — holder de antes da migração
+        ja_migrado = {"mentis_ilimitada": True, "mentis_ilimitada_ate": "2020-01-01T00:00:00+00:00"}
+        nunca_comprou = {"mentis_ilimitada": False}
+        docs = [
+            _Snap("holder-antigo", antigo),
+            _Snap("ja-migrado", ja_migrado),
+            _Snap("sem-direito", nunca_comprou),
+        ]
+
+        class _Colecao:
+            def stream(self):
+                return iter(docs)
+
+        class _Cliente:
+            def collection(self, *_a):
+                return _Colecao()
+
+        monkeypatch.setattr(fs, "get_firestore", lambda *a, **k: _Cliente())
+
+        dry_run = fs.migrar_mentis_ilimitada_para_prazo(aplicar=False)
+        assert dry_run["afetados"] == 1
+        assert dry_run["uids"] == ["holder-antigo"]
+        assert "mentis_ilimitada_ate" not in antigo  # dry run não escreve
+
+        aplicado = fs.migrar_mentis_ilimitada_para_prazo(aplicar=True)
+        assert aplicado["afetados"] == 1
+        assert "mentis_ilimitada_ate" in antigo
+        assert ja_migrado["mentis_ilimitada_ate"] == "2020-01-01T00:00:00+00:00"  # não mexeu em quem já tinha
+
+        # a validade nova é ~30 dias a partir de AGORA, não de uma data antiga
+        ate = datetime.fromisoformat(antigo["mentis_ilimitada_ate"])
+        dias = (ate - datetime.now(timezone.utc)).total_seconds() / 86400
+        assert sparks_store.PRAZO_MENTIS_ILIMITADA_DIAS - 0.01 <= dias <= sparks_store.PRAZO_MENTIS_ILIMITADA_DIAS + 0.01

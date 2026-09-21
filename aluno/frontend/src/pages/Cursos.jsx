@@ -8,7 +8,7 @@ import {
 import { api, errMsg } from "../lib/api";
 import { formatBRL } from "../lib/utils";
 import { economiaDoPacote } from "../lib/venda";
-import Nav, { avisarSparksMudou } from "../components/Nav";
+import { avisarSparksMudou } from "../components/Navegacao";
 import MentorUSP from "../components/MentorUSP";
 import { MENTOR } from "../lib/mentor";
 import ContagemEnem from "../components/ContagemEnem";
@@ -20,6 +20,7 @@ import { porArea, emAndamento } from "../lib/recomendacao";
 import { useDeclararContextoMentis } from "../lib/mentisContexto";
 import { marcarAcessoDaLive } from "../lib/live";
 import { quintasAteAProva } from "../lib/enem";
+import { ROTAS } from "../lib/rotas";
 
 /**
  * `/cursos` — o CATÁLOGO de cursos gravados.
@@ -268,7 +269,7 @@ export default function Cursos({ embutido = false }) {
     >
       {c.tenho_acesso && c.tem_conteudo ? (
         <Link
-          to={`/cursos/${c.curso_id}`}
+          to={`${ROTAS.CURSOS}/${c.curso_id}`}
           className="pill btn-sapiens inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-bold"
           data-testid={`ladrilho-curso-${c.curso_id}-estudar`}
         >
@@ -323,7 +324,7 @@ export default function Cursos({ embutido = false }) {
     >
       {e.tenho_acesso && e.tem_conteudo ? (
         <Link
-          to={`/cursos/ebooks/${e.ebook_id}`}
+          to={`${ROTAS.EBOOK.replace(":ebookId", e.ebook_id)}`}
           className="pill btn-sapiens inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-bold"
           data-testid={`ladrilho-ebook-${e.ebook_id}-ler`}
         >
@@ -586,7 +587,7 @@ export default function Cursos({ embutido = false }) {
               </div>
             )}
             <Link
-              to={`/cursos/${c.curso_id}`}
+              to={`${ROTAS.CURSOS}/${c.curso_id}`}
               className="pill btn-sapiens mt-3 inline-flex w-full items-center justify-center gap-2 rounded-full px-5 py-3.5 text-sm font-bold"
               data-testid={`curso-${c.curso_id}-estudar`}
             >
@@ -866,7 +867,7 @@ export default function Cursos({ embutido = false }) {
                         // Lê-se DENTRO do app, página por página — nenhum
                         // aluno baixa nada do Sapiens. Ver `EbookLeitor`.
                         <Link
-                          to={`/cursos/ebooks/${e.ebook_id}`}
+                          to={`${ROTAS.EBOOK.replace(":ebookId", e.ebook_id)}`}
                           className="pill btn-sapiens inline-flex w-full items-center justify-center gap-2 rounded-full px-5 py-3.5 text-sm font-bold"
                           data-testid={`ebook-${e.ebook_id}-ler`}
                         >
@@ -934,7 +935,6 @@ export default function Cursos({ embutido = false }) {
 
   return (
     <div className="min-h-screen">
-      <Nav />
       <div className="mx-auto max-w-5xl px-6 py-8 md:px-10 md:py-10">{conteudo}</div>
     </div>
   );

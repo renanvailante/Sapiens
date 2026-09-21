@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { api, errMsg } from "../lib/api";
-import Nav from "../components/Nav";
 import {
   ShieldCheck, Boxes, ClipboardCheck, FlaskConical, Check, X, Loader2, CircleAlert, TriangleAlert,
 } from "lucide-react";
@@ -312,7 +311,6 @@ export default function AdminCuradoria() {
 
   return (
     <div className="min-h-screen">
-      <Nav />
       <div className="mx-auto max-w-4xl px-5 py-7 md:px-10 md:py-10">
         <div className="mb-3 flex items-center gap-3">
           <ShieldCheck className="h-4 w-4 text-sapiens-accent" />

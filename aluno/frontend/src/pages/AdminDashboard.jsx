@@ -3,9 +3,16 @@ import { MENTOR } from "../lib/mentor";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { api, errMsg} from "../lib/api";
-import Nav from "../components/Nav";
 import PublicarLinkDaLive from "../components/PublicarLinkDaLive";
-import { FileText, Zap, Brain, Users, ClipboardList, ArrowRight, ShieldCheck, RefreshCw, Database, GraduationCap, Flag, Ticket, Gift, MessageSquareWarning, Receipt, Radio } from "lucide-react";
+import { FileText, Zap, Brain, Users, ClipboardList, ArrowRight, ShieldCheck, RefreshCw, Database, GraduationCap, Flag, Ticket, Gift, MessageSquareWarning, Receipt, Radio, Megaphone, TrendingUp } from "lucide-react";
+
+const ROTULO_MARCO = {
+  primeiro_proximo_passo: "1º próximo passo",
+  descoberta_prioridade: "Descoberta",
+  primeira_microvitoria: "1ª microvitória",
+  primeira_compra: "1ª compra",
+  recompra: "Recompra",
+};
 
 function StatCard({ label, value, hint }) {
   return (
@@ -38,6 +45,8 @@ const SECTIONS = [
     desc: "Criar e gerenciar códigos que dão Sparks de bônus no cadastro." },
   { to: "/admin/indicacoes", icon: Gift, title: "Indicações",
     desc: "Quem trouxe quem pelo código pessoal do aluno, quantos já compraram e quanto isso pagou em Sparks." },
+  { to: "/admin/influencers", icon: Megaphone, title: "Influencers",
+    desc: "Prospecção, ativação e comissão dos parceiros — 300 Sparks pra quem entra, 30% de comissão recorrente pra quem indicou." },
   { to: "/admin/history", icon: ClipboardList, title: "Histórico do Aluno",
     desc: "Response Event Store — histórico append-only por aluno com filtros." },
   { to: "/admin/users", icon: Users, title: "Alunos & permissões",
@@ -48,6 +57,7 @@ const SECTIONS = [
 
 export default function AdminDashboard() {
   const [summary, setSummary] = useState(null);
+  const [produto, setProduto] = useState(null);
   const [syncing, setSyncing] = useState(false);
   const [lastSync, setLastSync] = useState(null);
   const [grantEmail, setGrantEmail] = useState("");
@@ -55,6 +65,7 @@ export default function AdminDashboard() {
   const [granting, setGranting] = useState(false);
   useEffect(() => {
     api.get("/admin/summary").then(({ data }) => setSummary(data)).catch(() => {});
+    api.get("/admin/analytics/produto").then(({ data }) => setProduto(data)).catch(() => {});
   }, []);
 
   const handleGrant = async (e) => {
@@ -92,7 +103,6 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen">
-      <Nav />
       <div className="max-w-6xl mx-auto px-5 py-7 md:px-10 md:py-10">
         <div className="flex items-center gap-3 mb-3">
           <ShieldCheck className="w-4 h-4 text-sapiens-accent" />
@@ -152,6 +162,66 @@ export default function AdminDashboard() {
             <RefreshCw className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} />
             {syncing ? "Sincronizando…" : "Sincronizar Firestore"}
           </button>
+        </div>
+
+        {/* Analytics de produto (2026-09-21) — activation, TTFV agregado e
+            cohort semanal. Ver `product_analytics.py`. Não é uma aba nova:
+            é mais um bloco deste painel, igual ao resto daqui. */}
+        <div className="mt-10 card-sapiens rounded-2xl p-6" data-testid="admin-analytics-produto">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-sapiens-accent to-sapiens-navy text-white flex items-center justify-center shrink-0">
+              <TrendingUp className="w-5 h-5" strokeWidth={1.7} />
+            </div>
+            <div className="min-w-0">
+              <div className="font-display font-bold text-lg tracking-tight text-zinc-950">Ativação de produto</div>
+              <div className="text-sm text-zinc-500">Quem cadastrou nos últimos {produto?.ativacao?.janela_dias ?? 30} dias e chegou a algum marco real de valor.</div>
+            </div>
+          </div>
+
+          <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <StatCard label="Cadastrados" value={produto?.ativacao?.cadastrados} />
+            <StatCard label="Ativados" value={produto?.ativacao?.ativados} />
+            <StatCard
+              label="Taxa de ativação"
+              value={produto?.ativacao?.taxa_ativacao != null ? `${Math.round(produto.ativacao.taxa_ativacao * 100)}%` : "—"}
+            />
+          </div>
+
+          {produto?.ativacao?.marcos_por_tipo && (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {Object.entries(produto.ativacao.marcos_por_tipo).map(([tipo, n]) => (
+                <span key={tipo} className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-600">
+                  {ROTULO_MARCO[tipo] || tipo}: <strong className="text-zinc-950">{n}</strong>
+                </span>
+              ))}
+            </div>
+          )}
+
+          {produto?.cohort?.length > 0 && (
+            <div className="mt-6 overflow-x-auto">
+              <div className="text-[10px] uppercase tracking-wide text-zinc-400 mb-2">Cohort semanal</div>
+              <table className="w-full text-left text-xs" data-testid="admin-cohort-tabela">
+                <thead>
+                  <tr className="text-zinc-400">
+                    <th className="py-1 pr-4 font-medium">Semana</th>
+                    <th className="py-1 pr-4 font-medium">Cadastrados</th>
+                    <th className="py-1 pr-4 font-medium">Ativados</th>
+                    <th className="py-1 font-medium">Compraram</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {produto.cohort.map((linha) => (
+                    <tr key={linha.semana_inicio} className="border-t border-zinc-100">
+                      <td className="py-1.5 pr-4 text-zinc-700">{linha.semana_inicio}</td>
+                      <td className="py-1.5 pr-4 text-zinc-950 font-semibold">{linha.cadastrados}</td>
+                      <td className="py-1.5 pr-4 text-zinc-700">{linha.ativados}</td>
+                      <td className="py-1.5 text-zinc-700">{linha.compraram}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
         {/* Crédito manual de Sparks: ferramenta de suporte/teste — ajusta o

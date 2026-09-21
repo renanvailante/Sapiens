@@ -76,6 +76,19 @@ class User(BaseModel):
     referral_code: str | None = None
     indicado_por: str | None = None
     indicado_por_codigo: str | None = None
+    # Programa de influencers (2026-09-21) — NÃO confundir com `indicado_por`
+    # acima. `indicado_por` é o vínculo pessoa-a-pessoa de `indicacoes.py`
+    # (prêmio em Sparks, uma vez, pago pelo indicador escolher indicar).
+    # `influenciado_por` é o vínculo com um AFILIADO cadastrado no programa de
+    # influencers — comissão em dinheiro, recorrente, em cada compra, paga
+    # pela empresa. Os dois nascem do MESMO campo de cadastro (`promo_code`),
+    # resolvidos em `influencers.resolver_e_registrar_atribuicao`, chamado
+    # depois de `_registrar_cupom` em `auth.py`: um código só pode ser UMA
+    # das três coisas (cupom comum, indicação de amigo, ou influencer), nunca
+    # duas ao mesmo tempo, porque `_codigo_livre`/o catálogo de cupons já
+    # garantem que os namespaces não colidem. Ver [[afiliados]].
+    influenciado_por: str | None = None
+    influenciado_por_codigo: str | None = None
     # WhatsApp do aluno — pedido no cadastro (2026-09-15) porque é o único
     # canal em que a equipe realmente alcança um estudante: e-mail de menor de
     # idade não é lido, e o link da aula ao vivo de quinta precisa chegar a
@@ -337,6 +350,12 @@ class PromoCode(BaseModel):
     # tabela: é este campo, num cupom, que dá acesso ao painel restrito de
     # `/promoter/dashboard` — a própria conta com este e-mail, ao logar.
     promoter_email: str | None = None
+    # Preenchido só quando o cupom nasceu de `influencers.ativar` — é o que
+    # distingue "cupom de marketing comum" de "código de um afiliado do
+    # programa de influencers" sem duplicar catálogo. Nunca setado pelo admin
+    # via `/admin/promo-codes` diretamente (fora de `CreatePromoCodeRequest`
+    # de propósito) — só pelo fluxo de ativação em `influencers.py`.
+    influencer_id: str | None = None
 
 
 class CreatePromoCodeRequest(BaseModel):
@@ -349,6 +368,127 @@ class UpdatePromoCodeRequest(BaseModel):
     sparks_amount: int | None = Field(default=None, ge=1, le=100_000)
     active: bool | None = None
     promoter_email: str | None = Field(default=None, max_length=200)
+
+
+# ---------- Programa de influencers/afiliados (2026-09-21) ----------
+#
+# Ver `influencers.py` para a lógica e o porquê de cada decisão. Em resumo:
+# um influencer é um cupom (`PromoCode`, criado automaticamente ao ativar)
+# mais este registro mais rico — pipeline de prospecção, comissão percentual
+# configurável, contato. Comissão em si mora em `influencer_comissoes`
+# (coleção própria, um documento por pagamento, nunca um contador mutável).
+
+INFLUENCER_STATUS = [
+    "lead", "qualificado", "mensagem_pronta", "contato", "respondeu",
+    "interessado", "cadastrado", "ativo", "recusado", "removido",
+]
+# Estados que interrompem o follow-up automático (seção 9 do pedido): a
+# pessoa respondeu que não quer, ou já é parceira — insistir depois disso é
+# a coisa exata que a régua ética do produto já proíbe em outro lugar
+# (`engajamento.py`: pressão real e honesta, nunca insistência sem limite).
+INFLUENCER_STATUS_PARADO = {"interessado", "cadastrado", "ativo", "recusado", "removido"}
+
+DEFAULT_PERCENTUAL_COMISSAO = 0.30
+DEFAULT_SPARKS_BOAS_VINDAS_INFLUENCER = 300
+
+# Plataformas que o Pesquisador IA de Aquisição sabe descobrir — ver
+# `acquisition_research.py`. Só estas têm validação de domínio de URL.
+PESQUISA_IA_PLATAFORMAS = ("instagram", "whatsapp", "telegram")
+
+
+class Influencer(BaseModel):
+    influencer_id: str = Field(default_factory=lambda: f"inf_{uuid.uuid4().hex[:10]}")
+    nome: str
+    contato: str | None = None          # telefone/e-mail/@ — onde falar com a pessoa
+    canal_contato: str | None = None    # whatsapp | instagram_dm | email | outro
+    plataforma: str | None = None       # instagram | tiktok | youtube | podcast | outro
+    username: str | None = None
+    nicho: str | None = None
+    tamanho_aproximado: int | None = None   # seguidores, ORDEM DE GRANDEZA informada — nunca inventado
+    origem: str | None = None           # como chegou ao radar (prospecção ativa, indicação, inbound, pesquisa_ia)
+    status: str = "lead"
+    proxima_acao: str | None = None
+    proxima_acao_em: str | None = None
+    ultimo_contato_em: str | None = None
+    created_at: str = Field(default_factory=_now_iso)
+    updated_at: str = Field(default_factory=_now_iso)
+    # Preenchidos só a partir de `ativar()` (status vira "cadastrado"/"ativo"):
+    codigo: str | None = None
+    email_login: str | None = None      # == promo_codes.promoter_email
+    link: str | None = None
+    percentual_comissao: float = DEFAULT_PERCENTUAL_COMISSAO
+    sparks_boas_vindas: int = DEFAULT_SPARKS_BOAS_VINDAS_INFLUENCER
+    ativado_em: str | None = None
+
+    # --- Pesquisador IA de Aquisição (ver `acquisition_research.py`) ---
+    # Preenchidos só quando `origem == "pesquisa_ia"`. Cada um tem fonte
+    # verificável: `fontes` guarda as URLs que o grounding do Gemini de fato
+    # retornou, nunca texto que o modelo só "escreveu" no JSON — ver o nó
+    # `Cerebro/produto/aquisicao.md`.
+    url: str | None = None
+    foco: str | None = None
+    localizacao: str | None = None
+    sinais_publicos_relevancia: list[str] = Field(default_factory=list, max_length=10)
+    tipo_audiencia: str | None = None
+    potencial_parceria: str | None = None
+    justificativa_ia: str | None = None
+    prioridade: str | None = None       # alta | media | baixa — classificação operacional, não promessa de conversão
+    confianca: str | None = None        # alta | media | baixa — confiança da IDENTIFICAÇÃO do lead
+    fontes: list[str] = Field(default_factory=list, max_length=10)
+    url_normalizada: str | None = None  # dedup determinística — ver `influencers._normalizar_url`
+    descoberto_em: str | None = None
+    mensagem_gerada: str | None = None
+    observacao: str | None = None       # nota livre do admin, nunca da IA
+    descartado: bool = False
+
+    # --- LGPD (seção 18 do pedido de afiliados — ver Cerebro/produto/afiliados.md) ---
+    # Todo lead grava a base legal ATUAL — muda de legítimo interesse para
+    # execução de contrato quando vira afiliado ativo (`ativar()` atualiza).
+    base_legal: str | None = None
+    finalidade: str | None = None
+
+
+class CreateInfluencerLeadRequest(BaseModel):
+    nome: str = Field(..., min_length=1, max_length=200)
+    contato: str | None = Field(default=None, max_length=200)
+    canal_contato: str | None = Field(default=None, max_length=40)
+    plataforma: str | None = Field(default=None, max_length=40)
+    username: str | None = Field(default=None, max_length=120)
+    nicho: str | None = Field(default=None, max_length=120)
+    tamanho_aproximado: int | None = Field(default=None, ge=0, le=1_000_000_000)
+    origem: str | None = Field(default=None, max_length=120)
+
+
+class UpdateInfluencerRequest(BaseModel):
+    nome: str | None = Field(default=None, max_length=200)
+    contato: str | None = Field(default=None, max_length=200)
+    canal_contato: str | None = Field(default=None, max_length=40)
+    plataforma: str | None = Field(default=None, max_length=40)
+    username: str | None = Field(default=None, max_length=120)
+    nicho: str | None = Field(default=None, max_length=120)
+    tamanho_aproximado: int | None = Field(default=None, ge=0, le=1_000_000_000)
+    status: str | None = None
+    proxima_acao: str | None = Field(default=None, max_length=300)
+    proxima_acao_em: str | None = None
+    percentual_comissao: float | None = Field(default=None, ge=0.0, le=1.0)
+    prioridade: str | None = Field(default=None, max_length=20)
+    observacao: str | None = Field(default=None, max_length=2000)
+    descartado: bool | None = None
+
+
+class AtivarInfluencerRequest(BaseModel):
+    email_login: str = Field(..., max_length=200)
+    percentual_comissao: float = Field(default=DEFAULT_PERCENTUAL_COMISSAO, ge=0.0, le=1.0)
+    sparks_boas_vindas: int = Field(default=DEFAULT_SPARKS_BOAS_VINDAS_INFLUENCER, ge=1, le=100_000)
+    codigo: str | None = Field(default=None, max_length=40)  # opcional — auto-gerado se ausente
+
+
+class PesquisarAquisicaoRequest(BaseModel):
+    """Corpo opcional do POST que dispara uma rodada do Pesquisador IA.
+    Vazio = usa a matriz padrão de nichos (ver `acquisition_research.MATRIZ_PADRAO`)."""
+    nichos_instagram: list[str] | None = Field(default=None, max_length=8)
+    nichos_whatsapp: list[str] | None = Field(default=None, max_length=8)
+    nichos_telegram: list[str] | None = Field(default=None, max_length=8)
 
 
 # ---------- Redação (corretor ENEM) ----------

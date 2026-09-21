@@ -240,6 +240,46 @@ INDICES: list[tuple[str, list[tuple[str, int]], dict]] = [
     # corrida entre duas abas do painel.
     ("promo_codes", [("code", pymongo.ASCENDING)], {"name": "promo_code_unico", "unique": True}),
 
+    # --- programa de influencers/afiliados (2026-09-21) ---
+    # Listagem do CRM de prospecção filtra por estágio do funil.
+    ("influencers", [("status", pymongo.ASCENDING), ("created_at", pymongo.DESCENDING)],
+     {"name": "influencers_por_status"}),
+    # `resumo`/`resumo_admin` fazem `db.users.find({"influenciado_por": ...})`
+    # e `count_documents` do mesmo filtro — sem índice, cada abertura do
+    # painel de um influencer varre a coleção de alunos inteira.
+    ("users", [("influenciado_por", pymongo.ASCENDING)], {"name": "alunos_por_influencer", "sparse": True}),
+    # Comissão: `resumo`/`resumo_admin` agrupam por influencer; `_id` já é o
+    # `mp_payment_id` (garante "uma vez só" por pagamento, não precisa de
+    # índice extra para isso).
+    ("influencer_comissoes", [("influencer_id", pymongo.ASCENDING), ("status", pymongo.ASCENDING)],
+     {"name": "comissoes_por_influencer"}),
+    # Eventos de growth: consulta sempre filtra por influencer OU campanha,
+    # nunca varre tudo (ver `growth_events.resumo_funil`).
+    ("growth_events", [("influencer_id", pymongo.ASCENDING), ("tipo", pymongo.ASCENDING)],
+     {"name": "eventos_por_influencer", "sparse": True}),
+    ("growth_events", [("campanha_id", pymongo.ASCENDING), ("tipo", pymongo.ASCENDING)],
+     {"name": "eventos_por_campanha", "sparse": True}),
+    # Pesquisador IA de Aquisição (2026-09-21) — dedup determinística no
+    # próprio banco: uma rodada rodada duas vezes não deve duplicar o mesmo
+    # perfil/grupo. Único e PARCIAL: só sobre documentos que TÊM
+    # `url_normalizada` (leads manuais sem URL continuam permitidos, e o
+    # índice não barra `None == None`, que o Mongo trataria como duplicata).
+    ("influencers", [("url_normalizada", pymongo.ASCENDING)], {
+        "name": "influencers_url_unica",
+        "unique": True,
+        "partialFilterExpression": {"url_normalizada": {"$type": "string"}},
+    }),
+
+    # --- analytics de produto (2026-09-21) ---
+    # `resumo_ativacao`/`resumo_cohort` filtram por janela de tempo sobre a
+    # coleção inteira; `tempo_para_primeiro_valor` busca o marco mais antigo
+    # de UM aluno. `_id` já garante "uma vez" por marco (ver
+    # `product_analytics.registrar`), este índice é só das duas consultas.
+    ("product_events", [("uid", pymongo.ASCENDING), ("created_at", pymongo.ASCENDING)],
+     {"name": "eventos_de_produto_por_aluno"}),
+    ("product_events", [("created_at", pymongo.ASCENDING)], {"name": "eventos_de_produto_por_data"}),
+    ("users", [("created_at", pymongo.ASCENDING)], {"name": "usuarios_por_cadastro"}),
+
     # --- "Lembrar-me com a Mentis" ---
     # O `_id` é `{uid}:{hash do trecho}` (ver `lembretes_routes.
     # chave_do_lembrete`), então a trava de "cobra uma vez por trecho" já é a

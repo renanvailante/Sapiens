@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { api, errMsg } from "../lib/api";
-import Nav from "../components/Nav";
 import { Flag, Check, X, Sparkles } from "lucide-react";
 
 const STATUS_STYLE = {
@@ -68,7 +67,6 @@ export default function AdminReportesQuestoes() {
 
   return (
     <div className="min-h-screen">
-      <Nav />
       <div className="max-w-5xl mx-auto px-5 py-7 md:px-10 md:py-10">
         <div className="flex items-center gap-3 mb-3">
           <Flag className="w-4 h-4 text-sapiens-accent" />

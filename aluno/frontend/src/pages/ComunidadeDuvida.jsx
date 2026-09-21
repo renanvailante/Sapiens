@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import Nav, { avisarSparksMudou } from "../components/Nav";
+import { avisarSparksMudou } from "../components/Navegacao";
 import { api, errMsg } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { useDeclararContextoMentis } from "../lib/mentisContexto";
@@ -158,7 +158,6 @@ export default function ComunidadeDuvida() {
   if (carregando) {
     return (
       <div className="min-h-screen">
-        <Nav />
         <div className="mx-auto flex max-w-3xl items-center gap-2 px-6 py-12 text-white/50 md:px-10">
           <Loader2 className="h-4 w-4 animate-spin" /> Carregando…
         </div>
@@ -169,7 +168,6 @@ export default function ComunidadeDuvida() {
   if (!dados) {
     return (
       <div className="min-h-screen">
-        <Nav />
         <div className="mx-auto max-w-3xl px-5 py-7 md:px-10 md:py-10">
           <p className="text-white/60">Esta dúvida não está disponível.</p>
           <Link to="/comunidade" className="mt-4 inline-flex items-center gap-1 text-sm text-[#7FD8FF] hover:underline">
@@ -186,7 +184,6 @@ export default function ComunidadeDuvida() {
 
   return (
     <div className="min-h-screen">
-      <Nav />
       <div className="mx-auto max-w-3xl px-5 py-7 md:px-10 md:py-10">
         <Link
           to="/comunidade"
@@ -241,7 +238,8 @@ export default function ComunidadeDuvida() {
                     data-testid="duvida-destacar"
                   >
                     {destacando ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                    Destacar por 24h · 30 Sparks
+                    Destacar por 24h
+                    {dados.custo_destaque != null ? ` · ${dados.custo_destaque} Sparks` : ""}
                   </button>
                 )}
                 {destacada && (

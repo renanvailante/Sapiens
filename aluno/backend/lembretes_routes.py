@@ -52,6 +52,7 @@ import firestore_service as fs
 import rate_limit
 from auth import require_user
 from models import User, _now_iso
+import rotas_do_app as rotas
 
 logger = logging.getLogger("sapiens.lembretes")
 
@@ -150,9 +151,47 @@ def chave_do_lembrete(uid: str, texto: str, origem: str) -> str:
     diferentes — a segunda tem contexto que a primeira não tem, e apagar uma
     não deveria apagar a outra. O que a chave impede é marcar DUAS VEZES a
     mesma coisa no mesmo lugar.
+
+    > A origem é **normalizada** antes de entrar no hash, e isso é dinheiro.
+    >
+    > A origem é a rota da tela. Quando `/redacao` virou `/estudar/redacao`
+    > (2026-09-18), todo lembrete guardado antes da renomeação passou a ter uma
+    > chave que o app não consegue mais reconstruir: o aluno que marcasse o
+    > MESMO trecho de novo pagaria os 10 Sparks uma segunda vez, e a lista
+    > mostraria a mesma frase duplicada. Uma renomeação de tela virando
+    > cobrança em dobro.
+    >
+    > `rotas.normalizar` traduz o endereço antigo no atual, então as duas
+    > formas colapsam na mesma chave — em qualquer direção, e para sempre.
     """
+    return _chave(uid, texto, rotas.normalizar(origem))
+
+
+def _chave(uid: str, texto: str, origem: str) -> str:
     digest = hashlib.sha256(f"{normalizar(texto)}|{origem or ''}".encode()).hexdigest()
     return f"{uid}:{digest[:32]}"
+
+
+def chaves_do_lembrete(uid: str, texto: str, origem: str) -> list[str]:
+    """A chave canônica primeiro, e depois as que o MESMO trecho teria tido nos
+    endereços antigos daquela tela.
+
+    Quem escreve usa `chave_do_lembrete` (a primeira desta lista). Quem PROCURA
+    usa todas: sem isso, o aluno que guardou um trecho em `/redacao` antes da
+    renomeação de 2026-09-18 pagaria os 10 Sparks de novo pelo mesmo trecho em
+    `/estudar/redacao`, e a fila mostraria a frase duplicada.
+
+    A ordem importa: a canônica na frente, para que um documento novo vença um
+    antigo caso os dois existam (o antigo só existe se o aluno guardou o trecho
+    nas duas épocas, e aí o recente é o que ele acabou de ver).
+    """
+    canonica = rotas.normalizar(origem)
+    chaves = [_chave(uid, texto, canonica)]
+    for antiga in rotas.antecessores(canonica):
+        chave = _chave(uid, texto, antiga)
+        if chave not in chaves:
+            chaves.append(chave)
+    return chaves
 
 
 def _limpar(doc: dict) -> dict[str, Any]:
@@ -232,9 +271,13 @@ async def guardar(
     """
     texto = _texto_valido(payload.texto)
     rota = (payload.rota or "").strip()[:400]
-    doc_id = chave_do_lembrete(user.user_id, texto, rota)
+    chaves = chaves_do_lembrete(user.user_id, texto, rota)
+    doc_id = chaves[0]
 
-    ja = await _db[COLECAO].find_one({"_id": doc_id})
+    # Procura por TODAS as formas que esta chave já teve — ver
+    # `chaves_do_lembrete`. Uma renomeação de tela não pode virar cobrança
+    # nova em cima de um trecho que o aluno já pagou.
+    ja = await _db[COLECAO].find_one({"_id": {"$in": chaves}})
     if ja is not None:
         return {
             "lembrete": _limpar(ja),

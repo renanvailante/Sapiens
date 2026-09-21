@@ -4,7 +4,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, LabelList,
 } from "recharts";
 import { PenLine, Compass, ArrowRight } from "lucide-react";
-import Grafico, { Balao, SemDado } from "./Grafico";
+import Grafico, { Balao } from "./Grafico";
 import { EIXO, GRADE, SERIES, TINTA } from "./paleta";
 
 /**
@@ -45,7 +45,7 @@ function Vazio({ id, titulo, destacado }) {
           partir da terceira dá para ver a sua curva.
         </p>
         <Link
-          to="/redacao"
+          to="/estudar/redacao"
           className="pill btn-sapiens inline-flex min-h-[34px] items-center gap-1.5 rounded-full px-4 py-2 text-xs font-medium"
           data-testid="perfil-ir-redacao"
         >
@@ -92,7 +92,7 @@ export function EvolucaoDaRedacao({ redacao, destacado }) {
             de 1000, na sua primeira correção. A segunda redação já vira linha.
           </div>
           <Link
-            to="/redacao"
+            to="/estudar/redacao"
             className="pill btn-sapiens mt-1 inline-flex min-h-[34px] items-center gap-1.5 rounded-full px-4 py-2 text-xs font-medium"
           >
             Escrever outra <ArrowRight className="h-3.5 w-3.5" />

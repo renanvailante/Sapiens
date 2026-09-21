@@ -58,6 +58,7 @@ import redacao_routes as redacao_module
 import treino_routes as treino_module
 import perfil_publico_routes as perfil_publico_module
 import client_errors_routes as client_errors_module
+import product_analytics_routes as product_analytics_module
 import question_reports_routes as question_reports_module
 import sugestoes_routes as sugestoes_module
 import revisao_routes as revisao_module
@@ -70,6 +71,8 @@ import engajamento_service
 import engajamento_routes as engajamento_module
 import comunidade
 import comunidade_routes as comunidade_module
+import influencers_routes as influencers_module
+import campaigns_routes as campaigns_module
 import microdiagnostico
 import db_indexes
 from enem_seed import migrate_and_seed
@@ -97,6 +100,7 @@ sparks_module.set_db(db)
 redacao_module.set_db(db)
 treino_module.set_db(db)
 client_errors_module.set_db(db)
+product_analytics_module.set_db(db)
 question_reports_module.set_db(db)
 sugestoes_module.set_db(db)
 dados_pessoais_module.set_db(db)
@@ -111,6 +115,8 @@ perfil_publico_module.set_db(db)
 # `engajamento_service.py` — uma liga semanal em Firestore é a cota do dia.
 engajamento_service.set_db(db)
 comunidade.set_db(db)
+influencers_module.set_db(db)
+campaigns_module.set_db(db)
 # O microdiagnóstico (Fase 3) guarda no Mongo apenas CONTADORES por par
 # (erro, processo) — o relato em si mora no evento de behavior, no Firestore.
 microdiagnostico.set_db(db)
@@ -359,6 +365,7 @@ api_router.include_router(redacao_module.router)
 api_router.include_router(treino_module.router)
 api_router.include_router(perfil_publico_module.router)
 api_router.include_router(client_errors_module.router)
+api_router.include_router(product_analytics_module.router)
 api_router.include_router(question_reports_module.router)
 api_router.include_router(sugestoes_module.router)
 api_router.include_router(revisao_module.router)
@@ -369,6 +376,9 @@ api_router.include_router(cronograma_module.router)
 api_router.include_router(onboarding_module.router)
 api_router.include_router(engajamento_module.router)
 api_router.include_router(comunidade_module.router)
+api_router.include_router(influencers_module.router)
+api_router.include_router(campaigns_module.router)
+api_router.include_router(campaigns_module.router_publico)
 app.include_router(api_router)
 
 

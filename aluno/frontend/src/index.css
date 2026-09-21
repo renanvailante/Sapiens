@@ -1191,6 +1191,36 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
     body {
         padding-bottom: calc(var(--barra-inferior-h) + env(safe-area-inset-bottom, 0px) + 4.5rem);
     }
+
+    /* 4. O RÓTULO MAIS LONGO DA BARRA INFERIOR, no aparelho mais estreito.
+
+       Medido a 320px em 2026-09-18: "Comunidade" cabia em 61px de alvo e era
+       CORTADO pelo `text-overflow: ellipsis` — sem estouro horizontal e sem
+       quebra de linha, então nada acusava. Até esta passada o rótulo mais
+       longo era "Painel" (6 caracteres) e o quinto alvo era "Mais"; agora os
+       cinco alvos são áreas, e o maior tem 10 caracteres.
+
+       Encurtar a palavra não é opção: o produto tem UM nome por conceito
+       (`lib/navegacao.NOMES`), e "Mural" na barra contra "Comunidade" em toda
+       outra superfície reintroduziria exatamente o problema que a arquitetura
+       de 18/09 resolveu.
+
+       Então encolhe a fonte, e só abaixo de 360px — a faixa dos iPhone SE de
+       1ª geração e dos Android pequenos. De 375px para cima nada muda.
+
+       O `:root` na frente não é enfeite: este bloco de media query mora ANTES
+       da definição de `.aba-inferior` no arquivo, e com a mesma especificidade
+       (0,1,0) quem vence é quem vem depois — a regra entrou, casou a media
+       query e mesmo assim não pintou. Mesmo motivo do `:root input` do bloco
+       de campos aqui em cima. Medido no navegador, não lido no código. */
+    @media (max-width: 359px) {
+        :root .aba-inferior,
+        :root .aba-acao-rotulo {
+            font-size: 9px;
+            letter-spacing: 0;
+        }
+        :root .aba-inferior { padding-left: 1px; padding-right: 1px; }
+    }
 }
 
 /* 2. FÓRMULA MAIS LARGA QUE A TELA. O KaTeX em `displayMode` monta a fórmula

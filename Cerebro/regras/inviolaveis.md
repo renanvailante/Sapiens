@@ -21,8 +21,8 @@ Duas exceções, de categoria diferente: exportar os **próprios dados pessoais*
 (`MeusDadosLGPD.jsx`, direito legal de portabilidade) e instalar o PWA.
 
 **Os nomes reais da ontologia nunca aparecem para o aluno.** São a IP do produto.
-O mapa de habilidades (`/cognitive-profile`) é um hexágono **cosmético** com
-rótulos inventados. O único elo entre o dado real e a camada cosmética é
+O mapa de habilidades é um hexágono **cosmético** com rótulos inventados (o
+endpoint é `GET /cognitive-profile`; a tela que o desenha é `/progresso`). O único elo entre o dado real e a camada cosmética é
 `HUB_DOMAIN_MAP` (11 `DOM-*` reais → 6 hubs, muitos-para-um) e ele serve só para
 derivar percentual — **nunca** para inferência ou relatório pedagógico.
 
@@ -94,9 +94,19 @@ de 1.500 antes de 16/09 continua entrando de graça na live: a flag está gravad
 desfaz a promessa. Revogar, se um dia for preciso, é varredura no Firestore — nunca
 uma linha de catálogo.
 
-**Não afirme que um direito expira.** A loja anuncia "por um mês", o backend concede
-permanente, e a instrução de não escrever o contrário está no próprio
-`sparks_store.py`. Ver [[catalogo]].
+**`mentis_ilimitada` tem prazo de 30 dias — exceção explícita à regra acima,
+pedida pelo dono em 2026-09-21.** Reverte a regra que valia entre 20/09 e
+21/09 ("não afirme que um direito expira" — chegou a divergir na vitrine
+antes disso também, "por um mês" entre 16/09 e 20/09, então este campo já
+mudou de direção duas vezes; ver o histórico completo em [[catalogo]]). A
+migração dá a quem já tinha o direito permanente uma janela nova de 30 dias
+a partir de **hoje**, nunca a partir da compra original — ninguém perde
+acesso no instante em que a migração roda, decisão também explícita do
+dono. **Os outros três direitos do pacote de R$119,90
+(`cursos_inclusos`/`lives_inclusas`/`comunidade_vip`) continuam cobertos
+pela regra "direito concedido não se revoga" acima, sem prazo nenhum** —
+esta exceção é só da Mentis, não abra precedente para generalizar sem nova
+decisão explícita.
 
 ## Custo de infraestrutura
 

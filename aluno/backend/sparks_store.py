@@ -10,6 +10,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+# Quantos dias `mentis_ilimitada` vale a partir da concessão. Decisão do
+# dono, 2026-09-21 — reverte a regra anterior de "permanente, sem prazo".
+# Único direito com validade; os outros três de `spark_4000` continuam sem
+# prazo. Ver `firestore_service.conceder_direitos`/`ler_direitos`.
+PRAZO_MENTIS_ILIMITADA_DIAS = 30
+
 
 @dataclass(frozen=True)
 class SparksPackage:
@@ -84,21 +90,23 @@ PACKAGES: dict[str, SparksPackage] = {
             #  * `mentis_ilimitada` — abrir o chat, cada mensagem, a
             #    explicação de questão e a intervenção da causa raiz param de
             #    cobrar Spark (ver o atalho em `mentis_routes._cobrar`).
-            #    ATENÇÃO (2026-09-16): a loja passou a anunciar este direito
-            #    como "por um mês", mas o backend continua concedendo uma
-            #    FLAG PERMANENTE (`firestore_service.marcar_mentis_ilimitada`,
-            #    sem data de validade). Hoje entregamos MAIS do que
-            #    anunciamos — o lado seguro da divergência, mas ainda uma
-            #    divergência. Fechar isso exige guardar o vencimento por
-            #    aluno e checá-lo em `mentis_routes`; enquanto não existir,
-            #    NÃO escreva em lugar nenhum que o direito expira de fato.
+            #    **Decisão do dono, 2026-09-21: passou a ter PRAZO** — dura
+            #    `PRAZO_MENTIS_ILIMITADA_DIAS` (30) dias a partir da concessão,
+            #    não mais para sempre. Isto REVERTE a decisão anterior (entre
+            #    20/09 e 21/09 a regra era "permanente, sem `_ate`" — ver
+            #    `Cerebro/regras/inviolaveis.md` e `Cerebro/produto/catalogo.md`
+            #    para o histórico completo dessa reversão e por quê). A data de
+            #    validade é gravada em `mentis_ilimitada_ate`
+            #    (`firestore_service.conceder_direitos`) e checada em
+            #    `firestore_service.ler_direitos`/`ler_saldo_e_direitos`.
             #  * `comunidade_vip` — a sala fechada do mural, onde a equipe e o
-            #    1º colocado respondem (ver `comunidade.SALA_VIP`).
+            #    1º colocado respondem (ver `comunidade.SALA_VIP`). Continua
+            #    PERMANENTE — só `mentis_ilimitada` ganhou prazo.
             direitos=("cursos_inclusos", "lives_inclusas", "mentis_ilimitada", "comunidade_vip"),
             beneficios=(
                 "Todos os cursos inclusos",
                 "Todas as aulas ao vivo de quinta inclusas",
-                "Mentis ILIMITADA por um mês",
+                f"Mentis ilimitada por {PRAZO_MENTIS_ILIMITADA_DIAS} dias",
                 "Comunidade VIP — sala fechada",
             ),
         ),

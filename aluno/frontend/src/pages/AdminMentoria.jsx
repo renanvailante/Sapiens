@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { MENTOR } from "../lib/mentor";
 import { toast } from "sonner";
 import { api, errMsg } from "../lib/api";
-import Nav from "../components/Nav";
 import { Medal, MessageCircle, Zap } from "lucide-react";
 
 // Os VALORES são os que já estão gravados no banco desde a época de "aulas
@@ -58,7 +57,6 @@ export default function AdminMentoria() {
 
   return (
     <div className="min-h-screen">
-      <Nav />
       <div className="max-w-5xl mx-auto px-5 py-7 md:px-10 md:py-10">
         <div className="flex items-center gap-3 mb-3">
           <Medal className="w-4 h-4 text-sapiens-accent" />

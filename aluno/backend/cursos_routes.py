@@ -69,6 +69,7 @@ import ebooks_conteudo
 import firestore_service as fs
 import mentis_routes
 import rate_limit
+import sparks_store
 import whatsapp as wa
 from auth import require_admin, require_user
 from models import User
@@ -322,6 +323,18 @@ async def listar(user: User = Depends(require_user)):
         "live": await _montar_live(user, saldo, direitos),
         "direitos": direitos,
         "whatsapp": user.whatsapp,
+    }
+
+
+@router.get("/precos")
+async def precos(_: User = Depends(require_user)):
+    """O frontend nunca decide preço — só o exibe. Mesmo contrato de
+    `mentoria_routes.precos`, para telas que só precisam do número (a chamada
+    e-book de `Hoje`/`Mentoria`) sem carregar `/cursos/live` inteiro."""
+    pacote = sparks_store.pacote_com_direito("lives_inclusas")
+    return {
+        "custo_live": cursos.LIVE_CUSTO_SPARKS,
+        "pacote_lives_inclusas": pacote.label if pacote else None,
     }
 
 

@@ -15,6 +15,8 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import PortaisDaJornada from "./PortaisDaJornada";
+import { ROTAS } from "../lib/rotas";
+import { NOMES } from "../lib/navegacao";
 
 // O `react-router-dom` 7 é ESM e o jest do CRA não o resolve. O que este
 // teste precisa do roteador é só um `<a>` e um `useNavigate` que não faz
@@ -32,8 +34,8 @@ const render = (props) => renderToStaticMarkup(createElement(PortaisDaJornada, p
 test("monta sem dado nenhum — aluno recém-criado", () => {
   const html = render({});
   expect(html).toContain("Por onde começar hoje");
-  expect(html).toContain("Mapa de treino");
-  expect(html).toContain("Falar com a Mentis");
+  expect(html).toContain(NOMES[ROTAS.TREINO]);
+  expect(html).toContain(NOMES[ROTAS.MENTIS]);
 });
 
 test("mostra a fila de revisão de hoje pelo campo real do payload", () => {
@@ -69,8 +71,8 @@ test("compacto: as dez portas inteiras, sem o cabeçalho da vitrine", () => {
   const html = render({ compacto: true });
   expect(html).not.toContain("Por onde começar hoje");
   expect(html).not.toContain("Dez portas. Cada uma");
-  expect(html).toContain("Mapa de treino");
-  expect(html).toContain("Falar com a Mentis");
+  expect(html).toContain(NOMES[ROTAS.TREINO]);
+  expect(html).toContain(NOMES[ROTAS.MENTIS]);
   // o sorteio desce para o rodapé da grade, mas não some
   expect(html).toContain("Surpreenda-me");
 });

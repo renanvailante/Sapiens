@@ -8,6 +8,7 @@ import Mentis, { MentisPensando } from "./Mentis";
 import Baloes, { BALOES_INICIAIS } from "./MentisBaloes";
 import MentisAcao from "./MentisAcao";
 import MentisAtalhos from "./MentisAtalhos";
+import { ROTAS } from "../lib/rotas";
 
 const CUSTO_MENSAGEM_PADRAO = 10;
 const MAX_CHARS = 600;
@@ -62,7 +63,7 @@ export default function MentisWidget() {
   // `/feed` é a única tela em sangria total, sem barra e com controles
   // próprios no rodapé: um ícone flutuante por cima dela cobre o conteúdo e
   // não tem o que oferecer que a tela já não ofereça.
-  if (location.pathname === "/feed") return null;
+  if (location.pathname === ROTAS.FOLHEAR) return null;
   // `/bem-vindo` é a única tela em que a Mentis já está presente NO conteúdo,
   // conduzindo o onboarding. O ícone flutuante ali seria ela oferecendo abrir
   // uma conversa consigo mesma, por cima da conversa em curso.

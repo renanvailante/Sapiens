@@ -61,7 +61,7 @@ export default function CompletarCadastro() {
       // `user` em memória continua sem telefone e a navegação volta para cá.
       await refresh();
       toast.success("Pronto. Bons estudos.");
-      nav("/dashboard", { replace: true });
+      nav("/hoje", { replace: true });
     } catch (err) {
       toast.error(errMsg(err, "Não consegui salvar seu WhatsApp."));
     } finally {

@@ -49,6 +49,11 @@ LIMITES: dict[str, tuple[int, int]] = {
     # Relato de erro de frontend: generoso (uma tela quebrada gera vários),
     # mas o suficiente para a rota não virar depósito de lixo.
     "client_error": (30, 300),
+    # Analytics de produto (2026-09-21) — só grava algo na PRIMEIRA chamada
+    # (`product_analytics.registrar`, `_id` determinístico); as seguintes são
+    # no-op no Mongo. Generoso porque o `Hoje.jsx` pode chamar mais de uma vez
+    # por engano sem custar nada — o teto é só contra loop de verdade.
+    "analytics_produto": (60, 3600),
     # Direitos do titular (LGPD art. 18). A exportação varre o histórico
     # inteiro do aluno no Firestore — é a única rota que lê O(eventos) de
     # propósito. Cinco por hora atende qualquer pedido legítimo (normalmente
@@ -96,6 +101,19 @@ LIMITES: dict[str, tuple[int, int]] = {
     # 40/hora cobre uma tarde inteira respondendo colegas e torna inviável
     # despejar conteúdo em massa.
     "comunidade": (40, 3600),
+    # Pesquisador IA de Aquisição (2026-09-21) — dispara uma rodada de ~10-15
+    # chamadas de Gemini com busca do Google (grounding), a rota mais cara em
+    # dinheiro real deste arquivo. Diferente do resto de `influencers_routes.py`,
+    # que não tem freio nenhum (nem Sparks, nem rate limit): esta é a única
+    # rota admin de todo o programa de afiliados que precisa de um, porque é a
+    # única que gasta em loop se um admin (ou um duplo-clique) repetir a
+    # chamada. Teto por USUÁRIO, não por IP — é sempre um admin autenticado.
+    "pesquisa_aquisicao": (6, 3600),
+    # Gerar mensagem de abordagem por lead, sob demanda. Uma chamada de texto
+    # curta (sem grounding), bem mais barata que a descoberta — mas ainda
+    # assim uma chamada de Gemini por clique, então ganha teto próprio em vez
+    # de herdar o "llm" genérico (pensado para o aluno, não para o admin).
+    "pesquisa_aquisicao_mensagem": (120, 3600),
 }
 
 _eventos: dict[str, deque[float]] = defaultdict(deque)

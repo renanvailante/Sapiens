@@ -89,14 +89,14 @@ describe("onde o botão NÃO aparece", () => {
     expect(rotaAceitaCaptura("/login")).toBe(false);
     expect(rotaAceitaCaptura("/mentis")).toBe(false);
     expect(rotaAceitaCaptura("/bem-vindo")).toBe(false);
-    expect(rotaAceitaCaptura("/feed")).toBe(false);
+    expect(rotaAceitaCaptura("/estudar/folhear")).toBe(false);
   });
 
   test("mas aparece em toda tela de estudo", () => {
-    expect(rotaAceitaCaptura("/dashboard")).toBe(true);
-    expect(rotaAceitaCaptura("/revisoes")).toBe(true);
-    expect(rotaAceitaCaptura("/cursos/quimica/estacao/3")).toBe(true);
-    expect(rotaAceitaCaptura("/redacao")).toBe(true);
+    expect(rotaAceitaCaptura("/hoje")).toBe(true);
+    expect(rotaAceitaCaptura("/agenda")).toBe(true);
+    expect(rotaAceitaCaptura("/estudar/cursos/quimica/estacao/3")).toBe(true);
+    expect(rotaAceitaCaptura("/estudar/redacao")).toBe(true);
   });
 
   test("dentro de um campo, selecionar é EDITAR, não marcar", () => {

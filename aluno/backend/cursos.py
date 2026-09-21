@@ -77,7 +77,7 @@ AREAS_POR_ID: dict[str, Area] = {a.area_id: a for a in AREAS}
 class Capa:
     de: str        # cor inicial do degradê (hex)
     para: str      # cor final
-    glifo: str     # nome do ícone que a tela desenha (ver `lib/capas.js`)
+    glifo: str     # nome do ícone que a tela desenha (ver `components/curso/CapaDoCurso.jsx`)
 
 
 @dataclass(frozen=True)
@@ -324,7 +324,10 @@ EBOOKS: tuple[Ebook, ...] = (
             "prova, não por ordem de livro."
         ),
         paginas=8,
-        capa=Capa("#4FD9FF", "#2F6BFF", "calculadora"),
+        # "formula" (Σ) e não "calculadora": o curso de Matemática Básica já
+        # usa "calculadora", e os dois ladrilhos vivem lado a lado na mesma
+        # grade de /estudar — capa idêntica ali parecia conteúdo duplicado.
+        capa=Capa("#4FD9FF", "#2F6BFF", "formula"),
         area="matematica",
     ),
     Ebook(
@@ -337,7 +340,10 @@ EBOOKS: tuple[Ebook, ...] = (
             "parecer enfeite."
         ),
         paginas=24,
-        capa=Capa("#8B7BFF", "#4B2FBF", "caneta"),
+        # "citacao" (aspas) e não "caneta": o curso Redação do 0 ao 1000 já usa
+        # "caneta" e senta ao lado deste e-book na mesma grade — mesmo motivo
+        # do formulário de Matemática acima.
+        capa=Capa("#8B7BFF", "#4B2FBF", "citacao"),
         area="redacao",
     ),
     Ebook(

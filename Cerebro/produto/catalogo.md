@@ -80,23 +80,52 @@ teste que quebra o build. Ver [[decisoes-do-dono]].
   resposta. Admin entra sem comprar, porque modera.
 - **`lives_inclusas`** e **`cursos_inclusos`** — hoje só no pacote de 4.000.
 
-### Divergência aberta: "por um mês" é só a vitrine
+### "Mentis ilimitada" tem prazo de 30 dias — regra revertida em 2026-09-21
 
-> [!warning] A loja anuncia prazo; o backend concede permanente.
-> `beneficios` diz **"Mentis ILIMITADA por um mês"**, mas `conceder_direitos` grava
-> só `{direito}: True` + `{direito}_em` (quando foi concedido) — **não existe
-> `_ate`, nem `PRAZO_DOS_DIREITOS_DIAS`, nem checagem de vencimento em lugar
-> nenhum.** Verificado no código em 2026-09-18.
->
-> Hoje **entregamos mais do que anunciamos** — o lado seguro da divergência, mas
-> ainda uma divergência. Fechá-la exige guardar o vencimento por aluno e checá-lo em
-> `mentis_routes`.
->
-> **Enquanto isso não existir, não escreva em lugar nenhum que o direito expira de
-> fato.** A instrução está no próprio `sparks_store.py`, junto do pacote.
+**Histórico, para quem ler isto depois de outra reversão:** entre 20/09 e 21/09
+a regra era "permanente, sem `_ate`, sem checagem de vencimento em lugar
+nenhum" — e antes disso, entre 16/09 e 20/09, a vitrine tinha chegado a
+anunciar "por um mês" enquanto o backend seguia concedendo permanente,
+divergência corrigida de volta para "sem prazo" na época. Em 2026-09-21 o
+dono pediu explicitamente a reversão oposta: `mentis_ilimitada` volta a ter
+prazo, `sparks_store.PRAZO_MENTIS_ILIMITADA_DIAS = 30` dias, e desta vez com
+mecanismo real no backend, não só copy.
+
+**O que existe agora, os dois lados batendo:**
+- `conceder_direitos(uid, direitos)` grava `mentis_ilimitada_ate` = agora +
+  30 dias, só para essa chave — `cursos_inclusos`/`lives_inclusas`/
+  `comunidade_vip` continuam sem `_ate`, permanentes.
+- `ler_direitos`/`ler_saldo_e_direitos` chamam `_mentis_ilimitada_valida`:
+  `True` sozinho não basta mais, precisa de `_ate` no futuro. Documento sem
+  `_ate` (holder de antes da migração) conta como EXPIRADO — mesma
+  disciplina de "na dúvida cobra-se o Spark" que a falha de leitura já usa.
+- Vitrine (`SparksStore.jsx`), tela do chat (`MentisChat.jsx`) e a
+  referência cruzada em `Comunidade.jsx` foram todas reescritas de "para
+  sempre" para "por 30 dias" — as três foram auditadas nesta mesma mudança,
+  não sobrou nenhuma promessa de permanência para a Mentis.
+
+**Migração de quem já tinha o direito permanente — decisão explícita do
+dono:** a janela de 30 dias começa **na data da migração, não na data da
+compra original** (a maioria das compras já teria mais de 30 dias, o que
+revogaria o acesso de quase toda a base no instante em que a migração
+rodasse). `firestore_service.migrar_mentis_ilimitada_para_prazo(aplicar=...)`
+faz isso — dry run por padrão, só grava com `aplicar=True`. **Não é chamada
+por nenhuma rota automática nem por deploy**: é o instante em que um direito
+até então permanente passa a ter prazo pra quem já paga por ele, então
+precisa ser disparada manualmente pelo dono quando ele decidir o momento
+(mesmo mecanismo de `fly ssh console` já usado para teste de pagamento real,
+ver [[pagamentos]]). **Decisão explícita: sem aviso ao aluno por enquanto**
+(nenhuma notificação/mensagem foi construída para avisar quem perde o
+direito permanente) — revisitar se isso for cobrado depois.
+
+Os outros três direitos (`cursos_inclusos`, `lives_inclusas`,
+`comunidade_vip`) **não mudaram** — continuam permanentes, sem prazo, sem
+migração nenhuma. Não generalize expiração para eles sem outra decisão
+explícita do dono.
 
 `conceder_direitos` é idempotente por natureza (escrever `True` duas vezes não muda
-nada), então o reenvio de webhook não precisa de guarda extra.
+nada), então o reenvio de webhook não precisa de guarda extra — inclui a data de
+validade, que só é reafirmada, não duplicada, num reenvio do MESMO pagamento.
 
 ## Grandfathering já concedido
 

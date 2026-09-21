@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, errMsg } from "../lib/api";
-import Nav from "../components/Nav";
 import Mentis, { MentisPensando } from "../components/Mentis";
 import Baloes, { BALOES_INICIAIS } from "../components/MentisBaloes";
 import MentisAtalhos from "../components/MentisAtalhos";
@@ -145,10 +144,10 @@ function Portao({ custoSessao, custoMensagem, saldo, abrindo, erro, aoAbrir, ili
             <InfinityIcon className="h-6 w-6 shrink-0 text-violet-300" />
             <div className="min-w-0">
               <div className="font-display text-lg font-bold tracking-tight text-violet-100">
-                Sua Mentis é ilimitada.
+                Sua Mentis está ilimitada.
               </div>
               <div className="text-xs text-violet-200/70">
-                Abrir a sessão e conversar não custa Spark nenhum — para sempre.
+                Abrir a sessão e conversar não custa Spark nenhum por 30 dias.
               </div>
             </div>
           </div>
@@ -178,7 +177,7 @@ function Portao({ custoSessao, custoMensagem, saldo, abrindo, erro, aoAbrir, ili
               <InfinityIcon className="h-4 w-4 shrink-0 text-violet-300" />
               <span className="text-xs leading-snug text-violet-100/85">
                 <strong className="font-semibold text-violet-100">Cansou de contar Spark?</strong>{" "}
-                O pacote de R$119,90 deixa a Mentis ilimitada para sempre.
+                O pacote de R$119,90 deixa a Mentis ilimitada por 30 dias.
               </span>
             </Link>
           </>
@@ -325,7 +324,6 @@ export default function MentisChat() {
   if (carregando) {
     return (
       <div className="min-h-screen">
-        <Nav />
         <div className="flex flex-col items-center justify-center py-28 gap-4">
           <Mentis className="w-16 h-16" estado="analise" />
           <div className="text-sm text-white/50">Procurando a Mentis…</div>
@@ -337,7 +335,6 @@ export default function MentisChat() {
   if (!ativa) {
     return (
       <div className="min-h-screen">
-        <Nav />
         <div className="px-5 py-7 md:px-10 md:py-10">
           <Portao
             custoSessao={custoSessao}
@@ -369,7 +366,6 @@ export default function MentisChat() {
 
   return (
     <div className="min-h-screen">
-      <Nav />
       <div className="max-w-6xl mx-auto px-4 md:px-10 py-8 md:py-12">
         <div className="flex items-center gap-3 mb-6">
           <Mentis className="w-12 h-12 shrink-0" estado={enviando ? "analise" : "neutra"} title="Mentis" />

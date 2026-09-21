@@ -28,6 +28,7 @@ O Firestore é **compartilhado entre local e produção**. O Mongo local
 | idempotência de crédito de Sparks | progresso e eventos de curso |
 | | redações, avaliações, caches de LLM |
 | | pagamentos, cupons, indicações |
+| | influencers, comissões, eventos de growth, campanhas |
 | | caches derivados dos agregados |
 
 O critério é [[custo-de-leitura]]: o Firestore tem cota e o Mongo não. **O
@@ -68,6 +69,11 @@ entra lá e sai com a conta. **Há teste de inventário que pega quem esquecer.*
    `{"$in": [None, mp_payment_id]}` — vazio (primeira compra) ou este mesmo
    pagamento (reenvio de webhook). **Contar compras anteriores é ler-e-escrever, e
    dois webhooks juntos leem o mesmo zero.**
+   `influencer_comissoes` ([[afiliados]]) usa a forma mais simples do mesmo
+   princípio: `_id = mp_payment_id` direto no `insert_one`. Não precisa de
+   `find_one_and_update` porque a comissão não é "uma vez na primeira
+   compra", é "uma vez por pagamento" — a chave primária já garante isso, e
+   um reenvio de webhook esbarra em `DuplicateKeyError` em vez de duplicar.
 
 Do lado do cliente: `lib/idempotencia.js` (`criarPortao`). A lição que motivou o
 arquivo — **a chave sozinha não resolve o toque duplo**: um `novaChave()` dentro do

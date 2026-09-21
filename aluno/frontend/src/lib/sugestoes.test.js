@@ -1,4 +1,5 @@
 import { montarSugestoes } from "./sugestoes";
+import { ROTAS } from "./rotas";
 
 /**
  * As regras do balão de sugestões.
@@ -116,7 +117,7 @@ describe("a redação", () => {
     const painel = { ...painelVazio, redacao: { corrigidas: 0, serie: [] } };
     const s = montarSugestoes(painel, SEXTA);
     expect(s[0].id).toBe("redacao-primeira");
-    expect(s[0].rota).toBe("/redacao");
+    expect(s[0].rota).toBe(ROTAS.REDACAO);
   });
 
   test("quem escreveu esta semana NÃO é cobrado", () => {

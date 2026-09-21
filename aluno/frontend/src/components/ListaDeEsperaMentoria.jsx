@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { api, errMsg } from "../lib/api";
 import { useAuth } from "../lib/auth";
-import { avisarSparksMudou } from "./Nav";
+import { avisarSparksMudou } from "./Navegacao";
 import { criarPortao } from "../lib/idempotencia";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
 import { CheckCircle2, Loader2, Users, AlertCircle, Zap, Clock } from "lucide-react";

@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { api, errMsg } from "../lib/api";
-import Nav from "../components/Nav";
 import { Ticket, Plus, Trash2, Users, ChevronDown, ChevronRight, Megaphone, Check } from "lucide-react";
 
 function formatDate(iso) {
@@ -130,7 +129,6 @@ export default function AdminPromoCodes() {
 
   return (
     <div className="min-h-screen">
-      <Nav />
       <div className="max-w-4xl mx-auto px-5 py-7 md:px-10 md:py-10">
         <div className="flex items-center gap-3 mb-3">
           <Ticket className="w-4 h-4 text-sapiens-accent" />

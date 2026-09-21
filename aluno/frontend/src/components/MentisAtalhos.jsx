@@ -3,6 +3,8 @@ import {
   Compass, ListChecks, Trophy, PlayCircle, PenLine, Brain, Zap, GraduationCap,
   CalendarDays, Sparkles,
 } from "lucide-react";
+import { ROTAS, ANCORAS, com } from "../lib/rotas";
+import { nomeDoDestino } from "../lib/navegacao";
 
 /**
  * Os atalhos da Mentis — a parte NAVEGAÇÃO da camada, separada da parte
@@ -17,20 +19,26 @@ import {
  * Os destinos são os MESMOS que a Mentis pode escolher sozinha no campo
  * `acao.tipo = "ir"` (`mentis_routes.DESTINOS`), na mesma ordem de
  * importância do produto: o mapa primeiro.
+ *
+ * **O RÓTULO NÃO É ESCRITO AQUI.** Ele sai de `nomeDoDestino`, o vocabulário
+ * único do produto. Esta lista chamava `/exams` de "Questões", `/progresso` de
+ * "Meu desempenho" e `/agenda` de "Minha semana" — três nomes que não existiam
+ * em nenhuma outra superfície, num chip que a Mentis mostra justamente para o
+ * aluno novo, que é quem ainda está montando o mapa mental do produto.
  */
 
 export const ATALHOS = [
-  { rota: "/treino", icone: Compass, rotulo: "Mapa de Treino" },
-  { rota: "/dashboard#missoes", icone: ListChecks, rotulo: "Missões" },
-  { rota: "/conquistas", icone: Trophy, rotulo: "Conquistas" },
-  { rota: "/exams", icone: PlayCircle, rotulo: "Questões" },
-  { rota: "/minhas-questoes", icone: Sparkles, rotulo: "Questões que gerei" },
-  { rota: "/desempenho", icone: Brain, rotulo: "Meu desempenho" },
-  { rota: "/redacao", icone: PenLine, rotulo: "Redação" },
-  { rota: "/cronograma", icone: CalendarDays, rotulo: "Minha semana" },
-  { rota: "/sparks", icone: Zap, rotulo: "Sparks" },
-  { rota: "/mentoria", icone: GraduationCap, rotulo: "Mentoria com a USP" },
-];
+  { rota: ROTAS.TREINO, icone: Compass },
+  { rota: com(ROTAS.HOJE, ANCORAS.HOJE_MISSOES), icone: ListChecks, rotulo: "Missões do dia" },
+  { rota: com(ROTAS.PROGRESSO, ANCORAS.PROGRESSO_CONQUISTAS), icone: Trophy },
+  { rota: ROTAS.PROVAS, icone: PlayCircle },
+  { rota: `${ROTAS.TREINO}?fonte=geradas`, icone: Sparkles },
+  { rota: ROTAS.PROGRESSO, icone: Brain },
+  { rota: ROTAS.REDACAO, icone: PenLine },
+  { rota: ROTAS.AGENDA, icone: CalendarDays },
+  { rota: ROTAS.SPARKS, icone: Zap },
+  { rota: ROTAS.MENTORIA, icone: GraduationCap },
+].map((a) => ({ ...a, rotulo: a.rotulo || nomeDoDestino(a.rota) }));
 
 export default function MentisAtalhos({ compacto = false, limite }) {
   const nav = useNavigate();

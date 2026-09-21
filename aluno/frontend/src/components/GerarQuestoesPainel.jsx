@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Sparkles, Loader2, ArrowRight, ChevronDown } from "lucide-react";
 import { api, errMsg } from "../lib/api";
-import { avisarSparksMudou } from "./Nav";
+import { avisarSparksMudou } from "./Navegacao";
 
 /**
  * Gerar questões novas — agora com endereço.

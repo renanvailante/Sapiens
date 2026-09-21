@@ -35,6 +35,7 @@ from datetime import date, datetime, timedelta
 from typing import Any, Iterable, Optional
 
 import prioridade_enem
+import rotas_do_app as rotas
 
 # ---------------------------------------------------------------------------
 # Vocabulário
@@ -467,7 +468,7 @@ def alocar(
             titulo=f"Revisão: {nome}"[:_TITULO_MAX],
             detalhe=(item.get("motivo") or
                      "Este ponto voltou para a fila porque a data de reteste chegou.")[:_DETALHE_MAX],
-            rota="/revisoes",
+            rota=rotas.AGENDA_REVISOES,
             frente="revisao",
             frente_nome="Revisão espaçada",
         ))
@@ -487,7 +488,7 @@ def alocar(
                 if taxa is not None else
                 "Habilidade que o seu histórico ainda não sustenta."
             )[:_DETALHE_MAX],
-            rota=f"/treino?hab={hab['hab_id']}",
+            rota=f"{rotas.TREINO}?hab={hab['hab_id']}",
             hab_id=hab["hab_id"],
             frente="treino",
             frente_nome="Treino de habilidade",
@@ -522,7 +523,7 @@ def alocar(
                 + (" Bloco duplo: a redação do ENEM leva 90 minutos, e treinar em 50 ensina a não terminar."
                    if duplo else " Bloco curto: trabalhe uma competência isolada, não o texto inteiro.")
             ).strip()[:_DETALHE_MAX],
-            rota="/redacao",
+            rota=rotas.REDACAO,
             frente="redacao",
             frente_nome="Redação",
         ))

@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import CardDeMelhora from "./CardDeMelhora";
 import { CalendarClock, Repeat, TrendingDown, Shuffle, CircleAlert, Sprout } from "lucide-react";
+import { ROTAS } from "../lib/rotas";
 
 /**
  * A fila de revisões de hoje — o que a Fase 1 entrega ao aluno.
@@ -92,7 +93,7 @@ export function ResumoDaFila({ resumo }) {
 /** Leva às questões que exercitam ESTE processo, não ao cardápio genérico. */
 function hrefDaRevisao(item) {
   const ids = (item.praticar || []).map((p) => p.item_id).filter(Boolean);
-  return ids.length ? `/exams?item_ids=${encodeURIComponent(ids.join(","))}` : "/exams";
+  return ids.length ? `${ROTAS.PROVAS}?item_ids=${encodeURIComponent(ids.join(","))}` : ROTAS.PROVAS;
 }
 
 function evidenciaDe(item) {
@@ -134,7 +135,7 @@ export default function FilaDeRevisao({ fila, onSaldo }) {
           marca quando voltar a cobrar aquilo. Responda algumas questões e esta fila se monta sozinha.
         </p>
         <button
-          onClick={() => nav("/exams")}
+          onClick={() => nav("/estudar/provas")}
           className="pill btn-sapiens mt-4 inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium"
           data-testid="fila-vazia-praticar"
         >

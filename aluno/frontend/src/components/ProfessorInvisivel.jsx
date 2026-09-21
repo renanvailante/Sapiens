@@ -113,7 +113,7 @@ export default function ProfessorInvisivel({ gatilho, onFechar }) {
           type="button"
           onClick={() => {
             encerrar("concluir");
-            nav("/revisoes");
+            nav("/agenda#revisoes");
           }}
           className="pill btn-sapiens inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-medium"
           data-testid="professor-invisivel-trabalhar"

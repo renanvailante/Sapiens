@@ -123,7 +123,7 @@ export default function BemVindo() {
   // simplesmente volta para o Painel.
   useEffect(() => {
     api.get("/onboarding")
-      .then(({ data }) => { if (data?.concluido) nav("/dashboard", { replace: true }); })
+      .then(({ data }) => { if (data?.concluido) nav("/hoje", { replace: true }); })
       .catch(() => {});
   }, [nav]);
 
@@ -154,7 +154,7 @@ export default function BemVindo() {
       .catch(() => {})
       // `guia=1`: o Painel abre e a Mentis começa o tour por cima dele. É a
       // continuação da mesma conversa, não um segundo onboarding.
-      .finally(() => nav("/dashboard?guia=1", { replace: true }));
+      .finally(() => nav("/hoje?guia=1", { replace: true }));
   }, [dificuldades, objetivo, minutos, meta, nav, marcarVisto]);
 
   const pularTudo = useCallback(() => {
@@ -162,7 +162,7 @@ export default function BemVindo() {
     // "agora não" é a definição de insistência.
     marcarVisto();
     api.put("/onboarding", { concluido: true }).catch(() => {});
-    nav("/dashboard", { replace: true });
+    nav("/hoje", { replace: true });
   }, [nav, marcarVisto]);
 
   const avancar = () => {

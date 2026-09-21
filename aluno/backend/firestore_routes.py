@@ -523,7 +523,9 @@ async def concluir_rodada(payload: RodadaConcluirPayload, user: User = Depends(r
 
 @router.get("/students/me/sparks")
 async def meus_sparks(user: User = Depends(require_user)):
-    """Saldo + o direito permanente que a loja vende.
+    """Saldo + os direitos que a loja vende (a maioria permanente;
+    `mentis_ilimitada` tem prazo desde 2026-09-21 — ver `firestore_service.
+    _mentis_ilimitada_valida`).
 
     `mentis_ilimitada` vem junto porque as duas coisas aparecem no mesmo
     lugar da tela (o chip da barra, a loja, o chat) e separá-las em duas

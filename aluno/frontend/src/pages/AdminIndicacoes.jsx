@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { api, errMsg } from "../lib/api";
-import Nav from "../components/Nav";
 import { Gift, ArrowRight, Zap } from "lucide-react";
 
 /**
@@ -59,7 +58,6 @@ export default function AdminIndicacoes() {
 
   return (
     <div className="min-h-screen">
-      <Nav />
       <div className="max-w-4xl mx-auto px-5 py-7 md:px-10 md:py-10">
         <div className="mb-3 flex items-center gap-3">
           <Gift className="h-4 w-4 text-sapiens-accent" />

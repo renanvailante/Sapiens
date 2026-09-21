@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { api, errMsg } from "../lib/api";
-import { avisarSparksMudou } from "./Nav";
+import { avisarSparksMudou } from "./Navegacao";
 import AnelDeProgresso from "./AnelDeProgresso";
 import ContagemEnem from "./ContagemEnem";
 import {
@@ -130,7 +130,7 @@ function Liga({ dados }) {
   return (
     <Medida
       olho={<><Trophy className="h-3 w-3" /> Liga</>}
-      to="/liga"
+      to="/progresso#conquistas"
       testid="progresso-liga"
       tour="tour-liga"
     >
@@ -299,7 +299,7 @@ export default function PainelDeProgresso({ dados, aoMudar }) {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Link
-              to="/exams"
+              to="/estudar/provas"
               className="pill btn-sapiens inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold"
               data-testid="progresso-risco-praticar"
             >

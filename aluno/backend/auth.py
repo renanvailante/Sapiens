@@ -248,6 +248,28 @@ async def _registrar_indicacao(user_id: str, code: str | None) -> None:
         logger.exception("Falha ao registrar indicação de %s (código %r).", user_id, code)
 
 
+async def _registrar_influencia(user_id: str, cupom_aplicado: str | None) -> None:
+    """Terceira leitura do MESMO campo do cadastro (ver `_registrar_indicacao`
+    acima para a primeira/segunda): se o cupom que valeu pertence a um
+    influencer do programa de afiliados, carimba o vínculo. `cupom_aplicado`
+    já vem NORMALIZADO e confirmado como um código real do catálogo — só
+    chega aqui quando `_bonus_de_cadastro` já achou um cupom válido, então
+    não há o que resolver além de checar se ELE tem `influencer_id`
+    (`influencers.resolver_e_registrar_atribuicao` faz essa checagem e não
+    faz nada se não tiver — seguro chamar sempre que houve cupom).
+
+    Erro aqui nunca derruba o cadastro, mesma disciplina do resto do módulo.
+    """
+    if not cupom_aplicado:
+        return
+    import influencers
+
+    try:
+        await influencers.resolver_e_registrar_atribuicao(_db, user_id, cupom_aplicado)
+    except Exception:  # noqa: BLE001
+        logger.exception("Falha ao registrar atribuição de influencer para %s (cupom %r).", user_id, cupom_aplicado)
+
+
 @router.post("/signup")
 async def signup(
     payload: SignupRequest,
@@ -283,7 +305,9 @@ async def signup(
     await _db.users.insert_one(user.model_dump())
     sparks_iniciais, cupom, cupom_sparks = await _bonus_de_cadastro(payload.promo_code)
     await _registrar_cupom(user.user_id, cupom, cupom_sparks)
-    if not cupom:
+    if cupom:
+        await _registrar_influencia(user.user_id, cupom)
+    else:
         await _registrar_indicacao(user.user_id, payload.promo_code)
     fs.ensure_student_profile(user.user_id, user.name, user.email, initial_sparks=sparks_iniciais)
     token = await _create_session(user.user_id)
@@ -412,7 +436,9 @@ async def google_sign_in(
         user_id = novo.user_id
         sparks_iniciais, cupom, cupom_sparks = await _bonus_de_cadastro(promo_code)
         await _registrar_cupom(user_id, cupom, cupom_sparks)
-        if not cupom:
+        if cupom:
+            await _registrar_influencia(user_id, cupom)
+        else:
             await _registrar_indicacao(user_id, promo_code)
         fs.ensure_student_profile(user_id, nome, email, initial_sparks=sparks_iniciais)
 

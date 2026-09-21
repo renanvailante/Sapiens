@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Check, Star, Lock, Play } from "lucide-react";
 import Mentis from "./Mentis";
 import { ordenarMissoes } from "../lib/trilha";
+import { ROTAS } from "../lib/rotas";
 
 /**
  * A trilha — as próximas missões do Mapa de Treino desenhadas como um caminho.
@@ -145,7 +146,7 @@ export default function TrilhaDeMissoes({ habilidades, limite = 5, testid = "tri
             >
               <button
                 type="button"
-                onClick={() => nav(`/treino?hab=${hab.hab_id}`)}
+                onClick={() => nav(`${ROTAS.TREINO}?hab=${hab.hab_id}`)}
                 className={estilo.circulo}
                 title={hab.nome}
                 data-testid={`${testid}-no-${hab.hab_id}`}

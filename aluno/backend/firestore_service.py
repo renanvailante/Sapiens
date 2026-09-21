@@ -16,7 +16,7 @@ import logging
 import os
 import re
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 from zoneinfo import ZoneInfo
 
@@ -750,6 +750,55 @@ def resumo_dos_alunos() -> dict[str, dict[str, Any]]:
     return resumo
 
 
+def migrar_mentis_ilimitada_para_prazo(*, aplicar: bool = False) -> dict[str, Any]:
+    """Migração ÚNICA da reversão de 2026-09-21: dá a quem já tem
+    `mentis_ilimitada=True` sem `mentis_ilimitada_ate` uma janela nova de
+    `sparks_store.PRAZO_MENTIS_ILIMITADA_DIAS` dias A PARTIR DE AGORA — não a
+    partir da compra original (decisão explícita do dono: ninguém perde
+    acesso no minuto em que isto rodar).
+
+    **NÃO É CHAMADA POR NENHUMA ROTA HTTP.** É o instante em que um direito
+    até então permanente passa a ter prazo pra quem já paga por ele — decisão
+    demais para rodar sozinha num deploy. Executar manualmente, uma vez
+    (`fly ssh console -a sapiens-aluno -C "python -c '...'"`, mesmo mecanismo
+    já usado para testar pagamento real, ver `Cerebro/arquitetura/pagamentos.md`).
+
+    `aplicar=False` (padrão) é DRY RUN: conta e lista quem seria afetado, não
+    escreve nada — rode assim primeiro. Só grava com `aplicar=True`.
+    Idempotente: quem já tem `mentis_ilimitada_ate` (concedido depois desta
+    mudança, ou já migrado) é ignorado, reenrodar não empurra a validade de
+    novo.
+    """
+    import sparks_store
+
+    client = get_firestore()
+    nova_validade = (
+        datetime.now(timezone.utc) + timedelta(days=sparks_store.PRAZO_MENTIS_ILIMITADA_DIAS)
+    ).isoformat()
+    afetados: list[str] = []
+    varridos = 0
+    for snap in client.collection("students").stream():
+        varridos += 1
+        if varridos > _TETO_ALUNOS_VARRIDOS:
+            logger.error(
+                "migrar_mentis_ilimitada_para_prazo: base passou de %d alunos, "
+                "varredura truncada — pagine antes de rodar de novo.", _TETO_ALUNOS_VARRIDOS,
+            )
+            break
+        dados = snap.to_dict() or {}
+        if dados.get("mentis_ilimitada") and not dados.get("mentis_ilimitada_ate"):
+            afetados.append(snap.id)
+            if aplicar:
+                snap.reference.set({"mentis_ilimitada_ate": nova_validade}, merge=True)
+    return {
+        "aplicar": aplicar,
+        "afetados": len(afetados),
+        "uids": afetados,
+        "nova_validade": nova_validade,
+        "varridos": varridos,
+    }
+
+
 def resumo_de_um_aluno(uid: str) -> dict[str, Any]:
     """Tudo que o documento `students/{uid}` sabe sobre um aluno, em UMA
     leitura — para a ficha que o admin abre ao clicar num aluno.
@@ -1133,30 +1182,61 @@ def list_sparks_purchases(uid: str, limit: int = 100) -> list[dict[str, Any]]:
 
 
 # ---------------------------------------------------------------------------
-# Direitos permanentes — o que o pacote de R$119,90 compra além de saldo
+# Direitos — o que o pacote de R$119,90 compra além de saldo
 # ---------------------------------------------------------------------------
 #
 # Cada direito é uma flag booleana no documento do aluno
-# (`students/{uid}.mentis_ilimitada`, `...comunidade_vip`), e NÃO uma
-# assinatura com validade: o que foi vendido é "para sempre", e qualquer data
-# de expiração aqui seria uma promessa diferente da que a loja faz. Concedidos
-# só pelo webhook de pagamento aprovado, no mesmo lugar em que os Sparks são
+# (`students/{uid}.mentis_ilimitada`, `...comunidade_vip`). Concedidos só
+# pelo webhook de pagamento aprovado, no mesmo lugar em que os Sparks são
 # creditados. A lista do que pode existir mora em `sparks_store.DIREITOS`.
+#
+# `mentis_ilimitada` é o ÚNICO com prazo (`mentis_ilimitada_ate`, decisão do
+# dono de 2026-09-21 — ver `sparks_store.PRAZO_MENTIS_ILIMITADA_DIAS` e
+# `Cerebro/regras/inviolaveis.md`); os outros três (`cursos_inclusos`,
+# `lives_inclusas`, `comunidade_vip`) continuam sem validade, de propósito —
+# não generalize expiração para eles sem decisão explícita nova.
 
 
 def conceder_direitos(uid: str, direitos: tuple[str, ...] | list[str]) -> None:
     """Liga os direitos numa escrita só.
 
     Idempotente por natureza (escrever `True` duas vezes não muda nada), então
-    o reenvio de webhook do Mercado Pago não precisa de guarda extra.
+    o reenvio de webhook do Mercado Pago não precisa de guarda extra — inclui
+    `mentis_ilimitada_ate`: reenviar o mesmo webhook empurra a validade para
+    "agora + 30 dias" de novo, mas um reenvio real do Mercado Pago é sempre do
+    MESMO pagamento, então na prática isso só reafirma a mesma janela.
     """
+    import sparks_store
+
     if not direitos:
         return
     campos: dict[str, Any] = {}
     for d in direitos:
         campos[d] = True
         campos[f"{d}_em"] = _now_iso()
+        if d == "mentis_ilimitada":
+            campos["mentis_ilimitada_ate"] = (
+                datetime.now(timezone.utc) + timedelta(days=sparks_store.PRAZO_MENTIS_ILIMITADA_DIAS)
+            ).isoformat()
     _student_doc_ref(uid).set(campos, merge=True)
+
+
+def _mentis_ilimitada_valida(dados: dict) -> bool:
+    """`mentis_ilimitada` além de `True` precisa de `_ate` no futuro.
+
+    Doc sem `mentis_ilimitada_ate` (holder de antes da migração de
+    2026-09-21, ou falha na escrita) é tratado como EXPIRADO, não como
+    permanente — mesma disciplina de "na dúvida cobra-se o Spark" que
+    `ler_direitos` já aplica para falha de leitura inteira."""
+    if not dados.get("mentis_ilimitada"):
+        return False
+    ate = dados.get("mentis_ilimitada_ate")
+    if not ate:
+        return False
+    try:
+        return datetime.fromisoformat(ate) > datetime.now(timezone.utc)
+    except (TypeError, ValueError):
+        return False
 
 
 def ler_direitos(uid: str) -> dict[str, bool]:
@@ -1178,7 +1258,10 @@ def ler_direitos(uid: str) -> dict[str, bool]:
     except Exception:  # noqa: BLE001
         logger.warning("Não foi possível ler os direitos de %s.", uid)
         dados = {}
-    return {d: bool(dados.get(d)) for d in sparks_store.DIREITOS}
+    resultado = {d: bool(dados.get(d)) for d in sparks_store.DIREITOS}
+    if "mentis_ilimitada" in resultado:
+        resultado["mentis_ilimitada"] = _mentis_ilimitada_valida(dados)
+    return resultado
 
 
 def ler_saldo_e_direitos(uid: str) -> tuple[int | None, dict[str, bool]]:
@@ -1200,10 +1283,10 @@ def ler_saldo_e_direitos(uid: str) -> tuple[int | None, dict[str, bool]]:
     except Exception:  # noqa: BLE001
         logger.warning("Não foi possível ler saldo e direitos de %s.", uid)
         return None, {d: False for d in sparks_store.DIREITOS}
-    return (
-        dados.get("sparks_balance", SPARKS_INITIAL_BALANCE),
-        {d: bool(dados.get(d)) for d in sparks_store.DIREITOS},
-    )
+    direitos = {d: bool(dados.get(d)) for d in sparks_store.DIREITOS}
+    if "mentis_ilimitada" in direitos:
+        direitos["mentis_ilimitada"] = _mentis_ilimitada_valida(dados)
+    return dados.get("sparks_balance", SPARKS_INITIAL_BALANCE), direitos
 
 
 def tem_mentis_ilimitada(uid: str) -> bool:

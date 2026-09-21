@@ -1,6 +1,6 @@
 import {
   Calculator, PenLine, Target, BookOpen, FlaskConical, Rocket, Globe,
-  CalendarDays, GraduationCap,
+  CalendarDays, GraduationCap, Sigma, Quote,
 } from "lucide-react";
 
 /**
@@ -35,6 +35,8 @@ const GLIFOS = {
   foguete: Rocket,
   globo: Globe,
   calendario: CalendarDays,
+  formula: Sigma,
+  citacao: Quote,
 };
 
 export default function CapaDoCurso({ capa, className = "", altura = "h-28", testid }) {

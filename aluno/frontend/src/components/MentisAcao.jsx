@@ -30,7 +30,7 @@ function AcaoCronograma() {
     setErro(null);
     api
       .post("/cronograma/gerar", { com_mentis: false })
-      .then(() => nav("/cronograma"))
+      .then(() => nav("/agenda"))
       .catch((e) => {
         setErro(errMsg(e, "Não consegui montar sua semana agora."));
         setEstado("erro");

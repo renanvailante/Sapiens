@@ -310,6 +310,34 @@ class TestResgatarMissao:
         assert segundo["ok"] is False
         assert len(concessoes) == 1
 
+    def test_primeiro_resgate_registra_marco_de_analytics(self, servico_com_db, monkeypatch):
+        """Analytics de produto: `primeira_microvitoria` — ver
+        `product_analytics.py`. Uma vez na vida, mesmo resgatando missões em
+        dias diferentes depois."""
+        monkeypatch.setattr(servico.fs, "grant_sparks_evento",
+                             lambda uid, **kw: {"ja_concedido": False, "sparks_ganhos": kw.get("amount", 0)})
+        monkeypatch.setattr(servico.fs, "read_sparks_balance", lambda uid: 100)
+
+        roda(servico_com_db.engajamento_dia.insert_one(
+            {"_id": "u1:2026-09-15", "uid": "u1", "dia": "2026-09-15",
+             "contadores": {"questoes": 99, "acertos": 99, "respostas_comunidade": 9}}
+        ))
+        alvo = eng.missoes_do_dia("u1", "2026-09-15", {"questoes": 99, "acertos": 99})[0]
+        roda(servico.resgatar_missao("u1", alvo["id"]))
+        marco = roda(servico_com_db.product_events.find_one({"_id": "u1:primeira_microvitoria"}))
+        assert marco is not None
+        assert marco["tipo"] == "primeira_microvitoria"
+
+        # Segunda missão resgatada (dia diferente) não duplica o marco.
+        monkeypatch.setattr(servico, "_hoje", lambda: "2026-09-16")
+        roda(servico_com_db.engajamento_dia.insert_one(
+            {"_id": "u1:2026-09-16", "uid": "u1", "dia": "2026-09-16",
+             "contadores": {"questoes": 99, "acertos": 99, "respostas_comunidade": 9}}
+        ))
+        outro_alvo = eng.missoes_do_dia("u1", "2026-09-16", {"questoes": 99, "acertos": 99})[0]
+        roda(servico.resgatar_missao("u1", outro_alvo["id"]))
+        assert roda(servico_com_db.product_events.count_documents({"uid": "u1", "tipo": "primeira_microvitoria"})) == 1
+
 
 class TestCongelador:
     def test_sem_saldo_devolve_quanto_falta(self, servico_com_db, monkeypatch):

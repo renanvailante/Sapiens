@@ -17,6 +17,7 @@ import pytest
 
 import cronograma as cg
 import prioridade_enem as pe
+import rotas_do_app
 
 
 # ---------------------------------------------------------------------------
@@ -177,7 +178,11 @@ def test_revisao_marcada_pega_o_primeiro_horario():
     _, _, plano = _semana_cheia(revisoes=[{"processo_nome": "Comparar grandezas", "motivo": "Reteste hoje."}])
     primeiro = plano["blocos"][0]
     assert primeiro["tipo"] == "revisao"
-    assert primeiro["rota"] == "/revisoes"
+    # A fila de revisão deixou de ser tela própria e virou seção da Agenda
+    # (2026-09-18). O bloco leva à ÂNCORA, não a outra rota: antes, o
+    # cronograma apontava para `/revisoes` e `/revisoes` desenhava a fila que o
+    # cronograma tinha acabado de agendar — um laço com o aluno no meio.
+    assert primeiro["rota"] == rotas_do_app.AGENDA_REVISOES
 
 
 def test_redacao_entra_na_semana_de_quem_nunca_escreveu():

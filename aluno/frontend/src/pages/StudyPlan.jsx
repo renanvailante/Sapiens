@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
-import Nav from "../components/Nav";
 import EstadoDeErro from "../components/EstadoDeErro";
 import { ResumoDaFila } from "../components/FilaDeRevisao";
 import { useCarregamento } from "../hooks/useCarregamento";
@@ -40,7 +39,7 @@ function RevisoesDeHoje() {
     <div className="mt-8" data-testid="plan-fila-viva">
       <ResumoDaFila resumo={fila.resumo} />
       <Link
-        to="/revisoes"
+        to="/agenda#revisoes"
         className="pill btn-sapiens mt-3 inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 text-sm font-medium"
         data-testid="plan-ir-para-revisoes"
       >
@@ -57,15 +56,14 @@ export default function StudyPlan() {
     async () => (await api.get(`/analyses/${analysisId}`)).data,
     [analysisId],
   );
-  if (carregando) return <div><Nav /><div className="p-10 text-white/60">Carregando...</div></div>;
+  if (carregando) return <div className="p-10 text-white/60">Carregando...</div>;
   if (erro || !a) return (
     <div className="min-h-screen">
-      <Nav />
       <div className="max-w-3xl mx-auto px-5 py-7 md:px-10 md:py-10">
         <EstadoDeErro
           mensagem={erro || "Este plano não existe mais ou o link está incompleto."}
           aoTentarNovamente={recarregar}
-          voltarPara="/history"
+          voltarPara="/progresso#historico"
           voltarLabel="Ver meu histórico"
         />
       </div>
@@ -74,7 +72,6 @@ export default function StudyPlan() {
   const plan = a.study_plan || [];
   return (
     <div className="min-h-screen">
-      <Nav />
       <div className="max-w-3xl mx-auto px-5 py-7 md:px-10 md:py-10">
         <div className="font-mono-alt text-xs uppercase tracking-[0.35em] text-white/50 mb-4">Recomendações</div>
         <h1 className="titulo-tela" data-testid="plan-title">
@@ -111,7 +108,7 @@ export default function StudyPlan() {
                         <Clock className="w-3 h-3" /> {item.hours || 2}h
                       </span>
                       <button
-                        onClick={() => nav("/exams")}
+                        onClick={() => nav("/estudar/provas")}
                         className="pill btn-sapiens ml-auto inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-medium"
                         data-testid={`plan-cta-${i}`}
                       >

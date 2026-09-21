@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
 import { api, errMsg } from "../lib/api";
-import Nav from "../components/Nav";
 import { toast } from "sonner";
 import {
   Plus, Trash2, Eye, EyeOff, Copy, Check, AlertTriangle, Wand2,
@@ -603,7 +602,6 @@ export default function AdminFeed() {
 
   return (
     <div className="min-h-screen">
-      <Nav />
       <div className="max-w-5xl mx-auto px-5 py-7 md:px-10 md:py-10">
         <div className="secao-olho">Admin · Feed</div>
         <h1 className="font-display text-4xl font-extrabold tracking-tighter text-white" data-testid="feed-admin-title">

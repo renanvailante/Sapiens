@@ -1,7 +1,16 @@
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { api, errMsg } from "../lib/api";
-import Nav from "../components/Nav";
-import { Megaphone, Zap, Users, Ticket } from "lucide-react";
+import { Megaphone, Zap, Users, Ticket, Wallet, Copy } from "lucide-react";
+
+async function copiar(texto, rotulo) {
+  try {
+    await navigator.clipboard.writeText(texto);
+    toast.success(`${rotulo} copiado.`);
+  } catch {
+    toast.error("O navegador bloqueou a cópia.");
+  }
+}
 
 function reais(centavos) {
   if (centavos == null) return "—";
@@ -38,7 +47,6 @@ export default function PromoterDashboard() {
 
   return (
     <div className="min-h-screen">
-      <Nav />
       <div className="max-w-4xl mx-auto px-5 py-7 md:px-10 md:py-10">
         <div className="flex items-center gap-3 mb-3">
           <Megaphone className="w-4 h-4 text-emerald-400" />
@@ -56,7 +64,7 @@ export default function PromoterDashboard() {
 
         {dados && (
           <>
-            <div className="mt-8 grid grid-cols-2 gap-3">
+            <div className={`mt-8 grid grid-cols-2 gap-3 ${dados.eh_influencer ? "sm:grid-cols-4" : ""}`}>
               <div className="card-sapiens rounded-2xl p-4">
                 <div className="font-mono-alt text-[10px] uppercase tracking-[0.25em] text-zinc-500">Alunos</div>
                 <div className="mt-1 font-display text-2xl font-extrabold tracking-tighter text-zinc-950">
@@ -69,7 +77,57 @@ export default function PromoterDashboard() {
                   {reais(dados.total_gasto_centavos)}
                 </div>
               </div>
+              {dados.eh_influencer && (
+                <>
+                  <div className="card-sapiens rounded-2xl p-4" data-testid="promoter-comissao-acumulada">
+                    <div className="font-mono-alt text-[10px] uppercase tracking-[0.25em] text-zinc-500">Comissão a receber</div>
+                    <div className="mt-1 font-display text-2xl font-extrabold tracking-tighter text-emerald-700">
+                      {reais(dados.comissao_acumulada_centavos)}
+                    </div>
+                  </div>
+                  <div className="card-sapiens rounded-2xl p-4">
+                    <div className="font-mono-alt text-[10px] uppercase tracking-[0.25em] text-zinc-500">Já recebido</div>
+                    <div className="mt-1 font-display text-2xl font-extrabold tracking-tighter text-zinc-500">
+                      {reais(dados.comissao_paga_centavos)}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
+
+            {dados.kit_divulgacao && (
+              <div className="mt-6 card-sapiens rounded-2xl p-5" data-testid="promoter-kit">
+                <div className="flex items-center gap-2 text-sm font-semibold text-zinc-900">
+                  <Wallet className="w-4 h-4" /> Seus materiais de divulgação
+                </div>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  {[
+                    ["Mensagem", dados.kit_divulgacao.mensagem],
+                    ["Legenda", dados.kit_divulgacao.legenda],
+                    ["Story", dados.kit_divulgacao.story],
+                    ["Roteiro de Reel", dados.kit_divulgacao.roteiro_reel],
+                  ].map(([rotulo, texto]) => (
+                    <div key={rotulo} className="rounded-xl border border-zinc-100 p-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] uppercase text-zinc-400">{rotulo}</span>
+                        <button onClick={() => copiar(texto, rotulo)} className="text-zinc-400 hover:text-zinc-900">
+                          <Copy className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      <p className="mt-1 text-xs text-zinc-600 whitespace-pre-wrap">{texto}</p>
+                    </div>
+                  ))}
+                </div>
+                {dados.kit_divulgacao.link && (
+                  <button
+                    onClick={() => copiar(`${window.location.origin}${dados.kit_divulgacao.link}`, "Link")}
+                    className="pill mt-3 inline-flex items-center gap-1.5 rounded-full border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-600 hover:text-zinc-900"
+                  >
+                    <Copy className="w-3 h-3" /> Copiar meu link
+                  </button>
+                )}
+              </div>
+            )}
 
             <div className="mt-6 space-y-4">
               {dados.cupons.length === 0 && (

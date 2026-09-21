@@ -1,6 +1,8 @@
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, Sparkles, Brain, Network, ChevronRight, Radio, Video, Clock, Medal, Users, Quote, Check, X, BookOpen, ShieldCheck } from "lucide-react";
+import { ArrowRight, Sparkles, Brain, Network, ChevronRight, Radio, Video, Clock, Medal, Users, Quote, Check, X, BookOpen, ShieldCheck, Infinity as InfinityIcon } from "lucide-react";
 import { useAuth } from "../lib/auth";
+import { api } from "../lib/api";
 import Logo from "../components/Logo";
 import BrandMark from "../components/BrandMark";
 import Mentis from "../components/Mentis";
@@ -10,6 +12,7 @@ import { MENTOR } from "../lib/mentor";
 import ContagemEnem from "../components/ContagemEnem";
 import { OPERADOR } from "../lib/operador";
 import { PROBLEMA, DOR_INTERNA, EMBASAMENTO, PLANO, APOSTAS, DEPOIMENTOS, FAQ } from "../lib/historia";
+import { ROTAS } from "../lib/rotas";
 
 /**
  * A landing — a única tela que fala com quem ainda não é aluno.
@@ -49,7 +52,7 @@ const VALOR = [
 function BotaoPrincipal({ user, nav, testid, children }) {
   return (
     <button
-      onClick={() => nav(user ? "/dashboard" : "/login?novo=1")}
+      onClick={() => nav(user ? ROTAS.HOJE : `${ROTAS.LOGIN}?novo=1`)}
       className="pill btn-sapiens inline-flex items-center gap-2 rounded-full px-7 py-4 text-base font-bold"
       data-testid={testid}
     >
@@ -58,9 +61,28 @@ function BotaoPrincipal({ user, nav, testid, children }) {
   );
 }
 
+function reais(centavos) {
+  return (centavos / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
 export default function Landing() {
   const nav = useNavigate();
   const { user } = useAuth();
+  // Preço nunca é escrito à mão (regra do produto) — a landing busca o
+  // catálogo público (`GET /sparks/packages/vitrine`, sem login) em vez de
+  // hardcodar. Sem estado nenhum, a seção de oferta simplesmente não
+  // aparece: silêncio é seguro aqui, texto de preço errado não é.
+  const [pacoteOferta, setPacoteOferta] = useState(null);
+
+  useEffect(() => {
+    api.get("/sparks/packages/vitrine")
+      .then(({ data }) => {
+        const destaque = (data.packages || []).find((p) => p.package_id === "spark_4000")
+          || (data.packages || [])[0] || null;
+        setPacoteOferta(destaque);
+      })
+      .catch(() => {}); // silencioso: a landing não trava por causa disto
+  }, []);
 
   return (
     <div className="topo-seguro min-h-screen">
@@ -69,7 +91,7 @@ export default function Landing() {
         <Logo tamanho="m" testid="landing-brand" />
         <div className="flex items-center gap-3">
           {user ? (
-            <Link to="/dashboard" className="pill btn-sapiens rounded-full px-5 py-2.5 text-sm font-bold" data-testid="landing-go-dashboard">
+            <Link to="/hoje" className="pill btn-sapiens rounded-full px-5 py-2.5 text-sm font-bold" data-testid="landing-go-dashboard">
               Ir para o painel
             </Link>
           ) : (
@@ -441,6 +463,51 @@ export default function Landing() {
               <div className="mt-2 text-sm leading-relaxed text-white/55">{c.body}</div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* ---------------- A OFERTA ----------------
+          Bloco explícito de preço/valor — faltava na landing (achado da
+          auditoria de 2026-09-21): até aqui só existia a linha solta "grátis
+          para começar". Preço vem do catálogo público (`useEffect` acima),
+          nunca escrito à mão aqui. Some sozinho se a chamada falhar. */}
+      <div className="mx-auto max-w-5xl px-5 pb-24 md:px-10" data-testid="landing-oferta">
+        <div className="mx-auto mb-10 max-w-2xl text-center">
+          <div className="secao-olho">Como funciona o pagamento</div>
+          <h2 className="mt-2 font-display text-3xl font-extrabold tracking-tighter text-white md:text-4xl">
+            Você começa de graça. Paga só o que quiser continuar tendo.
+          </h2>
+        </div>
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+          <div className="superficie p-7">
+            <div className="secao-olho text-white/50">Para começar</div>
+            <div className="mt-3 font-display text-2xl font-extrabold tracking-tight text-white">Grátis</div>
+            <p className="mt-2 text-sm leading-relaxed text-white/55">
+              Você cria a conta, recebe Sparks e já faz o diagnóstico, o treino e o plano da
+              semana — sem cartão, sem prazo pra decidir.
+            </p>
+          </div>
+          {pacoteOferta && (
+            <div className="superficie p-7 border border-[#4FD9FF]/25" data-testid="landing-oferta-pacote">
+              <div className="secao-olho flex items-center gap-1.5 text-[#7FD8FF]/85">
+                <InfinityIcon className="h-3.5 w-3.5" /> {pacoteOferta.highlight || "Quem quer mais"}
+              </div>
+              <div className="mt-3 flex items-baseline gap-2">
+                <span className="font-display text-2xl font-extrabold tracking-tight text-white">
+                  {reais(pacoteOferta.price_cents)}
+                </span>
+                <span className="text-xs text-white/40">{pacoteOferta.sparks_amount.toLocaleString("pt-BR")} Sparks</span>
+              </div>
+              <ul className="mt-4 space-y-2">
+                {pacoteOferta.beneficios.map((b) => (
+                  <li key={b} className="flex gap-2 text-sm leading-relaxed text-white/70">
+                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#7FD8FF]" strokeWidth={2.2} />
+                    <span>{b}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       </div>
 

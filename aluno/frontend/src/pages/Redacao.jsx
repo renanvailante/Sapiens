@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, errMsg } from "../lib/api";
-import Nav from "../components/Nav";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { toast } from "sonner";
 import { useCarregamento } from "../hooks/useCarregamento";
@@ -573,7 +572,6 @@ export default function Redacao() {
 
   return (
     <div className="min-h-screen">
-      <Nav />
       <div className="max-w-3xl mx-auto px-5 py-7 md:px-10 md:py-10">
         <div className="secao-olho">Redação</div>
         <h1 className="titulo-tela" data-testid="redacao-title">

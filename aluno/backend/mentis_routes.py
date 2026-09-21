@@ -57,6 +57,7 @@ import rate_limit
 import treino_habilidades as th
 from auth import require_user
 from models import User
+import rotas_do_app as rotas
 
 logger = logging.getLogger("sapiens.mentis")
 
@@ -920,21 +921,30 @@ Sem markdown, sem texto fora do JSON."""
 # rota, nem mandar o aluno para fora do produto, nem cair numa página que
 # ainda não existe. Navegar é grátis — nenhum destino daqui cobra Spark nem
 # chama modelo; o que custar, custa na tela de destino, com o preço à vista.
+# Os destinos que a Mentis pode escolher sozinha (`acao.tipo = "ir"`). **O
+# modelo escolhe uma CHAVE, nunca uma URL** — é essa lista fechada que impede
+# uma alucinação de virar navegação.
+#
+# As rotas saem de `rotas_do_app`, e não digitadas aqui: até 2026-09-18 este
+# dicionário ainda mandava o aluno para `/cognitive-profile` e `/cursos#live`,
+# meses depois de as duas telas terem sido renomeadas. Não quebrou porque havia
+# redirect do outro lado — ou seja, a divergência ficou invisível exatamente
+# por existir uma rede de segurança.
 DESTINOS: dict[str, dict[str, str]] = {
-    "mapa_treino": {"rota": "/treino", "rotulo": "Abrir o Mapa de Treino"},
-    "missoes": {"rota": "/dashboard#missoes", "rotulo": "Ver minhas missões de hoje"},
-    "conquistas": {"rota": "/conquistas", "rotulo": "Ver minhas conquistas"},
-    "questoes": {"rota": "/exams", "rotulo": "Praticar questões do ENEM"},
-    "minhas_questoes": {"rota": "/minhas-questoes", "rotulo": "Abrir as questões que eu gerei"},
-    "progresso": {"rota": "/cognitive-profile", "rotulo": "Ver minha análise de desempenho"},
-    "revisoes": {"rota": "/revisoes", "rotulo": "Revisar o que ficou pendente"},
-    "redacao": {"rota": "/redacao", "rotulo": "Escrever uma redação"},
-    "cronograma": {"rota": "/cronograma", "rotulo": "Ver a minha semana"},
-    "sparks": {"rota": "/sparks", "rotulo": "Ver meus Sparks"},
-    "comunidade": {"rota": "/comunidade", "rotulo": "Abrir o mural da comunidade"},
-    "mentoria": {"rota": "/mentoria", "rotulo": "Entrar na lista de espera da mentoria"},
-    "cursos": {"rota": "/cursos", "rotulo": "Ver os cursos e a aula ao vivo de quinta"},
-    "live": {"rota": "/cursos#live", "rotulo": "Entrar na aula ao vivo de quinta"},
+    "mapa_treino": {"rota": rotas.TREINO, "rotulo": "Abrir o Mapa de Treino"},
+    "missoes": {"rota": rotas.HOJE_MISSOES, "rotulo": "Ver minhas missões de hoje"},
+    "conquistas": {"rota": rotas.PROGRESSO_CONQUISTAS, "rotulo": "Ver minhas conquistas"},
+    "questoes": {"rota": rotas.PROVAS, "rotulo": "Praticar questões do ENEM"},
+    "minhas_questoes": {"rota": f"{rotas.TREINO}?fonte=geradas", "rotulo": "Abrir as questões que eu gerei"},
+    "progresso": {"rota": rotas.PROGRESSO, "rotulo": "Ver o meu progresso"},
+    "revisoes": {"rota": rotas.AGENDA_REVISOES, "rotulo": "Revisar o que ficou pendente"},
+    "redacao": {"rota": rotas.REDACAO, "rotulo": "Escrever uma redação"},
+    "cronograma": {"rota": rotas.AGENDA, "rotulo": "Ver a minha semana"},
+    "sparks": {"rota": rotas.SPARKS, "rotulo": "Ver meus Sparks"},
+    "comunidade": {"rota": rotas.COMUNIDADE, "rotulo": "Abrir o mural da comunidade"},
+    "mentoria": {"rota": rotas.MENTORIA, "rotulo": "Entrar na lista de espera da mentoria"},
+    "cursos": {"rota": rotas.CURSOS, "rotulo": "Ver os cursos e os e-books"},
+    "live": {"rota": rotas.AULA_AO_VIVO, "rotulo": "Entrar na aula ao vivo de quinta"},
 }
 
 _SUGESTOES_MAX = 3

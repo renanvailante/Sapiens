@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Sparkles, ArrowRight, Loader2 } from "lucide-react";
 import { api, errMsg } from "../lib/api";
+import { ROTAS } from "../lib/rotas";
 
 /**
  * Botão de ação que acompanha uma resposta da Mentis quando ela decide que
@@ -44,7 +45,7 @@ export default function MentisAcaoQuestoes({ acao }) {
   if (estado === "pronto" && resposta) {
     return (
       <Link
-        to={`/minhas-questoes?hab_id=${acao.hab_id}`}
+        to={`${ROTAS.TREINO}?fonte=geradas&hab=${acao.hab_id}`}
         className="pill mt-2 inline-flex items-center gap-1.5 rounded-full bg-emerald-400/10 border border-emerald-400/30 px-3.5 py-2 text-xs font-medium text-emerald-200 hover:bg-emerald-400/15"
         data-testid="mentis-acao-ver-questoes"
       >

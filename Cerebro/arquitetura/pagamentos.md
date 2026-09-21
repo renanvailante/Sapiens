@@ -57,7 +57,7 @@ Três fatos caros de redescobrir, todos em `sparks_payments_service.py`:
 ## Provar mudança nesse caminho
 
 Nada offline prova que o MP aceita o formato. O pacote `spark_test_15`
-("[teste interno] R$ 1,00 → 15 Sparks", link discreto no fim da loja) existe para
+("[teste inte.........rno] R$ 1,00 → 15 Sparks", link discreto no fim da loja) existe para
 isso: dá para montar o payload e chamar o MP de dentro da máquina com
 `fly ssh console -a sapiens-aluno -C "python ..."` sem tocar no Mongo.
 

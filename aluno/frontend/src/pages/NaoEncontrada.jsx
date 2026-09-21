@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Compass } from "lucide-react";
 import { useAuth } from "../lib/auth";
 import BrandMark from "../components/BrandMark";
+import { ROTAS } from "../lib/rotas";
 
 /**
  * 404 de verdade. A rota curinga renderizava a Landing: um link com erro de
@@ -28,7 +29,7 @@ export default function NaoEncontrada() {
           continua salvo — nada aqui tem a ver com as suas respostas.
         </p>
         <Link
-          to={user ? "/dashboard" : "/"}
+          to={user ? ROTAS.HOJE : ROTAS.LANDING}
           className="pill btn-sapiens mt-8 inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-medium"
           data-testid="404-voltar"
         >

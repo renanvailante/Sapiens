@@ -155,7 +155,7 @@ function sugestaoDeRedacao(redacao, hoje) {
       titulo: "Escreva a sua primeira redação",
       porque:
         "A redação vale 1000 pontos sozinha e é a única parte do ENEM em que dá para ganhar nota com método em poucas semanas. O Sapiens corrige por competência.",
-      rota: "/redacao",
+      rota: "/estudar/redacao",
       cta: "Começar a escrever",
     };
   }
@@ -169,7 +169,7 @@ function sugestaoDeRedacao(redacao, hoje) {
     olho: `${dias} dias`,
     titulo: "Faz tempo que você não escreve",
     porque: `Sua última redação foi há ${dias} dias. Escrever uma a cada duas semanas é o que mantém repertório e estrutura na mão no dia da prova.`,
-    rota: "/redacao",
+    rota: "/estudar/redacao",
     cta: "Escrever agora",
   };
 }
@@ -210,7 +210,7 @@ function sugestaoDeConquista(constancia) {
     titulo: `${sequencia} dias seguidos estudando`,
     porque:
       "Constância é o que separa quem melhora de quem só estuda muito em alguns dias. Veja onde isso te colocou na liga.",
-    rota: "/conquistas",
+    rota: "/progresso#conquistas",
     cta: "Ver conquistas",
     tom: "conquista",
   };

@@ -197,6 +197,75 @@ async def generate_json(
     )
 
 
+# ---------- Chamada com busca do Google (grounding) ----------
+#
+# Único uso hoje: `acquisition_research.py` (Pesquisador IA de Aquisição,
+# 2026-09-21). Grounding dá ao Gemini a capacidade de pesquisar a web DENTRO
+# da própria chamada — não precisa (e não deve, ver `Cerebro/arquitetura/
+# custo-de-ia.md`) contratar nenhuma API de busca paga separada.
+#
+# A família Gemini 3 (o `DEFAULT_MODEL` deste arquivo) é a primeira que aceita
+# `tools=[google_search]` e `response_mime_type="application/json"` na MESMA
+# chamada — em Gemini 1.5/2.x a API rejeita a combinação (erro 400). Se
+# `GEMINI_MODEL` for trocado para fora da família 3.x, reconfira isso antes de
+# confiar no JSON estrito aqui.
+async def generate_grounded_json(
+    system_instruction: str,
+    user_text: str,
+    *,
+    model: str | None = None,
+    timeout: float | None = None,
+    max_output_tokens: int | None = None,
+) -> tuple[Any, list[dict[str, str]]]:
+    """Como `generate_json`, mas com a busca do Google ligada. Devolve
+    `(json_extraido, fontes)` — `fontes` é a lista de URLs que o GROUNDING de
+    fato retornou (`grounding_metadata.grounding_chunks[].web.uri`), nunca o
+    texto que o próprio modelo escreveu dentro do JSON. Um campo de URL no
+    JSON que não aparece em `fontes` é o modelo relatando algo que ele não
+    necessariamente viu na busca — quem chama deve tratar isso como confiança
+    baixa, nunca como fato verificado (ver `acquisition_research.py`)."""
+    client = _client()
+    chosen = model or _model()
+    config_kwargs: dict[str, Any] = {
+        "system_instruction": system_instruction,
+        "response_mime_type": "application/json",
+        "temperature": 0.2,
+        "tools": [types.Tool(google_search=types.GoogleSearch())],
+    }
+    if max_output_tokens:
+        config_kwargs["max_output_tokens"] = int(max_output_tokens)
+    try:
+        resp = await asyncio.wait_for(
+            client.aio.models.generate_content(
+                model=chosen,
+                contents=[types.Part.from_text(text=user_text)],
+                config=types.GenerateContentConfig(**config_kwargs),
+            ),
+            timeout=timeout if timeout is not None else GEMINI_TIMEOUT_SEGUNDOS,
+        )
+    except asyncio.TimeoutError as exc:
+        raise GeminiIndisponivelError(
+            f"Gemini (grounding) não respondeu em {timeout or GEMINI_TIMEOUT_SEGUNDOS:.0f}s."
+        ) from exc
+
+    dado = _extract_json(resp.text or "")
+
+    fontes: list[dict[str, str]] = []
+    try:
+        candidatos = resp.candidates or []
+        metadata = candidatos[0].grounding_metadata if candidatos else None
+        chunks = metadata.grounding_chunks if metadata else None
+        for chunk in (chunks or []):
+            web = getattr(chunk, "web", None)
+            uri = getattr(web, "uri", None) if web else None
+            if uri:
+                fontes.append({"uri": uri, "title": getattr(web, "title", None) or ""})
+    except Exception:  # noqa: BLE001
+        logger.exception("Falha ao extrair grounding_metadata da resposta do Gemini.")
+
+    return dado, fontes
+
+
 # ---------- Chamada resiliente (timeout próprio + fallback de modelo) ----------
 #
 # Existe por causa de uma falha real e reprodutível: em 2026-09-03 o botão

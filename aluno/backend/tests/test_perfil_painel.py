@@ -27,6 +27,7 @@ import perfil_painel as pp  # noqa: E402
 import perfil_pedagogico  # noqa: E402
 import prioridade_enem  # noqa: E402
 from canonical_ontology import load_ontology  # noqa: E402
+import rotas_do_app as rotas
 
 
 def _run(coro):
@@ -350,7 +351,7 @@ class TestLeiturasDaMentis:
         )
         queda = next(l for l in painel["mentis"]["leituras"] if l["id"] == "evolucao")
         assert queda["tom"] == "atencao"
-        assert queda["acao"]["href"] == "/revisoes"
+        assert queda["acao"]["href"] == rotas.AGENDA_REVISOES
 
 
 class TestPainelNaoVazaOntologia:
@@ -535,7 +536,7 @@ class TestRedacao:
             hoje=date(2026, 9, 16),
         )
         leitura = next(l for l in painel["mentis"]["leituras"] if l["id"] == "redacao")
-        assert leitura["acao"]["href"] == "/redacao"
+        assert leitura["acao"]["href"] == rotas.REDACAO
 
     def test_a_mentis_aponta_a_competencia_mais_fraca(self):
         painel = pp.montar(

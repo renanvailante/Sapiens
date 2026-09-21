@@ -6,6 +6,17 @@ import {
 import TrilhaDeMissoes from "./TrilhaDeMissoes";
 import { missaoAtual } from "../lib/trilha";
 import { diaLocal } from "../lib/atividade";
+import { ROTAS } from "../lib/rotas";
+import { api } from "../lib/api";
+
+// Analytics de produto: `primeiro_proximo_passo` (ver `product_analytics.py`).
+// Fire-and-forget — nunca atrasa nem bloqueia o clique real do aluno, e o
+// `.catch` silencioso existe porque telemetria não pode virar motivo de erro
+// na tela. O backend já é idempotente (só grava na primeira vez), então
+// chamar de novo em cliques seguintes é barato e inofensivo.
+function registrarProximoPassoIniciado() {
+  api.post("/analytics/proximo-passo-iniciado").catch(() => {});
+}
 
 /**
  * O PRÓXIMO PASSO — a primeira coisa do Painel, e a única que responde a
@@ -58,7 +69,7 @@ export function escolherPasso({ revisoes, cronograma, habilidades }) {
       olho: "Venceu hoje",
       titulo: vencidas === 1 ? "1 questão voltou para revisão" : `${vencidas} questões voltaram para revisão`,
       porque: "Revisar no dia em que vence é o que faz a memória durar. Depois disso, rende menos.",
-      rota: "/revisoes",
+      rota: "/agenda#revisoes",
       cta: "Revisar agora",
       testid: "passo-revisao",
     };
@@ -75,7 +86,7 @@ export function escolherPasso({ revisoes, cronograma, habilidades }) {
       porque: bloco.frente_nome
         ? `${bloco.frente_nome} — você mesmo marcou esta hora para isto.`
         : "Você mesmo marcou esta hora para isto.",
-      rota: bloco.rota || "/cronograma",
+      rota: bloco.rota || ROTAS.AGENDA,
       cta: "Começar",
       testid: "passo-cronograma",
     };
@@ -104,7 +115,7 @@ export function escolherPasso({ revisoes, cronograma, habilidades }) {
     olho: "Seu primeiro passo",
     titulo: "Responda uma prova e descubra o seu padrão",
     porque: "É a partir das suas respostas que o mapa, as missões e o seu perfil existem.",
-    rota: "/exams",
+    rota: "/estudar/provas",
     cta: "Descobrir agora",
     testid: "passo-praticar",
   };
@@ -166,6 +177,7 @@ export default function ProximoPasso({
           <div className="mt-6 flex flex-wrap items-center gap-2.5">
             <Link
               to={passo.rota}
+              onClick={registrarProximoPassoIniciado}
               className="pill btn-sapiens inline-flex items-center gap-2 rounded-full px-6 py-3.5 text-sm font-bold"
               data-testid={passo.testid}
             >
@@ -179,14 +191,14 @@ export default function ProximoPasso({
                 abaixo do passo principal na hierarquia — o passo é a ação de
                 hoje —, mas deixa de ser invisível. */}
             <Link
-              to="/treino"
+              to="/estudar/treino"
               className="pill btn-contorno inline-flex items-center gap-2 rounded-full px-5 py-3.5 text-sm font-bold"
               data-testid="dash-cta-mapa"
             >
               <Compass className="h-4 w-4" /> Mapa de treino
             </Link>
             <Link
-              to="/exams"
+              to="/estudar/provas"
               className="pill btn-vidro inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm"
               data-testid="dash-cta-provas"
               data-tour="dash-provas"
@@ -231,7 +243,7 @@ export default function ProximoPasso({
             toque, e quem usa leitor de tela ouve para onde ele vai em vez de
             ouvir a lista de nós soltos. */}
         <Link
-          to="/treino"
+          to="/estudar/treino"
           aria-label="Abrir o mapa de treino"
           className="group block rounded-[26px] border border-white/25 bg-black/35 p-4 pb-6 transition hover:border-[#7FD8FF]/60 hover:bg-black/50"
           data-testid="dash-trilha-porta"

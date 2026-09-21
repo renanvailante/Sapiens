@@ -126,6 +126,11 @@ COLECOES_POR_USUARIO: tuple[tuple[str, str], ...] = (
     # cabe aqui — ver `_desvincular_indicacoes`, logo abaixo, porque apagar
     # por `indicador_id` destruiria a origem de contas de OUTRAS pessoas.
     ("indicacoes", "indicado_id"),
+    # Programa de influencers (2026-09-21) — eventos de aquisição do PRÓPRIO
+    # titular (cliques e conversões atribuídos a ele como comprador). Não
+    # confundir com o lado do influencer: um influencer não é apagado por
+    # `aluno_id`, ver `COLECOES_TRATAMENTO_ESPECIAL` abaixo.
+    ("growth_events", "aluno_id"),
 )
 
 # Coleções que guardam dado de aluno mas NÃO cabem no padrão acima — cada uma
@@ -140,6 +145,24 @@ COLECOES_TRATAMENTO_ESPECIAL: tuple[str, ...] = (
     "comunidade_duvidas",
     "comunidade_respostas",
     "comunidade_reportes",
+    # Programa de influencers (2026-09-21) — mesma lógica de `sparks_payments`:
+    # é registro financeiro (comissão sobre uma compra real), anonimizado
+    # pelo lado do COMPRADOR, nunca apagado — ver `_anonimizar_comissoes`.
+    "influencer_comissoes",
+    # `influencers` NÃO tem expurgo AUTOMÁTICO, de propósito. O titular aqui
+    # é tipicamente um PARCEIRO comercial, não necessariamente um aluno — pode
+    # nunca ter criado conta no Sapiens, ou pode ter uma conta cujo e-mail
+    # (`email_login`) só por coincidência bate com este cupom. Apagar
+    # automaticamente arriscaria destruir histórico de comissão de um
+    # parceiro ativo por causa da exclusão de uma conta de aluno não
+    # relacionada. A base legal (execução de contrato de parceria vs. dado de
+    # aluno) é diferente o bastante para exigir decisão humana — ver seção 18
+    # do programa de afiliados e `Cerebro/produto/afiliados.md` (revisado por
+    # `legal-privacy` em 2026-09-21). Um pedido de remoção do titular (art.
+    # 18, VI) usa `DELETE /admin/influencers/{id}` (`influencers.remover`),
+    # que APAGA de verdade — diferente de `status="removido"`, que é decisão
+    # de pipeline de prospecção e mantém o histórico.
+    "influencers",
 )
 
 # Coleções SEM dado pessoal, classificadas de propósito para que o teste de
@@ -162,12 +185,17 @@ COLECOES_SEM_DADO_PESSOAL: tuple[str, ...] = (
     "mentis_explicacoes", "mentis_intervencoes", "treino_conceitos",
     # Telemetria de custo: sem campo de usuário
     "mentis_llm_chamadas", "redacao_llm_chamadas", "cronograma_llm_chamadas",
+    "acquisition_llm_chamadas",
     # Contador anônimo por par (erro, processo). O relato do aluno mora no
     # evento de behavior, que é apagado; isto é agregado, fora da LGPD (art. 12)
     "autorrelato_pares",
     # Registro operacional de notificação do Mercado Pago. Guarda `data_id` do
     # pagamento, nunca o aluno — e o pagamento em si é anonimizado na exclusão
     "webhook_events", "webhook_recebimentos",
+    # Campanha de aquisição (UTM, orçamento, criativo) — configuração de
+    # produto/marketing autorada pelo admin, chaveada pela campanha. Nenhum
+    # aluno dentro; o rastro de QUEM clicou/converteu mora em `growth_events`.
+    "campaigns",
 )
 
 # Campos que NUNCA saem numa exportação: credencial ou material de sessão.
@@ -379,6 +407,19 @@ async def _desvincular_indicacoes(user_id: str) -> int:
         return -1
 
 
+async def _anonimizar_comissoes(user_id: str) -> int:
+    """Mesma lógica de `_anonimizar_pagamentos`: comissão de influencer é
+    registro financeiro (art. 16, I) do lado do PARCEIRO, não do comprador —
+    apagar o `aluno_id` some com a rastreabilidade de qual pagamento gerou
+    qual comissão sem apagar a comissão em si, que o influencer já pode ter
+    recebido ou estar prestes a receber."""
+    r = await _db.influencer_comissoes.update_many(
+        {"aluno_id": user_id},
+        {"$set": {"aluno_id": TOMBSTONE, "titular_excluido_em": _agora()}},
+    )
+    return r.modified_count
+
+
 async def excluir(user_id: str) -> dict[str, Any]:
     """Apaga o aluno. Devolve o relatório do que saiu, coleção a coleção.
 
@@ -401,6 +442,7 @@ async def excluir(user_id: str) -> dict[str, Any]:
     relatorio["mongo"]["sparks_payments_anonimizados"] = await _anonimizar_pagamentos(user_id)
     relatorio["mongo"].update(await _anonimizar_comunidade(user_id))
     relatorio["mongo"]["indicacoes_desvinculadas"] = await _desvincular_indicacoes(user_id)
+    relatorio["mongo"]["influencer_comissoes_anonimizadas"] = await _anonimizar_comissoes(user_id)
 
     for colecao, campo in COLECOES_POR_USUARIO:
         try:

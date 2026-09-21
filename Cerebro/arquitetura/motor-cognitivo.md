@@ -69,7 +69,10 @@ não é prioridade.
 `observar → intervir → retestar`. Em produção desde 2026-09-12 (commit `222e838`).
 Módulos: `revisao_espacada.py` (máquina de estados **pura**, zero I/O),
 `revisao_service.py`, `microdiagnostico.py`, `curadoria.py`, `sapiens_lab.py`.
-Telas: `/revisoes` e `/admin/curadoria`.
+Telas: a seção **Revisões** da Agenda (`/agenda#revisoes`, era `/revisoes`) e
+`/admin/curadoria`. A trajetória por habilidade, que morava no fim da mesma tela,
+foi para a seção **Trajetória** do Progresso — ela narra mudança, e mudança se
+pergunta em "estou evoluindo?". Ver [[navegacao]].
 
 Decisões que divergem da proposta escrita (motivo em
 `aluno/docs/ciclo-adaptativo-implementacao.md`):

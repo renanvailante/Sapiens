@@ -54,6 +54,7 @@ import hashlib
 from dataclasses import dataclass
 from datetime import date, timedelta
 from typing import Any, Iterable
+import rotas_do_app as rotas
 
 # ---------------------------------------------------------------------------
 # XP — o que cada ação vale
@@ -269,13 +270,13 @@ class Missao:
 
 
 CATALOGO_MISSOES: tuple[Missao, ...] = (
-    Missao("responder5", "Responda 5 questões", "questoes", 5, 5, "/exams", "Praticar"),
-    Missao("responder15", "Responda 15 questões", "questoes", 15, 12, "/exams", "Praticar"),
-    Missao("acertar8", "Acerte 8 questões", "acertos", 8, 10, "/exams", "Praticar"),
-    Missao("revisao", "Faça 1 revisão da fila", "revisoes", 1, 8, "/revisoes", "Revisar"),
-    Missao("cronograma", "Conclua 1 bloco do cronograma", "blocos", 1, 8, "/cronograma", "Ver a semana"),
-    Missao("treino", "Faça 10 questões do banco de treino", "treino", 10, 10, "/treino", "Treinar"),
-    Missao("comunidade", "Responda a dúvida de um colega", "respostas_comunidade", 1, 10, "/comunidade", "Ajudar"),
+    Missao("responder5", "Responda 5 questões", "questoes", 5, 5, rotas.PROVAS, "Praticar"),
+    Missao("responder15", "Responda 15 questões", "questoes", 15, 12, rotas.PROVAS, "Praticar"),
+    Missao("acertar8", "Acerte 8 questões", "acertos", 8, 10, rotas.PROVAS, "Praticar"),
+    Missao("revisao", "Faça 1 revisão da fila", "revisoes", 1, 8, rotas.AGENDA_REVISOES, "Revisar"),
+    Missao("cronograma", "Conclua 1 bloco do cronograma", "blocos", 1, 8, rotas.AGENDA, "Ver a semana"),
+    Missao("treino", "Faça 10 questões do banco de treino", "treino", 10, 10, rotas.TREINO, "Treinar"),
+    Missao("comunidade", "Responda a dúvida de um colega", "respostas_comunidade", 1, 10, rotas.COMUNIDADE, "Ajudar"),
 )
 
 # Uma missão de cada "peso" por dia, para o conjunto nunca ser três tarefas

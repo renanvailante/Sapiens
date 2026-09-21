@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { api } from "../lib/api";
-import Nav from "../components/Nav";
 import EstadoDeErro from "../components/EstadoDeErro";
 import { useCarregamento } from "../hooks/useCarregamento";
 import { ArrowRight, Sparkles } from "lucide-react";
@@ -9,6 +8,7 @@ import {
   Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer, PolarRadiusAxis,
   BarChart, Bar, XAxis, YAxis, Tooltip, Cell,
 } from "recharts";
+import { ROTAS } from "../lib/rotas";
 
 export default function Diagnostic() {
   const { analysisId } = useParams();
@@ -21,19 +21,17 @@ export default function Diagnostic() {
 
   if (carregando) return (
     <div>
-      <Nav />
       <div className="max-w-3xl mx-auto p-10 text-white/60 font-medium">Compondo seu diagnóstico...</div>
     </div>
   );
 
   if (erro || !a) return (
     <div className="min-h-screen">
-      <Nav />
       <div className="max-w-3xl mx-auto px-5 py-7 md:px-10 md:py-10">
         <EstadoDeErro
           mensagem={erro || "Esta análise não existe mais ou o link está incompleto."}
           aoTentarNovamente={recarregar}
-          voltarPara="/history"
+          voltarPara="/progresso#historico"
           voltarLabel="Ver meu histórico"
         />
       </div>
@@ -53,7 +51,6 @@ export default function Diagnostic() {
 
   return (
     <div className="min-h-screen">
-      <Nav />
       <div className="max-w-3xl mx-auto px-5 py-7 md:px-10 md:py-10">
         {phase === "insight" ? (
           <div className="reveal">
@@ -136,15 +133,23 @@ export default function Diagnostic() {
               </div>
             </div>
 
-            <div className="mt-8 flex items-center gap-3">
+            {/* O "Mapa de aprendizagem" saiu daqui em 2026-09-18. Era um
+                grafo radial desenhado à mão sobre uma análise antiga,
+                alcançável por este único botão, e o produto já tem UM mapa —
+                o do Treino, que é vivo e reage ao que o aluno responde. Dois
+                mapas com nomes parecidos e conteúdos diferentes é o tipo de
+                coisa que faz o aluno duvidar do que está olhando.
+
+                O plano fica: ele é o documento que saiu DESTA análise. */}
+            <div className="mt-8 flex flex-wrap items-center gap-3">
               <button onClick={() => nav(`/plan/${a.analysis_id}`)} className="pill btn-sapiens px-6 py-3 rounded-full text-sm font-medium" data-testid="diag-go-plan">
                 Ver plano de estudos
               </button>
-              <button onClick={() => nav(`/map/${a.analysis_id}`)} className="pill border border-white/20 hover:bg-white/10 px-6 py-3 rounded-full text-sm font-medium text-white" data-testid="diag-go-map">
-                Mapa de aprendizagem
+              <button onClick={() => nav(ROTAS.TREINO)} className="pill border border-white/20 px-6 py-3 rounded-full text-sm font-medium text-white hover:bg-white/10" data-testid="diag-go-treino">
+                Abrir o Mapa de Treino
               </button>
-              <button onClick={() => nav("/dashboard")} className="text-sm text-white/50 hover:text-white underline" data-testid="diag-go-dash">
-                Ir para o painel
+              <button onClick={() => nav(ROTAS.PROGRESSO)} className="text-sm text-white/50 underline hover:text-white" data-testid="diag-go-progresso">
+                Ver o meu progresso
               </button>
             </div>
           </div>
