@@ -34,7 +34,7 @@ from fastapi import APIRouter, Body, Cookie, Depends, HTTPException, Request, Re
 import rate_limit
 import settings
 import whatsapp as wa
-from models import LoginRequest, SignupRequest, User, UserSession, generate_user_id
+from models import PARAMS_DE_ORIGEM, LoginRequest, SignupRequest, User, UserSession, generate_user_id
 
 logger = logging.getLogger("sapiens.auth")
 
@@ -213,6 +213,33 @@ async def _registrar_cupom(user_id: str, code: str | None, sparks: int | None) -
     )
 
 
+async def _registrar_origem(user_id: str, origem: dict[str, str]) -> None:
+    """Carimba a origem de aquisição (UTM/campanha) que acompanhou o cadastro.
+
+    Uma escrita separada, logo depois do `insert_one`, mesma disciplina de
+    `_registrar_cupom` acima. Sem origem nenhuma (cadastro orgânico, ou
+    campanha sem esses parâmetros), não escreve nada — um `$set` vazio não
+    tem o que fazer.
+    """
+    if not origem:
+        return
+    await _db.users.update_one({"user_id": user_id}, {"$set": origem})
+
+
+def _origem_filtrada(bruta: dict[str, Any] | None) -> dict[str, str]:
+    """Só as chaves de `models.PARAMS_DE_ORIGEM`, só string, só não-vazio,
+    truncado a 200 chars — a mesma disciplina de `SignupRequest`, aplicada a
+    quem chega por um `dict` solto (`/auth/google`) em vez de um schema
+    validado pelo Pydantic."""
+    if not bruta:
+        return {}
+    return {
+        chave: valor.strip()[:200]
+        for chave, valor in bruta.items()
+        if chave in PARAMS_DE_ORIGEM and isinstance(valor, str) and valor.strip()
+    }
+
+
 async def _registrar_indicacao(user_id: str, code: str | None) -> None:
     """Segunda leitura do MESMO campo do cadastro: se o texto digitado não era
     um cupom do catálogo, ainda pode ser o código pessoal de um aluno.
@@ -309,6 +336,10 @@ async def signup(
         await _registrar_influencia(user.user_id, cupom)
     else:
         await _registrar_indicacao(user.user_id, payload.promo_code)
+    await _registrar_origem(
+        user.user_id,
+        {chave: getattr(payload, chave) for chave in PARAMS_DE_ORIGEM if getattr(payload, chave, None)},
+    )
     fs.ensure_student_profile(user.user_id, user.name, user.email, initial_sparks=sparks_iniciais)
     token = await _create_session(user.user_id)
     _set_cookie(response, token)
@@ -351,6 +382,7 @@ async def google_sign_in(
     menor_de_idade: bool = Body(default=False, embed=True),
     responsavel_nome: str | None = Body(default=None, embed=True),
     responsavel_whatsapp: str | None = Body(default=None, embed=True),
+    origem: dict[str, Any] | None = Body(default=None, embed=True),
 ):
     """Troca um ID token do Firebase pela sessão do Sapiens.
 
@@ -440,6 +472,7 @@ async def google_sign_in(
             await _registrar_influencia(user_id, cupom)
         else:
             await _registrar_indicacao(user_id, promo_code)
+        await _registrar_origem(user_id, _origem_filtrada(origem))
         fs.ensure_student_profile(user_id, nome, email, initial_sparks=sparks_iniciais)
 
     token = await _create_session(user_id)

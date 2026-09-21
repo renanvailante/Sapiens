@@ -6,11 +6,12 @@
  * perder no primeiro clique, o anúncio que trouxe o cadastro deixa de ser
  * conhecível — e sem isso não existe comparação entre criativos.
  *
- * Três coisas moram aqui, e só três:
+ * Quatro coisas moram aqui, e só quatro:
  *
  * 1. `lerOrigem` — o que a URL trouxe.
  * 2. `salvarOrigem` / `origemSalva` — a janela de 30 dias no `localStorage`.
  * 3. `destinoComOrigem` — a URL do CTA, com a origem colada nela.
+ * 4. `origemParaEnvio` — o objeto que `Login.jsx` manda no cadastro.
  *
  * ---------------------------------------------------------------------------
  * POR QUE A QUERY INTEIRA VIAJA, E NÃO SÓ AS CHAVES QUE O PRODUTO LÊ HOJE
@@ -122,4 +123,15 @@ export function destinoComOrigem(search, { rota = ROTAS.LOGIN, salva = null } = 
   params.set("novo", "1");
   const query = params.toString();
   return `${rota}${query ? `?${query}` : ""}`;
+}
+
+/**
+ * A origem a mandar no `/auth/signup` (ou `/auth/google`): mesma regra de
+ * precedência de `destinoComOrigem` — a URL vence, o que estava guardado
+ * preenche o resto —, mas devolve o objeto pronto para o payload em vez de
+ * montar uma URL. É o elo que fechava a ponta descrita no header deste
+ * arquivo: até aqui a origem chegava na URL do `/login` e parava.
+ */
+export function origemParaEnvio(search) {
+  return { ...(origemSalva() || {}), ...lerOrigem(search) };
 }

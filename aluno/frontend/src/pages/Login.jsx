@@ -6,6 +6,7 @@ import { useAuth } from "../lib/auth";
 import { api, errMsg } from "../lib/api";
 import { googleDisponivel, mensagemDeErroGoogle } from "../lib/firebase";
 import { salvarAtribuicao, lerAtribuicao } from "../lib/atribuicao";
+import { origemParaEnvio } from "../lib/campanha";
 import { toast } from "sonner";
 import { Brain, Compass, Radio, Loader2, Gift } from "lucide-react";
 import Logo from "../components/Logo";
@@ -78,6 +79,11 @@ export default function Login() {
   // link, fecha a aba e volta depois pra se cadastrar perderia a atribuição.
   const atribuicaoSalva = !conviteDaUrl ? lerAtribuicao() : null;
   const convite = conviteDaUrl || atribuicaoSalva?.codigo || "";
+  // A origem (UTM/campanha) que a landing colou na URL ao levar ao cadastro
+  // (ver `AdsLandingLayout`), com a janela de 30 dias guardada como reforço
+  // para quem chega sem parâmetro — mesma regra de precedência do convite
+  // acima. `{}` para quem chega direto, sem passar por anúncio nenhum.
+  const origem = origemParaEnvio(params);
   // `?novo=1` é a porta do "Começar agora" da landing. Mesma razão do
   // convite: quem clicou em começar não está voltando, está chegando, e abrir
   // no formulário de login é pedir uma senha que essa pessoa ainda não tem.
@@ -133,7 +139,7 @@ export default function Login() {
       await loginGoogle(
         criando ? promoCode : undefined,
         criando ? whatsapp : undefined,
-        criando ? { menorDeIdade, responsavelNome, responsavelWhatsapp } : undefined,
+        criando ? { menorDeIdade, responsavelNome, responsavelWhatsapp, origem } : undefined,
       );
       nav("/hoje");
     } catch (e) {
@@ -179,7 +185,7 @@ export default function Login() {
       if (!criando) await login(email, password);
       else {
         await signup(name, email, password, whatsapp, promoCode, {
-          menorDeIdade, responsavelNome, responsavelWhatsapp,
+          menorDeIdade, responsavelNome, responsavelWhatsapp, origem,
         });
       }
       toast.success("Bem-vindo ao Sapiens.");

@@ -8,7 +8,7 @@
  * abrindo, o botão continua funcionando, e só o relatório do Meta fica vazio
  * três semanas depois).
  */
-import { destinoComOrigem, lerOrigem, PARAMS_DE_ORIGEM } from "./campanha";
+import { destinoComOrigem, lerOrigem, origemParaEnvio, PARAMS_DE_ORIGEM } from "./campanha";
 import { ROTAS } from "./rotas";
 
 const qs = (url) => Object.fromEntries(new URLSearchParams(url.split("?")[1] || ""));
@@ -83,5 +83,38 @@ describe("destinoComOrigem", () => {
 
   test("sem origem nenhuma, o destino continua sendo o cadastro", () => {
     expect(destinoComOrigem("")).toBe(`${ROTAS.LOGIN}?novo=1`);
+  });
+});
+
+describe("origemParaEnvio", () => {
+  beforeEach(() => localStorage.clear());
+
+  test("sem URL e sem nada guardado, manda um objeto vazio", () => {
+    expect(origemParaEnvio("")).toEqual({});
+  });
+
+  test("lê o que a URL do /login trouxe", () => {
+    expect(origemParaEnvio("?utm_source=meta&campanha_id=camp_abc")).toEqual({
+      utm_source: "meta",
+      campanha_id: "camp_abc",
+    });
+  });
+
+  test("o guardado preenche o que a URL não trouxe, e a URL sempre vence", () => {
+    localStorage.setItem("sapiens_origem", JSON.stringify({
+      utm_source: "antigo", utm_campaign: "campanha_antiga",
+      expira_em: Date.now() + 86400000,
+    }));
+    expect(origemParaEnvio("?utm_source=meta")).toEqual({
+      utm_source: "meta",
+      utm_campaign: "campanha_antiga",
+    });
+  });
+
+  test("guardado expirado não entra no envio", () => {
+    localStorage.setItem("sapiens_origem", JSON.stringify({
+      utm_source: "velho", expira_em: Date.now() - 1000,
+    }));
+    expect(origemParaEnvio("")).toEqual({});
   });
 });

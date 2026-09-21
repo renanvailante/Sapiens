@@ -30,10 +30,12 @@ export function AuthProvider({ children }) {
     return data.user;
   };
   /** `extras` carrega os campos que só existem para quem declara ser menor de
-   *  idade (`menorDeIdade`, `responsavelNome`, `responsavelWhatsapp`). Um
-   *  objeto e não três parâmetros posicionais: a assinatura já tinha cinco, e
-   *  a sexta posição seria o ponto em que alguém passa o cupom no lugar do
-   *  telefone do responsável sem o compilador dizer nada. */
+   *  idade (`menorDeIdade`, `responsavelNome`, `responsavelWhatsapp`) e a
+   *  origem de aquisição (`origem`, de `lib/campanha.origemParaEnvio` —
+   *  `{utm_source, campanha_id, ...}` ou `{}`). Um objeto e não parâmetros
+   *  posicionais: a assinatura já tinha cinco, e a sexta posição seria o
+   *  ponto em que alguém passa o cupom no lugar do telefone do responsável
+   *  sem o compilador dizer nada. */
   const signup = async (name, email, password, whatsapp, promoCode, extras = {}) => {
     const { data } = await api.post("/auth/signup", {
       name, email, password,
@@ -42,6 +44,7 @@ export function AuthProvider({ children }) {
       menor_de_idade: Boolean(extras.menorDeIdade),
       responsavel_nome: extras.responsavelNome?.trim() || undefined,
       responsavel_whatsapp: extras.responsavelWhatsapp?.trim() || undefined,
+      ...extras.origem,
     });
     localStorage.setItem("sapiens_token", data.token);
     setUser(data.user);
@@ -67,6 +70,7 @@ export function AuthProvider({ children }) {
       menor_de_idade: Boolean(extras.menorDeIdade),
       responsavel_nome: extras.responsavelNome?.trim() || undefined,
       responsavel_whatsapp: extras.responsavelWhatsapp?.trim() || undefined,
+      origem: extras.origem && Object.keys(extras.origem).length ? extras.origem : undefined,
     });
     localStorage.setItem("sapiens_token", data.token);
     setUser(data.user);

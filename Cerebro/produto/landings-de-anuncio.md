@@ -143,11 +143,25 @@ URL vence a guardada; a guardada só preenche o que falta.
 > jogado fora três telas antes. O que ninguém lê não custa nada; o que foi
 > descartado custa uma campanha. `lib/campanha.test.js` trava isso.
 
-**O que ainda NÃO existe, e precisa ser dito:** o backend **não grava UTM no
-usuário** no cadastro. A atribuição hoje acontece por `promo_code` (cupom /
-influencer) e por `campanha_id` no clique. Os `utm_*` chegam até a URL do
-`/login` e param ali. Fechar essa ponta é mudança em `auth`/`models`, não em
-landing.
+**O UTM passa a ser gravado no usuário no cadastro (2026-09-21).** Até aqui os
+`utm_*` chegavam até a URL do `/login` e paravam ali — esta era a pendência
+mais concreta do doc, e agora está fechada:
+
+- `models.PARAMS_DE_ORIGEM` é a MESMA lista de `lib/campanha.js`
+  (`PARAMS_DE_ORIGEM`) — as duas têm de continuar idênticas, ou um lado
+  descarta o que o outro grava.
+- `Login.jsx` lê a origem com `lib/campanha.origemParaEnvio(params)` (URL
+  vence, guardado de 30 dias preenche o resto — mesma regra de
+  `destinoComOrigem`) e manda em `signup()`/`loginGoogle()` via `extras.origem`.
+- No backend, `auth._registrar_origem` faz um `$set` separado, DEPOIS do
+  `insert_one`, mesmo padrão de `_registrar_cupom`. No cadastro por e-mail os
+  campos vêm tipados em `SignupRequest` (Pydantic valida); no login por Google
+  chegam como `dict` solto no `Body`, e `auth._origem_filtrada` é quem garante
+  que só as chaves de `PARAMS_DE_ORIGEM` entram no Mongo.
+- Atribuição continua tendo TRÊS fontes independentes, que não se substituem:
+  `promo_code` (cupom/influencer/indicação), `campanha_id` via `POST
+  /track/click` (o clique) e agora os campos de `User` (o cadastro). Cruzar
+  as três é o que fecha clique → cadastro → compra por campanha.
 
 **Meta Pixel: a arquitetura existe, o pixel não está ligado.**
 `lib/rastreio.js` é a porta única — **nenhum componente chama `fbq`**. Sem

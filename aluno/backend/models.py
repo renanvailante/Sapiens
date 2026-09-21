@@ -89,6 +89,18 @@ class User(BaseModel):
     # garantem que os namespaces não colidem. Ver [[afiliados]].
     influenciado_por: str | None = None
     influenciado_por_codigo: str | None = None
+    # Origem de aquisição (UTM/campanha), 2026-09-21 — espelha
+    # `PARAMS_DE_ORIGEM` (mesma lista em `lib/campanha.js` no frontend, que já
+    # preservava esses parâmetros na URL sem que ninguém os gravasse). `None`
+    # em cadastro orgânico, em campanha sem esses parâmetros, ou em conta
+    # anterior a esta data. Ver `Cerebro/produto/landings-de-anuncio.md`.
+    utm_source: str | None = None
+    utm_medium: str | None = None
+    utm_campaign: str | None = None
+    utm_content: str | None = None
+    utm_term: str | None = None
+    campanha_id: str | None = None
+    fbclid: str | None = None
     # WhatsApp do aluno — pedido no cadastro (2026-09-15) porque é o único
     # canal em que a equipe realmente alcança um estudante: e-mail de menor de
     # idade não é lido, e o link da aula ao vivo de quinta precisa chegar a
@@ -246,6 +258,33 @@ class SignupRequest(BaseModel):
     # Um código inválido/expirado nunca barra a criação da conta — só cai
     # no bônus padrão, como se não tivesse sido informado.
     promo_code: str | None = Field(default=None, max_length=40)
+    # Origem de aquisição (UTM/campanha) — os mesmos sete parâmetros de
+    # `PARAMS_DE_ORIGEM` abaixo, que o frontend já preserva na URL desde a
+    # landing até aqui. Todos opcionais e truncados a 200 chars: o frontend já
+    # trunca no mesmo tamanho (`lib/campanha.js`), o limite aqui é defesa
+    # contra quem chamar a rota direto.
+    utm_source: str | None = Field(default=None, max_length=200)
+    utm_medium: str | None = Field(default=None, max_length=200)
+    utm_campaign: str | None = Field(default=None, max_length=200)
+    utm_content: str | None = Field(default=None, max_length=200)
+    utm_term: str | None = Field(default=None, max_length=200)
+    campanha_id: str | None = Field(default=None, max_length=200)
+    fbclid: str | None = Field(default=None, max_length=200)
+
+
+# Os mesmos sete parâmetros de `PARAMS_DE_ORIGEM` em `lib/campanha.js`: a
+# lista precisa ser idêntica dos dois lados, porque o frontend já preserva a
+# query inteira até aqui de propósito (ver o comentário daquele arquivo) —
+# divergir aqui descartaria em silêncio o que já chegou.
+PARAMS_DE_ORIGEM = [
+    "utm_source",
+    "utm_medium",
+    "utm_campaign",
+    "utm_content",
+    "utm_term",
+    "campanha_id",
+    "fbclid",
+]
 
 
 class LoginRequest(BaseModel):
