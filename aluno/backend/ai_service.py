@@ -123,6 +123,45 @@ class GeminiIndisponivelError(RuntimeError):
     """
 
 
+class GeminiQuotaExcedidaError(GeminiIndisponivelError):
+    """A CONTA estourou a quota da Gemini API (HTTP 429).
+
+    Subclasse de `GeminiIndisponivelError` de propósito: quem já tratava
+    indisponibilidade continua tratando isto sem mudar nada. Mas tem tipo
+    próprio porque a resposta certa é OUTRA — não adianta tentar de novo em
+    dois segundos, e não é bug de prompt: a conta bateu no teto. O free tier
+    da Gemini API dá **20 requisições por dia por modelo**
+    (`GenerateRequestsPerDayPerProjectPerModel-FreeTier`), o que uma rodada do
+    Pesquisador sozinha consome. Medido em produção em 2026-09-21.
+
+    `segundos_para_retry` vem do `RetryInfo` da própria API quando existe, para
+    a mensagem ao usuário poder dizer QUANDO tentar em vez de só "falhou".
+    """
+
+    def __init__(self, mensagem: str, *, modelos: tuple[str, ...] = (), segundos_para_retry: float | None = None):
+        super().__init__(mensagem)
+        self.modelos = modelos
+        self.segundos_para_retry = segundos_para_retry
+
+
+def _eh_quota(exc: BaseException) -> bool:
+    return isinstance(exc, genai_errors.ClientError) and getattr(exc, "code", None) == 429
+
+
+def _segundos_para_retry(exc: BaseException) -> float | None:
+    """Lê o `RetryInfo` que a Gemini API devolve junto do 429. Best-effort: um
+    formato inesperado vale `None`, nunca uma exceção nova em cima do erro."""
+    try:
+        detalhes = ((getattr(exc, "details", None) or {}).get("error") or {}).get("details") or []
+        for item in detalhes:
+            if str(item.get("@type", "")).endswith("RetryInfo"):
+                bruto = str(item.get("retryDelay", "")).rstrip("s")
+                return float(bruto) if bruto else None
+    except Exception:  # noqa: BLE001
+        return None
+    return None
+
+
 async def _generate_json(
     system_instruction: str,
     user_text: str,
@@ -318,6 +357,16 @@ async def generate_json_resiliente(
     Levanta `GeminiIndisponivelError` se os dois modelos falharem por
     infraestrutura; qualquer outra exceção (JSON inválido, prompt recusado)
     sobe direto, sem retry.
+
+    **429 também dispara o fallback (correção de 2026-09-21).** A quota do
+    free tier é contada POR MODELO
+    (`GenerateRequestsPerDayPerProjectPerModel-FreeTier`, 20/dia), então um
+    429 no primário é justamente o caso em que trocar de modelo resolve — e
+    antes não trocava, porque `ClientError` não estava na lista e a chamada
+    morria ali. Foi o que derrubou a geração de mensagem do Pesquisador de
+    Aquisição. Se os DOIS modelos vierem com 429, sobe
+    `GeminiQuotaExcedidaError`, que o chamador traduz em "tente mais tarde"
+    em vez de um 500 sem explicação.
     """
     primario = modelo or _model()
     reserva = modelo_fallback if modelo_fallback is not None else GEMINI_MODELO_FALLBACK
@@ -329,8 +378,15 @@ async def generate_json_resiliente(
             thinking_level=thinking_level, timeout=orcamento * _FATIA_PRIMARIA,
             max_output_tokens=max_output_tokens,
         )
-    except (GeminiIndisponivelError, genai_errors.ServerError) as exc:
+    except (GeminiIndisponivelError, genai_errors.ServerError, genai_errors.ClientError) as exc:
+        if isinstance(exc, genai_errors.ClientError) and not _eh_quota(exc):
+            raise  # 400/403/404 são bug nosso — repetir em outro modelo não conserta
         if not reserva or reserva == primario:
+            if _eh_quota(exc):
+                raise GeminiQuotaExcedidaError(
+                    f"Quota da Gemini API esgotada em {primario}.",
+                    modelos=(primario,), segundos_para_retry=_segundos_para_retry(exc),
+                ) from exc
             raise GeminiIndisponivelError(f"Gemini indisponível em {primario}: {exc}") from exc
         logger.warning(
             "Gemini indisponível em %s (%s) — repetindo em %s.", primario, exc, reserva
@@ -361,7 +417,14 @@ async def generate_json_resiliente(
             thinking_level=thinking_level, timeout=restante,
             max_output_tokens=max_output_tokens,
         )
-    except (GeminiIndisponivelError, genai_errors.ServerError) as exc:
+    except (GeminiIndisponivelError, genai_errors.ServerError, genai_errors.ClientError) as exc:
+        if isinstance(exc, genai_errors.ClientError) and not _eh_quota(exc):
+            raise
+        if _eh_quota(exc):
+            raise GeminiQuotaExcedidaError(
+                f"Quota da Gemini API esgotada nos dois modelos ({primario}, {reserva}).",
+                modelos=(primario, reserva), segundos_para_retry=_segundos_para_retry(exc),
+            ) from exc
         raise GeminiIndisponivelError(
             f"Gemini indisponível nos dois modelos ({primario}, {reserva}): {exc}"
         ) from exc

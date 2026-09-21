@@ -448,6 +448,9 @@ class Influencer(BaseModel):
     motivo_inclusao: str | None = None      # por que entrou — texto de auditoria, não de abordagem
     classificado_por: str | None = None     # ia | heuristica (quando a IA não respondeu)
     mensagem_gerada: str | None = None
+    mensagem_origem: str | None = None   # ia | modelo — o admin precisa saber se o
+                                         # texto foi personalizado ou saiu do molde
+                                         # determinístico (quota de IA esgotada)
     observacao: str | None = None       # nota livre do admin, nunca da IA
     descartado: bool = False
 

@@ -531,6 +531,82 @@ class TestMensagem:
 
         _run(ar.gerar_mensagem_personalizada(db, lead["influencer_id"]))
 
+    def test_sem_quota_de_ia_cai_no_modelo_deterministico(self, db, monkeypatch):
+        """A quota do free tier é de 20 requisições/dia por modelo, e uma
+        rodada do Pesquisador sozinha a consome — sem plano B, o botão ficava
+        quebrado o resto do dia. `gerar_mensagem_prospeccao` já existia e é
+        determinística: monta a mensagem de campos do lead, sem inventar nada."""
+        lead = _run(influencers.criar_lead(db, {
+            "nome": "profcarol", "plataforma": "instagram", "nicho": "redação ENEM",
+        }))
+
+        async def sem_quota(*a, **k):
+            raise ai_service.GeminiQuotaExcedidaError("cota esgotada")
+        monkeypatch.setattr(ai_service, "generate_json_resiliente", sem_quota)
+
+        mensagem = _run(ar.gerar_mensagem_personalizada(db, lead["influencer_id"]))
+        assert mensagem, "o admin não pode ficar sem texto nenhum"
+        assert "profcarol" in mensagem and "redação ENEM" in mensagem
+        assert "Sapiens" in mensagem
+
+        atualizado = _run(influencers.obter(db, lead["influencer_id"]))
+        assert atualizado["mensagem_origem"] == "modelo"
+        assert atualizado["status"] == influencers.STATUS_MENSAGEM_PRONTA
+
+    def test_mensagem_por_ia_fica_marcada_como_ia(self, db, monkeypatch):
+        lead = _run(influencers.criar_lead(db, {"nome": "Prof Ana", "plataforma": "instagram"}))
+
+        async def ok(*a, **k):
+            return {"mensagem": "Oi! Curti seu conteúdo — topa uma parceria?"}
+        monkeypatch.setattr(ai_service, "generate_json_resiliente", ok)
+
+        _run(ar.gerar_mensagem_personalizada(db, lead["influencer_id"]))
+        assert _run(influencers.obter(db, lead["influencer_id"]))["mensagem_origem"] == "ia"
+
+    def test_permitir_modelo_false_deixa_o_erro_subir(self, db, monkeypatch):
+        """A rota usa isto para poder explicar a causa (429/503) em vez de
+        entregar um texto de molde sem o admin saber."""
+        lead = _run(influencers.criar_lead(db, {"nome": "Prof Beto", "plataforma": "instagram"}))
+
+        async def sem_quota(*a, **k):
+            raise ai_service.GeminiQuotaExcedidaError("cota esgotada")
+        monkeypatch.setattr(ai_service, "generate_json_resiliente", sem_quota)
+
+        with pytest.raises(ai_service.GeminiQuotaExcedidaError):
+            _run(ar.gerar_mensagem_personalizada(db, lead["influencer_id"], permitir_modelo=False))
+
+    def test_rota_sempre_devolve_texto_e_diz_de_onde_veio(self, db, monkeypatch):
+        """O botão morria com 500 mudo quando a conta batia na quota da Gemini
+        (medido em produção em 2026-09-21) e o admin ficava sem mensagem o
+        resto do dia. Agora sai texto sempre — e `origem` diz se foi a IA ou o
+        molde, porque entregar molde fingindo personalização seria pior que o
+        erro."""
+        lead = _run(influencers.criar_lead(db, {
+            "nome": "Prof Duda", "plataforma": "instagram", "nicho": "biologia ENEM"}))
+
+        async def sem_quota(*a, **k):
+            raise ai_service.GeminiQuotaExcedidaError(
+                "cota esgotada", modelos=("gemini-3-flash",), segundos_para_retry=43.0)
+        monkeypatch.setattr(ai_service, "generate_json_resiliente", sem_quota)
+        monkeypatch.setattr(influencers_routes, "_db", db)
+
+        resposta = _run(influencers_routes.mensagem_ia(lead["influencer_id"], admin=None, _=None))
+        assert resposta["mensagem"]
+        assert resposta["origem"] == "modelo"
+        assert "sem cota" in resposta["aviso"]
+
+    def test_rota_com_ia_disponivel_nao_avisa_nada(self, db, monkeypatch):
+        lead = _run(influencers.criar_lead(db, {"nome": "Prof Edu", "plataforma": "instagram"}))
+
+        async def ok(*a, **k):
+            return {"mensagem": "Oi! Topa uma parceria com o Sapiens?"}
+        monkeypatch.setattr(ai_service, "generate_json_resiliente", ok)
+        monkeypatch.setattr(influencers_routes, "_db", db)
+
+        resposta = _run(influencers_routes.mensagem_ia(lead["influencer_id"], admin=None, _=None))
+        assert resposta["origem"] == "ia"
+        assert resposta["aviso"] is None
+
     def test_lead_inexistente_leva_a_erro_claro(self, db):
         with pytest.raises(ValueError):
             _run(ar.gerar_mensagem_personalizada(db, "inf_inexistente"))

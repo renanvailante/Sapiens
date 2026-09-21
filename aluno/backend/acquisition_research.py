@@ -834,12 +834,25 @@ def _sanitizar_campo(valor: Any, *, limite: int = _LIMITE_CAMPO_MENSAGEM) -> Any
     return limpo
 
 
-async def gerar_mensagem_personalizada(db, influencer_id: str) -> str:
+async def gerar_mensagem_personalizada(db, influencer_id: str, *, permitir_modelo: bool = True) -> str:
     """Sob demanda, um lead por vez — nunca em lote (ver docstring do
     módulo). Recebe só campos ESTRUTURADOS já validados e persistidos do
     lead, cada um truncado por `_sanitizar_campo`; nunca a página bruta nem
     a `justificativa_ia` (que é metadado interno do admin, não insumo para
-    texto externo)."""
+    texto externo).
+
+    **Plano B sem IA (2026-09-21).** A quota do free tier da Gemini é de 20
+    requisições por dia por modelo, e uma rodada do Pesquisador sozinha a
+    consome — o botão então falhava o resto do dia inteiro. Quando a IA está
+    fora por quota ou indisponibilidade, cai em
+    `influencers.gerar_mensagem_prospeccao`, que é DETERMINÍSTICA e já existia
+    no projeto: monta a mensagem a partir de campos do lead (nome, nicho,
+    Sparks, percentual), sem inventar elogio nem fato. O lead fica com
+    `mensagem_origem="modelo"` para o admin saber que aquele texto não foi
+    personalizado por IA e poder pedir de novo amanhã.
+
+    `permitir_modelo=False` desliga o plano B para quem QUER saber que a IA
+    falhou (é o que a rota usa ao devolver 429/503 explicando a causa)."""
     lead = await influencers.obter(db, influencer_id)
     if lead is None:
         raise ValueError("Lead não encontrado.")
@@ -856,11 +869,21 @@ async def gerar_mensagem_personalizada(db, influencer_id: str) -> str:
 
     inicio = time.monotonic()
     estado = "ok"
+    origem = "ia"
+    resp: Any = None
     try:
         resp = await ai_service.generate_json_resiliente(
             _MENSAGEM_SYSTEM, user, thinking_level="MINIMAL",
             timeout=_TIMEOUT_MENSAGEM_SEGUNDOS, max_output_tokens=_MAX_TOKENS_MENSAGEM,
         )
+    except ai_service.GeminiIndisponivelError as exc:
+        # Inclui `GeminiQuotaExcedidaError`, que é subclasse. Sem plano B, o
+        # admin fica sem texto nenhum até a quota virar o dia.
+        estado = "quota" if isinstance(exc, ai_service.GeminiQuotaExcedidaError) else "indisponivel"
+        if not permitir_modelo:
+            raise
+        origem = "modelo"
+        logger.warning("Mensagem por IA indisponível (%s) — usando o modelo determinístico.", estado)
     except Exception:
         estado = "erro"
         raise
@@ -875,11 +898,16 @@ async def gerar_mensagem_personalizada(db, influencer_id: str) -> str:
             duration_ms=(time.monotonic() - inicio) * 1000,
         )
 
-    mensagem = resp.get("mensagem") if isinstance(resp, dict) else str(resp)
+    if origem == "modelo":
+        mensagem = influencers.gerar_mensagem_prospeccao(lead)
+    else:
+        mensagem = resp.get("mensagem") if isinstance(resp, dict) else str(resp)
     mensagem = (mensagem or "").strip()[:600]
 
     novo_status = lead.get("status")
     if novo_status in (influencers.STATUS_LEAD, influencers.STATUS_QUALIFICADO):
         novo_status = influencers.STATUS_MENSAGEM_PRONTA
-    await influencers.atualizar(db, influencer_id, {"mensagem_gerada": mensagem, "status": novo_status})
+    await influencers.atualizar(db, influencer_id, {
+        "mensagem_gerada": mensagem, "mensagem_origem": origem, "status": novo_status,
+    })
     return mensagem

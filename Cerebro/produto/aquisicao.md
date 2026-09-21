@@ -102,6 +102,25 @@ própria fonte, prioridade alta, classificado pela IA),
    desde que o Pesquisador nasceu, encontrada só numa rodada contra o banco
    real. Corrigido — `_emitir` manda campo desconhecido para `meta`.
 
+## O teto real sem motor de busca, e como ele se move
+
+A rodada COMPLETA logo depois trouxe **+0 leads**: 28 consultas atendidas pelo
+cache, todos os candidatos já no CRM, dedup barrando tudo. Não era teto da
+fonte — era teto da **variedade das perguntas**. Cinco nichos genéricos
+convergem para os mesmos poucos artigos.
+
+O eixo que move isso é **matéria**, não exame: a imprensa educacional escreve
+"professores de redação que viralizaram", "canais de química para o ENEM".
+`NICHOS_PADRAO_*` girou para matéria (redação, matemática, biologia, história,
+química, física, geografia) e `_nucleo_do_nicho` traduz cada nicho para o
+termo curto que cabe numa manchete — um nicho de persona ("estudantes de
+Medicina que produzem conteúdo para vestibulandos") não aparece em manchete
+nenhuma, e era por isso que rendia zero.
+
+**Regra para quem mexer nisto depois:** mais leads vêm de mais artigos
+DIFERENTES, não de mais consultas parecidas. Antes de aumentar
+`_ALVO_POR_CHAMADA`, aumente a variedade dos nichos.
+
 ## O que destrava volume, quando o dono quiser
 
 `GOOGLE_CSE_KEY` + `GOOGLE_CSE_CX` (Google Programmable Search: 100 consultas

@@ -157,8 +157,15 @@ function LinhaDeInfluencer({ item, aoAtualizar, aoRemover }) {
     setGerandoMensagem(true);
     try {
       const { data } = await api.post(`/admin/influencers/${item.influencer_id}/mensagem-ia`);
-      aoAtualizar({ ...item, mensagem_gerada: data.mensagem, status: "mensagem_pronta" });
-      toast.success("Mensagem gerada.");
+      aoAtualizar({
+        ...item, mensagem_gerada: data.mensagem, mensagem_origem: data.origem,
+        status: "mensagem_pronta",
+      });
+      // `aviso` chega quando a IA estava sem cota e o texto saiu do molde
+      // determinístico. Dizer isso importa: um texto de molde apresentado como
+      // personalizado é pior que um erro — o admin mandaria como está.
+      if (data.aviso) toast.warning(data.aviso);
+      else toast.success("Mensagem gerada.");
     } catch (e) {
       toast.error(errMsg(e, "Falha ao gerar mensagem."));
     } finally {
@@ -363,12 +370,24 @@ function LinhaDeInfluencer({ item, aoAtualizar, aoRemover }) {
               {item.mensagem_gerada && (
                 <div className="rounded-xl border border-zinc-100 p-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] uppercase text-zinc-400">Mensagem</span>
+                    <span className="text-[10px] uppercase text-zinc-400">
+                      Mensagem
+                      {item.mensagem_origem === "modelo" && (
+                        <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-[9px] font-semibold text-amber-800">
+                          modelo padrão
+                        </span>
+                      )}
+                    </span>
                     <button onClick={() => copiar(item.mensagem_gerada, "Mensagem")} className="text-zinc-400 hover:text-zinc-900" data-testid={`admin-inf-copiar-mensagem-${item.influencer_id}`}>
                       <Copy className="w-3.5 h-3.5" />
                     </button>
                   </div>
                   <p className="mt-1 text-xs text-zinc-600 whitespace-pre-wrap">{item.mensagem_gerada}</p>
+                  {item.mensagem_origem === "modelo" && (
+                    <p className="mt-1.5 text-[10px] text-amber-700">
+                      Não foi personalizada por IA (cota esgotada) — vale editar antes de enviar.
+                    </p>
+                  )}
                 </div>
               )}
             </div>

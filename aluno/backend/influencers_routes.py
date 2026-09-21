@@ -13,6 +13,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Body, Depends, HTTPException
 
 import acquisition_research
+import ai_service
 import influencers
 import rate_limit
 from auth import require_admin
@@ -202,11 +203,30 @@ async def mensagem_ia(
     admin: User = Depends(require_admin),
     _: None = Depends(rate_limit.por_usuario("pesquisa_aquisicao_mensagem")),
 ):
-    """Gera (e persiste) uma mensagem personalizada para ESTE lead — uma
-    chamada de IA sob demanda, nunca em lote. Nunca envia nada: o texto volta
-    pro admin copiar e mandar manualmente."""
+    """Gera (e persiste) uma mensagem para ESTE lead — uma chamada de IA sob
+    demanda, nunca em lote. Nunca envia nada: o texto volta pro admin copiar e
+    mandar manualmente.
+
+    **Sempre devolve texto.** O botão falhava com 500 mudo quando a conta batia
+    na quota da Gemini (20 requisições/dia por modelo no free tier — uma rodada
+    do Pesquisador consome isso sozinha), e o admin ficava sem mensagem o resto
+    do dia. Agora, sem IA, cai no molde determinístico de
+    `influencers.gerar_mensagem_prospeccao` — `origem` diz qual dos dois saiu,
+    porque entregar um texto de molde fingindo que foi personalizado seria pior
+    que o erro."""
     try:
         mensagem = await acquisition_research.gerar_mensagem_personalizada(_db, influencer_id)
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-    return {"mensagem": mensagem}
+
+    lead = await influencers.obter(_db, influencer_id)
+    origem = (lead or {}).get("mensagem_origem") or "ia"
+    return {
+        "mensagem": mensagem,
+        "origem": origem,
+        "aviso": (
+            "A IA está sem cota agora, então este texto veio do modelo padrão — "
+            "personalize antes de enviar, ou gere de novo mais tarde."
+            if origem == "modelo" else None
+        ),
+    }
