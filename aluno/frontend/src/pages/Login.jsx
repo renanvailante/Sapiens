@@ -72,14 +72,12 @@ export default function Login() {
   // de login é pedir uma senha que essa pessoa ainda não tem.
   const [params] = useSearchParams();
   const conviteDaUrl = (params.get("convite") || "").trim().toUpperCase();
-  const bonusDaUrl = parseInt(params.get("bonus"), 10) || null;
   // Sem `?convite=` na URL, ainda pode existir um clique de até 30 dias atrás
   // guardado pelo navegador (ver `lib/atribuicao.js`) — a janela de
   // atribuição do programa de afiliados/campanhas. Sem isso, quem clica no
   // link, fecha a aba e volta depois pra se cadastrar perderia a atribuição.
   const atribuicaoSalva = !conviteDaUrl ? lerAtribuicao() : null;
   const convite = conviteDaUrl || atribuicaoSalva?.codigo || "";
-  const bonus = bonusDaUrl || atribuicaoSalva?.bonus || null;
   // `?novo=1` é a porta do "Começar agora" da landing. Mesma razão do
   // convite: quem clicou em começar não está voltando, está chegando, e abrir
   // no formulário de login é pedir uma senha que essa pessoa ainda não tem.
@@ -98,12 +96,13 @@ export default function Login() {
   const [promoCode, setPromoCode] = useState(convite);
 
   // Guarda o convite da URL para sobreviver 30 dias (e conta o clique, uma
-  // vez, sem bloquear nada se a rota pública falhar). `bonus` é só o número
-  // que a tela EXIBE — quem decide de verdade é sempre `/auth/signup` lendo
-  // o catálogo, nunca este parâmetro.
+  // vez, sem bloquear nada se a rota pública falhar). Só o CÓDIGO viaja: o
+  // link já carregou um `&bonus=N` que a tela exibia, e que qualquer pessoa
+  // editava na barra de endereço para a página prometer o número que ela
+  // quisesse. Quem decide o valor é sempre `/auth/signup` lendo o catálogo.
   useEffect(() => {
     if (!conviteDaUrl) return;
-    salvarAtribuicao(conviteDaUrl, bonusDaUrl);
+    salvarAtribuicao(conviteDaUrl);
     api.post("/track/click", { codigo: conviteDaUrl }).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conviteDaUrl]);
@@ -281,16 +280,18 @@ export default function Login() {
           </p>
 
           {/* Só aparece com um convite reconhecido (URL ou janela de 30 dias
-              guardada no navegador — ver `lib/atribuicao.js`). O número é
-              cosmético: quem decide de verdade é sempre `/auth/signup` lendo
-              o catálogo no backend, nunca este texto. */}
-          {criando && convite && bonus && (
+              guardada no navegador — ver `lib/atribuicao.js`). SEM número: o
+              valor do bônus mora no catálogo do backend, e o único jeito de a
+              tela exibi-lo aqui seria confiar na URL (que a pessoa edita) ou
+              cravá-lo no JS (que a primeira afiliada com valor diferente
+              tornaria mentira). Quem decide é sempre `/auth/signup`. */}
+          {criando && convite && (
             <div
               className="mt-4 flex items-center gap-2.5 rounded-xl border border-emerald-400/25 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-200"
               data-testid="login-banner-convite"
             >
               <Gift className="h-4 w-4 shrink-0" />
-              Você foi convidado! Ganhe {bonus} Sparks de bônus ao criar sua conta.
+              Você foi convidado! Sua conta nova já começa com Sparks de bônus.
             </div>
           )}
 

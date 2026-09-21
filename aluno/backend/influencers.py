@@ -118,12 +118,17 @@ async def gerar_codigo(db, nome: str) -> str:
     raise RuntimeError(f"Não consegui sortear um código livre para influencer '{nome}'.")
 
 
-def link_de(codigo: str, sparks_boas_vindas: int) -> str:
-    """`bonus` é só cosmético (o `Login.jsx` usa para mostrar "ganhe N
-    Sparks" antes do cadastro) — quem decide o valor de verdade é sempre o
-    catálogo no backend (`promo_codes.sparks_amount`), nunca a URL. Alterar o
-    parâmetro na mão não muda quanto a conta recebe."""
-    return f"/login?convite={codigo}&bonus={sparks_boas_vindas}"
+def link_de(codigo: str) -> str:
+    """Só o código. O link JÁ CARREGOU um `&bonus=N` cosmético, que o
+    `Login.jsx` exibia antes do cadastro — e qualquer pessoa trocava o número
+    na barra de endereço para a tela prometer "ganhe 5000 Sparks". O valor
+    creditado nunca veio dali (é `promo_codes.sparks_amount`, no banco), então
+    o parâmetro não dava Spark nenhum a mais: dava só uma promessa falsa na
+    tela, do tipo que rende print e reclamação.
+
+    Um número que a própria pessoa consegue editar não tem como ser uma
+    promessa, então ele não existe mais."""
+    return f"/login?convite={codigo}"
 
 
 # --------------------------------------------------------------------- CRM
@@ -323,7 +328,7 @@ async def ativar(db, influencer_id: str, *, email_login: str, percentual_comissa
         "status": STATUS_ATIVO,
         "codigo": codigo_final,
         "email_login": email_login,
-        "link": link_de(codigo_final, sparks_boas_vindas),
+        "link": link_de(codigo_final),
         "percentual_comissao": percentual_comissao,
         "sparks_boas_vindas": sparks_boas_vindas,
         "ativado_em": agora,

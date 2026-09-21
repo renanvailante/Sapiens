@@ -386,7 +386,11 @@ class TestFluxoCompletoPontaAPonta:
             percentual_comissao=0.30, sparks_boas_vindas=300,
         ))
         assert ativo["codigo"].startswith("SAPIENSLUCAS")
-        assert ativo["link"] == f"/login?convite={ativo['codigo']}&bonus=300"
+        # O link carrega SÓ o código: um `&bonus=N` na URL é editável por quem
+        # abre a página, e a tela chegou a prometer o número que a pessoa
+        # digitasse ali (o crédito real nunca veio da URL).
+        assert ativo["link"] == f"/login?convite={ativo['codigo']}"
+        assert "bonus" not in ativo["link"]
         cupom = _run(db.promo_codes.find_one({"code": ativo["codigo"]}))
         assert cupom["sparks_amount"] == 300
 

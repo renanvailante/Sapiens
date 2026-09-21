@@ -15,12 +15,15 @@
 const CHAVE = "sapiens_atribuicao";
 const JANELA_DIAS = 30;
 
-export function salvarAtribuicao(codigo, bonus) {
+// Só o código é guardado. A janela já carregou junto um `bonus` vindo da URL,
+// que a tela exibia como promessa — e que qualquer pessoa editava na barra de
+// endereço antes de o valor ser gravado aqui por 30 dias. O valor do bônus
+// mora no catálogo do backend e é lido no cadastro; nunca daqui.
+export function salvarAtribuicao(codigo) {
   if (!codigo) return;
   try {
     localStorage.setItem(CHAVE, JSON.stringify({
       codigo,
-      bonus: bonus || null,
       expira_em: Date.now() + JANELA_DIAS * 86400000,
     }));
   } catch { /* storage bloqueado — degradação silenciosa */ }
