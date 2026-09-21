@@ -103,13 +103,24 @@ TERMOS_RELEVANTES = (
     "sisu", "prouni", "apostila", "revisão", "revisao", "monitoria", "concurso",
 )
 
+# Nichos por MATÉRIA, não só por exame — medido em 2026-09-21: a matriz
+# antiga (5 nichos genéricos) esgotava em ~17 leads, porque as consultas
+# convergiam para os mesmos poucos artigos e a dedup barrava o resto. Matéria
+# é o eixo que a imprensa educacional de fato usa ("professores de redação que
+# viralizaram", "canais de química para o ENEM"), então é o que multiplica
+# artigos DIFERENTES — e artigo diferente é a única coisa que vira lead novo
+# enquanto não há motor de busca.
 NICHOS_PADRAO_INSTAGRAM = (
-    "ENEM geral", "Fuvest e Unicamp", "vestibular de Medicina",
-    "estudantes de Medicina que produzem conteúdo para vestibulandos",
+    "ENEM geral", "redação ENEM", "matemática ENEM", "biologia ENEM",
+    "história ENEM", "química ENEM", "física ENEM", "geografia e atualidades ENEM",
+    "Fuvest e Unicamp", "vestibular de Medicina",
     "professores e educadores independentes de vestibular",
 )
-NICHOS_PADRAO_YOUTUBE = ("aulas para o ENEM", "resolução de questões de vestibular")
-NICHOS_PADRAO_TIKTOK = ("dicas rápidas para o ENEM",)
+NICHOS_PADRAO_YOUTUBE = (
+    "aulas para o ENEM", "resolução de questões de vestibular",
+    "matemática ENEM", "redação ENEM",
+)
+NICHOS_PADRAO_TIKTOK = ("dicas rápidas para o ENEM", "redação ENEM", "matemática ENEM")
 NICHOS_PADRAO_WEB = ("blogs e sites de preparação para o ENEM",)
 NICHOS_PADRAO_WHATSAPP = ("grupos de estudo para o ENEM",)
 NICHOS_PADRAO_TELEGRAM = ("canais de estudo para ENEM e vestibular",)
@@ -196,7 +207,13 @@ def _consultas_de_artigo(plataforma: str, nicho: str) -> list[str]:
 # não aparece em manchete nenhuma; "Medicina vestibular" aparece.
 _NUCLEOS = (
     ("medicina", "Medicina vestibular"), ("fuvest", "Fuvest"), ("unicamp", "Unicamp"),
-    ("redaç", "redação ENEM"), ("redac", "redação ENEM"), ("professor", "ENEM professores"),
+    ("redaç", "redação ENEM"), ("redac", "redação ENEM"),
+    ("matemática", "matemática ENEM"), ("matematica", "matemática ENEM"),
+    ("biologia", "biologia ENEM"), ("história", "história ENEM"), ("historia", "história ENEM"),
+    ("química", "química ENEM"), ("quimica", "química ENEM"),
+    ("física", "física ENEM"), ("fisica", "física ENEM"),
+    ("geografia", "geografia ENEM"), ("atualidades", "atualidades ENEM"),
+    ("professor", "ENEM professores"),
     ("educador", "ENEM professores"), ("cursinho", "cursinho ENEM"),
     ("questõ", "questões ENEM"), ("questo", "questões ENEM"), ("aula", "aulas ENEM"),
 )

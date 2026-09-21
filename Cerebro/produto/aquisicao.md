@@ -67,6 +67,41 @@ o artigo DISCUTE aparece no texto visível; o link institucional do veículo
 corte, o resultado mais frequente da estratégia de artigos era o Instagram do
 próprio jornal.
 
+## A rodada real de 2026-09-21 (banco de produção, código publicado)
+
+`limite_total=10`, CRM de 0 → **10 leads**, 108 s, nenhum aviso de déficit.
+
+| fonte | consultas |
+|---|---|
+| `bing_news_rss` | 17 OK · 5 de cache · 7 sem resultado |
+| `duckduckgo_html` | 2 OK · 19 com falha (captcha, depois pausado pelo breaker) |
+| leitura de página | 2 com falha (403 de portal) |
+
+Descartes, todos com motivo: 13 `url_nao_e_perfil`, 2 `ia_considerou_irrelevante`,
+2 `so_link_de_rodape`, 1 `dominio_fora_da_allowlist`.
+
+Entre os leads: `instagram.com/repertorioenem` (896.000 seguidores lidos da
+própria fonte, prioridade alta, classificado pela IA),
+`instagram.com/cursoenemgratuito` (300.000), e os TikTok
+`@dosesdahistoria`, `@prof.barbaragarbinato`, `@anglo.vestibulares`,
+`@portuguescomleticia`.
+
+**Dois achados dessa rodada que valem guardar:**
+
+1. **A quota do free tier do Gemini é 20 requisições por DIA por modelo**
+   (`GenerateRequestsPerDayPerProjectPerModel-FreeTier`) — não só o grounding.
+   Uma rodada completa gasta uma chamada de classificação por par
+   (plataforma × nicho), então ela sozinha pode estourar o dia. Quando estoura,
+   a heurística assume e a rodada continua — mas os leads nascem
+   `classificado_por="heuristica"`, `prioridade=baixa`, e o ruído
+   institucional passa. **É o sinal para o admin de que aquela rodada precisa
+   de triagem manual.**
+2. **`influencer_created` nunca foi gravado**: `criar_lead` emitia
+   `origem=...` e `growth_events.registrar` não aceita esse nome; o
+   `TypeError` morria no `except` de `_emitir`, que só logava. Falha calada
+   desde que o Pesquisador nasceu, encontrada só numa rodada contra o banco
+   real. Corrigido — `_emitir` manda campo desconhecido para `meta`.
+
 ## O que destrava volume, quando o dono quiser
 
 `GOOGLE_CSE_KEY` + `GOOGLE_CSE_CX` (Google Programmable Search: 100 consultas
