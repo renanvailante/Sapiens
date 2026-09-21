@@ -18,6 +18,45 @@ módulo.
 > docs/pricing`) antes de orçar algo real; isso aqui é o teto para decidir
 > desenho, não um número para citar como fato medido.
 
+## ⚠️ CORREÇÃO DE 2026-09-21 — o grounding NÃO funciona nesta chave
+
+**Tudo o que esta seção e a seguinte dizem sobre `google_search` continua
+verdadeiro sobre o SDK e sobre a documentação, e continua FALSO na prática
+para este projeto.** Medido contra a API real, com a `GEMINI_API_KEY` de
+produção, de dentro do container do Fly (não local, não em teoria):
+
+```
+POST …/models/{modelo}:generateContent  com tools=[{google_search:{}}]
+  gemini-3-flash-preview → 429 RESOURCE_EXHAUSTED
+  gemini-3.5-flash       → 429 RESOURCE_EXHAUSTED
+  gemini-3.6-flash       → 429 RESOURCE_EXHAUSTED
+  gemini-flash-latest    → 429 RESOURCE_EXHAUSTED
+  (100% das tentativas; a MESMA chave, no mesmo minuto, responde normalmente
+   SEM a tool — o 503 ocasional que aparece sem tool é outra coisa, demanda
+   do modelo em preview)
+```
+
+A quota de grounding desta chave é **zero**: é recurso de tier pago, e os
+"5.000 prompts grounded grátis por mês" da seção abaixo não valem para ela.
+Nenhuma troca de modelo, retry ou timeout conserta — é billing, não código.
+
+Duas consequências que valem para qualquer feature futura:
+
+1. **"O SDK expõe" nunca é "o servidor aceita, nesta conta".** Este nó já
+   avisava (na nota de revisão do agente `ai`) que inspecionar o pacote só
+   prova o primeiro. A distância entre os dois custou uma feature inteira que
+   nasceu sem funcionar nenhuma vez em produção.
+2. **Nenhum `except Exception` pode transformar erro de fonte em resultado
+   vazio.** O Pesquisador engolia o 429 e reportava "0/40 leads — fontes
+   públicas não renderam mais candidatos", que é uma frase honesta descrevendo
+   um fato que não aconteceu. Ver [[aquisicao]].
+
+O que a descoberta usa hoje está em `aluno/backend/web_search.py`: busca
+pública sem chave, com a medição de cada fonte no próprio docstring.
+Habilitar billing na chave, ou configurar `GOOGLE_CSE_KEY`+`GOOGLE_CSE_CX`
+(Programmable Search, 100 consultas/dia grátis, sem cartão), destrava volume
+sem mudar nenhuma linha de código.
+
 ## O SDK já tem busca web nativa — não precisa contratar nada
 
 `google-genai` (o projeto usa `>=2.12.1` em `aluno/backend/requirements.txt`;

@@ -440,19 +440,90 @@ function LinhaDeInfluencer({ item, aoAtualizar, aoRemover }) {
   );
 }
 
+/** Relatório da última rodada.
+ *
+ * Existe por causa de um bug de 2026-09-21: a rodada devolvia "0/40 leads
+ * novos encontrados (fontes públicas não renderam mais candidatos)" enquanto
+ * a causa real era um 429 de quota na busca. O admin lia "não tem ninguém lá
+ * fora" quando a verdade era "a busca não aconteceu". Por isso o painel mostra
+ * SEMPRE as fontes e os erros técnicos — um zero sem causa visível é o que
+ * não pode voltar a acontecer.
+ */
+function RelatorioDaRodada({ resumo }) {
+  if (!resumo) return null;
+  const fontes = resumo.fontes || [];
+  const descartes = Object.entries(resumo.descartes || {});
+  const erros = resumo.erros_tecnicos || [];
+  const porFonte = fontes.reduce((acc, f) => {
+    const chave = f.provedor || "-";
+    acc[chave] = acc[chave] || { ok: 0, vazio: 0, erro: 0, resultados: 0 };
+    acc[chave][f.estado === "cache" ? "ok" : f.estado] = (acc[chave][f.estado === "cache" ? "ok" : f.estado] || 0) + 1;
+    acc[chave].resultados += Number(f.resultados || 0);
+    return acc;
+  }, {});
+
+  return (
+    <div className="mt-4 rounded-xl border border-zinc-200 bg-zinc-50/60 p-4 text-xs text-zinc-600">
+      <div className="font-semibold text-zinc-900">
+        Última rodada · {resumo.total_novos ?? 0} lead(s) novo(s) · {Math.round((resumo.duracao_ms || 0) / 1000)}s
+      </div>
+
+      <div className="mt-3 font-medium text-zinc-700">Fontes usadas</div>
+      <ul className="mt-1 space-y-0.5">
+        {Object.entries(porFonte).map(([provedor, c]) => (
+          <li key={provedor}>
+            <span className="font-mono">{provedor}</span> — {c.resultados} resultado(s) em {c.ok || 0} consulta(s) OK
+            {c.vazio ? `, ${c.vazio} sem resultado` : ""}
+            {c.erro ? <span className="text-amber-700">, {c.erro} com falha</span> : ""}
+          </li>
+        ))}
+        {!fontes.length && <li>nenhuma fonte foi consultada nesta rodada.</li>}
+      </ul>
+
+      {!!descartes.length && (
+        <>
+          <div className="mt-3 font-medium text-zinc-700">Descartados e por quê</div>
+          <ul className="mt-1 space-y-0.5">
+            {descartes.map(([motivo, quantos]) => (
+              <li key={motivo}>
+                {quantos}× <span className="font-mono">{motivo.replace(/_/g, " ")}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+
+      {!!erros.length && (
+        <>
+          <div className="mt-3 font-medium text-amber-800">Erros técnicos (não são “nada encontrado”)</div>
+          <ul className="mt-1 space-y-0.5 text-amber-800">
+            {erros.map((e) => <li key={e} className="break-words">{e}</li>)}
+          </ul>
+        </>
+      )}
+    </div>
+  );
+}
+
 function PesquisadorIA({ aoConcluir }) {
   const [pesquisando, setPesquisando] = useState(false);
+  const [resumo, setResumo] = useState(null);
 
-  const pesquisar = async () => {
+  const pesquisar = async (limiteTotal) => {
     setPesquisando(true);
     try {
-      const { data } = await api.post("/admin/influencers/pesquisar", {});
+      const corpo = limiteTotal ? { limite_total: limiteTotal } : {};
+      const { data } = await api.post("/admin/influencers/pesquisar", corpo);
+      setResumo(data);
       const total = data.total_novos ?? 0;
-      toast.success(
-        total > 0
-          ? `${total} lead(s) novo(s) encontrado(s) (Instagram/WhatsApp/Telegram).`
-          : "Rodada concluída — nenhum lead novo (tudo já estava no CRM ou nenhuma fonte confiável foi encontrada).",
-      );
+      const houveFalha = (data.erros_tecnicos || []).length > 0;
+      if (total > 0) {
+        toast.success(`${total} lead(s) novo(s) encontrado(s).`);
+      } else if (houveFalha) {
+        toast.error("Nenhum lead novo — e houve falha de fonte nesta rodada. Veja os erros técnicos abaixo.");
+      } else {
+        toast.info("Rodada concluída — nenhum lead novo (tudo já estava no CRM).");
+      }
       (data.avisos || []).forEach((aviso) => toast.warning(aviso));
       aoConcluir();
     } catch (e) {
@@ -468,14 +539,20 @@ function PesquisadorIA({ aoConcluir }) {
         <Sparkles className="w-4 h-4 text-sapiens-accent" /> Pesquisador IA de Aquisição
       </div>
       <p className="mt-2 text-xs text-zinc-500 max-w-xl">
-        Pesquisa fontes públicas da web (Instagram, grupos públicos de WhatsApp e canais/grupos
-        públicos de Telegram) e traz leads qualificados para este CRM, cada um com a fonte que
-        comprova a descoberta. Nunca entra em grupo, nunca envia mensagem — o texto de abordagem
-        é sempre gerado sob demanda e copiado manualmente.
+        Busca pública real (Instagram, YouTube, TikTok, blogs e páginas públicas) e traz cada
+        lead com a fonte que comprova a descoberta — a URL nunca é escrita pela IA, sempre vem
+        de uma busca ou de uma página pública que cita o perfil. Nunca faz login, nunca entra em
+        grupo, nunca envia mensagem: o texto de abordagem é gerado sob demanda e copiado à mão.
       </p>
-      <button onClick={pesquisar} disabled={pesquisando} className="btn-sapiens mt-4 rounded-xl px-5 py-2.5 text-sm font-semibold disabled:opacity-50" data-testid="admin-inf-pesquisar-ia">
-        {pesquisando ? "Pesquisando… (pode levar até 1 minuto)" : "Pesquisar novos leads"}
-      </button>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <button onClick={() => pesquisar(10)} disabled={pesquisando} className="rounded-xl border border-zinc-300 px-4 py-2.5 text-sm font-semibold text-zinc-700 disabled:opacity-50" data-testid="admin-inf-pesquisar-ia-10">
+          {pesquisando ? "Pesquisando…" : "Rodada pequena (10 leads)"}
+        </button>
+        <button onClick={() => pesquisar(null)} disabled={pesquisando} className="btn-sapiens rounded-xl px-5 py-2.5 text-sm font-semibold disabled:opacity-50" data-testid="admin-inf-pesquisar-ia">
+          {pesquisando ? "Pesquisando… (pode levar alguns minutos)" : "Rodada completa"}
+        </button>
+      </div>
+      <RelatorioDaRodada resumo={resumo} />
     </div>
   );
 }

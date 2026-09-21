@@ -196,6 +196,12 @@ COLECOES_SEM_DADO_PESSOAL: tuple[str, ...] = (
     # produto/marketing autorada pelo admin, chaveada pela campanha. Nenhum
     # aluno dentro; o rastro de QUEM clicou/converteu mora em `growth_events`.
     "campaigns",
+    # Cache de busca web pública do Pesquisador IA (`web_search.COLECAO_CACHE`).
+    # Chaveado por hash da CONSULTA, com TTL curto; guarda o que um motor de
+    # busca devolveria a qualquer visitante (título, trecho, URL), nunca um
+    # aluno nem um vínculo com conta do Sapiens. O lead em si, que PODE
+    # identificar uma pessoa, mora em `influencers`, já classificada acima.
+    "web_search_cache",
 )
 
 # Campos que NUNCA saem numa exportação: credencial ou material de sessão.

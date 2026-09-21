@@ -33,7 +33,7 @@ Se nada aqui casar, vá direto ao código (`graft ask "<tarefa>"`) — o Cerebro
 | mexer em **copy, landing, logo, mentor** | [[marca]] |
 | mexer em **cadastro, login, WhatsApp** | [[contas-e-acesso]] |
 | mexer em **influencer, afiliado, comissão, tracking/atribuição, campanha, UTM** | [[afiliados]] |
-| mexer no **Pesquisador IA de Aquisição, lead de Instagram/WhatsApp/Telegram, grounding do Gemini** | [[aquisicao]] |
+| mexer no **Pesquisador IA de Aquisição, lead de Instagram/YouTube/TikTok, busca web pública, "0 leads encontrados", grounding do Gemini dando 429** | [[aquisicao]] |
 | fazer a **IA pesquisar a web** (grounding, custo de chamada de IA) | [[custo-de-ia]] |
 | mexer em **activation, TTFV, cohort, marco de produto, primeira compra/recompra/microvitória** | [[analytics-de-produto]] |
 | mexer no **pipeline, ontologia, schema, corpus** | [[pipeline-e-corpus]] · [[canon-pedagogico]] |
@@ -59,6 +59,9 @@ Se nada aqui casar, vá direto ao código (`graft ask "<tarefa>"`) — o Cerebro
 | Pagamento entrou e Sparks não | ver o laço de reconciliação e `/admin/sparks/pendentes` | [[pagamentos]] |
 | Correção só no Mongo "não pega" | o Firestore é a fonte da verdade e reconstrói tudo | [[dados]] |
 | Tela branca no login com Google | handler cross-origin do Firebase | [[contas-e-acesso]] |
+| Erro genérico na tela e o log do servidor diz outra coisa | 500 sai sem CORS, o navegador bloqueia e o `errMsg` cai no texto padrão | [[incidentes]] |
+| Mudei a definição de um índice e o banco não mudou | `create_index` não redefine índice existente | [[incidentes]] |
+| Cadastro/escrita falha por duplicata num campo que está vazio | `sparse` indexa o campo presente valendo `null` | [[incidentes]] |
 
 ## Antes de qualquer coisa
 

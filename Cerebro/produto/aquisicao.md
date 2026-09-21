@@ -5,11 +5,84 @@ atualizado: 2026-09-21
 
 # Aquisição — o Pesquisador IA no Admin
 
+> **Reescrito em 2026-09-21 (segunda passada), depois de a versão original
+> nunca ter funcionado uma vez em produção.** Boa parte do texto abaixo
+> descreve o desenho ANTIGO, baseado em `google_search` do Gemini. Leia
+> primeiro a seção seguinte; ela diz o que foi medido e o que mudou.
+
+## O que estava errado: a busca nunca aconteceu
+
+O botão devolvia `0/40 leads novos encontrados (fontes públicas verificáveis
+não renderam mais candidatos válidos)`. A frase é honesta e o fato é falso: a
+busca **nunca rodou**. Medido contra a API real, com a chave de produção, de
+dentro do container do Fly — toda chamada com
+`tools=[types.Tool(google_search=...)]` responde **429 RESOURCE_EXHAUSTED**,
+em 100% das tentativas, em `gemini-3-flash-preview`, `gemini-3.5-flash`,
+`gemini-3.6-flash` e `gemini-flash-latest`. A mesma chave, no mesmo minuto,
+responde normal SEM a tool. A quota de grounding desta chave é zero (recurso
+de tier pago). Detalhe em [[custo-de-ia]].
+
+O `except Exception` de `descobrir_leads` engolia o 429 e devolvia `[], 0`, e
+o resumo da rodada interpretava isso como ausência de candidatos. **A lição
+que vale para qualquer feature: falha de fonte e resultado vazio nunca podem
+sair pelo mesmo cano.** Hoje o resumo carrega `fontes` (estado de cada
+consulta) e `erros_tecnicos`, e `AdminInfluencers.jsx` mostra os dois — um
+zero sem causa visível é o que não pode voltar.
+
+## A inversão: a IA parou de produzir URL
+
+Antes: a IA devolvia leads prontos e tentávamos verificar depois — o que é
+impossível de fazer direito, porque o grounding vem como link de
+redirecionamento agregado por chamada. Agora:
+
+1. **`aluno/backend/web_search.py` acha URLs reais.** Busca pública, sem
+   chave, sem login, sem cookie. Nenhuma IA participa.
+2. **Filtro determinístico** de domínio e formato de perfil
+   (`_candidato_de`/`_identificador_de`) — `/p/`, `/explore/`, `/popular/` e
+   `/reel/` nunca viram lead.
+3. **A IA só CLASSIFICA**, por ÍNDICE. Ela não escreve URL nenhuma; índice
+   fora do lote é descartado, não "corrigido".
+4. **Se a IA cair, a heurística decide** e o lead nasce
+   `classificado_por="heuristica"`. Uma falha de IA não zera uma rodada cujos
+   candidatos já são reais.
+
+Cada lead grava `fonte_busca`, `fonte_consulta`, `fonte_pagina`,
+`pesquisado_em`, `motivo_inclusao` e `classificado_por`.
+
+## O que cada fonte realmente entrega (medido, não suposto)
+
+| fonte | veredito |
+|---|---|
+| `html.duckduckgo.com` | melhor-esforço. 2/12 numa rajada, depois **0/6** — o IP do Fly foi banido com captcha. Robots permite; a fonte é que recusa. Fica com circuit breaker: 3 falhas seguidas e o provedor é pausado por 15 min, para não gastar a rodada colecionando o mesmo erro. |
+| `bing.com/news/search?format=RSS` | **funciona e é a fonte que sustenta hoje.** Robots permite (`Disallow: /search` não casa com `/news/search`) e o feed traz a URL real do artigo. |
+| leitura de página pública + extração de perfis linkados | **a de melhor proveniência.** Numa medição real rendeu 28 perfis únicos de 46 artigos, entre eles `@dosesdahistoria`, `@prof.barbaragarbinato`, `@profgabrielcabral`, `@portuguescomleticia`, `@ameninadamatematica` — criadores de verdade. |
+| `bing.com/search?format=RSS` | funciona, mas robots **proíbe**. Não usamos: decisão de conformidade, não de capacidade. |
+| yep, ecosia, brave, stract, 4get, SearXNG públicos | 403/429/401. Inutilizáveis de datacenter. |
+| Common Crawl para `instagram.com/*` | 404 — o Instagram bloqueia crawler, não há captura nenhuma. |
+| YouTube Data API / Custom Search com a `GEMINI_API_KEY` | `401 "API keys are not supported by this API"`. A chave do AI Studio não vale fora da Gemini API. |
+
+**O filtro que separou lead de ruído** foi `mencionado_no_texto`: o perfil que
+o artigo DISCUTE aparece no texto visível; o link institucional do veículo
+(`jornaloglobo`, `portal_ig`, `tiktokbrasil`) aparece só no HTML. Sem esse
+corte, o resultado mais frequente da estratégia de artigos era o Instagram do
+próprio jornal.
+
+## O que destrava volume, quando o dono quiser
+
+`GOOGLE_CSE_KEY` + `GOOGLE_CSE_CX` (Google Programmable Search: 100 consultas
+por dia grátis, API oficial, sem cartão). O provedor **já está escrito** em
+`web_search._buscar_cse` e entra sozinho, na frente do DuckDuckGo, assim que
+as duas variáveis existirem — zero linha de código a mais. Habilitar billing
+na chave do Gemini ressuscitaria o grounding, mas é a opção cara e não é
+necessária.
+
+---
+
 **Status em 2026-09-21: implementado.** `aluno/backend/acquisition_research.py`
 existe e está integrado a `influencers.py`/`influencers_routes.py`/
 `AdminInfluencers.jsx` — sem sistema paralelo, sem aba nova no produto do
-aluno. Este nó documenta a arquitetura real; o que segue foi todo validado
-contra o código, não só desenhado.
+aluno. O que segue descreve o desenho ANTIGO em vários pontos; onde ele fala
+de `generate_grounded_json`, leia as seções acima.
 
 **Uma divergência do desenho original, deliberada:** a implementação NÃO usa
 `response_schema` tipado do `google-genai` — usa `response_mime_type=

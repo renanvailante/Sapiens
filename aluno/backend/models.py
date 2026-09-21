@@ -437,6 +437,16 @@ class Influencer(BaseModel):
     fontes: list[str] = Field(default_factory=list, max_length=10)
     url_normalizada: str | None = None  # dedup determinística — ver `influencers._normalizar_url`
     descoberto_em: str | None = None
+    # --- proveniência da descoberta (2026-09-21) ---
+    # A URL de um lead de `pesquisa_ia` NUNCA é escrita pelo modelo: ela vem de
+    # uma busca pública, e estes três campos dizem exatamente de onde, para que
+    # qualquer lead possa ser auditado sem confiar na palavra da IA.
+    fonte_busca: str | None = None          # provedor: duckduckgo_html | google_cse | bing_news_rss | pagina_publica
+    fonte_consulta: str | None = None       # a consulta literal que o encontrou
+    fonte_pagina: str | None = None         # a página pública que LINKAVA este perfil, quando foi assim
+    pesquisado_em: str | None = None        # data da pesquisa que o encontrou
+    motivo_inclusao: str | None = None      # por que entrou — texto de auditoria, não de abordagem
+    classificado_por: str | None = None     # ia | heuristica (quando a IA não respondeu)
     mensagem_gerada: str | None = None
     observacao: str | None = None       # nota livre do admin, nunca da IA
     descartado: bool = False
@@ -485,10 +495,19 @@ class AtivarInfluencerRequest(BaseModel):
 
 class PesquisarAquisicaoRequest(BaseModel):
     """Corpo opcional do POST que dispara uma rodada do Pesquisador IA.
-    Vazio = usa a matriz padrão de nichos (ver `acquisition_research.MATRIZ_PADRAO`)."""
+    Vazio = matriz padrão (ver `acquisition_research.NICHOS_PADRAO_*`).
+
+    `limite_total` e `plataformas` existem para a rodada PEQUENA de validação:
+    checar que a descoberta está achando gente real antes de gastar uma rodada
+    inteira de busca — a prática que expôs o 429 de grounding em 2026-09-21."""
     nichos_instagram: list[str] | None = Field(default=None, max_length=8)
     nichos_whatsapp: list[str] | None = Field(default=None, max_length=8)
     nichos_telegram: list[str] | None = Field(default=None, max_length=8)
+    nichos_youtube: list[str] | None = Field(default=None, max_length=8)
+    nichos_tiktok: list[str] | None = Field(default=None, max_length=8)
+    nichos_web: list[str] | None = Field(default=None, max_length=8)
+    plataformas: list[str] | None = Field(default=None, max_length=6)
+    limite_total: int | None = Field(default=None, ge=1, le=200)
 
 
 # ---------- Redação (corretor ENEM) ----------

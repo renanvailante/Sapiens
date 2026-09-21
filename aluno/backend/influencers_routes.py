@@ -188,6 +188,11 @@ async def pesquisar(
         nichos_instagram=payload.nichos_instagram,
         nichos_whatsapp=payload.nichos_whatsapp,
         nichos_telegram=payload.nichos_telegram,
+        nichos_youtube=payload.nichos_youtube,
+        nichos_tiktok=payload.nichos_tiktok,
+        nichos_web=payload.nichos_web,
+        plataformas=payload.plataformas,
+        limite_total=payload.limite_total,
     )
 
 
