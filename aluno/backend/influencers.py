@@ -554,11 +554,24 @@ async def resumo_admin(db) -> dict:
     }
 
 
+# Campos que `growth_events.registrar` aceita por nome. Qualquer outro vai
+# para `meta` — sem isto, `criar_lead` emitia `origem=...`, que `registrar`
+# não conhece, e TODO evento `influencer_created` morria num `TypeError`
+# engolido pelo `except` abaixo. Falhava calado desde que o Pesquisador
+# nasceu; apareceu numa rodada real em 2026-09-21.
+_CAMPOS_DE_EVENTO = ("influencer_id", "aluno_id", "campanha_id", "codigo", "meta")
+
+
 async def _emitir(db, tipo: str, **campos) -> None:
     import growth_events
 
+    nomeados = {k: v for k, v in campos.items() if k in _CAMPOS_DE_EVENTO}
+    extras = {k: v for k, v in campos.items() if k not in _CAMPOS_DE_EVENTO}
+    if extras:
+        nomeados["meta"] = {**(nomeados.get("meta") or {}), **extras}
+
     try:
-        await growth_events.registrar(db, tipo, **campos)
+        await growth_events.registrar(db, tipo, **nomeados)
     except Exception:  # noqa: BLE001
         logger.exception("Falha ao emitir evento de growth '%s'.", tipo)
 

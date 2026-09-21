@@ -430,6 +430,17 @@ class TestPersistencia:
         assert len(resumo["avisos"]) == 1
         assert "1/10" in resumo["avisos"][0]
 
+    def test_criar_lead_registra_o_evento_de_auditoria(self, db):
+        """`criar_lead` emite `influencer_created` com `origem=...`, que
+        `growth_events.registrar` não aceita por nome. O `TypeError` morria
+        dentro de um `except` que só logava, e o evento nunca era gravado —
+        falha calada desde que o Pesquisador nasceu, vista numa rodada real em
+        2026-09-21. Agora campo desconhecido vai para `meta`."""
+        _run(influencers.criar_lead(db, {"nome": "Lead auditado", "origem": "pesquisa_ia"}))
+        eventos = _run(db.growth_events.find({"tipo": "influencer_created"}).to_list(10))
+        assert len(eventos) == 1, "o evento de criação de lead precisa ser gravado"
+        assert eventos[0]["meta"]["origem"] == "pesquisa_ia"
+
     def test_rodada_registra_evento_de_auditoria(self, db, monkeypatch):
         _mock_busca(monkeypatch)
         _mock_ia(monkeypatch, [])
