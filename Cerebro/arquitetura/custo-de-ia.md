@@ -40,6 +40,37 @@ A quota de grounding desta chave é **zero**: é recurso de tier pago, e os
 "5.000 prompts grounded grátis por mês" da seção abaixo não valem para ela.
 Nenhuma troca de modelo, retry ou timeout conserta — é billing, não código.
 
+### E a quota do free tier é 20 requisições por DIA, por modelo
+
+Não é só o grounding. Medido no mesmo dia, em produção:
+
+```
+429 RESOURCE_EXHAUSTED
+  quotaId:    GenerateRequestsPerDayPerProjectPerModel-FreeTier
+  quotaValue: 20
+  model:      gemini-3-flash
+```
+
+**Uma rodada do Pesquisador de Aquisição consome isso sozinha** (uma chamada
+de classificação por par plataforma × nicho), e o resto do dia todas as outras
+features de IA do produto ficam sem cota. Três coisas saíram daí, e valem para
+qualquer chamador:
+
+1. **429 é caso de FALLBACK DE MODELO, não de morte.** A cota é por modelo, e
+   `generate_json_resiliente` só trocava de modelo em 5xx — `ClientError`
+   (onde mora o 429) passava reto e a chamada morria na primeira tentativa.
+   Isso derrubou a geração de mensagem do Pesquisador, com 500 mudo na tela.
+   Hoje 429 tenta a reserva; 400/403/404 continuam subindo direto, porque
+   repetir prompt inválido só gasta uma segunda chamada.
+2. **`GeminiQuotaExcedidaError`** (subclasse de `GeminiIndisponivelError`, para
+   não quebrar quem já tratava indisponibilidade) carrega o `retryDelay` que a
+   própria API devolve — dá para dizer QUANDO tentar em vez de só "falhou".
+3. **Toda feature de IA precisa de um caminho sem IA.** O Pesquisador cai na
+   heurística na descoberta e no molde determinístico
+   (`influencers.gerar_mensagem_prospeccao`) na mensagem, marcando
+   `mensagem_origem="modelo"`. Entregar texto de molde fingindo que foi
+   personalizado seria pior que o erro — por isso a tela marca.
+
 Duas consequências que valem para qualquer feature futura:
 
 1. **"O SDK expõe" nunca é "o servidor aceita, nesta conta".** Este nó já
