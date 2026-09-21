@@ -31,6 +31,7 @@ Se nada aqui casar, vá direto ao código (`graft ask "<tarefa>"`) — o Cerebro
 | mexer em algo que o **celular** toca | [[mobile]] |
 | mexer em **gamificação, liga, mural, venda** | [[engajamento]] |
 | mexer em **copy, landing, logo, mentor** | [[marca]] |
+| mexer em **landing de anúncio, `/ads/*`, Meta Pixel, criativo pago** | [[landings-de-anuncio]] |
 | mexer em **cadastro, login, WhatsApp** | [[contas-e-acesso]] |
 | mexer em **influencer, afiliado, comissão, tracking/atribuição, campanha, UTM** | [[afiliados]] |
 | mexer no **Pesquisador IA de Aquisição, lead de Instagram/YouTube/TikTok, busca web pública, "0 leads encontrados", grounding do Gemini dando 429** | [[aquisicao]] |
@@ -103,7 +104,7 @@ Cerebro/
 ├── operacao/   deploy · ambiente-local · sessoes-concorrentes · incidentes
 ├── produto/    ecossistema · economia-de-sparks · catalogo · mentis
 │               marca · engajamento · contas-e-acesso · afiliados · aquisicao
-│               analytics-de-produto
+│               analytics-de-produto · landings-de-anuncio
 ├── arquitetura/ dados · custo-de-leitura · custo-de-ia · pagamentos · motor-cognitivo
 │               cursos-conteudo · redacao · canon-pedagogico · pipeline-e-corpus
 ├── ux/         sistema-visual · navegacao · padroes-de-tela · mobile

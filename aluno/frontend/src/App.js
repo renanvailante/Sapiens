@@ -65,6 +65,21 @@ const RedefinirSenha = lazy(() => import("./pages/RedefinirSenha"));
 const Termos = lazy(() => import("./pages/Termos"));
 const Privacidade = lazy(() => import("./pages/Privacidade"));
 
+/** As landings de campanha (`/ads/*`).
+ *
+ *  Preguiçosas, e por uma razão que é o contrário da dos outros `lazy` daqui:
+ *  não é que o aluno raramente abra estas telas — é que quem abre UMA delas
+ *  nunca abre as outras três. Cada variante é um pedaço próprio, e o visitante
+ *  que veio de um anúncio baixa só a sua.
+ *
+ *  Elas não têm navegação, não têm chamada de API no render e não aparecem em
+ *  lugar nenhum de dentro do produto. Ver
+ *  `Cerebro/produto/landings-de-anuncio.md`. */
+const AdsDiagnostico = lazy(() => import("./pages/ads/Diagnostico"));
+const AdsMesmoErro = lazy(() => import("./pages/ads/MesmoErro"));
+const AdsDezQuestoes = lazy(() => import("./pages/ads/DezQuestoes"));
+const AdsComoVoceEstuda = lazy(() => import("./pages/ads/ComoVoceEstuda"));
+
 const Admin = lazy(() => import("./pages/Admin"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const AdminUsers = lazy(() => import("./pages/AdminUsers"));
@@ -226,6 +241,17 @@ function AppRouter() {
       <Route path={ROTAS.SUGESTOES} element={<Aluno titulo="Fale com a equipe"><Sugestoes /></Aluno>} />
       <Route path={ROTAS.AULA_AO_VIVO} element={<Aluno titulo="Aula ao vivo de quinta"><AulaAoVivo /></Aluno>} />
       <Route path={ROTAS.MENTORIA} element={<Aluno titulo="Mentoria com Vitor Lara"><Mentoria /></Aluno>} />
+
+      {/* ─── Aquisição: as landings de anúncio ───────────────────────────
+          Fora da navegação, fora do índice do Google (ver `AdsLandingLayout`)
+          e sem porta de entrada dentro do produto. São quatro variantes da
+          MESMA oferta, cada uma para um ângulo de criativo, e o título de aba
+          de cada uma é o que o anúncio prometeu — é ele que a pessoa lê se
+          deixar a aba aberta e voltar depois. */}
+      <Route path={ROTAS.ADS_DIAGNOSTICO} element={<Pagina titulo="Diagnóstico gratuito do ENEM"><AdsDiagnostico /></Pagina>} />
+      <Route path={ROTAS.ADS_MESMO_ERRO} element={<Pagina titulo="Por que você erra sempre as mesmas coisas"><AdsMesmoErro /></Pagina>} />
+      <Route path={ROTAS.ADS_DEZ_QUESTOES} element={<Pagina titulo="10 questões para descobrir onde você perde pontos"><AdsDezQuestoes /></Pagina>} />
+      <Route path={ROTAS.ADS_COMO_VOCE_ESTUDA} element={<Pagina titulo="Seus erros viram um mapa de estudo"><AdsComoVoceEstuda /></Pagina>} />
 
       {/* ─── Endereços antigos ───────────────────────────────────────── */}
       {RotasLegadas()}

@@ -84,6 +84,23 @@ export const ROTAS = {
   AULA_AO_VIVO: "/aula-ao-vivo",
   MENTORIA: "/mentoria",
 
+  // --- Aquisição (tráfego externo) -----------------------------------------
+  // As landings de campanha. NÃO são área, não entram na navegação e não são
+  // alcançáveis de dentro do produto: existem para receber o clique de um
+  // anúncio e levar a uma coisa só, o cadastro. Uma variante nova nasce como
+  // uma linha aqui e uma rota no `App.js` — ver
+  // `Cerebro/produto/landings-de-anuncio.md`.
+  //
+  // Elas não têm espelho em `rotas_do_app.py` de propósito: aquele arquivo
+  // existe porque o BACKEND emite endereço de tela como dado (o bloco do
+  // cronograma, o destino da Mentis), e nenhum backend tem o que fazer
+  // mandando um aluno para uma landing de anúncio.
+  ADS: "/ads",
+  ADS_DIAGNOSTICO: "/ads/diagnostico",
+  ADS_MESMO_ERRO: "/ads/mesmo-erro",
+  ADS_DEZ_QUESTOES: "/ads/10-questoes",
+  ADS_COMO_VOCE_ESTUDA: "/ads/como-voce-estuda",
+
   // --- Equipe --------------------------------------------------------------
   ADMIN: "/admin",
   PROMOTER: "/promoter",

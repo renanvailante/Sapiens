@@ -304,7 +304,14 @@ export const SEM_NAVEGACAO = [
 /** Prefixos (com filhas) em que a navegação também não entra. Hoje só um: o
  *  motor de prova, que roda em `/estudar/provas/:examId`. A LISTA de cadernos
  *  (`/estudar/provas`, sem id) continua com barra — é escolha, não prova. */
-export const SEM_NAVEGACAO_PREFIXO = [`${ROTAS.PROVAS}/`];
+export const SEM_NAVEGACAO_PREFIXO = [
+  `${ROTAS.PROVAS}/`,
+  // As landings de anúncio (`/ads/*`). Elas não são tela do produto: recebem
+  // tráfego externo e têm UMA ação. Uma barra com cinco áreas ali é a lista
+  // das outras ações — e para um visitante logado que caiu num anúncio seria
+  // a moldura do app em volta de uma peça de aquisição.
+  `${ROTAS.ADS}/`,
+];
 
 /** A navegação aparece nesta rota? Uma regra, lida pela barra de cima e pela
  *  de baixo — eram duas listas (`SEM_BARRA` e `SEM_TIRA`) que já divergiam:

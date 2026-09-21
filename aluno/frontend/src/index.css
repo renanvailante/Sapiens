@@ -2729,3 +2729,53 @@ a.chip:hover, button.chip:hover {
     text-transform: uppercase;
     color: #7C3AED;
 }
+
+/* ---------------- O CTA grudento das landings de anúncio ----------------
+
+   Só existe em `/ads/*`, e só no celular (a classe `md:hidden` decide isso no
+   JSX). Ele é o MESMO botão do herói reaparecendo depois que aquele sai da
+   tela — não um segundo convite —, e por isso não tem texto próprio.
+
+   Três decisões moram aqui:
+
+   - **Ele não existe até ser preciso.** `visibility: hidden` junto de
+     `opacity: 0` tira o botão da árvore de acessibilidade e do alvo de toque
+     enquanto ele está apagado; só `opacity` deixaria um retângulo invisível
+     capturando o dedo em cima do conteúdo.
+   - **O respiro de baixo é `env(safe-area-inset-bottom)`.** Sem ele o botão
+     encosta na barra de gestos do iPhone e metade dos toques vai para o
+     sistema. Vale o mesmo aviso de `ux/mobile.md`: sem `viewport-fit=cover` no
+     `index.html` o iOS devolve 0px aqui — e ele já está lá.
+   - **O véu acima dele é um degradê, não uma faixa opaca.** O conteúdo tem de
+     continuar visível por baixo, senão a última linha de texto da página fica
+     escondida atrás de uma barra sólida e a pessoa acha que acabou.
+
+   A barra inferior do app (`--barra-inferior-h`) nunca divide a tela com este
+   botão: a navegação não é desenhada em `/ads/*` (`SEM_NAVEGACAO_PREFIXO`) e
+   não é desenhada para quem não tem sessão. */
+.ads-grudento {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px));
+    background: linear-gradient(180deg, rgba(5, 10, 20, 0) 0%, rgba(5, 10, 20, 0.86) 42%, rgba(5, 10, 20, 0.96) 100%);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: opacity .22s var(--mov-saida), transform .22s var(--mov-saida), visibility .22s;
+    pointer-events: none;
+}
+
+.ads-grudento-visivel {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ads-grudento { transition: opacity .22s linear, visibility .22s; transform: none; }
+    .ads-grudento-visivel { transform: none; }
+}
