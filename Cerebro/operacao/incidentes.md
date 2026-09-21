@@ -1,11 +1,11 @@
 ---
 tags: [operacao, incidente, historico]
-atualizado: 2026-09-18
+atualizado: 2026-09-21
 ---
 
 # Incidentes — causa raiz e o que ficou
 
-Quatro apagões reais. Cada um deixou uma regra; a regra vale mais que a história.
+Cinco apagões reais. Cada um deixou uma regra; a regra vale mais que a história.
 
 ## 2026-09-04 · A cota do Firestore derrubou o app inteiro
 
@@ -58,13 +58,61 @@ logava. Duas causas, **as duas de empacotamento, nenhuma de lógica**:
 
 Build feito de dentro de um worktree sem o `.env`. Ver a armadilha 3 em [[deploy]].
 
-## Padrão comum aos quatro
+## 2026-09-21 · Nenhuma conta nova podia ser criada
+
+**Sintoma:** "Não foi possível entrar." ao criar conta — pelos dois caminhos,
+e-mail e Google. Chegou como relato de uma influencer, com print de story, e a
+primeira leitura (rede da usuária, navegador do Instagram) estava **errada**.
+
+**Causa:** o índice `users.referral_code` era `unique + sparse`, e o comentário
+dizia que o esparso existia justamente para não tratar os `None` como
+duplicata. **`sparse` pula só o campo AUSENTE** — presente valendo `null` é
+indexado como qualquer valor. `User.model_dump()` grava `referral_code: None`
+em toda conta nova, então o primeiro cadastro depois de o campo existir ficou
+com o valor nulo e todos os seguintes morriam com `DuplicateKeyError` dentro de
+`auth.signup`. Produção confirmou: 30 contas, 29 com o campo ausente, 1 com
+`null`, nenhuma com código de verdade. Cura: `partialFilterExpression` por
+`$type: "string"`.
+
+**Duas coisas em volta fizeram a falha durar, e valem mais que a causa:**
+
+> **`create_index` NUNCA redefine um índice que já existe.** Mudar as opções de
+> um índice neste repo não conserta banco nenhum que já rodou — o Mongo recusa,
+> e recusa de novo em todo boot. Pior: o conflito caía no ramo de "já existe sob
+> outro nome" (mesmas chaves, mesmo `unique`) e era contado como SUCESSO.
+> `criar_indices` agora derruba e recria quando o mesmo nome tem as mesmas
+> chaves e opções diferentes.
+
+> **Um 500 sem CORS é um erro que ninguém lê.** O handler de `Exception` é
+> servido pelo `ServerErrorMiddleware`, a camada mais EXTERNA do Starlette —
+> fora do `CORSMiddleware`. A resposta saía sem `Access-Control-Allow-Origin`,
+> o navegador bloqueava, o axios levantava erro sem `response` e o `errMsg` do
+> frontend caía no texto genérico. O servidor dizia qual era o incidente e
+> ninguém do outro lado conseguia ler — foi o que transformou um 500 objetivo
+> em "problema de rede da usuária" por horas.
+
+**O que ficou:** `tests/test_indices.py` trava a declaração do índice e a
+recriação sob o mesmo nome; `tests/test_erro_nao_tratado.py` trava o CORS do
+500. E a regra de diagnóstico: **reproduza contra produção com `curl` antes de
+teorizar sobre o cliente** — um `-i` mostrou o 500 e a ausência do cabeçalho em
+uma chamada.
+
+> O `fake_db` dos testes não tem índice nenhum. **Toda garantia que mora num
+> índice único é invisível para a suíte** e só existe contra um Mongo de
+> verdade — teste a DECLARAÇÃO quando não puder testar o efeito.
+
+## Padrão comum aos cinco
 
 Nenhum deles apareceu em teste, em revisão de código ou na saída de um comando.
-Três apareceram como **o produto parando** e um como **silêncio** (o pagamento
+Quatro apareceram como **o produto parando** e um como **silêncio** (o pagamento
 preso). O que os teria pego: fazer a conta antes (custo de laço de background),
 provar no alvo (deploy), e ter um endpoint de diagnóstico
 (`GET /api/admin/sparks/pendentes`).
+
+O de 2026-09-21 acrescenta um padrão próprio: os outros quatro foram
+descobertos por quem opera o produto, e este chegou por um **usuário**, com uma
+explicação plausível e errada embutida no relato. Nada no sistema avisou que
+100% dos cadastros falhavam.
 
 ---
 Relacionado: [[custo-de-leitura]] · [[pagamentos]] · [[deploy]] · [[redacao]]
