@@ -105,7 +105,11 @@ export default function DemoQuestao({ aoInteragir }) {
 
   return (
     <Demo
-      olho="Demonstração · você responde"
+      // O selo é o MESMO das outras três. "Demonstração · você responde"
+      // quebrava em duas linhas a 390px e deslocava o trilho de passos — e o
+      // convite a tocar já mora dentro do painel ("Toque numa alternativa…"),
+      // onde ele é lido no momento em que serve.
+      olho="Demonstração"
       passo={fase}
       passos={4}
       aoRever={escolhida ? refazer : null}
