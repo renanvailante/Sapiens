@@ -1,7 +1,7 @@
 import { ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAnuncio } from "./contexto";
-import { evento } from "../../lib/rastreio";
+import { ctaClicado } from "../../lib/rastreio";
 
 /**
  * O CONVITE À AÇÃO — um verbo, um destino, a origem colada.
@@ -40,7 +40,7 @@ function useIrParaCadastro() {
     aoClicar: (posicao) => (e) => {
       // O rastreio vem antes da navegação, e nunca a atrasa: `evento` é
       // síncrono e engole os próprios erros (ver `lib/rastreio.js`).
-      evento("CliqueCTA", { variante, posicao });
+      ctaClicado(variante, posicao);
       // Modificador de teclado / botão do meio: é o navegador que manda.
       if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button === 1) return;
       e.preventDefault();

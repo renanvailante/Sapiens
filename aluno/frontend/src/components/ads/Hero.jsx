@@ -16,9 +16,12 @@ import CTA from "./CTA";
  * anúncio não tem razão nenhuma para dar essa confiança.
  */
 export default function Hero({ olho, titulo, subtexto, cta, notaDoCta, children }) {
+  // O respiro do celular é curto de propósito: cada pixel gasto aqui empurra a
+  // demonstração para baixo da dobra, e a demonstração É o argumento. No
+  // desktop, onde a demo fica ao LADO do texto, o respiro volta.
   return (
-    <section className="pb-10 pt-10 md:pb-14 md:pt-16">
-      <div className="grid items-center gap-10 md:grid-cols-2 md:gap-12">
+    <section className="pb-10 pt-6 md:pb-14 md:pt-16">
+      <div className="grid items-center gap-7 md:grid-cols-2 md:gap-12">
         {/* A coluna do texto. No celular é a única coluna e vem primeiro; no
             desktop ela divide a tela com a demonstração, e o foco visual
             continua no botão. */}
@@ -26,12 +29,12 @@ export default function Hero({ olho, titulo, subtexto, cta, notaDoCta, children 
           {olho && <div className="secao-olho">{olho}</div>}
           <h1 className="titulo-heroi mt-2" data-testid="ads-titulo">{titulo}</h1>
           <p
-            className="mx-auto mt-5 max-w-md text-[17px] leading-relaxed text-white/65 md:mx-0"
+            className="mx-auto mt-4 max-w-md text-[16px] leading-relaxed text-white/65 md:mx-0 md:text-[17px]"
             data-testid="ads-subtexto"
           >
             {subtexto}
           </p>
-          <CTA heroi posicao="heroi" nota={notaDoCta} className="mt-8 md:items-start">{cta}</CTA>
+          <CTA heroi posicao="heroi" nota={notaDoCta} className="mt-6 md:items-start">{cta}</CTA>
         </div>
 
         {/* A demonstração. `md:order-none` mantém texto à esquerda no desktop;

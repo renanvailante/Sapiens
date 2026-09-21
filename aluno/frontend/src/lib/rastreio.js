@@ -82,30 +82,56 @@ function carregar() {
 }
 
 /**
- * A visualização de uma landing. Padrão `PageView` do Meta — o evento que
- * toda campanha usa como denominador.
+ * O VOCABULÁRIO DE EVENTOS DESTAS PÁGINAS. Três, e só três.
  *
- * `chave` é o que torna a visualização única (a variante da landing). Chamar
- * duas vezes com a mesma chave não dispara duas vezes.
- */
-export function visualizacao(chave) {
-  if (jaVistas.has(chave)) return;
-  jaVistas.add(chave);
-  carregar();
-  disparar("PageView");
-}
-
-/**
- * Um evento de conversão da landing. Hoje só um: o clique no CTA.
+ * Nomes customizados (`trackCustom`) e não padrões do Meta, de propósito:
+ * `Lead` significa cadastro CONCLUÍDO, e usá-lo para um clique inflaria a
+ * conversão do anúncio com gente que só tocou no botão — depois é o
+ * algoritmo do Meta que otimiza em cima dessa mentira.
  *
- * Nome customizado (`trackCustom`) e não um padrão do Meta de propósito —
- * `Lead` significa cadastro concluído, e usá-lo para um clique inflaria a
- * conversão do anúncio com gente que só tocou no botão. O cadastro em si
- * acontece em `/login`, fora destas páginas, e quando houver evento para ele
- * é aqui que ele entra.
+ * | evento                     | quando                                    |
+ * |----------------------------|-------------------------------------------|
+ * | `landing_view`             | a landing abriu (uma vez por variante)    |
+ * | `landing_demo_interaction` | a pessoa TOCOU na demonstração            |
+ * | `landing_cta_click`        | clique no CTA, com a posição na página    |
+ *
+ * **`landing_signup_start` não existe aqui, e a ausência é decisão.** Ele
+ * aconteceria em `/login`, que é tela do produto e não landing. Instrumentá-lo
+ * exigiria importar este módulo dentro de `Login.jsx` — espalhar analytics
+ * pelo app por um sinal que, hoje, é indistinguível de `landing_cta_click`:
+ * o CTA navega direto para o cadastro, sem tela intermediária onde alguém
+ * possa desistir. Quando houver etapa no meio (ou quando o pixel estiver
+ * ligado e a diferença virar mensurável), ele entra AQUI e é chamado de lá.
+ *
+ * `landing_demo_interaction` só tem emissor em `/ads/10-questoes`: é a única
+ * das quatro demos em que existe algo a tocar. Nas outras três a demonstração
+ * roda sozinha, e um "interagiu" disparado por scroll mediria rolagem, não
+ * interesse.
  */
 export function evento(nome, dados = {}) {
   disparar(nome, dados, true);
+}
+
+/** A landing abriu. Dispara o `PageView` (o denominador de toda campanha) e
+ *  o evento nomeado, uma vez só por variante. */
+export function landingView(variante) {
+  if (jaVistas.has(variante)) return;
+  jaVistas.add(variante);
+  carregar();
+  disparar("PageView");
+  evento("landing_view", { variante });
+}
+
+/** A pessoa tocou na demonstração. `escolha` é a alternativa que ela marcou —
+ *  é dado do criativo, não da pessoa, e não identifica ninguém. */
+export function demoInteragida(variante, escolha) {
+  evento("landing_demo_interaction", { variante, escolha });
+}
+
+/** Clique no CTA. `posicao` é o que diz se a página converte na primeira
+ *  dobra ou só depois da demonstração — sem isso só se sabe o total. */
+export function ctaClicado(variante, posicao) {
+  evento("landing_cta_click", { variante, posicao });
 }
 
 function disparar(nome, dados = {}, custom = false) {

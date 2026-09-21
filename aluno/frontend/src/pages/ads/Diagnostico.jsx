@@ -1,50 +1,42 @@
 import AdsLandingLayout from "../../components/ads/AdsLandingLayout";
 import Hero from "../../components/ads/Hero";
-import CTA from "../../components/ads/CTA";
-import DiagnosticPreview from "../../components/ads/DiagnosticPreview";
-import ErrorAnalysisPreview from "../../components/ads/ErrorAnalysisPreview";
+import CadeiaDoErro from "../../components/ads/CadeiaDoErro";
+import ComoFunciona from "../../components/ads/ComoFunciona";
+import CtaFinal from "../../components/ads/CtaFinal";
+import DemoAnaliseDoErro from "../../components/ads/DemoAnaliseDoErro";
 
 /**
  * `/ads/diagnostico` — ângulo CURIOSIDADE.
  *
- * A pergunta do herói ("você sabe POR QUE está errando?") é uma pergunta que a
- * pessoa não sabe responder, e é isso que faz o anúncio funcionar: ela não
- * está sendo convencida de nada, está sendo confrontada com uma lacuna que
- * já existia. A página inteira é a demonstração de que o Sapiens responde
- * aquela pergunta — não uma lista do que ele faz.
+ * A pergunta do herói é uma que a pessoa não sabe responder, e é isso que faz
+ * o anúncio funcionar: ela não está sendo convencida de nada, está sendo
+ * confrontada com uma lacuna que já existia. A página inteira é a
+ * demonstração de que o Sapiens responde aquela pergunta — não uma lista do
+ * que ele faz.
  *
- * Composição: herói com a questão de exemplo ao lado → a leitura do erro em
- * três degraus → o convite de novo. Nada mais. Não há seção sobre a
- * plataforma, sobre o mentor, sobre preço: quem chega aqui não está
- * comparando produtos, está com uma pergunta na cabeça.
+ * A demo roda em laço e é a coisa mais importante da primeira dobra: em cinco
+ * segundos ela mostra uma questão ser marcada errada, ser ANALISADA, e virar
+ * uma habilidade com um próximo passo. Quem não ler uma linha de texto desta
+ * página entendeu o produto.
  */
 export default function AdsDiagnostico() {
   return (
-    <AdsLandingLayout variante="diagnostico" ctaLabel="Fazer diagnóstico gratuito">
+    <AdsLandingLayout variante="diagnostico" ctaLabel="Fazer diagnóstico grátis">
       <Hero
         olho="Diagnóstico gratuito"
         titulo="Você sabe por que está errando no ENEM?"
-        subtexto="Faça um diagnóstico gratuito e descubra quais habilidades estão por trás dos seus erros."
-        cta="Fazer diagnóstico gratuito"
+        subtexto="O Sapiens analisa seus erros e identifica o que está por trás deles."
+        cta="Fazer diagnóstico grátis"
         notaDoCta={<NotaDeEntrada />}
       >
-        <DiagnosticPreview />
+        <DemoAnaliseDoErro />
       </Hero>
 
-      <div className="mx-auto max-w-2xl">
-        <ErrorAnalysisPreview />
+      <div className="space-y-16 md:space-y-20">
+        <CadeiaDoErro />
+        <ComoFunciona />
+        <CtaFinal cta="Fazer diagnóstico grátis" nota={<NotaDeEntrada />} />
       </div>
-
-      <section className="mx-auto mt-12 max-w-xl text-center">
-        <h2 className="titulo-tela">A nota diz onde você está. O erro diz por quê.</h2>
-        <p className="mx-auto mt-4 max-w-md text-[15px] leading-relaxed text-white/60">
-          O Sapiens olha cada resposta sua e monta a partir dela o que estudar
-          em seguida — a habilidade, não a questão.
-        </p>
-        <CTA posicao="fim" className="mt-8" nota={<NotaDeEntrada />}>
-          Fazer diagnóstico gratuito
-        </CTA>
-      </section>
     </AdsLandingLayout>
   );
 }
@@ -56,16 +48,18 @@ export default function AdsDiagnostico() {
  * O Sapiens **não tem diagnóstico sem conta** — responder questão grava
  * evento no perfil do aluno, e não existe perfil anônimo. Esconder isso
  * compraria o clique e perderia a pessoa na tela seguinte, que é o pior lugar
- * possível para perdê-la: depois de pagar a mídia.
+ * possível para perdê-la: depois de a mídia já ter sido paga.
  */
 function NotaDeEntrada() {
   return (
     <>
-      <span className="font-mono-alt text-[11px] uppercase tracking-[0.14em] text-white/55">
-        10 questões • gratuito • resultado personalizado
+      {/* `tracking` curto e 10px: a 390px a versão anterior quebrava em duas
+          linhas e a nota inteira media 63px. */}
+      <span className="font-mono-alt text-[10px] uppercase tracking-[0.06em] text-white/55">
+        10 questões • grátis • resultado personalizado
       </span>
       <br />
-      <span className="mt-1 inline-block">Criar conta leva menos de um minuto e não pede cartão.</span>
+      <span className="text-[11px]">Criar conta leva menos de um minuto e não pede cartão.</span>
     </>
   );
 }

@@ -1,42 +1,56 @@
+import { useCallback } from "react";
 import AdsLandingLayout from "../../components/ads/AdsLandingLayout";
 import Hero from "../../components/ads/Hero";
-import CTA from "../../components/ads/CTA";
-import QuestionProgress from "../../components/ads/QuestionProgress";
+import CadeiaDoErro from "../../components/ads/CadeiaDoErro";
+import ComoFunciona from "../../components/ads/ComoFunciona";
+import CtaFinal from "../../components/ads/CtaFinal";
+import DemoQuestao from "../../components/ads/DemoQuestao";
+import { demoInteragida } from "../../lib/rastreio";
 
 /**
  * `/ads/10-questoes` — ângulo DESAFIO.
  *
- * Esta é a página mais curta das quatro, e isso é o desenho, não pressa: o
- * argumento dela é **baixa fricção**, e uma página longa desmente o próprio
- * argumento. Quem chega por este criativo já aceitou a proposta no anúncio;
- * o trabalho da landing é não colocar nada entre ela e o botão.
+ * A única das quatro em que o visitante RESPONDE alguma coisa. As outras três
+ * mostram o produto; esta deixa a pessoa ter tido uma pequena experiência
+ * dele — e é o que o anúncio prometeu: se o criativo diz "comece o desafio" e
+ * a landing só tem um botão de cadastro, o anúncio mentiu na primeira tela.
  *
- * O "10" é o número real do produto — `RODADA_TAMANHO = 10`, a rodada que
- * fecha com devolutiva (acertos, evolução e padrões de erro, sem IA e sem
- * custo). Ver a nota em `components/ads/QuestionProgress.jsx`.
+ * A questão é local e descartável: nada de API, de Gemini, de Sparks, de
+ * Firestore, de resposta gravada. Ver a nota longa em
+ * `components/ads/DemoQuestao.jsx` — cada um desses "não" é deliberado.
+ *
+ * O CTA muda de verbo depois da interação ("Continuar com meu diagnóstico"
+ * em vez de "Começar"), porque quem respondeu já começou: convidar a começar
+ * de novo apaga o que a pessoa acabou de fazer.
  */
 export default function AdsDezQuestoes() {
+  const aoInteragir = useCallback((letra) => {
+    demoInteragida("10-questoes", letra);
+  }, []);
+
   return (
-    <AdsLandingLayout variante="10-questoes" ctaLabel="Começar desafio">
+    <AdsLandingLayout variante="10-questoes" ctaLabel="Continuar com meu diagnóstico">
       <Hero
-        olho="Uma rodada"
-        titulo="10 questões. Descubra onde você realmente está perdendo pontos."
-        subtexto="Faça um diagnóstico rápido e veja quais habilidades precisam de mais atenção."
-        cta="Começar desafio"
-        notaDoCta="Gratuito. Criar conta leva menos de um minuto e não pede cartão."
+        olho="Uma rodada de 10"
+        titulo="10 questões podem revelar onde você está perdendo pontos."
+        subtexto="Resolva algumas questões e veja o que seus erros dizem sobre seu estudo."
+        cta="Começar diagnóstico"
+        notaDoCta="Grátis. Criar conta leva menos de um minuto e não pede cartão."
       >
-        <QuestionProgress />
+        <DemoQuestao aoInteragir={aoInteragir} />
       </Hero>
 
-      <section className="mx-auto max-w-xl text-center">
-        <h2 className="titulo-tela">No fim da rodada, a leitura.</h2>
-        <p className="mx-auto mt-4 max-w-md text-[15px] leading-relaxed text-white/60">
-          Quantas você acertou, o que mudou em relação à rodada anterior e quais
-          padrões apareceram nos seus erros. Seu resultado mostra onde concentrar
-          seus estudos.
-        </p>
-        <CTA posicao="fim" className="mt-8">Começar desafio</CTA>
-      </section>
+      <div className="space-y-16 md:space-y-20">
+        <CadeiaDoErro
+          titulo="Uma rodada fecha com leitura, não com nota."
+          corpo="Quantas você acertou, o que mudou desde a rodada anterior e quais padrões apareceram nos seus erros."
+        />
+        <ComoFunciona />
+        <CtaFinal
+          titulo="Descubra o que seus erros estão tentando mostrar."
+          cta="Continuar com meu diagnóstico"
+        />
+      </div>
     </AdsLandingLayout>
   );
 }

@@ -4,7 +4,8 @@ import { api } from "../../lib/api";
 import Logo from "../Logo";
 import { ROTAS } from "../../lib/rotas";
 import { destinoComOrigem, lerOrigem, origemSalva, salvarOrigem } from "../../lib/campanha";
-import { visualizacao } from "../../lib/rastreio";
+import { salvarAtribuicao } from "../../lib/atribuicao";
+import { landingView } from "../../lib/rastreio";
 import { ContextoDoAnuncio } from "./contexto";
 import { CtaGrudento } from "./CTA";
 
@@ -96,7 +97,24 @@ export default function AdsLandingLayout({ variante, ctaLabel, children }) {
 
   useEffect(() => {
     salvarOrigem(origem);
-    visualizacao(variante);
+    landingView(variante);
+
+    /* O código de convite (`ADS-DIAG`, `ADS-ERRO`…) passa a ser guardado JÁ
+       NA CHEGADA, e não só quando a pessoa alcança `/login`.
+     *
+     * `Login.jsx` sempre salvou o `?convite=` da URL dele — mas quem clica no
+     * anúncio, lê a landing, fecha a aba e volta dois dias depois pelo link
+     * sem parâmetro nunca chegava ao `/login` COM o código, e a atribuição
+     * daquela campanha se perdia em silêncio. Guardando aqui, a janela de 30
+     * dias começa a contar do clique no anúncio, que é quando a aquisição de
+     * fato aconteceu.
+     *
+     * Reusa `lib/atribuicao.js` — o dono desse dado —, em vez de uma segunda
+     * cópia em `lib/campanha.js`. Duas janelas de 30 dias para o mesmo código
+     * divergiriam no dia em que uma expirasse antes da outra, e é por isso
+     * que `convite` não está em `PARAMS_DE_ORIGEM`. */
+    const convite = new URLSearchParams(search || "").get("convite");
+    if (convite) salvarAtribuicao(convite.trim().toUpperCase());
 
     // O clique da campanha entra no funil que já existe. Só com
     // `campanha_id`: `registrar_clique` grava `referral_click` quando não há
@@ -109,7 +127,7 @@ export default function AdsLandingLayout({ variante, ctaLabel, children }) {
         utm_source: origem.utm_source || null,
       }).catch(() => {});
     }
-  }, [origem, variante]);
+  }, [origem, variante, search]);
 
   /**
    * O CTA grudente do celular.
