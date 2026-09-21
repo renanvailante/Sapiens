@@ -48,14 +48,22 @@ INDICES: list[tuple[str, list[tuple[str, int]], dict]] = [
     # --- identidade ---
     ("users", [("email", pymongo.ASCENDING)], {"name": "email_unico", "unique": True}),
     ("users", [("user_id", pymongo.ASCENDING)], {"name": "user_id_unico", "unique": True}),
-    # Código de indicação: único e ESPARSO. Único porque um código aponta para
+    # Código de indicação: único e PARCIAL. Único porque um código aponta para
     # um aluno e só um — sem o índice, duas contas criando o código no mesmo
     # instante podem sortear o mesmo texto e o prêmio passaria a ir para quem
-    # a consulta encontrasse primeiro. Esparso porque a maioria das contas não
-    # tem código até abrir a tela pela primeira vez, e um índice único comum
-    # trataria todos esses `None` como duplicata (ver `indicacoes.py`).
+    # a consulta encontrasse primeiro.
+    #
+    # Parcial, e não `sparse`: esparso pula só o documento em que o campo está
+    # AUSENTE — o que está presente valendo `null` entra no índice como
+    # qualquer outro. `User.model_dump()` sempre grava `referral_code: None`
+    # (ver `models.User`), então todo cadastro novo disputava o MESMO valor
+    # nulo: o primeiro ficou com ele e todos os seguintes morriam com
+    # `DuplicateKeyError` dentro de `auth.signup` — cadastro quebrado em
+    # produção, pelos dois caminhos (e-mail e Google). O filtro por `$type`
+    # indexa só o código de verdade, que é o único que precisa ser único.
     ("users", [("referral_code", pymongo.ASCENDING)],
-     {"name": "referral_code_unico", "unique": True, "sparse": True}),
+     {"name": "referral_code_unico", "unique": True,
+      "partialFilterExpression": {"referral_code": {"$type": "string"}}}),
     # Vínculo da indicação. `indicado_id` é também o `_id` do documento, então
     # a unicidade já está garantida; este índice é para a consulta do sentido
     # oposto — "quem eu indiquei" —, que é a da tela do aluno.
@@ -269,6 +277,14 @@ INDICES: list[tuple[str, list[tuple[str, int]], dict]] = [
         "unique": True,
         "partialFilterExpression": {"url_normalizada": {"$type": "string"}},
     }),
+    # Cache de busca web (`web_search.COLECAO_CACHE`). O `_id` é o hash da
+    # consulta, então a leitura já é por chave; este índice existe só para a
+    # limpeza por idade. Não é TTL do Mongo de propósito: `buscado_em` é ISO
+    # string (o padrão de data deste projeto), e o TTL do Mongo exige um BSON
+    # Date — um índice TTL sobre string não expira nada e daria a impressão
+    # falsa de que a coleção se limpa sozinha. A expiração real é lógica, na
+    # leitura (`_ler_cache`).
+    ("web_search_cache", [("buscado_em", pymongo.ASCENDING)], {"name": "cache_busca_por_data"}),
 
     # --- analytics de produto (2026-09-21) ---
     # `resumo_ativacao`/`resumo_cohort` filtram por janela de tempo sobre a
@@ -393,6 +409,37 @@ async def _equivalente_ja_existe(db, colecao: str, chaves: list[tuple[str, int]]
     return False
 
 
+# Opções que mudam o COMPORTAMENTO do índice: duas delas divergindo fazem do
+# índice existente outro índice, e não o mesmo com outro nome.
+_OPCOES_DE_COMPORTAMENTO = ("unique", "sparse", "partialFilterExpression", "expireAfterSeconds")
+
+
+async def _redefinido_sob_o_mesmo_nome(db, colecao: str, chaves: list[tuple[str, int]], kwargs: dict) -> bool:
+    """Existe um índice com o MESMO nome e as MESMAS chaves, só que com outras
+    opções — isto é, a definição daqui mudou depois de o banco já ter rodado?
+
+    É o único caso em que `create_index` nunca se conserta sozinho: o Mongo
+    recusa redefinir um índice existente e vai recusar de novo em todo boot
+    seguinte, para sempre. Sem tratar isto aqui, corrigir a definição de um
+    índice neste arquivo não corrige banco nenhum que já esteja de pé — foi o
+    que deixou `referral_code_unico` esparso em produção depois de a correção
+    estar escrita, com o cadastro quebrado do outro lado.
+    """
+    nome = kwargs.get("name")
+    if not nome:
+        return False
+    try:
+        existentes = await db[colecao].index_information()
+    except Exception:  # noqa: BLE001
+        return False
+    info = existentes.get(nome)
+    if not info:
+        return False
+    if [list(par) for par in info.get("key", [])] != [list(par) for par in chaves]:
+        return False
+    return any(info.get(opcao) != kwargs.get(opcao) for opcao in _OPCOES_DE_COMPORTAMENTO)
+
+
 async def criar_indices(db) -> dict[str, int]:
     """Cria (idempotentemente) todos os índices. Devolve quantos foram
     processados e quantos falharam — o chamador loga, ninguém aborta."""
@@ -403,6 +450,27 @@ async def criar_indices(db) -> dict[str, int]:
             await db[colecao].create_index(chaves, **kwargs)
             criados += 1
         except Exception as exc:  # noqa: BLE001
+            # Mesmo nome, mesmas chaves, opções diferentes: a definição mudou
+            # aqui. Derruba o antigo e recria — é a ÚNICA saída, e vem antes da
+            # checagem de equivalência abaixo porque as duas se parecem (mesmas
+            # chaves, mesmo `unique`) e aquela daria o conflito por resolvido.
+            if await _redefinido_sob_o_mesmo_nome(db, colecao, chaves, kwargs):
+                try:
+                    await db[colecao].drop_index(kwargs["name"])
+                    await db[colecao].create_index(chaves, **kwargs)
+                    criados += 1
+                    logger.warning(
+                        "Índice %s.%s foi recriado: a definição mudou desde a criação.",
+                        colecao, kwargs["name"],
+                    )
+                    continue
+                except Exception as exc_recriacao:  # noqa: BLE001
+                    falhas += 1
+                    logger.warning(
+                        "Índice %s.%s não pôde ser recriado: %s",
+                        colecao, kwargs["name"], exc_recriacao,
+                    )
+                    continue
             # Conflito de NOME com um índice equivalente não é problema — e
             # deixá-lo virar WARNING a cada boot afogaria a falha que importa
             # no meio do ruído.

@@ -491,12 +491,31 @@ async def _erro_nao_tratado(request: Request, exc: Exception) -> JSONResponse:
 
     Sem isto, um erro não tratado pode devolver detalhe interno na resposta —
     caminho de arquivo, estrutura do código, às vezes trecho de query.
+
+    O CORS é escrito À MÃO aqui porque este handler NÃO passa pelo
+    `CORSMiddleware`: um handler de `Exception` é servido pelo
+    `ServerErrorMiddleware`, que no Starlette é a camada mais EXTERNA de todas
+    — a resposta dele nasce fora do middleware de CORS e sai sem
+    `Access-Control-Allow-Origin`. O navegador então bloqueia a leitura, o
+    axios levanta um erro sem `response`, e a tela cai na mensagem genérica do
+    `errMsg` ("Não foi possível entrar."). Foi exatamente assim que o cadastro
+    quebrado apareceu para o aluno: o servidor dizia qual era o incidente e o
+    navegador não deixava ninguém ler.
     """
     incidente = secrets.token_hex(8)
     logger.exception("[%s] %s %s", incidente, request.method, request.url.path)
+    origem = request.headers.get("origin")
+    cabecalhos = {}
+    if origem and origem in _origens_permitidas():
+        cabecalhos = {
+            "Access-Control-Allow-Origin": origem,
+            "Access-Control-Allow-Credentials": "true",
+            "Vary": "Origin",
+        }
     return JSONResponse(
         status_code=500,
         content={"detail": "Erro interno.", "incidente": incidente},
+        headers=cabecalhos,
     )
 
 
@@ -506,12 +525,19 @@ if not settings.CORS_ORIGINS:
         "boot teria sido recusado."
     )
 
+
+def _origens_permitidas() -> list[str]:
+    """Uma lista só, lida pelo `CORSMiddleware` e pelo handler de 500 acima —
+    que precisa escrever os mesmos cabeçalhos à mão."""
+    return settings.CORS_ORIGINS or [
+        "http://localhost:3000", "http://localhost:3001", "http://localhost:3002",
+    ]
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=settings.CORS_ORIGINS or [
-        "http://localhost:3000", "http://localhost:3001", "http://localhost:3002",
-    ],
+    allow_origins=_origens_permitidas(),
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"],
 )

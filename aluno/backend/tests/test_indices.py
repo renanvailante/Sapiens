@@ -48,6 +48,62 @@ class _DB:
         return self.colecoes.get(nome, _Colecao())
 
 
+class _ColecaoRedefinida:
+    """Um índice que já existe com o mesmo NOME e as mesmas chaves, mas com as
+    opções antigas: `create_index` conflita até o índice ser derrubado."""
+
+    def __init__(self, nome, info):
+        self.nome = nome
+        self.info = info
+        self.derrubados = []
+
+    async def create_index(self, chaves, **kwargs):
+        if kwargs.get("name") == self.nome and self.nome not in self.derrubados:
+            raise Exception("IndexOptionsConflict: an existing index has the same name")
+        return kwargs.get("name")
+
+    async def drop_index(self, nome):
+        self.derrubados.append(nome)
+
+    async def index_information(self):
+        if self.nome in self.derrubados:
+            return {}
+        return {self.nome: self.info}
+
+
+def test_referral_code_e_unico_so_para_codigo_de_verdade():
+    """Regressão do cadastro quebrado (2026-09-21).
+
+    `sparse` pula só o documento em que o campo está AUSENTE — o que está
+    presente valendo `null` é indexado como qualquer outro. Como
+    `User.model_dump()` grava `referral_code: None` em toda conta nova, o
+    primeiro cadastro ficava com o valor nulo e todos os seguintes morriam com
+    `DuplicateKeyError` dentro de `auth.signup`, pelos dois caminhos (e-mail e
+    Google). A unicidade tem de valer só para o código de verdade.
+    """
+    kwargs = [kw for col, chaves, kw in db_indexes.INDICES
+              if col == "users" and [k for k, _ in chaves] == ["referral_code"]]
+    assert len(kwargs) == 1
+    assert kwargs[0]["unique"] is True
+    assert not kwargs[0].get("sparse")
+    assert kwargs[0]["partialFilterExpression"] == {"referral_code": {"$type": "string"}}
+
+
+def test_indice_redefinido_sob_o_mesmo_nome_e_derrubado_e_recriado():
+    """Mudar a definição de um índice aqui não conserta banco nenhum que já
+    rodou: o Mongo recusa redefinir um índice existente, e recusaria de novo em
+    todo boot seguinte. Foi o que manteve `referral_code_unico` esparso em
+    produção com o cadastro quebrado do outro lado."""
+    antigo = _ColecaoRedefinida(
+        "referral_code_unico",
+        {"key": [("referral_code", 1)], "unique": True, "sparse": True},
+    )
+    resultado = _run(db_indexes.criar_indices(_DB({"users": antigo})))
+    assert antigo.derrubados == ["referral_code_unico"]
+    assert resultado["falhas"] == 0
+    assert resultado["criados"] == len(db_indexes.INDICES)
+
+
 def test_todos_os_indices_criados_sem_falha():
     resultado = _run(db_indexes.criar_indices(_DB({})))
     assert resultado["falhas"] == 0
