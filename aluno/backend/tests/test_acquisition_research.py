@@ -505,12 +505,17 @@ class TestMensagem:
         chamadas = {"n": 0}
         async def fake_mensagem(system, user, **kwargs):
             chamadas["n"] += 1
-            assert "ENEM geral" in user
-            return {"mensagem": "Oi! Vi seu conteúdo sobre ENEM geral e curti — topa uma parceria?"}
+            # O que a IA PODE usar: a plataforma e os números da proposta.
+            assert "plataforma: instagram" in user
+            assert "percentual_de_comissao" in user
+            # O que ela NÃO pode: o nicho é a etiqueta interna do lead, e
+            # mandar um campo que o prompt proíbe citar só convida ao vazamento.
+            assert "ENEM geral" not in user
+            return {"mensagem": "Oii, tudo certo? Meu nome é Renan… topa uma parceria?"}
         monkeypatch.setattr(ai_service, "generate_json_resiliente", fake_mensagem)
 
         mensagem = _run(ar.gerar_mensagem_personalizada(db, lead["influencer_id"]))
-        assert "ENEM geral" in mensagem
+        assert "parceria" in mensagem
         assert chamadas["n"] == 1  # uma chamada, não uma por campo/lote
 
         atualizado = _run(influencers.obter(db, lead["influencer_id"]))
@@ -531,6 +536,29 @@ class TestMensagem:
 
         _run(ar.gerar_mensagem_personalizada(db, lead["influencer_id"]))
 
+    def test_prompt_da_ia_e_o_molde_seguem_o_mesmo_padrao(self, db, monkeypatch):
+        """Os dois caminhos entregam texto para o mesmo admin mandar no mesmo
+        Instagram. Se divergirem, metade das abordagens sai com a voz errada e
+        ninguém descobre qual foi qual — por isso o padrão do dono
+        (apresentação pessoal, IA como argumento, nada de prazo eterno, nada
+        de nicho interno) é verificado NOS DOIS."""
+        system = ar._montar_mensagem_system()
+        molde = influencers.gerar_mensagem_prospeccao(
+            {"nome": "x", "plataforma": "instagram"})
+
+        for texto, quem in ((system, "prompt da IA"), (molde, "molde")):
+            assert influencers.FUNDADOR_NOME in texto, quem
+            assert "agentes de IA" in texto, quem
+
+        # O molde não pode CONTER a promessa; o prompt precisa PROIBI-LA — são
+        # exigências opostas sobre a mesma frase, e é por isso que este teste
+        # não pode varrer os dois textos com a mesma regra.
+        assert "sem limite de tempo" not in molde.lower()
+        linha_proibicao = next(
+            (l for l in system.splitlines() if "sem limite de tempo" in l), "")
+        assert "NUNCA prometa" in linha_proibicao, "a frase só pode aparecer como proibição"
+        assert "nicho" in system and "denuncia automação" in system
+
     def test_sem_quota_de_ia_cai_no_modelo_deterministico(self, db, monkeypatch):
         """A quota do free tier é de 20 requisições/dia por modelo, e uma
         rodada do Pesquisador sozinha a consome — sem plano B, o botão ficava
@@ -546,8 +574,11 @@ class TestMensagem:
 
         mensagem = _run(ar.gerar_mensagem_personalizada(db, lead["influencer_id"]))
         assert mensagem, "o admin não pode ficar sem texto nenhum"
-        assert "profcarol" in mensagem and "redação ENEM" in mensagem
-        assert "Sapiens" in mensagem
+        assert "Sapiens" in mensagem and "Instagram" in mensagem
+        # Mesmo padrão do caminho de IA: apresentação de quem escreve, sem o
+        # nicho interno. O molde não pode ser o texto antigo disfarçado.
+        assert influencers.FUNDADOR_NOME in mensagem
+        assert "redação ENEM" not in mensagem
 
         atualizado = _run(influencers.obter(db, lead["influencer_id"]))
         assert atualizado["mensagem_origem"] == "modelo"

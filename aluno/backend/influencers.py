@@ -35,6 +35,7 @@ de subtrair de um contador — auditável, e nunca dessincroniza.
 from __future__ import annotations
 
 import logging
+import os
 import re
 import secrets
 import unicodedata
@@ -583,37 +584,78 @@ async def _emitir(db, tipo: str, **campos) -> None:
 # fluxo que chamasse Gemini aqui; a personalização vem de dado REAL (nome,
 # nicho, código, link), nunca de texto inventado sobre a pessoa.
 
+# Quem assina a mensagem. É uma PESSOA escrevendo para outra pessoa — foi a
+# correção do dono em 2026-09-21: a abertura antiga ("Oi @handle! Vi seu
+# trabalho em dicas rápidas para o ENEM") chamava o criador pelo @ e citava o
+# nicho INTERNO da nossa matriz, que é jargão nosso e denuncia automação.
+# Trocar por uma apresentação real destrava a resposta.
+FUNDADOR_NOME = os.environ.get("FUNDADOR_NOME") or "Renan"
+FUNDADOR_CREDENCIAL = os.environ.get("FUNDADOR_CREDENCIAL") or "sou da Medicina USP"
+
+# Três decisões de conteúdo do dono, na mesma correção:
+#
+# 1. **A IA é o argumento, não a nota.** "plataforma de estudo pro ENEM que
+#    mede POR QUE o aluno erra" virou "usa agentes de IA para rastrear o POR
+#    QUE o aluno erra" — é o que diferencia o produto de qualquer cursinho.
+# 2. **"sem limite de tempo" saiu.** Prometer perpetuidade num primeiro
+#    contato é compromisso que ninguém pediu, e a comissão é decisão
+#    comercial que pode mudar. O que fica é o fato verificável: a pessoa fica
+#    com X% das compras.
+# 3. **A referência é a PLATAFORMA, não o nicho.** "Vi seu trabalho no
+#    Instagram" é verdade e soa humano; "vi seu trabalho em dicas rápidas
+#    para o ENEM" é o rótulo que NÓS demos ao lead.
 _ABERTURAS_PROSPECCAO = [
-    "Oi {nome}! Vi seu trabalho em {nicho_ou_canal} e queria te chamar pra uma parceria.",
-    "{nome}, tudo bem? Curti seu conteúdo sobre {nicho_ou_canal} e acho que faz sentido pra gente conversar.",
-    "Oi {nome}, passando rápido: montamos um programa de parceria pensado pra quem fala de {nicho_ou_canal}.",
+    "Oii, tudo certo? Meu nome é {fundador}, {credencial} e fundador da Sapiens. "
+    "Vi seu trabalho no {canal} e queria te chamar pra uma parceria.",
+    "Oii! Meu nome é {fundador}, {credencial} e fundador da Sapiens. "
+    "Acompanhei seu conteúdo no {canal} e queria te propor uma parceria.",
+    "Oi, tudo bem? Sou o {fundador}, {credencial} e fundador da Sapiens. "
+    "Cheguei no seu perfil do {canal} e achei que faz sentido a gente conversar.",
 ]
 
+# Sem plataforma no cadastro, não há "no Instagram" honesto a escrever — a
+# variante abaixo simplesmente não faz a referência, em vez de inventar uma.
+_ABERTURA_SEM_CANAL = (
+    "Oii, tudo certo? Meu nome é {fundador}, {credencial} e fundador da Sapiens. "
+    "Encontrei seu contato e queria te chamar pra uma parceria."
+)
+
 _CORPO_PROSPECCAO = (
-    "Sou do Sapiens — uma plataforma de estudo pro ENEM que mede POR QUE o aluno "
-    "erra, não só quanto. A proposta: quem entra pelo seu link/código ganha "
-    "{sparks} Sparks de boas-vindas (o padrão é 100), e você fica com {percentual}% "
-    "de tudo que essas pessoas comprarem no app, sem limite de tempo."
+    "A Sapiens é uma plataforma que usa agentes de IA para rastrear o POR QUE o "
+    "aluno erra, não só quanto. A proposta: quem entra pelo seu link/código ganha "
+    "{sparks} Sparks de boas-vindas (o padrão é {padrao}), e você fica com "
+    "{percentual}% de tudo que essas pessoas comprarem no app."
 )
 
 _CTA_PROSPECCAO = "Topa bater um papo rápido sobre como funcionaria pro seu público?"
+
+_CANAIS = {"instagram": "Instagram", "youtube": "YouTube", "tiktok": "TikTok",
+           "whatsapp": "seu grupo", "telegram": "seu canal", "web": "seu site"}
 
 
 def gerar_mensagem_prospeccao(lead: dict, *, variacao: int = 0) -> str:
     """Mensagem individual para o PRIMEIRO contato (D0). `variacao` escolhe
     entre aberturas diferentes para o mesmo lote de leads não sair com texto
-    idêntico. Nunca inventa elogio nem fato: `nicho_ou_canal` só aparece
-    quando o dado existe; sem ele, a abertura cai numa variante sem essa
-    frase, em vez de inventar um nicho."""
-    nome = (lead.get("nome") or "").split(" ")[0] or "tudo bem"
-    nicho_ou_canal = lead.get("nicho") or lead.get("plataforma")
-    aberturas = _ABERTURAS_PROSPECCAO if nicho_ou_canal else [
-        f"Oi {{nome}}! Encontrei seu contato e queria te chamar pra uma parceria com o Sapiens."
-    ]
+    idêntico.
+
+    Nunca inventa elogio nem fato. O canal só aparece quando `plataforma`
+    existe; sem ela, cai na variante que não faz referência nenhuma, em vez de
+    escrever um lugar onde ninguém viu nada."""
+    import firestore_service as fs  # local: o topo puxaria firebase_admin sem necessidade
+
+    plataforma = (lead.get("plataforma") or "").strip().lower()
+    canal = _CANAIS.get(plataforma) or (plataforma.capitalize() if plataforma else None)
+    aberturas = _ABERTURAS_PROSPECCAO if canal else [_ABERTURA_SEM_CANAL]
     idx = variacao % len(aberturas)
-    abertura = aberturas[idx].format(nome=nome, nicho_ou_canal=nicho_ou_canal or "")
+    abertura = aberturas[idx].format(
+        fundador=FUNDADOR_NOME, credencial=FUNDADOR_CREDENCIAL, canal=canal or "",
+    )
     corpo = _CORPO_PROSPECCAO.format(
         sparks=lead.get("sparks_boas_vindas") or DEFAULT_SPARKS_BOAS_VINDAS,
+        # Nunca escrito à mão: é o bônus real de quem se cadastra sem cupom.
+        # Escrever "100" aqui seria uma promessa que cala quando a constante
+        # mudar — ver a regra de preço no CLAUDE.md da raiz.
+        padrao=fs.SPARKS_INITIAL_BALANCE,
         percentual=int(round((lead.get("percentual_comissao") or DEFAULT_PERCENTUAL) * 100)),
     )
     return f"{abertura} {corpo} {_CTA_PROSPECCAO}"

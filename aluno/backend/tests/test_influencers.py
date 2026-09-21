@@ -321,14 +321,54 @@ class TestKitEMensagens:
         assert inf["codigo"] in kit["legenda"]
         assert str(inf["sparks_boas_vindas"]) in kit["mensagem"]
 
-    def test_mensagem_de_prospeccao_nao_inventa_nicho_ausente(self):
-        lead = {"nome": "Ana Silva"}
-        mensagem = influencers.gerar_mensagem_prospeccao(lead)
+    def test_mensagem_de_prospeccao_nao_inventa_canal_ausente(self):
+        """Sem `plataforma`, não há "vi seu trabalho no X" honesto a escrever —
+        a variante sem referência entra, em vez de inventar um lugar."""
+        mensagem = influencers.gerar_mensagem_prospeccao({"nome": "Ana Silva"})
         assert "None" not in mensagem
-        assert "Ana" in mensagem
+        assert "Encontrei seu contato" in mensagem
+        assert "Vi seu trabalho no" not in mensagem
+
+    def test_mensagem_cita_a_plataforma_e_nunca_o_nicho_interno(self):
+        """Correção do dono em 2026-09-21: "vi seu trabalho em dicas rápidas
+        para o ENEM" é o rótulo que NÓS demos ao lead — citá-lo denuncia
+        automação. O que a pessoa reconhece é a plataforma dela."""
+        lead = {"nome": "ameninadamatematica", "plataforma": "tiktok",
+                "nicho": "dicas rápidas para o ENEM"}
+        mensagem = influencers.gerar_mensagem_prospeccao(lead)
+        assert "TikTok" in mensagem
+        assert "dicas rápidas para o ENEM" not in mensagem
+
+    def test_mensagem_se_apresenta_como_pessoa_e_nao_chama_pelo_arroba(self):
+        lead = {"nome": "ameninadamatematica", "plataforma": "instagram"}
+        mensagem = influencers.gerar_mensagem_prospeccao(lead)
+        assert influencers.FUNDADOR_NOME in mensagem
+        assert "fundador da Sapiens" in mensagem
+        assert not mensagem.startswith("Oi ameninadamatematica")
+
+    def test_mensagem_vende_a_ia_e_nao_promete_prazo_eterno(self):
+        """Duas decisões de conteúdo do dono: a IA é o argumento, e
+        "sem limite de tempo" é compromisso que ninguém pediu num primeiro
+        contato."""
+        mensagem = influencers.gerar_mensagem_prospeccao(
+            {"nome": "x", "plataforma": "instagram"})
+        assert "agentes de IA" in mensagem
+        for promessa in ("sem limite de tempo", "para sempre", "vitalício"):
+            assert promessa not in mensagem.lower()
+
+    def test_sparks_padrao_vem_da_constante_e_nao_da_mao(self):
+        """Regra de preço do CLAUDE.md: o número do bônus padrão é o que o
+        backend de fato dá a quem entra sem cupom. Escrever "100" aqui seria
+        uma promessa que cala quando a constante mudar."""
+        import firestore_service as fs
+
+        mensagem = influencers.gerar_mensagem_prospeccao(
+            {"nome": "x", "plataforma": "instagram", "sparks_boas_vindas": 300})
+        assert f"(o padrão é {fs.SPARKS_INITIAL_BALANCE})" in mensagem
+        assert "300 Sparks" in mensagem
 
     def test_variacoes_diferentes_produzem_texto_diferente(self):
-        lead = {"nome": "Ana Silva", "nicho": "vestibular"}
+        lead = {"nome": "Ana Silva", "plataforma": "instagram"}
         m0 = influencers.gerar_mensagem_prospeccao(lead, variacao=0)
         m1 = influencers.gerar_mensagem_prospeccao(lead, variacao=1)
         assert m0 != m1
@@ -415,7 +455,10 @@ class TestFluxoCompletoPontaAPonta:
         kit = influencers.gerar_kit(resumo)
         assert ativo["codigo"] in kit["mensagem"]
         mensagem_prospeccao = influencers.gerar_mensagem_prospeccao(lead)
-        assert "Lucas" in mensagem_prospeccao
+        # Desde 2026-09-21 a abertura é a apresentação de quem ESCREVE, não o
+        # nome de quem recebe — ver `test_mensagem_se_apresenta_como_pessoa...`.
+        assert influencers.FUNDADOR_NOME in mensagem_prospeccao
+        assert "parceria" in mensagem_prospeccao
 
         # 11. medir conversão
         funil = _run(__import__("growth_events").resumo_funil(db, influencer_id=ativo["influencer_id"]))
