@@ -59,12 +59,45 @@ origem**. O `signInWithPopup` abre o handler lá e ele precisa devolver o result
 para a aba de origem; com o particionamento de armazenamento de terceiros do Chrome,
 esse retorno trava.
 
-**A cura de verdade, ainda NÃO aplicada** (muda a autenticação de todo mundo e
-precisa de aprovação): servir o handler no próprio domínio — `public/_worker.js` no
-Cloudflare Pages reencaminhando `/__/auth/*` e `/__/firebase/*` para
-`sapiens-dataset.firebaseapp.com`, e `REACT_APP_FIREBASE_AUTH_DOMAIN` passando a ser
-`sapiens-aluno.pages.dev`. O `_worker.js` mora em `public/` de propósito: o CRA copia
-tudo de lá para `build/`, então ele sobrevive a todo rebuild.
+**A cura foi APLICADA em 2026-09-22** (`ed87b44`), com aprovação do dono, porque o
+tráfego pago do Instagram tornou o defeito caro: o caminho de menor fricção do
+cadastro morria em silêncio justamente para 100% dos cliques comprados.
+
+`public/_worker.js` reencaminha `/__/auth/*` e `/__/firebase/*` para
+`sapiens-dataset.firebaseapp.com`, e `REACT_APP_FIREBASE_AUTH_DOMAIN` passou a ser
+`sapiens-aluno.pages.dev`. O handler virou mesma origem e a partição de
+armazenamento do navegador não tem mais o que bloquear. O `_worker.js` mora em
+`public/` de propósito: o CRA copia tudo de lá para `build/`, então ele sobrevive a
+todo rebuild.
+
+> [!danger] Um `_worker.js` na raiz do build põe o Pages em MODO AVANÇADO
+> A partir dele o Cloudflare para de servir arquivo estático sozinho e passa
+> **todo** o tráfego pelo worker. Um erro nesse arquivo derruba o site inteiro,
+> não só o login. A regra que o arquivo segue: todo caminho que não é do Firebase,
+> e **toda falha do proxy**, terminam em `env.ASSETS.fetch(request)` — o caminho de
+> exceção serve o site, nunca o contrário.
+>
+> E `redirect: "manual"` no proxy não é cautela: o handler responde 302 para
+> `accounts.google.com`, e seguir esse salto no servidor devolveria o HTML do
+> Google servido a partir do nosso domínio.
+>
+> **Valide num deploy de PREVIEW antes de publicar em `main`.** Foi assim que esta
+> mudança entrou: 14 rotas e assets em 200, `/__/auth/*` devolvendo Firebase de
+> verdade, e o app montando no navegador — tudo antes de tocar em produção.
+
+> [!warning] O `.env` NÃO é versionado, e é ele que carrega o `authDomain`
+> `REACT_APP_FIREBASE_AUTH_DOMAIN` vive no `.env` local, que o deploy copia à mão
+> para o worktree ([[deploy]]). Quem buildar de uma máquina com o `.env` antigo
+> publica o domínio antigo de volta — e o defeito volta **sem nada acusar**, porque
+> o `_worker.js` continua lá funcionando e servindo um handler que ninguém usa.
+> O valor correto está documentado em `.env.example`.
+>
+> O grep que detecta: `grep -c "sapiens-dataset.firebaseapp.com" build/static/js/main.*.js`
+> tem de dar **0**.
+
+**O que isto NÃO foi verificado:** o login com Google de ponta a ponta. Isso exige
+entrar numa conta Google real, que é do dono. O que foi verificado é a encanação —
+o handler responde na origem certa, com o conteúdo certo, e o site não caiu.
 
 **O que foi aplicado:** em `Login.jsx`, fechar a janela travada deixou de ser
 silêncio — abaixo de 25s continua sendo cancelamento deliberado (sem toast), acima
