@@ -3117,3 +3117,53 @@ a.chip:hover, button.chip:hover {
         transition-delay: 0ms !important;
     }
 }
+
+/* ---------------- `/ads/sem-mensalidade`: o preço que vira peças ---------- */
+
+/* A altura é reservada para o estado MAIOR (o número grande do passo 0).
+   Sem isso o cartão encolhia quando ele diminuía, e a grade de peças subia
+   no meio da sequência. */
+.ads-eco-topo { min-height: 86px; display: flex; align-items: flex-end; }
+
+.ads-eco-preco {
+    transition: transform .55s var(--mov-saida), opacity .55s var(--mov-saida);
+    transform-origin: left bottom;
+}
+.ads-eco-preco[data-foco="0"] { transform: scale(.62); opacity: .5; }
+.ads-eco-preco[data-foco="1"] { transform: scale(1); opacity: 1; }
+.ads-eco-valor {
+    font-size: clamp(2.2rem, 1.2rem + 3.6vw, 3rem);
+    color: var(--bio-texto);
+}
+
+/* As peças reusam `.chip`, a primitiva de metadado do produto — um desenho
+   só para "um dado pequeno ao lado de um título". O que se acrescenta aqui é
+   a revelação e o destaque do que é gratuito. */
+.ads-eco-pecas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-top: 16px;
+}
+.ads-eco-peca {
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity .38s var(--mov-saida), transform .38s var(--mov-saida);
+}
+.ads-eco-peca-on { opacity: 1; transform: translateY(0); }
+
+/* O que não custa Spark nenhum acende. Não é enfeite: a peça inteira existe
+   para separar o que é de graça do que se paga por uso, e esconder essa
+   distinção seria vender o produto que o Sapiens não é. */
+.ads-eco-peca-livre {
+    border-color: rgba(110, 231, 183, .45);
+    background: rgba(110, 231, 183, .10);
+    color: #A7F3D0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ads-eco-preco, .ads-eco-peca {
+        transition-duration: 0.01ms !important;
+        transition-delay: 0ms !important;
+    }
+}

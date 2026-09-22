@@ -101,6 +101,7 @@ export const ROTAS = {
   ADS_DEZ_QUESTOES: "/ads/10-questoes",
   ADS_COMO_VOCE_ESTUDA: "/ads/como-voce-estuda",
   ADS_RETA_FINAL: "/ads/reta-final",
+  ADS_SEM_MENSALIDADE: "/ads/sem-mensalidade",
 
   // --- Equipe --------------------------------------------------------------
   ADMIN: "/admin",
