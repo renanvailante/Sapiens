@@ -79,6 +79,7 @@ const AdsDiagnostico = lazy(() => import("./pages/ads/Diagnostico"));
 const AdsMesmoErro = lazy(() => import("./pages/ads/MesmoErro"));
 const AdsDezQuestoes = lazy(() => import("./pages/ads/DezQuestoes"));
 const AdsComoVoceEstuda = lazy(() => import("./pages/ads/ComoVoceEstuda"));
+const AdsRetaFinal = lazy(() => import("./pages/ads/RetaFinal"));
 
 const Admin = lazy(() => import("./pages/Admin"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
@@ -252,6 +253,7 @@ function AppRouter() {
       <Route path={ROTAS.ADS_MESMO_ERRO} element={<Pagina titulo="Por que você erra sempre as mesmas coisas"><AdsMesmoErro /></Pagina>} />
       <Route path={ROTAS.ADS_DEZ_QUESTOES} element={<Pagina titulo="10 questões para descobrir onde você perde pontos"><AdsDezQuestoes /></Pagina>} />
       <Route path={ROTAS.ADS_COMO_VOCE_ESTUDA} element={<Pagina titulo="Seus erros viram um mapa de estudo"><AdsComoVoceEstuda /></Pagina>} />
+      <Route path={ROTAS.ADS_RETA_FINAL} element={<Pagina titulo="Reta final para o ENEM"><AdsRetaFinal /></Pagina>} />
 
       {/* ─── Endereços antigos ───────────────────────────────────────── */}
       {RotasLegadas()}

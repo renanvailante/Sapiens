@@ -3022,3 +3022,98 @@ a.chip:hover, button.chip:hover {
     }
     .ads-pulso { animation: none; opacity: .9; }
 }
+
+/* ---------------- Vidro sem desfoque ----------------
+
+   O MESMO painel do produto, sem o `backdrop-filter`. Pedido explícito do
+   dono em 2026-09-22 para a superfície de anúncios: "quero tudo nítido
+   sempre".
+
+   Por que um modificador e não uma classe nova: `.card-sapiens` carrega o
+   degradê, a borda, a sombra longa E a linha de luz do `::before`. Uma classe
+   paralela teria de copiar tudo isso e as duas divergiriam no primeiro ajuste
+   de cor. Aqui só a propriedade pedida é desligada — o resto continua sendo
+   a mesma peça, e continua mudando junto.
+
+   Especificidade 0,2,0: vence a definição base sem depender da ordem do
+   arquivo, que é a armadilha que já custou duas correções neste CSS. */
+.card-sapiens.sem-desfoque {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    /* Sem o desfoque, a malha de pontos do ambiente atravessa o painel e
+       compete com o conteúdo. Um degrau a mais de opacidade no próprio vidro
+       devolve a separação sem devolver o borrado. */
+    background:
+        linear-gradient(180deg, rgba(28, 48, 82, 0.72) 0%, rgba(10, 19, 35, 0.86) 100%),
+        var(--bio-abismo);
+}
+
+/* ---------------- `/ads/reta-final`: os dias que viram plano ----------------
+
+   Um quadradinho por dia restante. Dois estados, e a diferença entre eles é
+   a peça inteira: ESPALHADOS todos são idênticos; ORGANIZADOS alguns crescem
+   e acendem. "Nem toda hora de estudo rende o mesmo", dito sem uma palavra.
+
+   Só `transform` e `opacity` mudam — o compositor anima as duas sozinho, sem
+   tocar no layout. A grade nasce com a altura final e nunca muda de tamanho,
+   então a sequência não empurra nada da página. */
+
+.ads-reta-grade {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 7px;
+    margin-top: 18px;
+    /* A altura é reservada pelo `aspect-ratio` dos filhos; a margem inferior
+       dá o respiro que a faixa de análise esperava do `space-y` que aqui não
+       existe. */
+    margin-bottom: 14px;
+}
+
+.ads-reta-dia {
+    aspect-ratio: 1;
+    border-radius: 5px;
+    background: rgba(255, 255, 255, 0.11);
+    border: 1px solid rgba(150, 200, 255, 0.20);
+    opacity: 0;
+    transition:
+        transform .62s var(--mov-saida),
+        background-color .5s var(--mov-saida),
+        border-color .5s var(--mov-saida),
+        box-shadow .5s var(--mov-saida),
+        opacity .4s linear;
+    /* `will-change` porque são até 49 elementos transformando ao mesmo tempo:
+       sem ele o Safari do iPhone promove tarde e o primeiro quadro da
+       dispersão engasga. */
+    will-change: transform;
+}
+.ads-reta-dia-on { opacity: 1; }
+
+/* O dia que pesa mais. Cresce E acende: só a cor não sobrevive a uma tela de
+   celular no sol, e só o tamanho não diz "este é o importante". */
+.ads-reta-dia-forte {
+    background: linear-gradient(135deg, rgba(95, 220, 255, 0.95), rgba(62, 134, 232, 0.95));
+    border-color: rgba(190, 240, 255, 0.55);
+    box-shadow: 0 0 16px -4px var(--bio-brilho);
+    transform: scale(1.18) !important;
+}
+
+/* O número da contagem, que encolhe quando a data entra em cena. Mesma
+   técnica da demo de decomposição: troca de protagonista por escala, nunca
+   por troca de elemento — trocar pisca e muda a altura da linha. */
+.ads-reta-numero {
+    transition: transform .55s var(--mov-saida), opacity .55s var(--mov-saida);
+    transform-origin: left bottom;
+}
+.ads-reta-numero[data-foco="0"] { transform: scale(.72); }
+.ads-reta-numero[data-foco="1"] { transform: scale(1); }
+.ads-reta-valor {
+    font-size: clamp(2.6rem, 1.4rem + 4.4vw, 3.6rem);
+    color: #9BE8FF;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ads-reta-dia, .ads-reta-numero {
+        transition-duration: 0.01ms !important;
+        transition-delay: 0ms !important;
+    }
+}

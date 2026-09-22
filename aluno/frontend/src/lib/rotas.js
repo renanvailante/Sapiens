@@ -100,6 +100,7 @@ export const ROTAS = {
   ADS_MESMO_ERRO: "/ads/mesmo-erro",
   ADS_DEZ_QUESTOES: "/ads/10-questoes",
   ADS_COMO_VOCE_ESTUDA: "/ads/como-voce-estuda",
+  ADS_RETA_FINAL: "/ads/reta-final",
 
   // --- Equipe --------------------------------------------------------------
   ADMIN: "/admin",

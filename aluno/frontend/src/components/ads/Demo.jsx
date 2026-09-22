@@ -42,7 +42,10 @@ export default function Demo({
 }) {
   return (
     <section
-      className="card-sapiens rounded-3xl p-3.5 md:p-5"
+      // `sem-desfoque`: o mesmo painel do produto sem o `backdrop-filter`.
+      // Pedido do dono para toda a superfície de anúncios — ver a seção
+      // "Vidro sem desfoque" no `index.css`. O produto continua com vidro.
+      className="card-sapiens sem-desfoque rounded-3xl p-3.5 md:p-5"
       data-testid={testid}
       data-passo={passo}
     >
