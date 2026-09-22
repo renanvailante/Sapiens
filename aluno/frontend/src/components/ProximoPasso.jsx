@@ -92,7 +92,29 @@ export function escolherPasso({ revisoes, cronograma, habilidades }) {
     };
   }
 
-  const missao = missaoAtual(habilidades);
+  /* A missão da trilha só vale para quem JÁ TEM MEDIDA em algum ponto.
+   *
+   * `/treino/habilidades` devolve as 56 habilidades SEMPRE, inclusive para a
+   * conta criada há dez segundos, com `respondidas: 0` e
+   * `classificacao: "sem_dados"`. Como `missaoAtual` procura a primeira que
+   * não seja `"forte"`, `"sem_dados"` passa no filtro e ela devolve HAB-01 —
+   * nunca `null`. Consequência medida em 2026-09-21: o degrau 4 abaixo era
+   * inalcançável, e o aluno recém-cadastrado abria o Painel com
+   * "Território novo — Ordenar valores numéricos em sequência crescente/
+   * decrescente" e um botão para o mapa 3D (chunk de 1,25 MB / 335 kB gzip,
+   * mais pesado que o `main.js` inteiro).
+   *
+   * Isso contradizia o próprio comentário do degrau 4 logo abaixo ("quem
+   * ainda não tem medida nenhuma não tem lacuna conhecida") — a intenção
+   * estava escrita e não estava implementada. E ficou caro no dia em que
+   * tráfego pago começou a chegar: o anúncio promete "10 questões" e a
+   * primeira tela oferecia uma habilidade sorteada por ordem alfanumérica de
+   * id, que é o oposto de "personalizado".
+   *
+   * Aqui o teste é sobre DADO, não sobre a lista: 56 habilidades intocadas
+   * são 56 linhas de catálogo, não uma medida do aluno. */
+  const temMedida = (habilidades || []).some((h) => h.respondidas > 0);
+  const missao = temMedida ? missaoAtual(habilidades) : null;
   if (missao) {
     const tocada = missao.respondidas > 0;
     return {

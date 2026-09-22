@@ -1,6 +1,6 @@
 import PaginaLegal from "../components/PaginaLegal";
 import MeusDadosLGPD from "../components/MeusDadosLGPD";
-import { OPERADOR } from "../lib/operador";
+import { OPERADOR, identificacaoDoOperador } from "../lib/operador";
 
 export default function Privacidade() {
   return (
@@ -11,7 +11,12 @@ export default function Privacidade() {
       <section>
         <h2>1. Quem trata seus dados</h2>
         <p>
-          O controlador dos dados é {OPERADOR.razaoSocial || OPERADOR.nomeFantasia}. Para qualquer
+          {/* `identificacaoDoOperador()` e não `razaoSocial || nomeFantasia`:
+              o fallback antigo dizia "o controlador é Sapiens", que é uma
+              MARCA, não alguém a quem o titular possa se dirigir. A LGPD
+              (art. 9º) dá ao titular o direito de saber quem trata os dados
+              dele; uma marca não responde a isso. */}
+          O controlador dos dados é {identificacaoDoOperador()}. Para qualquer
           assunto de privacidade — inclusive os pedidos descritos na seção 6 — escreva para{" "}
           <a className="text-sapiens-accentDeep hover:underline" href={`mailto:${OPERADOR.emailPrivacidade || OPERADOR.emailContato}`}>
             {OPERADOR.emailPrivacidade || OPERADOR.emailContato}

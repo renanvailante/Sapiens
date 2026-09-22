@@ -313,6 +313,99 @@ Com o cupom de pé, `/admin/promo-codes` mostra por código quantas e QUAIS
 contas vieram dali (nome, e-mail, data), e o vínculo fica na conta para
 sempre. Cruzando com `/admin/transacoes` fecha até a compra.
 
+## O funil pós-clique — o que a auditoria de 2026-09-21 consertou
+
+Uma auditoria adversarial (cinco lentes independentes, cada achado entregue a
+um refutador) rodou contra as quatro landings antes da primeira verba. **Dos
+achados que chegaram a ser verificados, nenhum sobreviveu como bloqueador** —
+os refutadores acharam mecanismo correto e severidade inflada em todos. O que
+segue é o que sobrou depois da refutação, e foi consertado.
+
+### O aluno novo não chegava à rodada que o anúncio promete
+
+`/treino/habilidades` devolve as 56 habilidades SEMPRE, inclusive para a conta
+criada há dez segundos, com `respondidas: 0` e `classificacao: "sem_dados"`.
+`missaoAtual` procura a primeira que não seja `"forte"` — e `"sem_dados"`
+passa. Ela devolvia **HAB-01, nunca `null`**.
+
+Consequência: o degrau "praticar" de `ProximoPasso` era **inalcançável**, e
+quem acabava de se cadastrar pelo anúncio abria o Painel em *"Território novo
+— Ordenar valores numéricos em sequência crescente/decrescente"*, com botão
+para o mapa 3D (chunk de 1,25 MB / 335 kB gzip, mais pesado que o `main.js`).
+O anúncio prometia 10 questões; a primeira tela oferecia uma habilidade
+sorteada por ordem alfanumérica de id.
+
+> A intenção já estava escrita e não estava implementada — o próprio
+> comentário do degrau dizia "quem ainda não tem medida nenhuma não tem lacuna
+> conhecida". O teste é sobre DADO, não sobre a lista: 56 habilidades
+> intocadas são 56 linhas de catálogo, não uma medida do aluno.
+> `ProximoPasso.test.js` trava isso.
+
+### A origem já era gravada e ninguém lia
+
+`auth._registrar_origem` carimba os sete campos de `models.PARAMS_DE_ORIGEM`
+no documento do usuário, nos **dois** caminhos de cadastro (`auth.py:339`
+e-mail, `auth.py:475` Google). O dado existia desde sempre e **não havia uma
+única tela lendo**.
+
+`components/PainelDeAquisicao.jsx` (montado em `/admin/users`) agrega por
+`utm_content` e mostra cadastros, quantos responderam, questões e dias ativos
+por ângulo. É **frontend puro**: `GET /admin/users` já devolve o documento
+inteiro do aluno (`admin_routes.py:76`), então não há endpoint novo, nem
+segunda fonte para a mesma verdade, nem deploy de backend.
+
+> **Isso torna os cupons `ADS-*` opcionais.** A atribuição por `utm_content`
+> não depende deles. O cupom continua útil (dá a tela de
+> `/admin/promo-codes`), mas já não é o que separa "gastou e aprendeu" de
+> "só gastou".
+
+> [!danger] Não invente coluna que o payload não tem.
+> A primeira versão do painel tinha "Compraram", lendo `total_gasto_cents` e
+> `compras` — campos que `/admin/users` **não devolve**. A coluna teria
+> marcado zero em toda linha para sempre, sem nenhum sinal de que o campo não
+> existia. Medida falsa é pior que medida ausente: a ausente você vai
+> procurar. Compra mora em `/admin/transacoes`.
+
+### As páginas legais se declaravam inacabadas — em produção
+
+`/termos` e `/privacidade` são os **dois únicos links** do rodapé das
+landings, e estampavam *"Documento em finalização. Faltam os dados de
+identificação do responsável."* O comentário de `lib/operador.js` dizia "AÇÃO
+NECESSÁRIA ANTES DO BETA PÚBLICO" — **comprar tráfego é cruzar essa linha**,
+e o Sapiens fala com menor de idade.
+
+O defeito não era falta de preenchimento, era o MODELO: ele pressupunha
+pessoa jurídica, e quem opera como pessoa física não tem razão social nem
+CNPJ — o aviso ficaria aceso para sempre, sem nunca haver o que preencher.
+Hoje `OPERADOR.tipo` é explícito e cada tipo tem a sua lista de obrigatórios;
+`identificacaoDoOperador()` é o que as páginas legais imprimem, em vez de
+`razaoSocial || nomeFantasia`, que dizia "o controlador é Sapiens" — uma
+marca, não alguém a quem o titular possa se dirigir (LGPD art. 9º).
+
+> Endereço não é obrigatório em nenhum dos dois tipos, de propósito: em pessoa
+> física ele é o endereço residencial de alguém, e publicá-lo cria para o
+> operador o risco que a LGPD existe para reduzir. **Virar pessoa jurídica é
+> trocar `tipo` e preencher dois campos.**
+
+### O login com Google morre calado no navegador do Instagram
+
+100% do tráfego pago abre a página no navegador embutido do aplicativo.
+`signInWithPopup` (`lib/firebase.js:54`) depende de armazenamento de terceiro
+para devolver o resultado, e é isso que esses navegadores particionam. No
+Android o Firebase falha rápido e há erro tratável; **no iOS a janela abre, a
+pessoa escolhe a conta e a tela fica branca** — sem exceção, sem nada para o
+`catch` pegar, com o botão ainda escrito "Abrindo o Google…".
+
+`lib/navegador.js` detecta o navegador embutido por `userAgent` e faz duas
+coisas: avisa **antes** do clique que o caminho mais garantido é o cadastro
+por e-mail, e encurta de 25s para 8s a espera até o aviso de popup travado.
+
+> **A detecção informa, nunca bloqueia.** `userAgent` é palpite: falso
+> positivo custa um aviso a mais, falso negativo devolve o comportamento
+> anterior. Nenhum dos dois quebra o cadastro. A cura de verdade continua
+> sendo o `_worker.js` reencaminhando `/__/auth/*` — ver [[contas-e-acesso]],
+> que muda a autenticação de todo mundo e segue pendente de aprovação.
+
 ## Como criar a quinta variante
 
 1. Uma linha em `ROTAS` (`lib/rotas.js`) e uma `<Route>` no `App.js`, com

@@ -7,6 +7,7 @@ import {
   ShieldCheck, ShieldOff, Zap, ListChecks, Ticket, Search, Receipt,
   X, Loader2, ArrowRight, AlertTriangle, MessageCircleMore, Copy, Check, Radio,
 } from "lucide-react";
+import PainelDeAquisicao from "../components/PainelDeAquisicao";
 
 // Tela de contas do admin. Três coisas ao mesmo tempo, de propósito — é a
 // única lista que tem TODO MUNDO: permissão (promover/revogar), estado do
@@ -396,6 +397,11 @@ export default function AdminUsers() {
           Sparks, quantas questões já respondeu e o cupom que usou no cadastro. Clique no
           aluno para abrir a ficha completa.
         </p>
+
+        {/* De onde vieram — antes da busca, porque é a pergunta que se faz
+            ANTES de procurar um aluno específico. Lê os `utm_*` que já vêm no
+            payload de `/admin/users`; nenhuma requisição nova. */}
+        <PainelDeAquisicao users={users} />
 
         <div className="mt-6 flex flex-wrap items-center gap-2">
           <Link

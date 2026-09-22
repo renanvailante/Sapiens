@@ -6,6 +6,7 @@ import { useAuth } from "../lib/auth";
 import { api, errMsg } from "../lib/api";
 import { googleDisponivel, mensagemDeErroGoogle } from "../lib/firebase";
 import { salvarAtribuicao, lerAtribuicao } from "../lib/atribuicao";
+import { navegadorEmbutido, esperaAteAvisarDoPopup } from "../lib/navegador";
 import { origemParaEnvio } from "../lib/campanha";
 import { toast } from "sonner";
 import { Brain, Compass, Radio, Loader2, Gift } from "lucide-react";
@@ -119,6 +120,9 @@ export default function Login() {
   const [dicaPopup, setDicaPopup] = useState(false);
 
   const criando = mode === "signup";
+  // Calculado uma vez por montagem: o `userAgent` não muda com a pessoa na
+  // página, e reavaliar a cada render não acrescentaria nada.
+  const [embutido] = useState(() => navegadorEmbutido());
 
   const comGoogle = async () => {
     setBusyGoogle(true);
@@ -128,7 +132,10 @@ export default function Login() {
     // AVISAR: passados 25 segundos a dica aparece embaixo do botão, e o fluxo
     // continua esperando normalmente. É a diferença entre "travou e eu não sei
     // o que fazer" e "travou, e o app me disse a saída".
-    const avisar = setTimeout(() => setDicaPopup(true), 25_000);
+    // 8s dentro do navegador de um aplicativo, 25s fora dele. Ver
+    // `lib/navegador.js`: ali a espera não é lentidão da pessoa, é o defeito
+    // conhecido do popup cross-origin acontecendo em silêncio.
+    const avisar = setTimeout(() => setDicaPopup(true), esperaAteAvisarDoPopup());
     const abertoEm = Date.now();
     try {
       if (criando && menorDeIdade && !(responsavelNome.trim() && responsavelWhatsapp.trim())) {
@@ -433,6 +440,26 @@ export default function Login() {
                 )}
                 {busyGoogle ? "Abrindo o Google…" : "Continuar com Google"}
               </button>
+
+              {/* O aviso que chega ANTES do prejuízo.
+                  Num navegador embutido de rede social o login com Google
+                  costuma abrir e branquear sem erro nenhum — e 100% do
+                  tráfego pago chega por aí. Dizer isso depois de 8 segundos
+                  de anel girando é melhor que depois de 25, mas dizer ANTES
+                  do clique é melhor que as duas. O botão continua lá e
+                  continua clicável: a detecção é por `userAgent` e portanto
+                  é palpite, então ela informa em vez de bloquear. */}
+              {embutido && !dicaPopup && (
+                <p
+                  className="mt-2.5 rounded-xl border border-white/12 bg-white/[0.04] px-3.5 py-2.5 text-xs leading-relaxed text-white/55"
+                  data-testid="login-aviso-embutido"
+                >
+                  Você abriu este link dentro de um aplicativo. O login com Google
+                  costuma falhar aqui —{" "}
+                  <strong className="font-semibold text-white/80">criar conta com e-mail</strong>{" "}
+                  logo abaixo é o caminho mais garantido.
+                </p>
+              )}
 
               {dicaPopup && (
                 <p

@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import BrandMark from "./BrandMark";
 import AvisoLegalPendente from "./AvisoLegalPendente";
-import { ATUALIZADO_EM, OPERADOR } from "../lib/operador";
+import { ATUALIZADO_EM, OPERADOR, identificacaoDoOperador } from "../lib/operador";
 
 /** Moldura comum de Termos e Privacidade: fundo claro e legível, porque são
  *  documentos para ler por inteiro, não telas de produto. */
@@ -30,8 +30,10 @@ export default function PaginaLegal({ titulo, resumo, children }) {
         <div className="mt-12 pt-8 border-t border-zinc-200 text-sm text-zinc-500">
           <div className="font-medium text-zinc-800">Como falar conosco</div>
           <p className="mt-1">
-            {OPERADOR.razaoSocial || OPERADOR.nomeFantasia}
-            {OPERADOR.cnpj && ` — CNPJ ${OPERADOR.cnpj}`}
+            {/* Uma função e não uma cadeia de `||`: quem opera como pessoa
+                física não tem razão social, e cair na marca deixava o
+                documento sem identificar ninguém. Ver `lib/operador.js`. */}
+            {identificacaoDoOperador()}
             {OPERADOR.endereco && <><br />{OPERADOR.endereco}</>}
             <br />
             <a className="text-sapiens-accentDeep hover:underline" href={`mailto:${OPERADOR.emailContato}`}>
