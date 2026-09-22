@@ -345,8 +345,18 @@ sorteada por ordem alfanumérica de id.
 
 `auth._registrar_origem` carimba os sete campos de `models.PARAMS_DE_ORIGEM`
 no documento do usuário, nos **dois** caminhos de cadastro (`auth.py:339`
-e-mail, `auth.py:475` Google). O dado existia desde sempre e **não havia uma
-única tela lendo**.
+e-mail, `auth.py:475` Google).
+
+> **Isso entrou em `c854083`, três horas antes da auditoria, por outra
+> sessão trabalhando nesta mesma árvore** — não "existia desde sempre", como
+> a primeira versão desta nota afirmava. Vale registrar o modo de falha: a
+> auditoria encontrou a capacidade no código e concluiu que ela era antiga,
+> quando na verdade ela tinha acabado de nascer e ainda não tinha leitor
+> porque ninguém tivera tempo de escrever um. Ver [[sessoes-concorrentes]] —
+> duas sessões construindo as duas metades da mesma ponte sem saber uma da
+> outra é o caso bom; o caso ruim é uma desfazer a outra.
+
+O que faltava era o leitor: **não havia uma única tela mostrando esse dado**.
 
 `components/PainelDeAquisicao.jsx` (montado em `/admin/users`) agrega por
 `utm_content` e mostra cadastros, quantos responderam, questões e dias ativos
