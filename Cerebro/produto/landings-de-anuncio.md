@@ -322,6 +322,44 @@ borda, sombra longa e a linha de luz do `::before`, e uma cópia divergiria no
 primeiro ajuste de cor. **O produto continua com vidro** — só `/ads/*` e os
 criativos são nítidos.
 
+## A sexta variante: `/ads/sem-mensalidade` (2026-09-22)
+
+O primeiro ângulo cujo argumento é **custo**. A virada visual é um número
+pesado (R$ 6.000, em outras plataformas) que encolhe, e no vazio que ele deixa
+entram as peças do produto. Comparação de barras seria mais óbvia e mais
+fraca: barra contra barra convida a comparar VALORES, quando o que muda aqui
+é o modelo.
+
+> [!danger] "O Sapiens é gratuito" é FALSO, e nenhuma peça pode dizer isso.
+> O produto é **freemium**. Questão, diagnóstico e cronograma não custam nada;
+> curso (350), e-book (200), aula ao vivo (200), redação corrigida (120) e a
+> Mentis custam Sparks — ver [[economia-de-sparks]]. Os 100 de boas-vindas não
+> pagam nem um curso.
+>
+> A copy aprovada diz **"o diagnóstico é de graça"** e **"sem mensalidade"**
+> (conferido: não existe assinatura no produto). A primeira versão do roteiro
+> dizia "e é gratuito", logo depois de "plataformas custam R$ 6.000" — a
+> frase carregava o anúncio inteiro e prometia um produto completo de graça.
+>
+> Isso não é cautela jurídica, é conversão: quem chega por um anúncio que
+> promete tudo de graça e bate num paywall na terceira tela não volta, e o
+> paywall aparece **depois** de a mídia já ter sido paga.
+
+Por isso o último passo da demo não é o CTA — é a linha que separa o que é de
+graça do que se paga. E as peças gratuitas entram PRIMEIRO, acesas em verde: a
+ordem é o argumento, não estética. Quem vê a lista começando pelo que não custa
+nada lê "isto eu já posso usar" em vez de "isto é a vitrine".
+
+**Nenhum preço do Sapiens é escrito à mão nestas páginas.** Elas falam de
+modelo ("sem mensalidade", "paga só se usar"), nunca de valor — preço mora no
+backend e só é citado depois de conferir a constante.
+
+O **R$ 6.000 é afirmação sobre o preço de TERCEIROS**, feita pelo dono, que
+declarou ter fonte e decidiu não publicá-la. Publicidade comparativa precisa
+ser verificável (CONAR) e o Meta pode pedir comprovação: se o anúncio for
+questionado, é essa fonte que precisa existir. A decisão é do dono e está
+registrada aqui para a próxima sessão não a refazer nem a desfazer.
+
 ## Os códigos de campanha, e a pegadinha que anula o rastreio
 
 As URLs de anúncio em uso carregam `&convite=` além dos UTM:
