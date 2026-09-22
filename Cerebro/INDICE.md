@@ -39,6 +39,7 @@ Se nada aqui casar, vá direto ao código (`graft ask "<tarefa>"`) — o Cerebro
 | mexer em **activation, TTFV, cohort, marco de produto, primeira compra/recompra/microvitória** | [[analytics-de-produto]] |
 | mexer no **pipeline, ontologia, schema, corpus** | [[pipeline-e-corpus]] · [[canon-pedagogico]] |
 | rodar **testes ou o app local** | [[ambiente-local]] |
+| otimizar/instrumentar o **próprio Claude Code** (índice, cache, tokens, `graft`, `rtk`) | [[ferramentas-claude-code]] |
 | **restaurar** algo que "parece errado" no produto | [[superado]] |
 | entender o projeto pela primeira vez | [[ecossistema]] |
 | saber o que falta para o funil de ativação/monetização | [[ROADMAP_EXECUCAO]] |
@@ -102,6 +103,7 @@ Cerebro/
 ├── ROADMAP_EXECUCAO.md      ← plano de execução datado (não é nó de conhecimento)
 ├── regras/     inviolaveis · decisoes-do-dono
 ├── operacao/   deploy · ambiente-local · sessoes-concorrentes · incidentes
+│               ferramentas-claude-code
 ├── produto/    ecossistema · economia-de-sparks · catalogo · mentis
 │               marca · engajamento · contas-e-acesso · afiliados · aquisicao
 │               analytics-de-produto · landings-de-anuncio

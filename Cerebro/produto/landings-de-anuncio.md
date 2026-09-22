@@ -280,6 +280,48 @@ rolagem forçou um quadro. A cura é a rede de 1,4s em `QuestionProgress` — nu
 navegador de verdade ela nunca roda, e existe porque um demo congelado em zero
 não é uma animação que faltou: é a landing afirmando que o produto trava.
 
+## A quinta variante: `/ads/reta-final` (2026-09-22)
+
+O primeiro ângulo cujo gancho é o **calendário** e não o erro. As outras
+quatro argumentam sobre o mecanismo ("por que você erra"); esta argumenta
+sobre o tempo que sobrou, e mostra a outra metade do produto —
+`prioridade_enem` — que nenhuma landing usava.
+
+**A tese visual, em uma frase: no caos todos os quadrados são iguais; na
+ordem, alguns valem mais.** Um quadradinho por dia restante, que se
+estilhaça, fica indistinguível, e depois se encaixa numa semana com alguns
+acesos. O passo do caos existe só para o passo da ordem ter o que desmentir:
+sem ver os dias idênticos primeiro, a organização depois não significa nada.
+
+> **O número nunca é escrito.** Vem de `lib/enem.proximaProva`/
+> `tempoRestante` — a mesma fonte da contagem que já roda em cinco telas. Uma
+> landing de urgência com número digitado à mão seria a única peça do produto
+> capaz de mentir sozinha no dia seguinte. Passados os dois domingos,
+> `proximaProva` devolve `null` e a demo some em vez de contar negativo.
+>
+> Atenção ao que o produto conta: **dias CHEIOS até as 13h30 da prova**, não
+> dias de calendário. Em 22/09 isso dá 46, não 47. O criativo em vídeo assa o
+> número e pode divergir da landing em um dia — renderize o vídeo no dia em
+> que a campanha sobe.
+
+**Este ângulo não precisa afirmar nada sobre quem lê**, e é a vantagem
+estrutural dele: "faltam 46 dias" é fato de calendário, e "quando a prova se
+aproxima, fica a dúvida" atribui a dúvida à SITUAÇÃO. Nenhuma das duas cruza
+a política de atributos pessoais do Meta, que é o que derruba anúncio de
+educação.
+
+### Vidro sem desfoque
+
+Por pedido do dono, **toda a superfície de anúncios é nítida**:
+`.card-sapiens.sem-desfoque` desliga o `backdrop-filter` e compensa com um
+degrau a mais de opacidade no próprio vidro (sem o desfoque, a malha de
+pontos do ambiente atravessa o painel e compete com o conteúdo).
+
+É um MODIFICADOR, não uma classe paralela: `.card-sapiens` carrega degradê,
+borda, sombra longa e a linha de luz do `::before`, e uma cópia divergiria no
+primeiro ajuste de cor. **O produto continua com vidro** — só `/ads/*` e os
+criativos são nítidos.
+
 ## Os códigos de campanha, e a pegadinha que anula o rastreio
 
 As URLs de anúncio em uso carregam `&convite=` além dos UTM:
