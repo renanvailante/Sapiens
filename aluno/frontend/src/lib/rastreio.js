@@ -16,21 +16,47 @@
  * O PIXEL NÃO CARREGA SEM UM ID CONFIGURADO, E ISSO É DELIBERADO
  * ---------------------------------------------------------------------------
  *
- * `REACT_APP_META_PIXEL_ID` não existe em nenhum `.env` hoje. Sem ele este
- * módulo é inerte: zero JavaScript de terceiro, zero requisição, zero cookie.
- * Duas razões, e as duas pesam:
+ * `REACT_APP_META_PIXEL_ID` é o que LIGA tudo isto. Sem ele o módulo é inerte:
+ * zero JavaScript de terceiro, zero requisição, zero cookie. **Ligado desde
+ * 22/09/2026**, por decisão do dono, com o pixel `3603769776438017`; até ali o
+ * produto não tinha analytics de frontend nenhum. As duas razões pelas quais
+ * a chave de liga/desliga existe continuam valendo, e é por isso que ela não
+ * virou código fixo:
  *
  * - **Performance.** O `fbevents.js` é script de terceiro num produto cuja
  *   landing de anúncio tem de abrir rápido no 4G. Ele nunca entra no caminho
  *   crítico: só é injetado depois da primeira pintura (ver `carregar`).
  * - **LGPD.** O Sapiens atende menor de idade e tem política de privacidade
- *   publicada. Ligar rastreio de terceiro é decisão do dono com revisão
- *   jurídica, não efeito colateral de um deploy de frontend. Preencher a
- *   variável é o ato explícito que liga.
+ *   publicada. Ligar rastreio de terceiro é decisão do dono, não efeito
+ *   colateral de um deploy de frontend — preencher a variável é o ato
+ *   explícito que liga, e esvaziá-la desliga tudo num build, sem precisar
+ *   caçar chamada nenhuma pelo código. Duas coisas que o texto da política de
+ *   privacidade precisa acompanhar, e que este módulo sozinho não resolve:
+ *   dizer que há pixel de terceiro e qual é a base legal dele.
  *
- * E o pixel só é carregado nas rotas `/ads/*` — nunca dentro do app do aluno.
- * Rastreio de anúncio não tem o que fazer numa tela de estudo, e colocá-lo lá
- * seria trocar privacidade e peso por um dado que ninguém pediu.
+ * ---------------------------------------------------------------------------
+ * ONDE O PIXEL CARREGA — e a linha que ele não atravessa (2026-09-22)
+ * ---------------------------------------------------------------------------
+ *
+ * Nas três superfícies PÚBLICAS, e em nenhuma outra:
+ *
+ * | rota        | quem dispara                                    |
+ * |-------------|-------------------------------------------------|
+ * | `/ads/*`    | `landingView` (`AdsLandingLayout`)              |
+ * | `/`         | `PixelDeRota` (montado no `App`)                |
+ * | `/login`    | `PixelDeRota`                                   |
+ *
+ * **Dentro do app do aluno ele não entra.** Depois do cadastro não há mais
+ * campanha a medir e há aluno menor de idade estudando: carregar script de
+ * terceiro e cookie da Meta numa tela de estudo trocaria privacidade e peso
+ * por um dado que ninguém pediu. `ROTAS_PUBLICAS` abaixo é essa fronteira, e
+ * ela é uma lista fechada de propósito — uma regra do tipo "tudo que não é
+ * protegido" faria a próxima tela pública nascer com pixel sem ninguém decidir.
+ *
+ * > A fronteira mora AQUI, não no `index.html`. O snippet oficial do Meta,
+ * > colado no HTML, carrega em toda página e dispara `PageView` uma vez só —
+ * > numa SPA isso é o pior dos dois mundos: pixel na tela de estudo e funil
+ * > cego a partir do segundo clique. Por isso ele não está lá.
  */
 
 const PIXEL_ID = process.env.REACT_APP_META_PIXEL_ID;
@@ -41,7 +67,15 @@ let carregado = false;
 // (troca de variante) não pode virar duas visualizações no relatório.
 const jaVistas = new Set();
 
-/** O pixel está configurado? Falso hoje, e é o estado esperado. */
+/** As rotas públicas fora de `/ads/*` onde o pixel pode carregar.
+ *
+ *  Lista fechada, e comparada por igualdade exata — `/login/qualquer-coisa`
+ *  não entra. As landings de anúncio NÃO estão aqui: elas têm emissor próprio
+ *  (`landingView`), que além do `PageView` manda a variante. Repetir `/ads`
+ *  nesta lista contaria a visita duas vezes. */
+const ROTAS_PUBLICAS = new Set(["/", "/login"]);
+
+/** O pixel está configurado? */
 export function pixelAtivo() {
   return Boolean(PIXEL_ID);
 }
@@ -132,6 +166,49 @@ export function demoInteragida(variante, escolha) {
  *  dobra ou só depois da demonstração — sem isso só se sabe o total. */
 export function ctaClicado(variante, posicao) {
   evento("landing_cta_click", { variante, posicao });
+}
+
+/**
+ * UMA TELA PÚBLICA FOI VISTA. É o que `components/PixelDeRota.jsx` chama a
+ * cada mudança de rota.
+ *
+ * Devolve `true` quando de fato contou, só para o teste ter o que afirmar.
+ *
+ * A trava por caminho é a mesma de `landingView`, e pela mesma razão: o
+ * `useEffect` roda duas vezes no StrictMode do desenvolvimento. Mas aqui ela
+ * é por VISITA e não por vida da aba — ir de `/` para `/login` e voltar são
+ * duas visualizações honestas, e é justamente esse vaivém que diz se a
+ * pessoa hesitou no cadastro. Quem zera é o próprio componente.
+ */
+export function paginaPublicaVista(caminho) {
+  if (!ROTAS_PUBLICAS.has(caminho)) return false;
+  carregar();
+  disparar("PageView");
+  return true;
+}
+
+/**
+ * CADASTRO CONCLUÍDO — o `Lead` do Meta, e o único evento deste módulo que
+ * nasce DENTRO do produto (`pages/Login.jsx`).
+ *
+ * Padrão do Meta, e não `trackCustom`: `Lead` é o vocabulário que o
+ * Gerenciador de Anúncios entende para otimizar campanha por cadastro. O que
+ * o doc deste módulo recusava era usá-lo para um CLIQUE — aqui ele significa
+ * exatamente o que o Meta diz que significa: a conta existe.
+ *
+ * `metodo` é `"email"` ou `"google"` — é dado do fluxo, não da pessoa.
+ * **Nada que identifique o aluno sai daqui**: nem e-mail, nem nome, nem
+ * telefone, nem `user_id`. O Meta aceitaria (`em`, `ph` com hash), e é
+ * exatamente por isso que a recusa precisa estar escrita: o produto atende
+ * menor de idade, e mandar dado de contato dele para uma rede de anúncios é
+ * uma decisão que ninguém deve poder tomar sem querer.
+ *
+ * Só conta cadastro de verdade. Ver `conta_criada` em `backend/auth.py`: o
+ * botão do Google entra e cadastra pela mesma porta, e sem essa flag todo
+ * retorno de um aluno antigo viraria uma conversão nova no relatório.
+ */
+export function cadastroConcluido(metodo) {
+  disparar("Lead", { content_name: metodo });
 }
 
 function disparar(nome, dados = {}, custom = false) {

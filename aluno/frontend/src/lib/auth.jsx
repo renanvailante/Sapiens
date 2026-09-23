@@ -74,7 +74,12 @@ export function AuthProvider({ children }) {
     });
     localStorage.setItem("sapiens_token", data.token);
     setUser(data.user);
-    return data.user;
+    // O ÚNICO dos três que não devolve só o usuário. O botão do Google entra
+    // E cadastra pela mesma porta, e o `user` devolvido é igual nos dois
+    // casos — `conta_criada` (ver `backend/auth.py`) é a única forma de o
+    // frontend saber que acabou de nascer uma conta. Quem usa é o rastreio de
+    // aquisição, que só pode contar `Lead` em cadastro de verdade.
+    return { user: data.user, contaCriada: Boolean(data.conta_criada) };
   };
   const logout = async () => {
     try { await api.post("/auth/logout"); } catch {}

@@ -479,7 +479,14 @@ async def google_sign_in(
     _set_cookie(response, token)
     doc = await _db.users.find_one({"user_id": user_id}, {"_id": 0, "password_hash": 0})
     doc["is_promoter"] = await _is_promoter(doc["email"])
-    return {"user": doc, "token": token}
+    # `conta_criada` diz se ESTA chamada criou a conta ou apenas abriu sessão
+    # numa que já existia. O botão do Google é um só para as duas coisas, e o
+    # frontend não tem como distinguir: o `user` devolvido é idêntico nos dois
+    # casos. Quem precisa da diferença é o rastreio de aquisição — `Lead` no
+    # Meta significa cadastro CONCLUÍDO, e disparar em todo login com Google
+    # contaria o mesmo aluno como conversão nova a cada vez que ele voltasse,
+    # inflando a campanha com gente que já é cliente.
+    return {"user": doc, "token": token, "conta_criada": not existente}
 
 
 def _campos_do_responsavel(

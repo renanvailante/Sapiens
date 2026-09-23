@@ -1,6 +1,6 @@
 ---
 tags: [produto, aquisicao, marketing, frontend]
-atualizado: 2026-09-21
+atualizado: 2026-09-22
 ---
 
 # Landings de anúncio (`/ads/*`)
@@ -163,38 +163,22 @@ mais concreta do doc, e agora está fechada:
   /track/click` (o clique) e agora os campos de `User` (o cadastro). Cruzar
   as três é o que fecha clique → cadastro → compra por campanha.
 
-**Meta Pixel: a arquitetura existe, o pixel não está ligado.**
-`lib/rastreio.js` é a porta única — **nenhum componente chama `fbq`**. Sem
-`REACT_APP_META_PIXEL_ID` configurado ele é inerte: zero script de terceiro,
-zero requisição, zero cookie. Com o id, injeta o `fbevents.js` **depois da
-primeira pintura** e só em `/ads/*`, nunca dentro do app do aluno. Eventos:
-`PageView` (uma vez por variante, com trava contra o duplo `useEffect` do
-StrictMode) e o custom `CliqueCTA` com `{variante, posicao}` — `posicao` é o
-que diz se a página converte na primeira dobra ou depois da demonstração.
+**Meta Pixel: ligado em 22/09/2026 — e o assunto mudou de casa.**
+O pixel deixou de ser só das landings (ele cobre também `/` e `/login`, e há
+`Lead` no cadastro concluído), então tudo sobre ele vive agora em
+[[meta-pixel]]: escopo, vocabulário de eventos, a fronteira que o mantém fora
+do app do aluno e a pendência de política de privacidade.
 
-> [!danger] Preencher `REACT_APP_META_PIXEL_ID` é decisão do dono, com
-> revisão jurídica — não efeito colateral de um deploy.
-> O Sapiens atende menor de idade e tem política de privacidade publicada;
-> rastreio de terceiro sem consentimento é exatamente o ponto que
-> `legal-privacy` precisa olhar antes. A variável não existe em nenhum `.env`
-> hoje, e esse é o estado esperado.
+O que estas páginas precisam saber, e só isto: **`AdsLandingLayout` chama
+`landingView(variante)`**, que dispara o `PageView` e o custom `landing_view`
+uma vez por variante; `CTA.jsx` chama `ctaClicado(variante, posicao)`; e
+`/ads/10-questoes` chama `demoInteragida`. Nenhum componente daqui chama `fbq`
+direto — a porta única é `lib/rastreio.js`.
 
-O vocabulário são três nomes, em `lib/rastreio.js`: `landing_view` (uma vez
-por variante), `landing_demo_interaction` (só `/ads/10-questoes` tem emissor —
-é a única com algo a tocar) e `landing_cta_click` (com a `posicao` na página).
-
-**`landing_signup_start` não existe, e a ausência é decisão.** Ele aconteceria
-em `/login`, que é tela do produto e não landing; instrumentá-lo exigiria
-importar o rastreio dentro de `Login.jsx` — espalhar analytics pelo app por um
-sinal que hoje é indistinguível de `landing_cta_click`, já que o CTA navega
-direto para o cadastro sem tela intermediária onde desistir. Quando houver
-etapa no meio, ele entra em `rastreio.js` e é chamado de lá.
-
-Evento customizado de propósito: `Lead` no Meta significa
-cadastro concluído, e usá-lo para um clique infla a conversão do anúncio com
-gente que só tocou no botão. "Início do diagnóstico" não tem evento porque ele
-acontece dentro do app, atrás da sessão — instrumentá-lo espalharia analytics
-pelas telas de estudo e carregaria script de terceiro em todas elas.
+> **`/ads/*` fica fora de `ROTAS_PUBLICAS`.** O `PixelDeRota`, que conta as
+> outras telas públicas, ignora estas de propósito: elas já se contam, e com a
+> variante junto. Acrescentá-las ali contaria toda visita de anúncio duas
+> vezes. Ver [[meta-pixel]].
 
 ## As decisões de arquitetura que custam caro para desfazer
 
@@ -529,4 +513,4 @@ roteiro inteiro (tem de ser constante), `scrollWidth - clientWidth` a 320/375/
 390/430px (tem de ser 0), e o detector de texto espremido de [[mobile]].
 
 ---
-Relacionado: [[marca]] · [[afiliados]] · [[sistema-visual]] · [[mobile]] · [[navegacao]] · [[custo-de-leitura]] · [[contas-e-acesso]]
+Relacionado: [[marca]] · [[afiliados]] · [[sistema-visual]] · [[mobile]] · [[navegacao]] · [[custo-de-leitura]] · [[contas-e-acesso]] · [[meta-pixel]]

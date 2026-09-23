@@ -15,6 +15,7 @@ import LembrarComAMentis from "./components/LembrarComAMentis";
 import Navegacao from "./components/Navegacao";
 import Redireciona from "./components/Redireciona";
 import ContinuidadeDaPagina from "./components/ContinuidadeDaPagina";
+import PixelDeRota from "./components/PixelDeRota";
 import BrandMark from "./components/BrandMark";
 import { InstalacaoProvider } from "./components/InstalarApp";
 import { ROTAS, LEGADO } from "./lib/rotas";
@@ -297,6 +298,14 @@ export default function App() {
                 única vez e cedo — ver `components/InstalarApp.jsx`. */}
             <InstalacaoProvider>
             <FirestoreStudentProvisioner />
+
+            {/* O `PageView` do Meta Pixel nas telas públicas (`/` e `/login`).
+                Aqui e não dentro de uma rota: dentro do `<Routes>` ele
+                remontaria a cada navegação e esqueceria onde a pessoa estava,
+                que é a única coisa que ele precisa lembrar. Nas `/ads/*` quem
+                dispara é a própria casca da landing, com a variante junto —
+                ver `lib/rastreio.js`. */}
+            <PixelDeRota />
 
             {/* A NAVEGAÇÃO, montada uma vez. Ela decide sozinha onde não
                 aparecer (ver `lib/navegacao.temNavegacao`) e desenha a barra de

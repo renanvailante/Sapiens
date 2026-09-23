@@ -3,6 +3,7 @@ import { MENTOR } from "../lib/mentor";
 import { VOZ } from "../lib/historia";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { useAuth } from "../lib/auth";
+import { cadastroConcluido } from "../lib/rastreio";
 import { api, errMsg } from "../lib/api";
 import { googleDisponivel, mensagemDeErroGoogle } from "../lib/firebase";
 import { salvarAtribuicao, lerAtribuicao } from "../lib/atribuicao";
@@ -143,11 +144,17 @@ export default function Login() {
         setBusyGoogle(false);
         return;
       }
-      await loginGoogle(
+      const { contaCriada } = await loginGoogle(
         criando ? promoCode : undefined,
         criando ? whatsapp : undefined,
         criando ? { menorDeIdade, responsavelNome, responsavelWhatsapp, origem } : undefined,
       );
+      // `contaCriada` vem do BACKEND, e não do modo em que o formulário
+      // estava: este botão cria conta também a partir da tela de "Entrar", e
+      // um aluno antigo que volte por aqui não é cadastro nenhum. Ver
+      // `lib/rastreio.cadastroConcluido` — nada que identifique a pessoa sai
+      // junto. Antes do `nav`, porque navegar desmonta esta tela.
+      if (contaCriada) cadastroConcluido("google");
       nav("/hoje");
     } catch (e) {
       // Fechar o popup NÃO é erro quando foi rápido: é cancelamento
@@ -195,6 +202,7 @@ export default function Login() {
           menorDeIdade, responsavelNome, responsavelWhatsapp, origem,
         });
       }
+      if (criando) cadastroConcluido("email");
       toast.success("Bem-vindo ao Sapiens.");
       nav("/hoje", { replace: true });
     } catch (err) {
