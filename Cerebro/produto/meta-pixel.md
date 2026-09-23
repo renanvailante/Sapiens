@@ -120,11 +120,41 @@ máquina que builda. Um build feito de outro lugar sai sem pixel e sem erro
 nenhum — o sintoma é "o Gerenciador de Eventos não recebe nada", nunca uma
 falha visível.
 
-> [!warning] **Pendência jurídica, aberta.** A política de privacidade
-> publicada precisa dizer que há pixel de terceiro e qual é a base legal dele,
-> e não há tela de consentimento de cookies no produto. Ligar o pixel foi
-> decisão do dono; o texto da política acompanhar isso é trabalho que ainda não
-> foi feito. Ver [[contas-e-acesso]] para o que o produto já declara.
+## O que o pixel quebrou na Política de Privacidade (22/09/2026)
+
+Ligar o pixel tornou **falsas** duas frases que já estavam publicadas:
+
+- §9: *"não há rastreadores de terceiros no produto"*;
+- §4 (adolescentes): *"não usamos os dados para publicidade dirigida, de
+  nenhum tipo"*.
+
+Nenhuma das duas apareceu no code review — elas moram em `pages/Privacidade.jsx`,
+que nada no fluxo do pixel importa. **Toda mudança de rastreio tem de reler
+aquele arquivo**, e esta é a lição mais cara desta entrada: a promessa pública
+do produto é um arquivo de código como outro qualquer, e ele não quebra o build
+quando vira mentira.
+
+O texto foi corrigido no mesmo dia e declara em voz alta que afirmava o
+contrário até ali. As seções 2, 3, 5 e 9 passaram a descrever o pixel, a base
+legal (legítimo interesse, art. 7º IX) e o direito de oposição; a §4 diz o que
+continua verdade — nenhum dado de estudo, contato ou pagamento vai para a Meta,
+e o pixel não entra em tela nenhuma atrás do login.
+
+A Privacidade ganhou **data própria** (`PRIVACIDADE_ATUALIZADA_EM`): antes uma
+constante só servia Termos e Privacidade, e atualizar uma anunciaria que a
+outra mudou. Data falsa em documento legal é pior que data velha — é por ela
+que o titular sabe se leu a versão que vale.
+
+> [!danger] **Duas decisões que continuam do dono, e que o código não resolve.**
+> 1. **A promessa da §4 foi reescrita para caber no produto, não o contrário.**
+>    O público é majoritariamente menor de idade. Se a promessa é que vale, o
+>    caminho é limitar o pixel (esvaziar a variável, ou deixá-lo só em
+>    `/ads/*`, onde a pessoa chegou por um anúncio) — não ajustar o texto.
+> 2. **§10 promete avisar "por e-mail e dentro do produto ANTES de a mudança
+>    valer".** O pixel passou a valer no dia da mudança, sem aviso. Mandar esse
+>    aviso à base é ação do dono, e continua pendente.
+>
+> Não há tela de consentimento de cookies no produto. Ver [[contas-e-acesso]].
 
 ---
 Relacionado: [[landings-de-anuncio]] · [[afiliados]] · [[analytics-de-produto]] · [[deploy]]

@@ -1,11 +1,12 @@
 import PaginaLegal from "../components/PaginaLegal";
 import MeusDadosLGPD from "../components/MeusDadosLGPD";
-import { OPERADOR, identificacaoDoOperador } from "../lib/operador";
+import { OPERADOR, PRIVACIDADE_ATUALIZADA_EM, identificacaoDoOperador } from "../lib/operador";
 
 export default function Privacidade() {
   return (
     <PaginaLegal
       titulo="Política de Privacidade"
+      atualizadoEm={PRIVACIDADE_ATUALIZADA_EM}
       resumo="Quais dados coletamos, por que, com quem compartilhamos e como você controla tudo isso. Escrito conforme a LGPD (Lei 13.709/2018)."
     >
       <section>

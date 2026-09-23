@@ -6,7 +6,7 @@ import { ATUALIZADO_EM, OPERADOR, identificacaoDoOperador } from "../lib/operado
 
 /** Moldura comum de Termos e Privacidade: fundo claro e legível, porque são
  *  documentos para ler por inteiro, não telas de produto. */
-export default function PaginaLegal({ titulo, resumo, children }) {
+export default function PaginaLegal({ titulo, resumo, atualizadoEm, children }) {
   return (
     <div className="min-h-screen bg-white">
       <div className="max-w-2xl mx-auto px-6 py-12">
@@ -18,7 +18,7 @@ export default function PaginaLegal({ titulo, resumo, children }) {
         <h1 className="mt-10 font-display text-3xl md:text-4xl font-extrabold tracking-tight text-zinc-950">
           {titulo}
         </h1>
-        <p className="mt-2 text-sm text-zinc-500">Atualizado em {ATUALIZADO_EM}</p>
+        <p className="mt-2 text-sm text-zinc-500">Atualizado em {atualizadoEm || ATUALIZADO_EM}</p>
         {resumo && <p className="mt-6 text-zinc-700 leading-relaxed">{resumo}</p>}
 
         <div className="mt-8"><AvisoLegalPendente /></div>

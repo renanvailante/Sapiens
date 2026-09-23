@@ -84,4 +84,16 @@ export function identificacaoDoOperador() {
   return `${OPERADOR.razaoSocial}, CNPJ ${OPERADOR.cnpj}, que opera o serviço sob o nome ${OPERADOR.nomeFantasia}`;
 }
 
+/** A data que os documentos legais exibem.
+ *
+ *  `ATUALIZADO_EM` é o padrão — a data em que Termos e Privacidade nasceram
+ *  juntos. **Cada documento pode ter a sua**, e passa `atualizadoEm` para
+ *  `PaginaLegal`: eles mudam em datas diferentes, e uma constante só fazia
+ *  corrigir a Privacidade anunciar que os Termos também tinham mudado. Uma
+ *  data falsa num documento legal é pior que uma data velha — é ela que o
+ *  titular usa para saber se leu a versão que está valendo. */
 export const ATUALIZADO_EM = "2 de setembro de 2026";
+
+/** A Política de Privacidade mudou sozinha em 22/09/2026, quando o Meta Pixel
+ *  entrou e as seções 2, 3, 4, 5 e 9 tiveram de passar a dizer a verdade. */
+export const PRIVACIDADE_ATUALIZADA_EM = "22 de setembro de 2026";
