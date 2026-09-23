@@ -150,6 +150,26 @@ e-mail (LGPD art. 14). Quem se declara maior **nunca** guarda campo de responsá
 nem mandando um. `POST /auth/whatsapp` aceita `menor_de_idade` e o responsável, para
 a tela ser uma chamada só.
 
+## O aluno antigo que cai no cadastro
+
+A landing tem "Entrar" no topo e **"Começar agora"** no meio, grande e roxo. Quem já
+tem conta clica no grande — e ia para `/login?novo=1`, que abre em "Criar conta".
+O cupom ainda nascia preenchido sozinho, de uma atribuição de campanha guardada por
+30 dias no navegador (`lib/atribuicao.js`), o que reforçava a impressão de que a
+tela era a certa. No fim: `Email already registered`, **em inglês**, numa tela que
+nunca ia aceitá-lo.
+
+Desde 2026-09-23 a tela se corrige sozinha: a recusa troca o modo para "Entrar",
+preserva o e-mail e **limpa a senha** — a que a pessoa inventou para o cadastro
+quase nunca é a da conta que já existe, e mantê-la só produziria um segundo erro
+logo depois do aviso. A detecção é `emailJaTemConta` em `lib/api.js` (ao lado de
+`errMsg`, mesma família, e testável sem arrastar o `react-router` da página).
+
+> [!warning] A regra é uma comparação de texto contra a mensagem do backend
+> `auth.py` responde 400 + `"Email already registered"`. Mudar essa frase quebra a
+> tela **em silêncio** — nada falha, o aluno só volta a ver inglês. `api.test.js`
+> é o alarme; se mexer na mensagem, mexa nos dois.
+
 ## Cupons e indicação
 
 Um campo só no cadastro para os dois. Ver [[pagamentos]].
