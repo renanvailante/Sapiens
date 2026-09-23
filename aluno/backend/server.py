@@ -447,9 +447,17 @@ async def ready() -> JSONResponse:
     # no log do servidor, e destravar alguém vira trabalho manual. Não derruba
     # a prontidão: o produto inteiro funciona sem enviar e-mail, e o login com
     # Google não tem senha para esquecer.
+    #
+    # `configurado: true` NÃO quer dizer que o e-mail chega: diz só que as duas
+    # variáveis existem no processo. Em 23/09/2026 isso valeu `true` enquanto o
+    # Resend recusava todo envio com 401 — a tela prometia o link, nada chegava,
+    # e este endpoint concordava que estava tudo bem. Por isso o resultado da
+    # última tentativa REAL vem junto (ver `auth.estado_do_envio_de_email`): é a
+    # única coisa aqui que sabe a diferença entre configurado e funcionando.
     checks["email"] = {
         "configurado": resumo["email_configurado"],
         "frontend_base": resumo["frontend_base"],
+        **auth_module.estado_do_envio_de_email(),
     }
     # Valores EFETIVOS de duas variáveis que decidem custo e conteúdo, e cujo
     # valor real não se lê no `fly.toml`: existe um SECRET do Fly com cada um

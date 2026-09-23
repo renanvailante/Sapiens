@@ -246,7 +246,11 @@ class _RespostaFalsa:
         if self.status_code >= 400:
             import httpx
 
-            raise httpx.HTTPStatusError("falhou", request=None, response=None)
+            # `response=self`, e não `None`, porque é o que o httpx de verdade
+            # faz — e é de `exc.response.status_code` que sai o "HTTP 401" que
+            # `/ready` mostra. Com `None` o dublê passava num código que a
+            # produção não exercita.
+            raise httpx.HTTPStatusError("falhou", request=None, response=self)
 
 
 class _ClienteHttpFalso:
@@ -335,3 +339,85 @@ class TestEntregaDoLinkDeReset:
             asyncio.run(auth._entregar_link_de_reset("aluno@x.com", "tok-422"))
 
         assert "ENVIO FALHOU" in caplog.text
+
+
+class TestEstadoDoEnvioDeEmail:
+    """O que `/ready` mostra sobre a entrega — ver `auth.estado_do_envio_de_email`.
+
+    Existe por causa de 23/09/2026: o Resend recusava todo envio com 401, a tela
+    prometia o link ao aluno, e `/ready` dizia `configurado: true` porque as duas
+    variáveis estavam lá. Um defeito visível só para quem fosse ler log.
+    """
+
+    @pytest.fixture(autouse=True)
+    def _estado_limpo(self):
+        auth._ultimo_envio = None
+        yield
+        auth._ultimo_envio = None
+
+    def test_processo_sem_tentativa_nao_finge_saber(self):
+        assert "desconhecido" in auth.estado_do_envio_de_email()["ultimo_envio"]
+
+    def test_envio_bem_sucedido_fica_registrado(self, monkeypatch):
+        monkeypatch.setattr(auth.settings, "EMAIL_HABILITADO", True)
+        monkeypatch.setattr(auth.settings, "RESEND_API_KEY", "chave")
+        monkeypatch.setattr(auth.settings, "RESEND_FROM", "x@x.com")
+        monkeypatch.setattr(auth.httpx, "AsyncClient", lambda **_k: _ClienteHttpFalso([]))
+
+        asyncio.run(auth._entregar_link_de_reset("aluno@x.com", "tok-ok"))
+
+        estado = auth.estado_do_envio_de_email()
+        assert estado["ultimo_envio"] == "ok"
+        assert estado["verificado_em"]
+
+    def test_o_401_do_provedor_chega_ao_ready_com_o_status(self, monkeypatch):
+        """O status é o que separa 'chave revogada' (401) de 'conta em modo de
+        teste' (403) — duas causas com ações opostas."""
+        monkeypatch.setattr(auth.settings, "EMAIL_HABILITADO", True)
+        monkeypatch.setattr(auth.settings, "RESEND_API_KEY", "chave-morta")
+        monkeypatch.setattr(auth.settings, "RESEND_FROM", "x@x.com")
+        monkeypatch.setattr(
+            auth.httpx, "AsyncClient", lambda **_k: _ClienteHttpFalso([], status=401)
+        )
+
+        asyncio.run(auth._entregar_link_de_reset("aluno@x.com", "tok-401"))
+
+        estado = auth.estado_do_envio_de_email()
+        assert estado["ultimo_envio"] == "FALHOU"
+        assert estado["detalhe"] == "HTTP 401"
+
+    def test_falha_sem_resposta_http_cai_no_tipo_da_excecao(self, monkeypatch):
+        monkeypatch.setattr(auth.settings, "EMAIL_HABILITADO", True)
+        monkeypatch.setattr(auth.settings, "RESEND_API_KEY", "chave")
+        monkeypatch.setattr(auth.settings, "RESEND_FROM", "x@x.com")
+        monkeypatch.setattr(
+            auth.httpx, "AsyncClient", lambda **_k: _ClienteHttpFalso([], explode=True)
+        )
+
+        asyncio.run(auth._entregar_link_de_reset("aluno@x.com", "tok-boom"))
+
+        assert auth.estado_do_envio_de_email()["ultimo_envio"] == "FALHOU"
+
+    def test_sem_provedor_nao_se_confunde_com_falha(self, monkeypatch):
+        """São dois problemas diferentes: um é configuração que nunca existiu,
+        o outro é entrega que parou de funcionar."""
+        monkeypatch.setattr(auth.settings, "EMAIL_HABILITADO", False)
+
+        asyncio.run(auth._entregar_link_de_reset("aluno@x.com", "tok-123"))
+
+        assert auth.estado_do_envio_de_email()["ultimo_envio"] == "sem provedor configurado"
+
+    def test_o_estado_nunca_carrega_a_chave_nem_o_email_do_aluno(self, monkeypatch):
+        """`/ready` é público."""
+        monkeypatch.setattr(auth.settings, "EMAIL_HABILITADO", True)
+        monkeypatch.setattr(auth.settings, "RESEND_API_KEY", "chave-secretissima")
+        monkeypatch.setattr(auth.settings, "RESEND_FROM", "x@x.com")
+        monkeypatch.setattr(
+            auth.httpx, "AsyncClient", lambda **_k: _ClienteHttpFalso([], status=401)
+        )
+
+        asyncio.run(auth._entregar_link_de_reset("aluno@x.com", "tok-401"))
+
+        texto = str(auth.estado_do_envio_de_email())
+        assert "chave-secretissima" not in texto
+        assert "aluno@x.com" not in texto

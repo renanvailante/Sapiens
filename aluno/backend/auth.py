@@ -641,6 +641,51 @@ def _hash_token(token: str) -> str:
 _RESEND_URL = "https://api.resend.com/emails"
 _TIMEOUT_EMAIL_SEGUNDOS = 10.0
 
+# O RESULTADO DO ÚLTIMO ENVIO, para `/ready` poder contar a verdade.
+#
+# `email_configurado` só diz que as duas variáveis existem no processo — e em
+# 23/09/2026 isso valia `true` enquanto o Resend recusava TODO envio com 401
+# (chave inválida ou revogada). O dono pedia a redefinição, a tela dizia
+# "enviamos um link", nada chegava, e `/ready` concordava que estava tudo bem.
+# A falha existia só dentro de um `logger.exception` que ninguém tinha motivo
+# para ir ler.
+#
+# Um booleano sobre a existência da chave não tem como detectar isso: só quem
+# sabe se o envio funciona é uma tentativa de envio. Então a última tentativa
+# fica registrada aqui, de graça, e aparece no mesmo lugar onde já se olha o
+# resto da configuração.
+#
+# É memória do PROCESSO, e isso é deliberado: sem escrita em banco, sem custo
+# por requisição, e sem chamada extra a provedor nenhum dentro de um health
+# check que o Fly usa para decidir se mata a máquina. O preço é que o estado
+# zera a cada deploy e vale por instância — daí `verificado_em`, para ninguém
+# ler um `ok` de três dias atrás como notícia de agora.
+_ultimo_envio: dict[str, Any] | None = None
+
+
+def estado_do_envio_de_email() -> dict[str, Any]:
+    """O que se sabe sobre a entrega de e-mail, para `/ready`.
+
+    `desconhecido` não é defeito: é o estado honesto de um processo que subiu
+    e ainda não teve nenhum pedido de redefinição para entregar.
+    """
+    if _ultimo_envio is None:
+        return {"ultimo_envio": "desconhecido (nenhuma tentativa neste processo)"}
+    return dict(_ultimo_envio)
+
+
+def _registrar_envio(estado: str, detalhe: str | None = None) -> None:
+    """Nunca levanta: quem chama está num caminho que não pode falhar."""
+    global _ultimo_envio
+    try:
+        _ultimo_envio = {
+            "ultimo_envio": estado,
+            "verificado_em": datetime.now(timezone.utc).isoformat(),
+            **({"detalhe": detalhe} if detalhe else {}),
+        }
+    except Exception:  # noqa: BLE001
+        pass
+
 
 def _corpo_do_email(link: str) -> str:
     """HTML do e-mail. Nada aqui vem do usuário: o único valor interpolado é um
@@ -675,6 +720,7 @@ async def _entregar_link_de_reset(email: str, token: str) -> None:
             "(RESEND_API_KEY + RESEND_FROM). Link para %s (válido por %d min): %s",
             email, PASSWORD_RESET_TTL_MINUTOS, link,
         )
+        _registrar_envio("sem provedor configurado")
         return
 
     try:
@@ -691,13 +737,24 @@ async def _entregar_link_de_reset(email: str, token: str) -> None:
             )
         resposta.raise_for_status()
         logger.info("[RESET DE SENHA] Link enviado para %s.", email)
-    except Exception:  # noqa: BLE001
+        _registrar_envio("ok")
+    except Exception as exc:  # noqa: BLE001
         # O link vai para o log para que o aluno ainda possa ser destravado à
         # mão — o mesmo caminho de quando não há provedor nenhum.
         logger.exception(
             "[RESET DE SENHA] ENVIO FALHOU para %s. Link (válido por %d min): %s",
             email, PASSWORD_RESET_TTL_MINUTOS, link,
         )
+        # O STATUS HTTP entra no detalhe porque é ele que separa os dois
+        # defeitos que mais acontecem aqui, e que pedem ações opostas: 401 é
+        # chave inválida ou revogada (gerar outra e trocar o secret do Fly),
+        # 403 é a conta do Resend ainda em modo de teste, que só entrega para o
+        # e-mail do próprio dono da conta. Sem isso, `/ready` diria apenas
+        # "falhou" e o caminho até a causa continuaria sendo ler log.
+        #
+        # Nada além do status e do tipo da exceção: `/ready` é público.
+        status = getattr(getattr(exc, "response", None), "status_code", None)
+        _registrar_envio("FALHOU", f"HTTP {status}" if status else type(exc).__name__)
 
 
 @router.post("/password/forgot")

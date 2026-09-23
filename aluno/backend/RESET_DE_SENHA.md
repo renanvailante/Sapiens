@@ -29,10 +29,44 @@ as duas variáveis estão configuradas, e cai no log quando não estão:
 Confira o estado em produção sem abrir o painel do Fly:
 
 ```bash
-curl -s https://sapiens-aluno.fly.dev/ready | python3 -m json.tool | grep -A 2 '"email"'
+curl -s https://sapiens-aluno.fly.dev/ready | python3 -m json.tool | grep -A 4 '"email"'
 ```
 
 `"configurado": false` significa que o link está indo só para o log.
+
+> [!danger] `configurado: true` NÃO quer dizer que o e-mail chega
+> Esse booleano só diz que as duas variáveis existem no processo. Em
+> **23/09/2026** ele valia `true` enquanto o Resend recusava **todo** envio com
+> `401 Unauthorized` — chave inválida ou revogada. A tela prometia o link ao
+> aluno, nada chegava, e `/ready` concordava que estava tudo bem. O defeito
+> existia só dentro de um `logger.exception`, e o dono do produto ficou sem
+> conseguir entrar na própria plataforma.
+>
+> Por isso o bloco traz também `ultimo_envio` — o resultado da última tentativa
+> REAL (`ok`, `FALHOU` com o status HTTP, ou `sem provedor configurado`). É a
+> única coisa ali que distingue configurado de funcionando.
+>
+> Os dois status que aparecem na prática pedem ações opostas:
+> **401** = chave inválida ou revogada → gere outra e troque o secret;
+> **403** = conta do Resend ainda em modo de teste → ela só entrega para o
+> e-mail do dono da conta, e é preciso verificar um domínio para sair disso.
+>
+> `ultimo_envio` é memória do processo: zera a cada deploy, vale por instância,
+> e `verificado_em` existe para ninguém ler um `ok` antigo como notícia de
+> agora. Um `desconhecido` só quer dizer que este processo ainda não teve
+> nenhum pedido para entregar.
+
+### Enquanto o envio está quebrado, ninguém precisa ficar trancado
+
+O link completo vai para o log em `ERROR`, e vale 30 minutos:
+
+```bash
+flyctl logs --config aluno/backend/fly.toml --no-tail > /tmp/fly.log 2>&1
+grep -o "https://sapiens-aluno.pages.dev/redefinir-senha?token=[A-Za-z0-9_-]*" /tmp/fly.log | tail -1
+```
+
+Peça a redefinição pela tela primeiro — é ela que gera o token — e só então leia
+o log. Um pedido novo **invalida** os anteriores, então use o último.
 
 ### Para ligar o envio
 
