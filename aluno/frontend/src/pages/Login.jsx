@@ -4,7 +4,7 @@ import { VOZ } from "../lib/historia";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { cadastroConcluido } from "../lib/rastreio";
-import { api, errMsg } from "../lib/api";
+import { api, errMsg, emailJaTemConta } from "../lib/api";
 import { googleDisponivel, mensagemDeErroGoogle } from "../lib/firebase";
 import { salvarAtribuicao, lerAtribuicao } from "../lib/atribuicao";
 import { navegadorEmbutido, esperaAteAvisarDoPopup } from "../lib/navegador";
@@ -206,6 +206,21 @@ export default function Login() {
       toast.success("Bem-vindo ao Sapiens.");
       nav("/hoje", { replace: true });
     } catch (err) {
+      // A tela se corrige sozinha em vez de acusar a pessoa: vira "Entrar",
+      // guarda o e-mail que ela já digitou e diz o que fez. Um clique, e não
+      // um formulário inteiro de novo.
+      //
+      // A senha é LIMPA, e isso é deliberado. A que ela acabou de inventar
+      // para o cadastro quase nunca é a senha da conta que já existe;
+      // mantê-la no campo convida a clicar em "Entrar" e colher um
+      // "credenciais inválidas" logo depois do aviso — dois erros no lugar de
+      // um, e o segundo parecendo culpa dela.
+      if (criando && emailJaTemConta(err)) {
+        setMode("login");
+        setPassword("");
+        toast.info("Esse e-mail já tem conta no Sapiens. Trouxemos você para a tela de entrar — digite sua senha.");
+        return;
+      }
       toast.error(errMsg(err, "Não foi possível entrar."));
     } finally {
       setBusy(false);
