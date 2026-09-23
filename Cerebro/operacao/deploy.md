@@ -36,15 +36,16 @@ npx wrangler pages deployment list           # Environment=Production, Branch=ma
 flyctl deploy --config aluno/backend/fly.toml --dockerfile aluno/backend/Dockerfile
 ```
 
-> [!warning] **O `flyctl` desta máquina não tem token (constatado em 22/09/2026).**
-> O deploy morre em `Error: no access token available` e **o agente não pode
-> resolver**: `flyctl auth login` é autenticação com a conta do dono, e digitar
-> credencial é ação vedada a agente. Quem roda `flyctl auth login` é o dono, uma
-> vez; depois disso o deploy segue normal.
+> [!warning] **Sessão do `flyctl` expira, e o agente não pode renovar.**
+> Quando expira, o deploy morre em `Error: no access token available` — e a cura
+> é `flyctl auth login`, que é autenticação com a conta do dono. **Digitar
+> credencial é ação vedada a agente**, então o agente para aqui e pede; o dono
+> roda uma vez e o deploy segue normal. Aconteceu em 22/09/2026 e foi resolvido
+> assim.
 >
-> Pior: o erro sai em **segundos** e um wrapper mal escrito devolve 0 por cima
-> dele — foi exatamente a armadilha 2 acontecendo de novo. **Leia o log, não o
-> código de saída.**
+> Pior: o erro sai em **segundos**, e naquele dia um wrapper devolveu 0 por cima
+> dele — a armadilha 2 deste runbook, de novo, agora num comando que nem chegou
+> a começar. **Leia o log, não o código de saída.**
 
 ## As cinco armadilhas
 

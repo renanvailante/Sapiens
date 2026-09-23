@@ -92,9 +92,14 @@ apareceria convertendo gente que já é cliente.
 
 `Login.jsx` dispara `cadastroConcluido("google")` só quando a flag vem
 verdadeira, e `cadastroConcluido("email")` quando o `signup` por e-mail
-completa. **Degrada seguro:** se o backend em produção ainda não tiver a flag,
+completa. **Degrada seguro:** se o backend em produção não tiver a flag,
 `contaCriada` é `false` e o `Lead` simplesmente não dispara — perde-se sinal,
-nunca se inventa conversão.
+nunca se inventa conversão. Foi o estado por algumas horas em 22/09, entre o
+deploy do frontend e o do backend, e o funil não mentiu em momento nenhum.
+
+Em produção desde 22/09/2026, provado pelo `md5sum` de `/app/auth.py` dentro da
+máquina do Fly batendo com `git show HEAD:aluno/backend/auth.py` — hash de
+bundle ou "Deployment complete" não provam nada ([[deploy]]).
 
 > **Nada que identifique o aluno vai junto.** Nem e-mail, nem nome, nem
 > telefone, nem `user_id` — o único parâmetro é `content_name: "email" |
