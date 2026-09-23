@@ -78,14 +78,46 @@ const jaVistas = new Set();
  *  nesta lista contaria a visita duas vezes. */
 const ROTAS_PUBLICAS = new Set(["/", "/login"]);
 
-/** O pixel está configurado? */
+/**
+ * RASTREIO NÃO SAI DE MÁQUINA DE DESENVOLVIMENTO. (23/09/2026)
+ *
+ * O Gerenciador de Eventos mostrou o domínio dos eventos recebidos como
+ * `localhost`: um `yarn start` com o `.env` real na máquina dispara para o
+ * MESMO dataset de produção, e cada tela aberta em desenvolvimento vira um
+ * `PageView` no relatório do anunciante. Foi o que aconteceu — parte dos 40
+ * `PageView` e dos 10 `landing_view` contados pelo painel nasceu em
+ * `localhost:3000`, não de gente real.
+ *
+ * Isso não é só sujeira de relatório: o algoritmo do Meta otimiza a entrega
+ * com esses eventos. Audiência construída sobre visitas que nunca existiram
+ * gasta mídia procurando um público que não existe.
+ *
+ * O corte é por HOSTNAME e não por `NODE_ENV`, porque o build de produção
+ * rodado localmente (`yarn build && serve`) também é desenvolvimento — e é
+ * justamente o que se faz para conferir um bundle antes de publicar.
+ */
+const HOSTS_LOCAIS = new Set(["localhost", "127.0.0.1", "0.0.0.0", "::1", ""]);
+
+function ambienteEnviaEventos() {
+  // O jsdom da suíte roda em `localhost`, e os testes precisam poder afirmar
+  // que o evento saiu. É a única exceção, e ela é explícita: `NODE_ENV` é
+  // `test` só sob o Jest, nunca num navegador de verdade.
+  if (process.env.NODE_ENV === "test") return true;
+  if (typeof window === "undefined") return false;
+  return !HOSTS_LOCAIS.has(window.location.hostname);
+}
+
+/** O pixel está configurado E este ambiente pode mandar evento? */
 export function pixelAtivo() {
-  return Boolean(PIXEL_ID);
+  return Boolean(PIXEL_ID) && ambienteEnviaEventos();
 }
 
 /** Injeta o `fbevents.js` uma vez, fora do caminho crítico. */
 function carregar() {
   if (carregado || !PIXEL_ID || typeof window === "undefined") return;
+  // Em `localhost` o script do Meta nem é baixado: sem cookie, sem
+  // requisição, sem linha no relatório de ninguém.
+  if (!ambienteEnviaEventos()) return;
   carregado = true;
 
   // O trecho oficial do Meta, reescrito legível. `fbq` precisa existir e
@@ -260,6 +292,7 @@ function idDeEvento(prefixo) {
 
 function disparar(nome, dados = {}, custom = false, opcoes = undefined) {
   if (!PIXEL_ID || typeof window === "undefined") return;
+  if (!ambienteEnviaEventos()) return;
   try {
     // O RASTRO INSPECIONÁVEL, e ele existe por uma razão concreta.
     //
