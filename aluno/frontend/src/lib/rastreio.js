@@ -62,6 +62,9 @@
 const PIXEL_ID = process.env.REACT_APP_META_PIXEL_ID;
 
 let carregado = false;
+// Um `Lead` por vida de aba. Ver `cadastroConcluido` para por que a trava é
+// dupla (esta, local, e o `eventID` do lado da Meta).
+let leadEnviado = false;
 // Um `PageView` por página vista, nunca dois. O `useEffect` do React roda
 // duas vezes no StrictMode do desenvolvimento, e uma remontagem da rota
 // (troca de variante) não pode virar duas visualizações no relatório.
@@ -208,13 +211,74 @@ export function paginaPublicaVista(caminho) {
  * retorno de um aluno antigo viraria uma conversão nova no relatório.
  */
 export function cadastroConcluido(metodo) {
-  disparar("Lead", { content_name: metodo });
+  // `carregar()` ANTES de disparar, e esta linha é a correção de 23/09/2026.
+  //
+  // Antes, este era o único evento do módulo que não carregava o pixel — ele
+  // confiava que `PixelDeRota` já o tivesse feito ao entrar em `/login`. Na
+  // maioria das vezes tinha mesmo, e é isso que torna a falha traiçoeira:
+  // quando NÃO tinha, `window.fbq` era `undefined`, o `?.` de `disparar`
+  // engolia a chamada e o cadastro sumia sem erro nenhum — nem no console,
+  // nem na aba de rede, nem no Gerenciador de Eventos. Um evento de conversão
+  // não pode depender de outro componente ter rodado antes dele.
+  //
+  // `carregar` é idempotente (a trava `carregado`), então chamar aqui não
+  // duplica script nem `init`. E como o stub do `fbq` enfileira desde o
+  // primeiro instante, o `Lead` sobrevive mesmo se o `fbevents.js` ainda
+  // estiver a caminho.
+  carregar();
+
+  // UM `Lead` POR CONTA CRIADA, e a trava é dupla de propósito.
+  //
+  // Local: `leadEnviado` impede que um re-render, um clique duplo no botão ou
+  // um `useEffect` em StrictMode mandem dois. Vale enquanto a aba viver — e
+  // como a tela seguinte é `/hoje` numa SPA, ela vive.
+  //
+  // No lado da Meta: o `eventID` deixa a própria plataforma descartar a
+  // repetida. É ele que protege o caso que a trava local NÃO cobre — a pessoa
+  // recarregar a página logo depois, ou uma futura Conversions API mandar o
+  // mesmo cadastro do servidor. Sem `eventID`, dois canais viram duas
+  // conversões e a campanha parece o dobro do que é.
+  if (leadEnviado) return false;
+  leadEnviado = true;
+
+  disparar("Lead", { content_name: metodo }, false, { eventID: idDeEvento("lead") });
+  return true;
 }
 
-function disparar(nome, dados = {}, custom = false) {
+/** Um identificador por evento, estável dentro da aba e único fora dela.
+ *
+ *  Não carrega nada da pessoa: é hora + aleatório. `crypto.randomUUID` não
+ *  existe em Safari antigo nem fora de HTTPS, e o `Math.random` abaixo é o
+ *  caminho real no iPhone, não o plano B. */
+function idDeEvento(prefixo) {
+  const aleatorio =
+    typeof crypto !== "undefined" && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `${Math.random().toString(36).slice(2)}${Math.random().toString(36).slice(2)}`;
+  return `${prefixo}-${Date.now()}-${aleatorio}`;
+}
+
+function disparar(nome, dados = {}, custom = false, opcoes = undefined) {
   if (!PIXEL_ID || typeof window === "undefined") return;
   try {
-    window.fbq?.(custom ? "trackCustom" : "track", nome, dados);
+    // O RASTRO INSPECIONÁVEL, e ele existe por uma razão concreta.
+    //
+    // Um evento que não chega ao Gerenciador de Eventos é indistinguível, do
+    // lado de cá, de um evento que nunca foi disparado: o `fbq` não devolve
+    // nada e a requisição sai como imagem, que não aparece em `fetch`. Sem
+    // isto, diagnosticar "o Lead não chegou" vira adivinhação — e foi
+    // exatamente o que custou uma investigação inteira em 23/09/2026.
+    //
+    // Guarda só nome, hora e se o `fbq` existia no instante do disparo. Nada
+    // da pessoa entra aqui, pela mesma razão que nada da pessoa vai à Meta.
+    window.__sapiensPixel = window.__sapiensPixel || [];
+    window.__sapiensPixel.push({
+      evento: nome,
+      em: new Date().toISOString(),
+      fbqPronto: typeof window.fbq === "function",
+    });
+
+    window.fbq?.(custom ? "trackCustom" : "track", nome, dados, opcoes);
   } catch {
     // Rastreio nunca derruba a página. Mesma regra de `monitoring.js`: um erro
     // dentro do medidor não pode virar o erro visível.
