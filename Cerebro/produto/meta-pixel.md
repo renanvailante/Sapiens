@@ -113,6 +113,62 @@ e hoje é indistinguível de `landing_cta_click` — o CTA navega direto para o
 cadastro, sem tela intermediária onde desistir. Quando houver etapa no meio,
 ele entra em `rastreio.js` e é chamado de lá.
 
+## `localhost` no Gerenciador de Eventos (23/09/2026)
+
+O painel do Meta mostrou o domínio dos eventos recebidos como **`localhost`**,
+com 40 `PageView` e 10 `landing_view`. A causa: **`yarn start` na máquina de
+alguém, com o `.env` real, dispara para o MESMO dataset de produção.** Cada
+tela aberta em desenvolvimento — inclusive as sessões de agente testando as
+landings — virou evento no relatório do anunciante.
+
+Não é só sujeira de número: o algoritmo do Meta otimiza a entrega com esses
+eventos, e audiência construída sobre visita que nunca existiu gasta mídia
+procurando um público que não existe.
+
+O corte agora é por **hostname** (`HOSTS_LOCAIS` em `lib/rastreio.js`), não por
+`NODE_ENV`: conferir um bundle com `yarn build && serve` roda em modo produção
+e continua sendo a máquina de alguém. A única exceção é `NODE_ENV === "test"`,
+que só vale sob o Jest.
+
+> **Um dataset só para produção e desenvolvimento é uma decisão implícita que
+> ninguém tomou.** A alternativa é um segundo pixel de teste — mas enquanto o
+> `.env` local carregar o id de produção, o corte por hostname é o que impede
+> a contaminação.
+
+## Por que um `Lead` some sem deixar rastro
+
+`cadastroConcluido` era o único evento do módulo que **não** chamava
+`carregar()`: confiava que `PixelDeRota` tivesse carregado o pixel ao entrar em
+`/login`. Quando não tinha, `window.fbq` era `undefined`, o `?.` de `disparar`
+engolia a chamada, e o cadastro sumia — **sem erro no console, sem linha na aba
+de rede e sem evento na Meta**. Corrigido em 23/09: o evento carrega o próprio
+pixel, e `carregar` é idempotente.
+
+> [!warning] **Um evento de conversão não pode depender de outro componente ter
+> rodado antes dele.** É a regra que esta entrada custou.
+
+Diagnosticar isso é difícil por natureza: o `fbq` não devolve nada, e a
+requisição sai como **imagem** (`facebook.com/tr/?...`), que não aparece em
+`fetch` nem em `XHR`. Duas ferramentas agora:
+
+- **`window.__sapiensPixel`** — nome, hora e se o `fbq` existia no disparo.
+  Nada da pessoa. É o "o código chegou a mandar?".
+- **`performance.getEntriesByType("resource")`** filtrado por
+  `facebook.com/tr` — é o "a requisição saiu mesmo?". Funciona em produção, no
+  navegador de qualquer visitante, sem ferramenta do Meta.
+
+Contra duplicata há **duas** travas, que cobrem casos diferentes: `leadEnviado`
+(local) mata clique duplo, re-render e StrictMode; o **`eventID`** deixa a
+própria Meta descartar a repetida — e é ele que cobre o refresh e o dia em que
+uma Conversions API mandar o mesmo cadastro do servidor. Dois canais sem
+`eventID` viram duas conversões, e a campanha parece o dobro do que é.
+
+> **O que o navegador não garante.** Adblock, ITP do Safari e aba fechada antes
+> do envio derrubam qualquer pixel de navegador — e cadastro de vestibulando
+> acontece muito no celular. A cura estrutural é a **Conversions API**
+> (servidor → Meta, disparada onde a conta é criada), que ainda não existe
+> aqui: exige token da Meta e é decisão do dono, porque manda dado do servidor.
+
 ## O que ligar/desligar custa
 
 Esvaziar `REACT_APP_META_PIXEL_ID` e buildar desliga **tudo**: zero script de
