@@ -103,6 +103,46 @@ o handler responde na origem certa, com o conteúdo certo, e o site não caiu.
 silêncio — abaixo de 25s continua sendo cancelamento deliberado (sem toast), acima
 disso vira aviso com a saída.
 
+### A conta que a mudança de `authDomain` deixou por pagar: `redirect_uri_mismatch`
+
+Trocar o `authDomain` muda o `redirect_uri` que o Firebase manda para o Google. Ele
+passa a ser `https://sapiens-aluno.pages.dev/__/auth/handler`, e **o Google recusa**
+com `Erro 400: redirect_uri_mismatch` até esse URI ser adicionado à mão no OAuth
+Client — a tela branca virou erro visível em 2026-09-23.
+
+> [!danger] Autorizar o domínio no Firebase **não** autoriza o redirect no Google
+> São duas listas, em dois consoles, e mexer numa não mexe na outra:
+> - `authorizedDomains` (Firebase Auth / Identity Platform) — já tinha
+>   `sapiens-aluno.pages.dev` e por isso não acusou nada.
+> - **Authorized redirect URIs** do OAuth Client Web em Google Cloud → APIs e
+>   serviços → Credenciais. Esse é o que o Google confere, e o que faltava.
+>
+> O client é `222338124837-gnvk54ceubpq9r6pj4t160cavp7dul3g.apps.googleusercontent.com`
+> (o Firebase cria um por projeto e o reusa; não crie outro). Ele já trazia
+> `https://sapiens-dataset.firebaseapp.com/__/auth/handler` de fábrica — o novo
+> **soma**, não substitui: apagar o antigo quebra `localhost` e os dois domínios
+> `firebaseapp.com`/`web.app`, que continuam válidos.
+
+O diagnóstico não precisa de conta Google nem de navegador — dá para arrancar do
+Google o erro cru, em três comandos:
+
+```bash
+K=<REACT_APP_FIREBASE_API_KEY>
+curl -s "https://identitytoolkit.googleapis.com/v1/projects?key=$K"   # authorizedDomains
+A=$(curl -s -X POST "https://identitytoolkit.googleapis.com/v1/accounts:createAuthUri?key=$K" \
+  -H "Content-Type: application/json" \
+  -d '{"providerId":"google.com","continueUri":"https://sapiens-aluno.pages.dev/__/auth/handler"}' \
+  | python3 -c "import sys,json;print(json.load(sys.stdin)['authUri'])")
+curl -s -L "$A" | grep -io "redirect_uri_mismatch\|Error 400"
+```
+
+`createAuthUri` devolve a URL exata que o popup abriria, com `client_id` e
+`redirect_uri` visíveis na query — é a forma de ver **qual** URI está sendo pedido
+antes de sair mexendo em console. O último comando calando é o sinal de curado.
+
+**Isto não é corrigível pelo repositório.** O código e o `.env` já estão certos; a
+pendência mora no Google Cloud Console e exige a conta do dono.
+
 ## Menor de idade
 
 Autodeclarado, revela nome + WhatsApp do responsável, obrigatórios no cadastro por
