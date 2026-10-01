@@ -189,18 +189,94 @@ def test_fila_cheia_recusa_antes_de_cobrar(fake_db, carteira):
     assert carteira.debitos == []
 
 
-def test_agendamento_nasce_pronto_e_inerte(fake_db, carteira):
-    """A revisão programada ainda não existe — mas o campo em que ela vai
-    escrever já nasce com a forma certa, para que o dia em que ela existir não
-    seja um dia de migração de coleção."""
+def _hoje(monkeypatch, dia):
+    """Fixa o "hoje" do aluno (`fs.dia_local`) — com ou sem timestamp."""
+    monkeypatch.setattr(fs, "dia_local", lambda ts=None: dia)
+
+
+def test_trecho_guardado_volta_no_dia_seguinte(fake_db, carteira, monkeypatch):
+    """A revisão programada existe desde 2026-10-01: o lugar na fila que os
+    10 Sparks compraram passa a VOLTAR, na escada de `revisao_espacada`."""
     routes.set_db(fake_db)
+    _hoje(monkeypatch, "2026-10-01")
     r = _run(routes.guardar(_payload(), user=_user(), _=None))
     ag = r["lembrete"]["agendamento"]
 
-    assert ag["estado"] == "aguardando"
+    assert ag["estado"] == "agendado"
     assert ag["degrau"] == 0
-    assert ag["revisar_em"] is None
+    assert ag["revisar_em"] == "2026-10-02"
     assert ag["revisoes"] == 0
+
+
+def test_a_fila_diz_o_que_voltou_hoje_e_poe_na_frente(fake_db, carteira, monkeypatch):
+    routes.set_db(fake_db)
+    _hoje(monkeypatch, "2026-10-01")
+    _run(routes.guardar(_payload(texto="Primeiro trecho guardado, bem longo para valer."), user=_user(), _=None))
+    _run(routes.guardar(_payload(texto="Segundo trecho guardado, também longo o bastante.", rota="/outra"), user=_user(), _=None))
+
+    assert _run(routes.meus_lembretes(user=_user()))["vencidos"] == 0  # guardados hoje: voltam amanhã
+
+    _hoje(monkeypatch, "2026-10-02")
+    fila = _run(routes.meus_lembretes(user=_user()))
+    assert fila["vencidos"] == 2
+    assert all(i["vencido"] for i in fila["itens"])
+    assert fila["primeiro_vencido"]["titulo"] == "Termoquímica · Estação 2"
+    # O Hoje pede limite=1 e ainda assim recebe a contagem inteira.
+    assert _run(routes.meus_lembretes(limite=1, user=_user()))["vencidos"] == 2
+
+
+def test_revisei_sobe_a_escada_e_completa_o_ciclo(fake_db, carteira, monkeypatch):
+    routes.set_db(fake_db)
+    _hoje(monkeypatch, "2026-10-01")
+    lid = _run(routes.guardar(_payload(), user=_user(), _=None))["lembrete"]["lembrete_id"]
+    carteira.debitos.clear()
+
+    dia = "2026-10-02"  # a primeira volta: um dia depois de guardado
+    for intervalo in routes.rev.INTERVALOS_DIAS[1:]:
+        _hoje(monkeypatch, dia)
+        r = _run(routes.revisei(lid, user=_user()))
+        assert r["ciclo_completo"] is False
+        assert r["lembrete"]["vencido"] is False
+        # A próxima volta é o dia em que reviu + o intervalo do novo degrau.
+        assert r["lembrete"]["revisar_em"] == routes._somar_dias(dia, intervalo)
+        dia = r["lembrete"]["revisar_em"]
+
+    _hoje(monkeypatch, dia)
+    final = _run(routes.revisei(lid, user=_user()))
+    assert final["ciclo_completo"] is True
+    assert final["lembrete"]["status"] == "revisado"
+    assert final["lembrete"]["agendamento"]["revisoes"] == len(routes.rev.INTERVALOS_DIAS)
+    assert _run(routes.meus_lembretes(user=_user()))["itens"] == []
+    assert carteira.debitos == []  # rever é de graça
+
+
+def test_revisei_antes_do_dia_recusa(fake_db, carteira, monkeypatch):
+    """Espaçar é o ponto: a escada inteira não pode caber numa tarde."""
+    routes.set_db(fake_db)
+    _hoje(monkeypatch, "2026-10-01")
+    lid = _run(routes.guardar(_payload(), user=_user(), _=None))["lembrete"]["lembrete_id"]
+    with pytest.raises(HTTPException) as exc:
+        _run(routes.revisei(lid, user=_user()))
+    assert exc.value.status_code == 409
+    assert "02/10" in exc.value.detail
+
+
+def test_lembrete_antigo_sem_data_vence_no_dia_seguinte_sem_migracao(fake_db, carteira, monkeypatch):
+    """Os lembretes guardados antes da revisão programada têm `aguardando` e
+    nenhuma data: a leitura calcula a volta a partir de quando foram guardados."""
+    routes.set_db(fake_db)
+    _run(fake_db.lembretes_revisao.insert_one({
+        "_id": "user-1:antigo", "user_id": "user-1", "texto": "Trecho de antes", "status": "aberto",
+        "criado_em": "2026-09-20T15:00:00+00:00",
+        "agendamento": {"estado": "aguardando", "degrau": 0, "revisar_em": None, "revisoes": 0, "ultima_revisao_em": None},
+    }))
+    # O dia local de quando foi guardado vem do próprio timestamp; "hoje" é 01/10.
+    monkeypatch.setattr(fs, "dia_local", lambda ts=None: ts[:10] if ts and ts.startswith("2026-09") else "2026-10-01")
+    fila = _run(routes.meus_lembretes(user=_user()))
+    assert fila["vencidos"] == 1
+    assert fila["itens"][0]["revisar_em"] == "2026-09-21"
+    r = _run(routes.revisei("antigo", user=_user()))
+    assert r["lembrete"]["agendamento"]["degrau"] == 1
 
 
 # ---------------------------------------------------------------------------

@@ -115,3 +115,18 @@ describe("conquistasDoDia — conquista é notícia só no dia em que aparece", 
     expect(conquistasDoDia([c("10q", false)], {}, "2026-10-01").doDia).toEqual([]);
   });
 });
+
+describe("trechos guardados que voltaram (revisão programada)", () => {
+  test("aparece com a contagem e de onde veio o primeiro", () => {
+    const eventos = eventosDoDia({ lembretes: { vencidos: 2, primeiro_vencido: { titulo: "Termoquímica · Estação 2" } } });
+    const l = eventos.find((e) => e.chave === "lembretes");
+    expect(l.titulo).toBe("2 trechos que você guardou voltaram hoje");
+    expect(l.detalhe).toContain("«Termoquímica · Estação 2»");
+    expect(l.rota).toBe("/agenda#lembretes");
+  });
+
+  test("sem trecho vencido, sem linha", () => {
+    expect(eventosDoDia({ lembretes: { vencidos: 0 } }).find((e) => e.chave === "lembretes")).toBeUndefined();
+    expect(eventosDoDia({ lembretes: null }).find((e) => e.chave === "lembretes")).toBeUndefined();
+  });
+});

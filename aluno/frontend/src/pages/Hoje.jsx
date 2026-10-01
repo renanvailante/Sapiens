@@ -265,6 +265,10 @@ export default function Hoje() {
   // A trajetória por habilidade (marcos de revisão acertada e de acerto em
   // contexto novo): é daqui que saem as microvitórias do "O que mudou".
   const [trajetoria, setTrajetoria] = useState(null);
+  // Os trechos guardados que voltaram hoje (revisão programada). Mongo, uma
+  // consulta limitada pelo teto da fila — `limite=1` porque só o número e o
+  // primeiro importam aqui.
+  const [lembretes, setLembretes] = useState(null);
   const [habilidades, setHabilidades] = useState([]);
   const [redacoes, setRedacoes] = useState([]);
   const [revisoes, setRevisoes] = useState(null);
@@ -317,8 +321,9 @@ export default function Hoje() {
       // UMA leitura de `students/{uid}` (o bloco `revisao`), O(1) — nunca
       // varre eventos. Falhar aqui só apaga a microvitória, nada mais.
       api.get("/revisao/trajetoria").then(({ data }) => data),
+      api.get("/lembretes", { params: { limite: 1 } }).then(({ data }) => data),
     ]).then((resultados) => {
-      const [a, s, dates, h, respondidas, r, f, habs, reds, fila, semana, onb, eng, live, traj] = resultados;
+      const [a, s, dates, h, respondidas, r, f, habs, reds, fila, semana, onb, eng, live, traj, lemb] = resultados;
       const valor = (res, vazio) => (res.status === "fulfilled" ? res.value : vazio);
 
       setAnalyses(valor(a, []));
@@ -330,6 +335,7 @@ export default function Hoje() {
       setRounds(valor(r, []));
       setPrioritarias(valor(f, []));
       setTrajetoria(valor(traj, null));
+      setLembretes(valor(lemb, null));
       setHabilidades(valor(habs, []));
       setRedacoes(valor(reds, []));
       setRevisoes(valor(fila, null));
@@ -701,6 +707,7 @@ export default function Hoje() {
             conquistas={conquistasNovas}
             passoAtual={passoAtual}
             trajetoria={trajetoria}
+            lembretes={lembretes}
           />
 
           {/* -------------------------------------------------------------

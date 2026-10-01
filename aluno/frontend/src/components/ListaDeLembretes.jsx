@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { BookmarkPlus, Check, ExternalLink, Loader2, MessageCircle, Sparkles, Trash2 } from "lucide-react";
+import { BookmarkPlus, Check, ExternalLink, Loader2, MessageCircle, RotateCw, Sparkles, Trash2 } from "lucide-react";
 import { api, errMsg } from "../lib/api";
 import MentisPedido from "./MentisPedido";
 import { EVENTO_LEMBRETES, resumir } from "../lib/lembretes";
@@ -67,7 +67,10 @@ function Vazia() {
   );
 }
 
-function Cartao({ lembrete, onRemover, onRevisado, ocupado }) {
+/** `2026-10-04` → `04/10`. */
+const diaMes = (iso) => (iso ? iso.split("-").slice(1).reverse().join("/") : "");
+
+function Cartao({ lembrete, onRemover, onRevisado, onRevisei, ocupado }) {
   const [pedindo, setPedindo] = useState(false);
   const quando = (lembrete.criado_em || "").slice(0, 10).split("-").reverse().join("/");
 
@@ -77,6 +80,15 @@ function Cartao({ lembrete, onRemover, onRevisado, ocupado }) {
         <div className="font-mono-alt text-[10px] uppercase tracking-[0.25em] text-zinc-400">
           {lembrete.tipo === "objeto" ? "objeto marcado" : "trecho marcado"}
           {quando ? ` · ${quando}` : ""}
+          {/* A revisão programada: o trecho volta na escada de 1, 3, 7, 16
+              e 35 dias. "Voltou hoje" é o único estado aceso. */}
+          {lembrete.vencido ? (
+            <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-amber-800" data-testid={`lembrete-${lembrete.lembrete_id}-voltou`}>
+              voltou hoje
+            </span>
+          ) : lembrete.revisar_em ? (
+            <span className="ml-2 normal-case tracking-normal">· volta em {diaMes(lembrete.revisar_em)}</span>
+          ) : null}
         </div>
         <button
           type="button"
@@ -107,10 +119,21 @@ function Cartao({ lembrete, onRemover, onRevisado, ocupado }) {
           `flex-wrap`, que não quebra faixa com filho `flex-1 min-w-0`
           (invariante 4 de `project_aluno_mobile_invariantes`). */}
       <div className="mt-4 flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
+        {lembrete.vencido && (
+          <button
+            type="button"
+            onClick={() => onRevisei(lembrete)}
+            disabled={ocupado}
+            className="pill btn-sapiens inline-flex w-full items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-medium disabled:opacity-40 sm:w-auto"
+            data-testid={`lembrete-${lembrete.lembrete_id}-revisei`}
+          >
+            <RotateCw className="h-4 w-4" /> Revisei
+          </button>
+        )}
         <button
           type="button"
           onClick={() => setPedindo(true)}
-          className="pill btn-sapiens inline-flex w-full items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-medium sm:w-auto"
+          className={`pill ${lembrete.vencido ? "macio border border-zinc-200 text-zinc-700" : "btn-sapiens"} inline-flex w-full items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-medium sm:w-auto`}
           data-testid={`lembrete-${lembrete.lembrete_id}-mentis`}
         >
           <MessageCircle className="h-4 w-4" /> Pedir à Mentis
@@ -194,6 +217,34 @@ export default function ListaDeLembretes() {
     }
   }
 
+  /** "Revisei": o trecho continua na fila com a próxima volta marcada — ou,
+   *  no último degrau, completa o ciclo e sai como dominado. */
+  async function revisei(lembrete) {
+    if (emVoo.current) return;
+    emVoo.current = true;
+    setOcupado(lembrete.lembrete_id);
+    try {
+      const { data } = await api.post(`/lembretes/${lembrete.lembrete_id}/revisei`);
+      setFila((f) => ({
+        ...f,
+        vencidos: Math.max(0, (f?.vencidos || 1) - 1),
+        itens: data.ciclo_completo
+          ? (f?.itens || []).filter((i) => i.lembrete_id !== lembrete.lembrete_id)
+          : (f?.itens || []).map((i) => (i.lembrete_id === lembrete.lembrete_id ? data.lembrete : i)),
+      }));
+      toast.success(
+        data.ciclo_completo
+          ? "Ciclo completo: cinco voltas. Guardado como dominado."
+          : `Revisado. Ele volta em ${diaMes(data.lembrete?.revisar_em)}.`,
+      );
+    } catch (e) {
+      toast.error(errMsg(e, "Não foi possível registrar a revisão."));
+    } finally {
+      emVoo.current = false;
+      setOcupado(null);
+    }
+  }
+
   if (carregando) {
     return (
       <div className="flex items-center gap-2 text-sm text-white/60">
@@ -214,6 +265,7 @@ export default function ListaDeLembretes() {
           ocupado={ocupado === l.lembrete_id}
           onRemover={(x) => agir(x, "remover")}
           onRevisado={(x) => agir(x, "revisado")}
+          onRevisei={revisei}
         />
       ))}
     </div>

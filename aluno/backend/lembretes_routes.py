@@ -31,17 +31,26 @@ duplo toque no celular, o retry do axios, o F5 no meio e o aluno que volta na
 mesma página semanas depois — nenhum desses precisa de chave de idempotência
 para funcionar, porque a identidade do conteúdo já é a chave.
 
-**O agendamento nasce preparado e inerte.** Cada lembrete carrega um bloco
-`agendamento` com a forma que `revisao_espacada` usa (`degrau`, `revisar_em`),
-zerado e sem ninguém que o avance. A decisão de QUANDO cobrar cada lembrete
-ainda não foi tomada; deixar o campo pronto é o que permite tomá-la depois sem
-migrar coleção nenhuma.
+**A revisão programada** (desde 2026-10-01). Cada lembrete carrega um bloco
+`agendamento` com a forma de `revisao_espacada` (`degrau`, `revisar_em`) e a
+MESMA escada (`INTERVALOS_DIAS`: 1, 3, 7, 16, 35 dias). O trecho volta no dia
+seguinte ao que foi guardado; "Revisei" (`/revisei`) sobe um degrau e marca a
+próxima volta; quem revisa no último degrau completa o ciclo e o trecho sai da
+fila como revisado. "Já domino isto" (`/revisado`) continua sendo a saída
+direta, a qualquer momento. Lembrete anterior a isto (estado `aguardando`,
+sem data) vence no dia seguinte ao que foi guardado — calculado na leitura,
+sem migração, que é exatamente o que o campo nascer pronto comprou.
+
+Nada aqui chama modelo e nada aqui cobra: rever o que se guardou é de graça,
+como ver e remover. O que os 10 Sparks compraram foi o lugar na fila — e um
+lugar que nunca volta não valia o que custou.
 """
 from __future__ import annotations
 
 import hashlib
 import logging
 import re
+from datetime import date, timedelta
 from typing import Annotated, Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -50,6 +59,7 @@ from pymongo.errors import DuplicateKeyError
 
 import firestore_service as fs
 import rate_limit
+import revisao_espacada as rev  # pura, zero I/O — só a escada de intervalos
 from auth import require_user
 from models import User, _now_iso
 import rotas_do_app as rotas
@@ -200,18 +210,40 @@ def _limpar(doc: dict) -> dict[str, Any]:
     }
 
 
-def _agendamento_inicial() -> dict[str, Any]:
-    """A forma que a revisão programada vai usar — vazia, e sem ninguém que a
-    avance hoje. Os nomes são os de `revisao_espacada` (`degrau` na escada de
-    `INTERVALOS_DIAS`) para que o dia em que as duas se encontrarem não seja
-    um dia de migração."""
+def _somar_dias(dia: str, dias: int) -> str:
+    return (date.fromisoformat(dia) + timedelta(days=dias)).isoformat()
+
+
+def _agendamento_inicial(agora: str | None = None) -> dict[str, Any]:
+    """O trecho volta no dia seguinte ao que foi guardado (`INTERVALOS_DIAS[0]`),
+    no fuso do aluno. Os nomes são os de `revisao_espacada`."""
     return {
-        "estado": "aguardando",   # aguardando → agendado → revisado
+        "estado": "agendado",     # agendado → revisado
         "degrau": 0,
-        "revisar_em": None,
+        "revisar_em": _somar_dias(fs.dia_local(agora), rev.INTERVALOS_DIAS[0]),
         "revisoes": 0,
         "ultima_revisao_em": None,
     }
+
+
+def _revisar_em(doc: dict) -> Optional[str]:
+    """Quando o trecho volta. O lembrete anterior à revisão programada não
+    tem data (`aguardando`): vence no dia seguinte ao que foi guardado,
+    calculado aqui na leitura — sem migrar coleção nenhuma."""
+    ag = doc.get("agendamento") or {}
+    if ag.get("revisar_em"):
+        return ag["revisar_em"]
+    criado = doc.get("criado_em")
+    return _somar_dias(fs.dia_local(criado), rev.INTERVALOS_DIAS[0]) if criado else None
+
+
+def _vestir(doc: dict, hoje: str) -> dict[str, Any]:
+    """A linha como a tela a lê: com a data efetiva da volta e se é hoje."""
+    linha = _limpar(doc)
+    quando = _revisar_em(doc)
+    linha["revisar_em"] = quando
+    linha["vencido"] = bool(doc.get("status") == "aberto" and quando and quando <= hoje)
+    return linha
 
 
 # ---------------------------------------------------------------------------
@@ -310,7 +342,7 @@ async def guardar(
         "criado_em": agora,
         "atualizado_em": agora,
         "custo_sparks": LEMBRETE_COST,
-        "agendamento": _agendamento_inicial(),
+        "agendamento": _agendamento_inicial(agora),
     }
 
     try:
@@ -374,9 +406,33 @@ async def meus_lembretes(
         filtro["status"] = "aberto"
     docs = await _db[COLECAO].find(filtro).sort("criado_em", -1).to_list(length=limite)
     abertos = await _db[COLECAO].count_documents({"user_id": user.user_id, "status": "aberto"})
+
+    hoje = fs.dia_local()
+    itens = [_vestir(d, hoje) for d in docs]
+    # Os que voltam hoje vêm primeiro; dentro de cada grupo, a ordem de sempre.
+    itens.sort(key=lambda i: 0 if i["vencido"] else 1)
+
+    # `vencidos` conta a fila ABERTA inteira, não só a página pedida: o Hoje
+    # pede `limite=1` e precisa do número certo. A fila tem teto
+    # (`TETO_DA_FILA`), então isto é limitado por construção — e é Mongo.
+    if not incluir_revisados and limite >= abertos:
+        abertos_docs = docs
+    else:
+        abertos_docs = await _db[COLECAO].find(
+            {"user_id": user.user_id, "status": "aberto"},
+        ).to_list(length=TETO_DA_FILA)
+    vencidos = [d for d in abertos_docs if _vestir(d, hoje)["vencido"]]
+    primeiro = _vestir(vencidos[0], hoje) if vencidos else None
     return {
-        "itens": [_limpar(d) for d in docs],
+        "itens": itens,
         "abertos": abertos,
+        "vencidos": len(vencidos),
+        # O suficiente para o Hoje dizer DE QUE é o trecho que voltou, sem
+        # carregar a fila: a tela de origem e o começo do texto.
+        "primeiro_vencido": (
+            {"titulo": primeiro.get("titulo") or "", "texto": (primeiro.get("texto") or "")[:120]}
+            if primeiro else None
+        ),
         "custo": LEMBRETE_COST,
         "teto": TETO_DA_FILA,
     }
@@ -416,6 +472,55 @@ async def marcar_revisado(lembrete_id: str, user: User = Depends(require_user)):
         {"$set": {"status": "revisado", "atualizado_em": agora, "agendamento": agendamento}},
     )
     return {"lembrete": _limpar({**doc, "status": "revisado", "agendamento": agendamento})}
+
+
+@router.post("/{lembrete_id}/revisei")
+async def revisei(lembrete_id: str, user: User = Depends(require_user)):
+    """O aluno reviu o trecho no dia em que ele voltou: sobe um degrau e marca
+    a próxima volta (`INTERVALOS_DIAS`). No último degrau o ciclo se completa
+    e o trecho sai da fila como revisado — o mesmo estado de "Já domino isto",
+    alcançado pelo caminho longo.
+
+    Só no dia da volta (ou depois): rever antes faria a escada inteira caber
+    numa tarde, e espaçar é o ponto. De graça, como ver e remover.
+    """
+    doc = await _meu(user.user_id, lembrete_id)
+    if doc.get("status") != "aberto":
+        raise HTTPException(status_code=409, detail="Este trecho já saiu da sua fila.")
+
+    agora = _now_iso()
+    hoje = fs.dia_local(agora)
+    quando = _revisar_em(doc)
+    if quando and quando > hoje:
+        dia_mes = "/".join(reversed(quando.split("-")[1:]))
+        raise HTTPException(status_code=409, detail=f"Ainda não é dia de rever isto: ele volta em {dia_mes}.")
+
+    agendamento = {**(doc.get("agendamento") or {})}
+    degrau = int(agendamento.get("degrau") or 0)
+    revisoes = int(agendamento.get("revisoes") or 0) + 1
+    if degrau >= len(rev.INTERVALOS_DIAS) - 1:
+        status = "revisado"
+        agendamento.update({
+            "estado": "revisado", "revisoes": revisoes, "ultima_revisao_em": agora, "revisar_em": None,
+        })
+    else:
+        status = "aberto"
+        novo = degrau + 1
+        agendamento.update({
+            "estado": "agendado",
+            "degrau": novo,
+            "revisoes": revisoes,
+            "ultima_revisao_em": agora,
+            "revisar_em": _somar_dias(hoje, rev.INTERVALOS_DIAS[novo]),
+        })
+    await _db[COLECAO].update_one(
+        {"_id": doc["_id"]},
+        {"$set": {"status": status, "atualizado_em": agora, "agendamento": agendamento}},
+    )
+    return {
+        "lembrete": _vestir({**doc, "status": status, "agendamento": agendamento}, hoje),
+        "ciclo_completo": status == "revisado",
+    }
 
 
 @router.delete("/{lembrete_id}")

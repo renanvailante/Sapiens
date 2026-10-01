@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import {
-  RotateCw, PenLine, Flame, CalendarClock, Trophy, ArrowRight, GraduationCap, TrendingUp,
+  RotateCw, PenLine, Flame, CalendarClock, Trophy, ArrowRight, GraduationCap, TrendingUp, Bookmark,
 } from "lucide-react";
 import { ROTAS, ANCORAS, com } from "../lib/rotas";
 import { diaLocal } from "../lib/atividade";
@@ -139,6 +139,7 @@ export function eventosDoDia({
   conquistas = [],
   passoAtual = null,
   trajetoria = null,
+  lembretes = null,
 } = {}) {
   const eventos = [];
 
@@ -154,6 +155,23 @@ export function eventosDoDia({
       detalhe: "Revisar no dia em que vence é o que faz a memória durar.",
       rota: com(ROTAS.AGENDA, ANCORAS.AGENDA_REVISOES),
       cta: "Ver a fila",
+    });
+  }
+
+  // 1b. O QUE VOCÊ GUARDOU E VOLTOU. A revisão programada dos trechos que o
+  //     próprio aluno marcou (`/lembretes`, escada de 1-3-7-16-35 dias): o
+  //     motivo para abrir o app amanhã é ele mesmo quem escolheu.
+  const voltaram = lembretes?.vencidos ?? 0;
+  if (voltaram > 0) {
+    const de = lembretes?.primeiro_vencido?.titulo;
+    eventos.push({
+      chave: "lembretes",
+      icone: Bookmark,
+      cor: "text-amber-300",
+      titulo: voltaram === 1 ? "1 trecho que você guardou voltou hoje" : `${voltaram} trechos que você guardou voltaram hoje`,
+      detalhe: de ? `O primeiro é de «${de}».` : "Rever no dia da volta é o que faz a memória durar.",
+      rota: com(ROTAS.AGENDA, ANCORAS.AGENDA_LEMBRETES),
+      cta: "Rever",
     });
   }
 
