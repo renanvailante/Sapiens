@@ -1,6 +1,6 @@
 ---
 tags: [ux, mobile, invariante]
-atualizado: 2026-09-18
+atualizado: 2026-10-01
 ---
 
 # Invariantes de celular
@@ -67,7 +67,10 @@ linha ANINHADA (ícone/rosto + texto):
 botão:      w-full justify-center sm:w-auto
 ```
 
-Aninhar é o que evita um retrato solto no topo do card. Onde o rosto divide a linha
+Aninhar é o que evita um retrato solto no topo do card. E o tamanho do
+retrato conta: `MentorUSP` "g" tem **160px** no celular, e na chamada da
+mentoria do Hoje deixava ~130px para a frase (achado em 2026-09-30). Em linha
+com texto, abaixo de `sm`, é "m". Onde o rosto divide a linha
 com texto, `MentorUSP` já encolhe sozinho (`m` = 80px, `g` = 144px) — e `m` só cresce
 a partir de `sm`, porque a 375px um retrato de 112px deixa 171px para a frase.
 

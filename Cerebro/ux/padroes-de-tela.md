@@ -1,6 +1,6 @@
 ---
 tags: [ux, padroes, componentes]
-atualizado: 2026-09-18
+atualizado: 2026-10-01
 ---
 
 # Padrões de tela
@@ -83,8 +83,18 @@ certo).
 ## O Hoje abre pela AÇÃO
 
 `ProximoPasso.jsx` é a primeira coisa: **uma** ação, escolhida numa escada de
-prioridade sobre dados que a página **já carregou** (revisão vencida > bloco de hoje
-no cronograma > missão atual da trilha > praticar). **Custa zero requisição.**
+prioridade sobre dados que a página **já carregou** — `escolherPasso`, pura e
+testada em `ProximoPasso.test.js`:
+
+    revisão vencida > bloco de hoje no cronograma > PADRÃO DE ERRO COM CAUSA
+    > missão atual da trilha > ponto de medida mais baixa
+    > "Continue de onde parou" (já respondeu) > "Seu primeiro passo" (conta nova)
+
+Os degraus de padrão leem a fila do motor (`/motor/perfil`), que o Hoje já
+carregava e só usava para vender a aula. **A trilha só enxerga o Treino**
+(`treino_agregado`, incrementado só por missão do mapa): antes de 2026-09-28,
+quem tinha 200 questões de prova e nunca abriu o mapa recebia "Seu primeiro
+passo" todo dia. "Primeiro passo" é só para `totalRespondidas === 0`.
 
 Ordem desde 18/09, cinco seções: **Próximo Passo → O que mudou → Sua sequência
 → Com o mentor → Explorar**.
@@ -98,8 +108,16 @@ MESMA informação maior do lado de lá.
 `components/OQueMudou.jsx` os substituiu por **eventos**, não resumos: um
 resumo ("você tem 12 blocos na semana") existe sempre e por isso não chama
 atenção; um evento ("sua redação foi corrigida") só existe quando aconteceu.
-Mesma disciplina do Próximo Passo — **zero requisição nova**, teto de quatro
+Mesma disciplina do Próximo Passo — **zero requisição própria**, teto de quatro
 linhas, e nada genérico (toda linha cita um número do próprio aluno).
+
+A **microvitória** é o terceiro evento, antes das pendências (o teto a
+cortaria no fim): o marco mais recente de `reteste_ok` ou `transferencia` da
+trajetória (`/revisao/trajetoria`, uma leitura O(1) que o Hoje carrega), em
+até 3 dias. Os dois marcos só nascem de acerto, e a frase descreve sem alegar
+causa — `nexo_causal` é falso enquanto o portão de crença estiver desligado.
+O catálogo de conquistas chama o nome de `label`; ler `nome || titulo` saiu
+"Você desbloqueou "undefined"" em produção até 2026-09-30.
 
 As 10 Portas (`PortaisDaJornada.jsx`) moram na seção **Explorar**
 (`ExplorarOSapiens.jsx`), **fechada por padrão** e aberta só para quem nunca
@@ -116,6 +134,44 @@ ofensiva é `engajamento.ofensiva.dias`, nota é `redacao.avaliacao.nota_total`.
 `lib/trilha.js` existe para que a ordem da trilha seja **uma** função
 (`ordenarMissoes`/`missaoAtual`), usada pelo desenho **e** pela frase do passo. Duas
 cópias apontariam para nós diferentes na mesma dobra.
+
+## O erro vira sequência: prática dirigida e fechamento
+
+O degrau de padrão do Próximo Passo não leva a uma prova qualquer. O clique
+busca `GET /motor/habilidade/:processo` (o plano do motor, que até 2026-09-28
+nenhuma tela chamava) e abre `/estudar/provas?item_ids=…` com até 5 questões
+**inéditas** daquele raciocínio. O porquê viaja no `state` da navegação, não
+na URL — `lib/praticaDirigida.js` é a única ponte (pura, testada):
+
+- **Cabeçalho** (`CabecalhoDirigido` em `Provas.jsx`): a Mentis explica a
+  escolha sem chamar modelo — o ponto, o erro que mais se repete, e o
+  enquadramento escrito à mão (`intervencoes._ENQUADRAMENTO`) **fechado num
+  `<details>`**. Aberto, media 514px a 375px e empurrava o enunciado para fora
+  da tela. O texto do caso sem catálogo (`_SEM_CATALOGO`) **nunca** viaja: ele
+  fala "nesta versão da ontologia".
+- **Fechamento** (`FechamentoDaSerie`): substituiu "Você concluiu todas as
+  questões! 🎉 / Voltar". Acertos da série, comparação **descritiva** com o
+  histórico do ponto (só com amostra ≥ 3 dos dois lados, e avisando que série
+  curta não fecha a questão), o sinal de progresso, e uma saída concreta:
+  mais do mesmo ponto, o ponto em que dois erros da série começaram
+  (`pontoRepetido`, lendo a `causa_raiz` que já vem em cada resposta), ou o
+  Próximo Passo.
+- Navegar para a **mesma rota** com outros ids não remonta a página: o filtro
+  é refeito por `location.key` e o `QuestionRunner` leva `key={location.key}`.
+
+Na devolutiva de rodada, o visto verde só aparece com ≥ 60%, e dois erros de
+mesma raiz viram "Praticar esse ponto". A **última** rodada de lista sem bloco
+(revisão, dirigida, área) não abre devolutiva: não paga Sparks e termina onde
+o fechamento começa — mostrar as duas sugeria praticar o ponto que o aluno
+estava praticando.
+
+O desfecho de missão do Treino segue a mesma gramática: acertos da missão,
+antes/depois da habilidade e a próxima missão a um clique
+(`trilha.proximaMissaoNoMapa`: lacuna conhecida > vizinho que a missão abriu >
+qualquer acessível, nunca a mesma). O efeito do deep-link `?hab=` **não age
+com desfecho na tela** — o React Router limpa a URL numa renderização
+posterior à que zera a missão, e nesse intervalo o briefing da missão que
+acabou reabria por cima do desfecho.
 
 ## Um checkpoint só para a devolutiva de prática
 

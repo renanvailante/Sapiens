@@ -1,6 +1,6 @@
 ---
 tags: [arquitetura, pedagogia, motor]
-atualizado: 2026-09-18
+atualizado: 2026-10-01
 ---
 
 # O motor cognitivo — medir, explicar, intervir
@@ -43,6 +43,21 @@ por item, e `pedagogia.passos`. O motor só faz a junção evento × item × cat
 
 Validado com aluno real (2026-09-06): 88 eventos, 59 erros, 47 traços, 79,7% de
 cobertura.
+
+**O plano por ponto tem consumidor desde 2026-09-28.** `GET
+/motor/habilidade/:processo` (`detalhe` → `intervencoes.montar`) devolve
+evidência, intervenção, o enquadramento escrito à mão e `praticar` (questões
+inéditas daquele processo). Ficou meses sem nenhuma tela chamando; hoje é o
+clique da prática dirigida ([[padroes-de-tela]]) — **só no clique**, nunca no
+carregamento. Custo: `_historico` memorizado por `(uid, total_respostas)`.
+Vindo do Hoje, reaproveita o histórico que `/motor/perfil` acabou de montar
+(1 leitura do agregado); depois de uma série nova o total mudou e ele remonta
+uma vez — o mesmo custo de abrir o Hoje depois de responder. A memória é por
+processo: com mais de uma máquina no Fly, pode estar fria.
+
+A fila de `/motor/perfil` também decide o Próximo Passo: causa com catálogo
+vence a trilha; desempenho sem traço fica abaixo dela; sentinela aparece como
+"onde mais erros começam", **sem** o nome do erro.
 
 ## O portão de crença
 

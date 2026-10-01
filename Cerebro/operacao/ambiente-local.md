@@ -1,6 +1,6 @@
 ---
 tags: [operacao, dev, teste]
-atualizado: 2026-09-18
+atualizado: 2026-10-01
 ---
 
 # Ambiente local e testes
@@ -70,6 +70,18 @@ e leva CORS em `/api/auth/me`, então nem haveria como. A alternativa que funcio
 no Browser pane, **sem login**, injetar por `javascript_tool` um clone do elemento
 usando as classes reais do bundle, fora da tela, e medir. O CSS já está carregado
 para qualquer visitante; só o **dado** exige sessão.
+
+**Para percorrer telas LOGADAS de ponta a ponta:** `aluno/frontend/verificacao/
+servidor_falso.py`. Um build com `REACT_APP_BACKEND_URL=http://localhost:8799`
+(em `BUILD_PATH` fora da árvore — o `.env` não é tocado) servido pelo próprio
+script, que responde às rotas com um aluno de teste na **mesma origem** (sem
+CORS); o token de teste vai no `localStorage`. Instruções e cenários no
+cabeçalho do arquivo. Foi como o fluxo Hoje → prática dirigida → fechamento e
+o desfecho do Treino foram verificados em 2026-09-30.
+
+> **Tela que quebra só ali é, primeiro, dado falso incompleto** (`ANCORA_BIOMA_SRC`
+> exige id de bioma real; a liga lê `tabela`). O script loga `SEM MOCK GET …`
+> para cada rota sem resposta própria — olhe ali antes de suspeitar do código.
 
 Duas coisas mais que dá para provar sem sessão, e que valeram a pena em 18/09:
 

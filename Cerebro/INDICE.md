@@ -1,6 +1,6 @@
 ---
 tags: [indice, entrada]
-atualizado: 2026-09-18
+atualizado: 2026-10-01
 ---
 
 # Índice — o que ler antes de cada tarefa
@@ -28,6 +28,7 @@ Se nada aqui casar, vá direto ao código (`graft ask "<tarefa>"`) — o Cerebro
 | mexer em **CSS, cor, tema escuro** | [[sistema-visual]] |
 | **acrescentar área, item de menu ou ROTA** | [[navegacao]] |
 | criar **tela nova** | [[padroes-de-tela]] · [[sistema-visual]] |
+| mexer no **Próximo Passo, prática dirigida, fechamento de série, desfecho de missão** | [[padroes-de-tela]] · [[motor-cognitivo]] |
 | mexer em algo que o **celular** toca | [[mobile]] |
 | mexer em **gamificação, liga, mural, venda** | [[engajamento]] |
 | mexer em **copy, landing, logo, mentor** | [[marca]] |
@@ -65,6 +66,7 @@ Se nada aqui casar, vá direto ao código (`graft ask "<tarefa>"`) — o Cerebro
 | Erro genérico na tela e o log do servidor diz outra coisa | 500 sai sem CORS, o navegador bloqueia e o `errMsg` cai no texto padrão | [[incidentes]] |
 | Mudei a definição de um índice e o banco não mudou | `create_index` não redefine índice existente | [[incidentes]] |
 | Cadastro/escrita falha por duplicata num campo que está vazio | `sparse` indexa o campo presente valendo `null` | [[incidentes]] |
+| Tela logada quebra só no servidor de verificação local | dado falso incompleto, não o código | [[ambiente-local]] |
 
 ## Antes de qualquer coisa
 
