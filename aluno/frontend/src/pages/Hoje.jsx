@@ -204,7 +204,12 @@ function ChamadaDaMentoria() {
       data-tour="dash-mentoria"
     >
       <div className="flex min-w-0 flex-1 items-start gap-4 sm:items-center sm:gap-5">
-        <MentorUSP tamanho="g" testid="dash-mentoria-mentor" />
+        {/* Retrato "g" tem 160px no celular: numa linha com o texto ao lado,
+            sobravam ~130px para a frase, uma palavra por linha (medido a
+            375px em 2026-09-30 — o defeito 4 de `Cerebro/ux/mobile.md`).
+            No celular entra o "m"; do `sm` para cima, o de sempre. */}
+        <span className="shrink-0 sm:hidden"><MentorUSP tamanho="m" testid="dash-mentoria-mentor-celular" /></span>
+        <span className="hidden shrink-0 sm:block"><MentorUSP tamanho="g" testid="dash-mentoria-mentor" /></span>
 
         <div className="min-w-0 flex-1">
           <div className="secao-olho inline-flex items-center gap-1.5 text-amber-200/90">
@@ -252,7 +257,14 @@ export default function Hoje() {
   const [hubs, setHubs] = useState([]);
   const [totalRespondidas, setTotalRespondidas] = useState(0);
   const [rounds, setRounds] = useState([]);
-  const [fracos, setFracos] = useState([]);
+  // A fila INTEIRA do motor cognitivo (`habilidades_prioritarias`). Até
+  // 2026-09-28 o Painel guardava só as linhas com causa e as usava para o
+  // anúncio da aula; o Próximo Passo não as via. Agora é a fila que decide
+  // o degrau "padrão de erro" — e `fracos` (o recorte da venda) sai dela.
+  const [prioritarias, setPrioritarias] = useState([]);
+  // A trajetória por habilidade (marcos de revisão acertada e de acerto em
+  // contexto novo): é daqui que saem as microvitórias do "O que mudou".
+  const [trajetoria, setTrajetoria] = useState(null);
   const [habilidades, setHabilidades] = useState([]);
   const [redacoes, setRedacoes] = useState([]);
   const [revisoes, setRevisoes] = useState(null);
@@ -288,12 +300,9 @@ export default function Hoje() {
       api.get("/skills-map").then(({ data }) => data.hubs || []),
       api.get("/firestore/students/me/respondidas").then(({ data }) => (data.item_ids || []).length),
       api.get("/firestore/students/me/rounds").then(({ data }) => data.rounds || []),
-      // Pontos fracos COM causa raiz identificada — é o que torna a
-      // dificuldade clicável e tratável. Memorizado no servidor por
-      // `total_respostas`.
-      api.get("/motor/perfil").then(({ data }) =>
-        (data.habilidades_prioritarias || []).filter((l) => l.origem === "error_trace" && l.erro_dominante),
-      ),
+      // A fila do motor: onde os erros começam, e por quê. Memorizado no
+      // servidor por `total_respostas`.
+      api.get("/motor/perfil").then(({ data }) => data.habilidades_prioritarias || []),
       api.get("/treino/habilidades").then(({ data }) => data.habilidades || []),
       api.get("/redacao", { params: { limit: 3 } }).then(({ data }) => data.items || []),
       api.get("/revisao/fila").then(({ data }) => data),
@@ -305,8 +314,11 @@ export default function Hoje() {
       // Preço da aula ao vivo (`ChamadaDaLive`) — nunca escrito à mão aqui;
       // sai de `cursos.LIVE_CUSTO_SPARKS` via `GET /cursos/precos`.
       api.get("/cursos/precos").then(({ data }) => data.custo_live),
+      // UMA leitura de `students/{uid}` (o bloco `revisao`), O(1) — nunca
+      // varre eventos. Falhar aqui só apaga a microvitória, nada mais.
+      api.get("/revisao/trajetoria").then(({ data }) => data),
     ]).then((resultados) => {
-      const [a, s, dates, h, respondidas, r, f, habs, reds, fila, semana, onb, eng, live] = resultados;
+      const [a, s, dates, h, respondidas, r, f, habs, reds, fila, semana, onb, eng, live, traj] = resultados;
       const valor = (res, vazio) => (res.status === "fulfilled" ? res.value : vazio);
 
       setAnalyses(valor(a, []));
@@ -316,7 +328,8 @@ export default function Hoje() {
       setHubs(valor(h, []));
       setTotalRespondidas(valor(respondidas, 0));
       setRounds(valor(r, []));
-      setFracos(valor(f, []));
+      setPrioritarias(valor(f, []));
+      setTrajetoria(valor(traj, null));
       setHabilidades(valor(habs, []));
       setRedacoes(valor(reds, []));
       setRevisoes(valor(fila, null));
@@ -446,6 +459,12 @@ export default function Hoje() {
     return () => window.removeEventListener(EVENTO_SPARKS, relerSaldo);
   }, []);
 
+  // O recorte que a venda da aula sempre usou: só linhas com causa nomeada.
+  const fracos = useMemo(
+    () => prioritarias.filter((l) => l.origem === "error_trace" && l.erro_dominante),
+    [prioritarias],
+  );
+
   const latest = analyses[0];
   const streak = computeStreak(activityDates);
   const weekActiveDays = computeWeek(activityDates).filter((d) => d.active).length;
@@ -547,8 +566,8 @@ export default function Hoje() {
   // da fila em "Hoje" sai de cena. Duas peças diferentes cobrando a mesma
   // coisa na mesma rolagem leem como duas coisas a fazer.
   const passoAtual = useMemo(
-    () => escolherPasso({ revisoes, cronograma, habilidades }),
-    [revisoes, cronograma, habilidades],
+    () => escolherPasso({ revisoes, cronograma, habilidades, padroes: prioritarias, totalRespondidas }),
+    [revisoes, cronograma, habilidades, prioritarias, totalRespondidas],
   );
 
   if (!loaded) {
@@ -635,6 +654,7 @@ export default function Hoje() {
             habilidades={habilidades}
             revisoes={revisoes}
             cronograma={cronograma}
+            padroes={prioritarias}
             totalRespondidas={totalRespondidas}
             ofensiva={engajamento?.ofensiva?.dias ?? 0}
             estudouHoje={engajamento?.ofensiva?.estudou_hoje ?? true}
@@ -665,6 +685,7 @@ export default function Hoje() {
             engajamento={engajamento}
             conquistas={conquistas}
             passoAtual={passoAtual}
+            trajetoria={trajetoria}
           />
 
           {/* -------------------------------------------------------------

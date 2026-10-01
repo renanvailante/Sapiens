@@ -14,6 +14,11 @@ import { MapaMundo3D, BriefingHUD, GuiaMissoes, aplicarProgressao } from "../com
 import QuestoesGeradas from "../components/treino/QuestoesGeradas";
 import { ESTADO_LABEL } from "../components/mapa3d/sceneBuilder";
 import { ROTAS } from "../lib/rotas";
+import { proximaMissaoNoMapa } from "../lib/trilha";
+
+/** Abaixo disto, "antes X% → agora Y%" compara ruído. */
+const MIN_PARA_COMPARAR = 3;
+const pct = (acertos, respondidas) => (respondidas ? Math.round((100 * acertos) / respondidas) : null);
 
 // A aba Treino deixou de ser uma grade de 56 cartões — as mesmas 56
 // habilidades agora são pontos de um único grafo de exploração
@@ -89,6 +94,9 @@ function Missao({ hab, onSair, onConcluida }) {
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState(null);
   const [sparksMissao, setSparksMissao] = useState(0);
+  // Quantas saíram certas NESTA missão — o número que o desfecho mostra
+  // primeiro. O agregado da habilidade (antes/depois) vem do servidor.
+  const [acertosMissao, setAcertosMissao] = useState(0);
 
   useEffect(() => {
     setCarregando(true);
@@ -111,6 +119,7 @@ function Missao({ hab, onSair, onConcluida }) {
       .post(`/treino/habilidade/${hab.hab_id}/responder`, { indice: questao.indice, alternativa: letra })
       .then(({ data }) => {
         setResultado(data);
+        if (data.acertou) setAcertosMissao((n) => n + 1);
         if (data.sparks_ganhos > 0) setSparksMissao((s) => s + data.sparks_ganhos);
       })
       .catch((e) => setErro(errMsg(e, "Não foi possível registrar sua resposta.")))
@@ -119,7 +128,16 @@ function Missao({ hab, onSair, onConcluida }) {
 
   const proxima = () => {
     if (ultima) {
-      onConcluida({ sparksMissao, respondidas: resultado.respondidas, classificacao: resultado.classificacao });
+      onConcluida({
+        sparksMissao,
+        respondidas: resultado.respondidas,
+        acertos: resultado.acertos,
+        classificacao: resultado.classificacao,
+        acertosMissao,
+        totalMissao: base.questoes.length,
+        // `/base` devolve o agregado da habilidade ANTES desta missão.
+        antes: { respondidas: base.respondidas || 0, acertos: base.acertos || 0 },
+      });
       return;
     }
     setSelecionada(null);
@@ -350,24 +368,81 @@ function AprofundarConceito({ habId, habNome, habRotulo, custoConceito, onSparks
 
 // ---------- Desfecho da missão ----------
 
-function DesfechoMissao({ hab, resultado, novosPontos, custoPorQuestao, custoConceito, onSparks, onFechar }) {
-  const bioma = hab.bioma;
+/**
+ * O desfecho responde três coisas, nesta ordem: como foi (acertos desta
+ * missão), o que mudou (o acerto da habilidade antes e depois — só com
+ * amostra dos dois lados) e o que vem agora (a próxima missão, com um clique,
+ * escolhida por `proximaMissaoNoMapa`). Até 2026-09-28 ele dizia só "Missão
+ * concluída" e oferecia as duas ferramentas pagas e "Voltar ao mapa".
+ */
+function DesfechoMissao({ hab, resultado, novosPontos, proxima, onProxima, custoPorQuestao, custoConceito, onSparks, onFechar }) {
+  const antes = resultado.antes || { respondidas: 0, acertos: 0 };
+  const pctAntes = pct(antes.acertos, antes.respondidas);
+  const pctAgora = pct(resultado.acertos ?? 0, resultado.respondidas ?? 0);
+  const comparar = antes.respondidas >= MIN_PARA_COMPARAR && pctAgora != null;
+  // "Passou a contar como dominado" só é verdade se ele NÃO era antes: o nó
+  // do mapa guarda o estado que o servidor deu antes da missão.
+  const subiuDeNivel = resultado.classificacao === "forte" && (hab.estadoBackend || hab.estado) !== "mastered";
+
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="mt-6 space-y-5" data-testid="mapa-desfecho">
       <div className="card-sapiens rounded-2xl p-6 text-center">
         <div className="mx-auto w-12 h-12 rounded-full bg-sapiens-accentSoft flex items-center justify-center">
           <Check className="w-6 h-6 text-sapiens-accentDeep" />
         </div>
-        <div className="mt-3 font-display text-xl font-extrabold text-zinc-950">Missão concluída</div>
+        <div className="mt-3 font-display text-xl font-extrabold text-zinc-950">
+          {resultado.totalMissao
+            ? `Missão concluída: ${resultado.acertosMissao ?? 0} de ${resultado.totalMissao}`
+            : "Missão concluída"}
+        </div>
         <div className="mt-1 text-sm text-zinc-500">
           {ESTADO_LABEL[resultado.classificacao === "forte" ? "mastered" : "in_progress"]} em {hab.rotulo}
         </div>
+        {pctAgora != null && (
+          <div className="mt-3 text-sm text-zinc-600" data-testid="mapa-desfecho-evolucao">
+            {comparar ? (
+              <>
+                Seu acerto em {hab.rotulo}: <span className="font-semibold text-zinc-800">{pctAntes}%</span> antes desta
+                missão, <span className="font-semibold text-zinc-800">{pctAgora}%</span> agora
+                {subiuDeNivel ? ", e o ponto passou a contar como dominado." : "."}
+              </>
+            ) : (
+              <>Primeira medida sua em {hab.rotulo}: {pctAgora}% em {resultado.respondidas} questões.</>
+            )}
+          </div>
+        )}
         {resultado.sparksMissao > 0 && (
           <div className="mt-3 inline-flex items-center gap-1.5 text-sm font-bold text-amber-700 bg-amber-50 px-3 py-1.5 rounded-full">
             <Sparkles className="w-4 h-4" /> +{resultado.sparksMissao} Sparks nesta missão
           </div>
         )}
       </div>
+
+      {/* O QUE VEM AGORA. Um clique e a próxima missão começa — sem reabrir o
+          globo, sem escolher entre 56 pontos. O mapa continua a um botão. */}
+      {proxima && (
+        <div className="superficie flex flex-col items-stretch gap-4 p-5 sm:flex-row sm:items-center" data-testid="mapa-proxima-missao">
+          <div className="flex min-w-0 flex-1 items-start gap-3 sm:items-center">
+            <Compass className="mt-0.5 h-5 w-5 shrink-0 text-[#7FD8FF] sm:mt-0" />
+            <div className="min-w-0 flex-1">
+              <div className="secao-olho">Próxima missão</div>
+              <div className="font-display text-lg font-bold text-white">{proxima.rotulo || proxima.nome}</div>
+              <div className="text-xs text-white/55">
+                {proxima.respondidas > 0
+                  ? `Você acerta ${pct(proxima.acertos || 0, proxima.respondidas)}% aqui, e é onde a próxima missão rende mais.`
+                  : "Um ponto que você ainda não praticou, logo ao lado do que já conhece."}
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={() => onProxima(proxima)}
+            className="pill btn-sapiens inline-flex w-full items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-bold sm:w-auto"
+            data-testid="mapa-proxima-missao-btn"
+          >
+            Começar <ArrowRight className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
       <AnimatePresence>
         {novosPontos > 0 && (
@@ -453,11 +528,16 @@ export default function Treino() {
   // Deep-link ?hab=HAB-03 (Motor Cognitivo) — abre o briefing direto quando o
   // mapa carrega. Na fonte "geradas" o mesmo `hab` significa outra coisa (a
   // habilidade a gerar), então o briefing não entra.
+  //
+  // `desfecho` também barra: a missão vinha do mesmo `?hab=`, e o React Router
+  // limpa a URL numa renderização POSTERIOR à que zera `missaoHab`. Nesse
+  // intervalo este efeito reabria o briefing da missão que acabou, por cima
+  // do desfecho (medido no navegador em 2026-09-30).
   useEffect(() => {
     const habId = searchParams.get("hab");
-    if (fonte !== "mapa" || !habId || !nodeIndex[habId] || briefingHab || missaoHab) return;
+    if (fonte !== "mapa" || !habId || !nodeIndex[habId] || briefingHab || missaoHab || desfecho) return;
     setBriefingHab(nodeIndex[habId]);
-  }, [fonte, searchParams, nodeIndex, briefingHab, missaoHab]);
+  }, [fonte, searchParams, nodeIndex, briefingHab, missaoHab, desfecho]);
 
   const abrirBriefing = (hab) => {
     setBriefingHab(hab);
@@ -481,6 +561,9 @@ export default function Treino() {
     const novosPontos = novoMapa ? Math.max(0, contarVisiveis(novoMapa) - visiveisAntes) : 0;
     setDesfecho({ hab, resultado, novosPontos });
     setMissaoHab(null);
+    // O `?hab=` da missão não tem mais o que abrir: sai da URL (e o efeito do
+    // deep-link, acima, já não age enquanto há desfecho).
+    setSearchParams({}, { replace: true });
   };
 
   const sairMissao = () => {
@@ -491,6 +574,19 @@ export default function Treino() {
   const fecharDesfecho = () => {
     setDesfecho(null);
     setSearchParams({});
+  };
+
+  // A próxima missão sai do mapa JÁ recarregado (o desfecho só aparece depois
+  // de `carregar()`), então ela enxerga o território que esta missão abriu.
+  const proximaMissao = useMemo(() => {
+    if (!desfecho || !mapaData) return null;
+    const no = proximaMissaoNoMapa(biomasVisiveis, mapaData.arestas, desfecho.hab.hab_id);
+    return no ? nodeIndex[no.hab_id] || null : null;
+  }, [desfecho, mapaData, biomasVisiveis, nodeIndex]);
+
+  const iniciarProxima = (hab) => {
+    setDesfecho(null);
+    setMissaoHab(hab);
   };
 
   const atualizarSparks = (saldo) => {
@@ -609,6 +705,8 @@ export default function Treino() {
             hab={desfecho.hab}
             resultado={desfecho.resultado}
             novosPontos={desfecho.novosPontos}
+            proxima={proximaMissao}
+            onProxima={iniciarProxima}
             custoPorQuestao={custoPorQuestao}
             custoConceito={mapaData.custo_conceito}
             onSparks={atualizarSparks}

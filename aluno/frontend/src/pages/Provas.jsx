@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { api, API, errMsg} from "../lib/api";
 import ContagemEnem from "../components/ContagemEnem";
-import { ArrowRight, Check, X, RotateCw, Sparkles, BookOpen, ChevronLeft } from "lucide-react";
+import { ArrowRight, Check, X, RotateCw, Sparkles, BookOpen, ChevronLeft, Crosshair, Loader2, Compass } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import FormulaMath from "../components/FormulaMath";
 import Mentis from "../components/Mentis";
@@ -11,7 +11,11 @@ import ProfessorInvisivel from "../components/ProfessorInvisivel";
 import Microdiagnostico from "../components/Microdiagnostico";
 import Alternativas from "../components/questao/Alternativas";
 import ReportarQuestao from "../components/ReportarQuestao";
-import { ROTAS } from "../lib/rotas";
+import { ROTAS, ANCORAS, com } from "../lib/rotas";
+import { useDeclararContextoMentis } from "../lib/mentisContexto";
+import {
+  abrirPraticaDirigida, resumoDaSerie, fraseDoFechamento, pontoRepetido, TETO_QUESTOES,
+} from "../lib/praticaDirigida";
 
 const APP_VERSION = "sapiens-web-1.0";
 const MENTIS_COST = 7; // espelha EXPLICACAO_COST em mentis_routes.py — só p/ desabilitar o botão sem saldo, o servidor é quem cobra de fato
@@ -112,6 +116,134 @@ function dimensoesIntrinsecas(asset) {
   return w > 0 && h > 0 ? { width: w, height: h } : {};
 }
 
+/**
+ * O FECHAMENTO DE UMA SÉRIE — a última tela de qualquer conjunto de questões.
+ *
+ * Era "Você concluiu todas as questões! 🎉" e um botão "Voltar": o momento
+ * em que o aluno mais sabe sobre o próprio desempenho era o único sem
+ * nenhuma informação e sem nenhum caminho. Quem terminava uma revisão, uma
+ * prova inteira ou uma série dirigida recebia a mesma tela, e ela mandava
+ * para trás.
+ *
+ * Agora ela responde as três perguntas de quem acabou de terminar:
+ *
+ *   1. **como foi** — acertos desta série (só desta sessão; o que já vinha
+ *      respondido ao abrir não entra, porque não foi feito agora);
+ *   2. **mudou alguma coisa** — na prática dirigida, a comparação com o
+ *      histórico daquele ponto (`resumoDaSerie`), descritiva e com amostra
+ *      mínima dos dois lados;
+ *   3. **e agora** — uma saída concreta: o ponto em que dois erros desta
+ *      série começaram, mais questões do mesmo ponto, ou o Próximo Passo do
+ *      Hoje (que a esta altura já foi recalculado com estas respostas).
+ */
+function FechamentoDaSerie({ respostas, filtro, onExit, abrindo, aoPraticar }) {
+  // O fechamento aparece no lugar da última questão, abaixo do cabeçalho da
+  // série. No celular isso o deixava a 600px do topo — o resultado existia e
+  // não era visto. Ele rola até si ao montar.
+  const ref = useRef(null);
+  useEffect(() => {
+    ref.current?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+  }, []);
+  const dirigida = filtro?.dirigida || null;
+  const resumo = resumoDaSerie(respostas, dirigida);
+  const frase = fraseDoFechamento(resumo);
+  // Dentro de uma série dirigida, dois erros no mesmo ponto são o próprio
+  // ponto da série — dizer isso de novo seria redundante.
+  const repetido = !dirigida ? resumo.repetido : null;
+  const mais = dirigida?.processoId && dirigida.restantes > 0 ? Math.min(TETO_QUESTOES, dirigida.restantes) : 0;
+
+  const titulo = dirigida
+    ? "Série concluída"
+    : filtro?.origem === "revisao"
+      ? "Revisão concluída"
+      : filtro?.banca
+        ? "Caderno concluído"
+        : "Questões concluídas";
+
+  // O olho diz DE QUÊ era a série; o título já diz que ela acabou.
+  const olho =
+    dirigida?.foco ||
+    (filtro?.origem === "revisao"
+      ? "Revisão espaçada"
+      : [filtro?.banca, filtro?.ano].filter(Boolean).join(" ") || filtro?.area || "Prática");
+
+  const botaoPrimario = "pill btn-sapiens inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-bold disabled:opacity-50";
+  const botaoSecundario = "pill btn-vidro inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm";
+
+  return (
+    <div ref={ref} className="card-sapiens scroll-mt-24 rounded-2xl p-7 md:p-10" data-testid="serie-fechamento">
+      <div className="secao-olho">{olho}</div>
+      <div className="mt-1.5 font-display text-2xl font-bold text-zinc-950" data-testid="serie-fechamento-titulo">
+        {resumo.total > 0 ? `${titulo}: ${resumo.acertos} de ${resumo.total}` : titulo}
+      </div>
+      <p className="mt-2 max-w-lg text-sm leading-relaxed text-zinc-500">
+        {resumo.total === 0
+          ? "Você já tinha respondido todas as questões deste conjunto. Cada resposta está registrada no seu histórico."
+          : frase || "Cada resposta desta série já entrou no seu histórico — é com elas que o próximo passo é escolhido."}
+      </p>
+
+      {dirigida?.sinal && resumo.total > 0 && (
+        <p className="mt-3 max-w-lg text-sm leading-relaxed text-zinc-600" data-testid="serie-fechamento-sinal">
+          <span className="font-semibold text-zinc-800">O que observar daqui para a frente:</span> {dirigida.sinal}
+        </p>
+      )}
+
+      {repetido && (
+        <p className="mt-3 max-w-lg text-sm leading-relaxed text-zinc-600" data-testid="serie-fechamento-repetido">
+          <span className="font-semibold text-zinc-800">{repetido.vezes} erros desta série começaram no mesmo ponto.</span>{" "}
+          Vale praticar só ele agora, com questões que você ainda não viu.
+        </p>
+      )}
+
+      <div className="mt-6 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap">
+        {repetido && (
+          <button
+            onClick={() => aoPraticar(repetido.processoId, { tipo: "repetido", linha: { processo_id: repetido.processoId } })}
+            disabled={abrindo}
+            className={botaoPrimario}
+            data-testid="serie-praticar-ponto"
+          >
+            {abrindo ? <>Separando as questões <Loader2 className="h-4 w-4 animate-spin" /></> : <><Crosshair className="h-4 w-4" /> Praticar esse ponto</>}
+          </button>
+        )}
+        {mais > 0 && (
+          <button
+            onClick={() => aoPraticar(dirigida.processoId, {
+              tipo: dirigida.tipo,
+              linha: {
+                processo_id: dirigida.processoId,
+                processo_nome: dirigida.foco,
+                erro_dominante: dirigida.erro ? { nome: dirigida.erro } : null,
+              },
+            })}
+            disabled={abrindo}
+            className={botaoPrimario}
+            data-testid="serie-mais-do-ponto"
+          >
+            {abrindo ? <>Separando as questões <Loader2 className="h-4 w-4 animate-spin" /></> : <>Mais {mais} deste ponto <ArrowRight className="h-4 w-4" /></>}
+          </button>
+        )}
+        <Link
+          to={ROTAS.HOJE}
+          className={repetido || mais > 0 ? botaoSecundario : botaoPrimario}
+          data-testid="serie-proximo-passo"
+        >
+          <Compass className="h-4 w-4" /> Ver o próximo passo
+        </Link>
+        {filtro?.origem === "revisao" ? (
+          <Link to={com(ROTAS.AGENDA, ANCORAS.AGENDA_REVISOES)} className={botaoSecundario} data-testid="serie-voltar-revisoes">
+            Voltar às revisões
+          </Link>
+        ) : !dirigida ? (
+          <button onClick={onExit} className={botaoSecundario} data-testid="serie-voltar">
+            {filtro?.banca ? "Escolher outro caderno" : "Voltar"}
+          </button>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 function QuestionRunner({ filtro, onExit }) {
   const [lightbox, setLightbox] = useState(null);
   const [itens, setItens] = useState([]);
@@ -130,9 +262,28 @@ function QuestionRunner({ filtro, onExit }) {
   const [resumoIA, setResumoIA] = useState(null); // { loading, erro } da leitura paga da Mentis sobre a rodada aberta
   const startRef = useRef(Date.now());
   const changesRef = useRef(0);
-  const respostasSessaoRef = useRef([]); // [{item_id, alternativa_escolhida, acertou}], só desta sessão
+  const respostasSessaoRef = useRef([]); // [{item_id, alternativa_escolhida, acertou, causa_raiz}], só desta sessão
   const rodadaPendenteRef = useRef(null); // devolutiva de rodada já buscada, aguardando o clique em "avançar"
   const rodadasProcessadasRef = useRef(new Set()); // evita chamar /rodada/concluir 2x pela mesma rodada nesta sessão
+  const navegar = useNavigate();
+  const [abrindoPonto, setAbrindoPonto] = useState(false);
+
+  // A prática dirigida avisa a Mentis do que está sendo trabalhado: quem abre
+  // o chat no meio da série encontra uma tutora que sabe o ponto e o porquê.
+  const dirigida = filtro?.dirigida || null;
+  useDeclararContextoMentis(
+    dirigida?.foco
+      ? `Fazendo uma série de questões dirigida ao ponto "${dirigida.foco}"${dirigida.erro ? `, onde o erro que mais se repete é "${dirigida.erro}"` : ""}.`
+      : "",
+  );
+
+  /** Do erro repetido para a prática só dele. O que já foi respondido está
+   *  gravado, então sair daqui no meio de uma prova não perde nada. */
+  const praticarPonto = (processoId, escolha) => {
+    if (!processoId || abrindoPonto) return;
+    setAbrindoPonto(true);
+    abrirPraticaDirigida({ api, navegar, processoId, escolha }).finally(() => setAbrindoPonto(false));
+  };
 
   useEffect(() => {
     let ativo = true;
@@ -226,6 +377,10 @@ function QuestionRunner({ filtro, onExit }) {
       setTimeout(() => setPulso(false), 700);
       respostasSessaoRef.current.push({
         item_id: item.item_id, alternativa_escolhida: selected, acertou: data.acertou,
+        // O ponto em que este erro começou — já veio na resposta, de graça.
+        // É o que permite dizer, no fim da rodada, que dois erros tiveram a
+        // mesma origem.
+        causa_raiz: data.causa_raiz || null,
       });
 
       // Fim de rodada (10/10, ..., ou 5/5 na última): busca a devolutiva já
@@ -245,7 +400,13 @@ function QuestionRunner({ filtro, onExit }) {
       // sempre sobra pelo menos a devolutiva local computada abaixo.
       const posicao = idx + 1;
       const rodadaNum = rodadaNaPosicao(posicao, itens.length);
-      if (rodadaNum && !rodadasProcessadasRef.current.has(rodadaNum)) {
+      // A última rodada de uma lista SEM bloco (revisão, prática dirigida,
+      // prática por área) não paga Sparks e termina exatamente onde o
+      // fechamento da série começa. Mostrar as duas seria dizer a mesma coisa
+      // duas vezes — e, na série dirigida, sugerir "praticar esse ponto" a
+      // quem está praticando justamente ele. O fechamento cobre tudo.
+      const fimSemBloco = posicao === itens.length && !filtro?.banca;
+      if (rodadaNum && !fimSemBloco && !rodadasProcessadasRef.current.has(rodadaNum)) {
         rodadasProcessadasRef.current.add(rodadaNum);
 
         // A janela precisa ser a da RODADA, não a da sessão: quem retomava na
@@ -264,6 +425,9 @@ function QuestionRunner({ filtro, onExit }) {
           padroes_de_erro: [],
           sparks_ganhos: 0,
           sparks_balance: sparks,
+          // Dois erros desta rodada com a mesma raiz: vira uma saída concreta
+          // na devolutiva, em vez de só um número.
+          repetido: pontoRepetido(janela),
         };
 
         const pedidoRodada = filtro?.banca
@@ -295,7 +459,11 @@ function QuestionRunner({ filtro, onExit }) {
           devolutiva = { ...devolutiva, ...rd };
           if (typeof rd.sparks_balance === "number") setSparks(rd.sparks_balance);
         }
-        devolutiva.janelaIA = janela.length >= 10 ? janela : null;
+        // A leitura paga recebe só o que o contrato dela pede — `causa_raiz`
+        // é um campo nosso, da tela.
+        devolutiva.janelaIA = janela.length >= 10
+          ? janela.map(({ item_id, alternativa_escolhida, acertou }) => ({ item_id, alternativa_escolhida, acertou }))
+          : null;
 
         rodadaPendenteRef.current = devolutiva;
       }
@@ -415,14 +583,13 @@ function QuestionRunner({ filtro, onExit }) {
 
   if (idx >= itens.length)
     return (
-      <div className="card-sapiens rounded-2xl p-10 text-center">
-        <ProgressoProva respondidas={itens.length} total={itens.length} pulso={false} tone="dark" />
-        <div className="font-display text-2xl font-bold text-zinc-950">Você concluiu todas as questões! 🎉</div>
-        <p className="mt-2 text-zinc-500">Respostas registradas: {answered}.</p>
-        <button onClick={onExit} className="pill btn-sapiens inline-flex items-center gap-2 mt-6 px-5 py-3 rounded-full text-sm font-medium">
-          Voltar
-        </button>
-      </div>
+      <FechamentoDaSerie
+        respostas={respostasSessaoRef.current}
+        filtro={filtro}
+        onExit={onExit}
+        abrindo={abrindoPonto}
+        aoPraticar={praticarPonto}
+      />
     );
 
   const tags = [fonte.disciplina, fonte.ano, fonte.prova].filter(Boolean);
@@ -578,7 +745,7 @@ function QuestionRunner({ filtro, onExit }) {
             </span>
             <div className="min-w-0 flex-1">
               <div className={`text-sm font-bold ${result.acertou ? "text-emerald-700" : "text-rose-700"}`}>
-                {result.feedback?.titulo || (result.acertou ? "Você acertou!" : `Resposta incorreta. Correta: ${result.correta}.`)}
+                {result.feedback?.titulo || (result.acertou ? "Você acertou!" : "Resposta incorreta.")}
                 {!result.acertou && <span className="ml-1 font-normal">(correta: {result.correta})</span>}
               </div>
               {(result.feedback?.mensagens || []).map((m, i) => (
@@ -685,7 +852,10 @@ function QuestionRunner({ filtro, onExit }) {
                   data-testid="rodada-acertos"
                 >
                   {rodadaResumo.acertos}/{rodadaResumo.total}
-                  <Check className="w-6 h-6 text-emerald-500" />
+                  {/* O visto verde é de quem foi bem. Pintado em toda rodada,
+                      ele parabenizava um 2/10 — e quem acabou de errar oito
+                      percebe que a tela não está olhando para ele. */}
+                  {rodadaResumo.percentual_acerto >= 60 && <Check className="w-6 h-6 text-emerald-500" />}
                 </DialogTitle>
               </DialogHeader>
 
@@ -727,6 +897,26 @@ function QuestionRunner({ filtro, onExit }) {
                   <ul className="mt-1.5 space-y-1 text-sm text-zinc-700">
                     {rodadaResumo.padroes_de_erro.map((p, i) => <li key={i}>· {p.nome}</li>)}
                   </ul>
+                </div>
+              )}
+
+              {rodadaResumo.repetido && (
+                <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3.5" data-testid="rodada-ponto-repetido">
+                  <div className="text-sm font-semibold text-zinc-900">
+                    {rodadaResumo.repetido.vezes} erros desta rodada começaram no mesmo ponto.
+                  </div>
+                  <p className="mt-1 text-xs leading-relaxed text-zinc-600">
+                    Dá para praticar só ele agora, com questões novas. O que você já respondeu fica
+                    guardado, e esta prova continua de onde parou quando você voltar.
+                  </p>
+                  <button
+                    onClick={() => praticarPonto(rodadaResumo.repetido.processoId, { tipo: "repetido", linha: { processo_id: rodadaResumo.repetido.processoId } })}
+                    disabled={abrindoPonto}
+                    data-testid="rodada-ponto-repetido-btn"
+                    className="pill btn-contorno mt-3 inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold disabled:opacity-50"
+                  >
+                    {abrindoPonto ? <>Separando as questões <Loader2 className="h-3.5 w-3.5 animate-spin" /></> : <><Crosshair className="h-3.5 w-3.5" /> Praticar esse ponto</>}
+                  </button>
                 </div>
               )}
 
@@ -1099,11 +1289,89 @@ function ExamsByYear() {
  * mudar o `QuestionRunner`, ela AVISA a página, que recolhe a outra coluna e
  * devolve a largura inteira. O motor continua exatamente como está.
  */
+/**
+ * POR QUE ESTAS QUESTÕES — o cabeçalho da prática dirigida.
+ *
+ * A Mentis explicando a escolha, sem chamar modelo nenhum: o texto é montado
+ * aqui com o que o motor já tinha (o ponto, o erro que mais se repete nele) e
+ * com o enquadramento escrito à mão em `intervencoes._ENQUADRAMENTO`, que até
+ * hoje só existia no servidor. Quem abre uma série sem saber por que ela foi
+ * escolhida responde como responderia a uma prova qualquer; quem sabe o que
+ * está treinando lê o enunciado procurando exatamente aquilo.
+ *
+ * Curto de propósito: uma frase de porquê, e os dois passos FECHADOS num
+ * `<details>`. Aberto, o cabeçalho media 514px a 375px e empurrava o
+ * enunciado para fora da primeira tela — explicar a escolha não pode custar
+ * o começo rápido. O resto do enquadramento aparece no fechamento.
+ */
+function CabecalhoDirigido({ dirigida, total }) {
+  const d = dirigida || {};
+  const n = total === 1 ? "esta questão" : `estas ${total} questões`;
+  const porque =
+    d.tipo === "causa" && d.erro
+      ? `Escolhi ${n} porque, nos seus erros, o que mais se repete neste ponto é «${d.erro}».`
+      : d.tipo === "traco"
+        ? `Escolhi ${n} porque é neste ponto que mais erros seus começam.`
+        : d.tipo === "desempenho"
+          ? `Escolhi ${n} porque é neste ponto que a sua medida está mais baixa.`
+          : d.tipo === "repetido"
+            ? `Escolhi ${n} porque mais de um erro seu começou neste ponto.`
+            : `Escolhi ${n} para este ponto.`;
+
+  return (
+    <div className="mb-6" data-testid="practice-dirigida-header">
+      <div className="secao-olho flex items-center gap-1.5">
+        <Crosshair className="h-3.5 w-3.5" /> Prática dirigida
+      </div>
+      <h1 className="titulo-tela">{d.foco || "O ponto em que você mais tropeça"}</h1>
+      <div className="superficie mt-4 flex items-start gap-3 p-4">
+        <Mentis className="mt-0.5 h-7 w-7 shrink-0" variante="icone" />
+        <div className="min-w-0 text-sm leading-relaxed text-white/70">
+          <p>{porque} Nenhuma delas você respondeu antes.</p>
+          {(d.objetivo || d.comoPraticar?.length > 0) && (
+            <details className="mt-2 group" data-testid="practice-dirigida-passos">
+              <summary className="cursor-pointer py-1 text-xs font-semibold text-[#7FD8FF]">
+                O objetivo e como atacar estas questões
+              </summary>
+              {d.objetivo && <p className="mt-1.5 text-white/70">{d.objetivo}</p>}
+              <ul className="mt-1.5 space-y-1 text-white/60">
+                {(d.comoPraticar || []).map((passo, i) => (
+                  <li key={i} className="flex gap-2">
+                    <span className="font-mono-alt text-[#7FD8FF]">{i + 1}.</span>
+                    <span className="min-w-0">{passo}</span>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+          {d.provisorio && (
+            <p className="mt-1.5 text-xs text-white/45" data-testid="practice-dirigida-provisorio">
+              Leitura provisória: aponta onde olhar primeiro, não é um veredito sobre você.
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** O filtro de uma lista de questões por id: a revisão espaçada manda só os
+ *  ids; a prática dirigida manda também o porquê, no `state` da navegação. */
+function filtroPorIds(itemIdsParam, dirigida) {
+  return {
+    item_ids: itemIdsParam.split(",").filter(Boolean),
+    origem: dirigida ? "padrao" : "revisao",
+    dirigida: dirigida || null,
+  };
+}
+
 export default function Provas({ embutido = false, onModo = null }) {
   const [params] = useSearchParams();
   const areaParam = params.get("area");
   const itemIdsParam = params.get("item_ids");
   const nav = useNavigate();
+  const location = useLocation();
+  const dirigidaDaNavegacao = location.state?.dirigida || null;
   // "Praticar" abre DIRETO nos cadernos. Havia um modo `hub` antes deste:
   // uma tela inteira cujo conteúdo era um botão escrito "Começar prática de
   // questões" e, abaixo, a lista por ano. Um clique inteiro para dizer sim a
@@ -1116,11 +1384,24 @@ export default function Provas({ embutido = false, onModo = null }) {
   const [mode, setMode] = useState(areaParam || itemIdsParam ? "practice" : "provas"); // 'provas' | 'practice'
   const [filtro, setFiltro] = useState(
     itemIdsParam
-      ? { item_ids: itemIdsParam.split(",").filter(Boolean), origem: "revisao" }
+      ? filtroPorIds(itemIdsParam, dirigidaDaNavegacao)
       : areaParam
         ? { area: areaParam }
         : null,
-  ); // { banca, ano, prova, disciplinas, count } | { area } | { item_ids, origem }
+  ); // { banca, ano, prova, disciplinas, count } | { area } | { item_ids, origem, dirigida }
+
+  // "Mais deste ponto" e "Praticar esse ponto" navegam para ESTA MESMA rota
+  // com outros ids. O React Router não remonta a página nesse caso, então o
+  // filtro é refeito aqui — e o `key` do QuestionRunner (abaixo) garante que
+  // a série nova começa limpa, sem a contagem da anterior.
+  const ultimaNavegacao = useRef(location.key);
+  useEffect(() => {
+    if (location.key === ultimaNavegacao.current) return;
+    ultimaNavegacao.current = location.key;
+    if (!itemIdsParam) return;
+    setFiltro(filtroPorIds(itemIdsParam, dirigidaDaNavegacao));
+    setMode("practice");
+  }, [location.key, itemIdsParam, dirigidaDaNavegacao]);
 
   const escolherProva = (p, opts) => { setFiltro({ ...p, reiniciar: !!opts?.reiniciar }); setMode("practice"); };
 
@@ -1140,13 +1421,27 @@ export default function Provas({ embutido = false, onModo = null }) {
         {mode === "practice" && filtro?.origem === "revisao" && (
           <div className="mb-6" data-testid="practice-revisao-header">
             <div className="secao-olho">Revisão espaçada</div>
-            <h1 className="titulo-tela">A questão que estava marcada para hoje.</h1>
+            <h1 className="titulo-tela">
+              {filtro.item_ids.length > 1
+                ? `${filtro.item_ids.length} questões marcadas para hoje.`
+                : "A questão que estava marcada para hoje."}
+            </h1>
           </div>
+        )}
+        {mode === "practice" && filtro?.origem === "padrao" && (
+          <CabecalhoDirigido dirigida={filtro.dirigida} total={filtro.item_ids.length} />
         )}
         {mode === "practice" ? (
           <QuestionRunner
+            key={location.key}
             filtro={filtro}
-            onExit={() => (filtro?.area ? nav("/hoje") : filtro?.origem === "revisao" ? nav("/agenda#revisoes") : setMode("provas"))}
+            onExit={() => (
+              filtro?.area || filtro?.origem === "padrao"
+                ? nav(ROTAS.HOJE)
+                : filtro?.origem === "revisao"
+                  ? nav(com(ROTAS.AGENDA, ANCORAS.AGENDA_REVISOES))
+                  : setMode("provas")
+            )}
           />
         ) : mode === "provas" ? (
           <>

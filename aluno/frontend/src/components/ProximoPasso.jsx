@@ -1,13 +1,14 @@
-import { useMemo } from "react";
-import { Link } from "react-router-dom";
+import { useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import {
-  ArrowRight, Compass, PlayCircle, RotateCw, CalendarClock, Target, Flame,
+  ArrowRight, Compass, PlayCircle, RotateCw, CalendarClock, Target, Flame, Crosshair, Loader2,
 } from "lucide-react";
 import TrilhaDeMissoes from "./TrilhaDeMissoes";
 import { missaoAtual } from "../lib/trilha";
 import { diaLocal } from "../lib/atividade";
 import { ROTAS } from "../lib/rotas";
 import { api } from "../lib/api";
+import { escolherPadrao, abrirPraticaDirigida } from "../lib/praticaDirigida";
 
 // Analytics de produto: `primeiro_proximo_passo` (ver `product_analytics.py`).
 // Fire-and-forget — nunca atrasa nem bloqueia o clique real do aluno, e o
@@ -52,6 +53,20 @@ function registrarProximoPassoIniciado() {
  *   4. **Praticar.** Quem ainda não tem medida nenhuma não tem lacuna
  *      conhecida; o caminho é responder questão até haver o que medir.
  *
+ * Desde 2026-09-28 a escada lê também o POR QUÊ (`padroes`, a fila do motor
+ * cognitivo que o Painel já carregava e só usava para o anúncio da aula):
+ *
+ *   · entre o cronograma e a trilha, o **padrão de erro com causa** — o ponto
+ *     em que mais erros de prova começam. É a evidência mais forte que o
+ *     produto tem sobre o aluno, e o clique abre questões inéditas daquele
+ *     raciocínio (`lib/praticaDirigida.js`), não uma prova qualquer;
+ *   · depois da trilha, o **ponto de medida mais baixa** (desempenho sem
+ *     traço), que é evidência mais fraca;
+ *   · e "Continue de onde parou" para quem já respondeu e ainda não tem
+ *     medida. Antes disto a trilha só enxergava o TREINO (`treino_agregado`),
+ *     e quem tinha 200 questões de prova e nunca abriu o mapa via "Seu
+ *     primeiro passo" todo dia — o produto dizendo que não se lembrava dele.
+ *
  * A OFENSIVA não é um degrau: ela é o MOTIVO, e entra como uma linha de
  * urgência no passo que tiver vencido. "Você está no dia 12 e ainda não
  * estudou hoje" muda o peso de abrir o app; trocar o destino por causa disso
@@ -60,15 +75,55 @@ function registrarProximoPassoIniciado() {
 
 const TOTAL_HABILIDADES = 56;
 
-export function escolherPasso({ revisoes, cronograma, habilidades }) {
+/** O passo que anuncia um ponto da fila do motor. Só lê o que a linha tem —
+ *  e o nome do erro só entra quando ele tem catálogo (`tipo === "causa"`). */
+function passoDoPadrao(escolha) {
+  const { tipo, linha } = escolha;
+  const pct = Math.round(linha.percentual_acerto ?? 0);
+  const texto = {
+    causa: {
+      olho: "O padrão que mais se repete",
+      porque: `Nos seus erros aqui, o que mais se repete é «${linha.erro_dominante?.nome}». Separei questões novas que exercitam exatamente esse ponto.`,
+    },
+    traco: {
+      olho: "Onde mais erros começam",
+      porque: `${linha.ocorrencias_raiz > 1 ? `${linha.ocorrencias_raiz} dos seus erros começam` : "Seus erros começam"} neste ponto. Algumas questões novas dele mostram se isso se repete.`,
+    },
+    desempenho: {
+      olho: "Sua medida mais baixa",
+      porque: `Você acerta ${pct}% em ${linha.respondidas} questões deste ponto, abaixo da sua média. Algumas questões novas mostram se isso muda.`,
+    },
+  }[tipo];
+  return {
+    chave: `padrao-${linha.processo_id}`,
+    icone: Crosshair,
+    olho: texto.olho,
+    titulo: linha.processo_nome,
+    porque: texto.porque,
+    // A rota é a RESERVA (sem JS, clique do meio, plano indisponível). O
+    // clique normal busca o plano do motor e abre as questões dirigidas.
+    rota: ROTAS.PROVAS,
+    cta: "Praticar este ponto",
+    testid: "passo-padrao",
+    provisorio: tipo !== "desempenho" && Boolean(linha.provisorio),
+    dirigida: { processoId: linha.processo_id, escolha },
+  };
+}
+
+export function escolherPasso({ revisoes, cronograma, habilidades, padroes = [], totalRespondidas = 0 }) {
   const vencidas = revisoes?.resumo?.questoes || 0;
   if (vencidas > 0) {
+    // A fila já diz QUAL ponto voltou e em que estado ele está — "3 questões
+    // voltaram" sem dizer de quê é um lembrete; com o nome, é memória.
+    const primeira = (revisoes?.itens || []).find((i) => i?.processo_nome);
     return {
       chave: "revisao",
       icone: RotateCw,
       olho: "Venceu hoje",
       titulo: vencidas === 1 ? "1 questão voltou para revisão" : `${vencidas} questões voltaram para revisão`,
-      porque: "Revisar no dia em que vence é o que faz a memória durar. Depois disso, rende menos.",
+      porque: primeira
+        ? `${vencidas === 1 ? "É" : "A primeira é"} de «${primeira.processo_nome}», marcada como ${primeira.rotulo || "revisão"}. Revisar no dia em que vence é o que faz a memória durar.`
+        : "Revisar no dia em que vence é o que faz a memória durar. Depois disso, rende menos.",
       rota: "/agenda#revisoes",
       cta: "Revisar agora",
       testid: "passo-revisao",
@@ -113,6 +168,9 @@ export function escolherPasso({ revisoes, cronograma, habilidades }) {
    *
    * Aqui o teste é sobre DADO, não sobre a lista: 56 habilidades intocadas
    * são 56 linhas de catálogo, não uma medida do aluno. */
+  const padrao = escolherPadrao(padroes);
+  if (padrao && padrao.tipo !== "desempenho") return passoDoPadrao(padrao);
+
   const temMedida = (habilidades || []).some((h) => h.respondidas > 0);
   const missao = temMedida ? missaoAtual(habilidades) : null;
   if (missao) {
@@ -128,6 +186,23 @@ export function escolherPasso({ revisoes, cronograma, habilidades }) {
       rota: `/treino?hab=${missao.hab_id}`,
       cta: tocada ? "Abrir a missão" : "Começar a missão",
       testid: "passo-missao",
+    };
+  }
+
+  if (padrao) return passoDoPadrao(padrao);
+
+  // Já respondeu, mas ainda não há medida que aponte um ponto. "Seu primeiro
+  // passo" aqui seria o produto dizendo que não se lembra dele.
+  if (totalRespondidas > 0) {
+    return {
+      chave: "continuar",
+      icone: PlayCircle,
+      olho: "Continue de onde parou",
+      titulo: "Mais uma rodada de questões",
+      porque: `Você já tem ${totalRespondidas} ${totalRespondidas === 1 ? "resposta" : "respostas"}. Cada rodada deixa mais nítido onde os seus erros começam.`,
+      rota: "/estudar/provas",
+      cta: "Continuar praticando",
+      testid: "passo-continuar",
     };
   }
 
@@ -147,15 +222,35 @@ export default function ProximoPasso({
   habilidades = [],
   revisoes = null,
   cronograma = null,
+  padroes = [],
   totalRespondidas = 0,
   ofensiva = 0,
   estudouHoje = true,
   testid = "proximo-passo",
 }) {
   const passo = useMemo(
-    () => escolherPasso({ revisoes, cronograma, habilidades }),
-    [revisoes, cronograma, habilidades],
+    () => escolherPasso({ revisoes, cronograma, habilidades, padroes, totalRespondidas }),
+    [revisoes, cronograma, habilidades, padroes, totalRespondidas],
   );
+  const navegar = useNavigate();
+  const [abrindo, setAbrindo] = useState(false);
+
+  // O passo dirigido continua sendo um LINK (a rota é a reserva, para clique
+  // do meio e para quando o JS falha), mas o clique normal busca o plano do
+  // motor e abre as questões certas. Registro de analytics nos dois casos.
+  const aoClicar = (e) => {
+    registrarProximoPassoIniciado();
+    if (!passo.dirigida || e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return;
+    e.preventDefault();
+    if (abrindo) return;
+    setAbrindo(true);
+    abrirPraticaDirigida({
+      api,
+      navegar,
+      processoId: passo.dirigida.processoId,
+      escolha: passo.dirigida.escolha,
+    }).finally(() => setAbrindo(false));
+  };
 
   const pontosTocados = habilidades.filter((h) => h.respondidas > 0).length;
   const pontosDominados = habilidades.filter((h) => h.classificacao === "forte").length;
@@ -180,6 +275,13 @@ export default function ProximoPasso({
             <span className="secao-olho inline-flex items-center gap-1.5">
               <Icone className="h-3.5 w-3.5" /> {passo.olho}
             </span>
+            {/* O portão de crença está desligado: a causa ainda não passou
+                por revisão humana, e a tela é obrigada a dizer isso. */}
+            {passo.provisorio && (
+              <span className="chip py-1 text-[11px] text-white/60" data-testid={`${testid}-provisorio`}>
+                leitura provisória
+              </span>
+            )}
             {emRisco && (
               <span
                 className="chip border-amber-300/30 bg-amber-400/12 py-1 text-[11px] text-amber-100"
@@ -199,11 +301,16 @@ export default function ProximoPasso({
           <div className="mt-6 flex flex-wrap items-center gap-2.5">
             <Link
               to={passo.rota}
-              onClick={registrarProximoPassoIniciado}
+              onClick={aoClicar}
+              aria-busy={abrindo || undefined}
               className="pill btn-sapiens inline-flex items-center gap-2 rounded-full px-6 py-3.5 text-sm font-bold"
               data-testid={passo.testid}
             >
-              {passo.cta} <ArrowRight className="h-4 w-4" />
+              {abrindo ? (
+                <>Separando as questões <Loader2 className="h-4 w-4 animate-spin" /></>
+              ) : (
+                <>{passo.cta} <ArrowRight className="h-4 w-4" /></>
+              )}
             </Link>
             {/* O MAPA. Era um fantasma chamado "O mapa" — dois problemas num
                 botão só. Fantasma, perdia para o passo aceso ao lado e o olho

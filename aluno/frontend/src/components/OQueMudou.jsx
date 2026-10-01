@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import {
-  RotateCw, PenLine, Flame, CalendarClock, Trophy, ArrowRight, GraduationCap,
+  RotateCw, PenLine, Flame, CalendarClock, Trophy, ArrowRight, GraduationCap, TrendingUp,
 } from "lucide-react";
 import { ROTAS, ANCORAS, com } from "../lib/rotas";
 import { diaLocal } from "../lib/atividade";
@@ -49,7 +49,53 @@ import { diaLocal } from "../lib/atividade";
  *
  * Sem eventos, a seção inteira não é desenhada — um cabeçalho "o que mudou"
  * sobre "nada mudou" é ruído com aparência de informação.
+ *
+ * ---------------------------------------------------------------------------
+ * A MICROVITÓRIA (2026-09-28)
+ * ---------------------------------------------------------------------------
+ *
+ * O único evento que faltava era o mais importante: "hoje consegui algo que
+ * antes não conseguia". Ele já existia no dado — a trajetória da revisão
+ * espaçada grava um marco quando o aluno ACERTA a revisão marcada de um ponto
+ * (`reteste_ok`) e quando acerta o mesmo raciocínio num contexto diferente
+ * daquele em que errava (`transferencia`) — e só aparecia enterrado no fim do
+ * Progresso. Os dois marcos só nascem de acerto (`revisao_espacada.py`),
+ * então a frase é verdade por construção. E ela DESCREVE, não alega causa:
+ * com o portão de crença desligado, "você melhorou por causa da revisão" é
+ * uma afirmação que o produto não pode fazer (`trajetoria.nexo_causal`).
+ *
+ * O Hoje carrega a trajetória junto com o resto (uma leitura O(1) do
+ * `students/{uid}`); esta peça continua sem requisição própria.
  */
+
+/** Janela da microvitória: depois de três dias ela deixa de ser notícia. */
+const DIAS_DA_VITORIA = 3;
+
+const FRASES_DA_VITORIA = {
+  reteste_ok: {
+    titulo: (nome) => `A revisão de «${nome}» saiu certa`,
+    detalhe: "O ponto voltou na data marcada, e desta vez você acertou.",
+  },
+  transferencia: {
+    titulo: (nome) => `Você acertou «${nome}» num contexto novo`,
+    detalhe: "Não era a questão de antes: era o mesmo raciocínio, em outro assunto.",
+  },
+};
+
+/** O marco de acerto mais recente da trajetória, se couber na janela. */
+export function microvitoria(trajetoria) {
+  let melhor = null;
+  for (const h of trajetoria?.habilidades || []) {
+    for (const m of h?.marcos || []) {
+      if (!FRASES_DA_VITORIA[m?.tipo] || !m.quando || !h.processo_nome) continue;
+      if (!melhor || m.quando > melhor.quando) melhor = { ...m, processo_nome: h.processo_nome };
+    }
+  }
+  if (!melhor) return null;
+  const dias = diasDesde(melhor.quando);
+  if (dias == null || dias > DIAS_DA_VITORIA) return null;
+  return melhor;
+}
 
 function diasDesde(iso) {
   if (!iso) return null;
@@ -69,6 +115,7 @@ export function eventosDoDia({
   engajamento = null,
   conquistas = [],
   passoAtual = null,
+  trajetoria = null,
 } = {}) {
   const eventos = [];
 
@@ -106,7 +153,24 @@ export function eventosDoDia({
     });
   }
 
-  // 3. O QUE VOCÊ MARCOU E NÃO CUMPRIU. O bloco de hoje que ainda não foi
+  // 3. O QUE VOCÊ CONSEGUIU. Antes das pendências de agenda e da ofensiva:
+  //    é o único evento que responde "estou evoluindo?", e o teto de quatro
+  //    linhas o cortaria se viesse no fim.
+  const vitoria = microvitoria(trajetoria);
+  if (vitoria) {
+    const frase = FRASES_DA_VITORIA[vitoria.tipo];
+    eventos.push({
+      chave: "vitoria",
+      icone: TrendingUp,
+      cor: "text-emerald-300",
+      titulo: frase.titulo(vitoria.processo_nome),
+      detalhe: frase.detalhe,
+      rota: com(ROTAS.PROGRESSO, ANCORAS.PROGRESSO_TRAJETORIA),
+      cta: "Ver a trajetória",
+    });
+  }
+
+  // 4. O QUE VOCÊ MARCOU E NÃO CUMPRIU. O bloco de hoje que ainda não foi
   //    feito — e só ele: o resumo da semana inteira é da Agenda.
   const hoje = (cronograma?.dias || []).find((d) => d.data === diaLocal());
   const pendente = (hoje?.blocos || []).find((b) => !b.concluido);
@@ -125,7 +189,7 @@ export function eventosDoDia({
     });
   }
 
-  // 4. A SEQUÊNCIA EM RISCO. Só quando há sequência DE VERDADE a perder e o
+  // 5. A SEQUÊNCIA EM RISCO. Só quando há sequência DE VERDADE a perder e o
   //    dia ainda não está garantido — nunca um aviso construído sobre um
   //    número que não existe. Ver a linha ética em `engajamento.py`.
   const ofensiva = engajamento?.ofensiva?.dias ?? 0;
@@ -142,7 +206,7 @@ export function eventosDoDia({
     });
   }
 
-  // 5. O CURSO PARADO. `cronograma` traz o que a semana reservou para estudo
+  // 6. O CURSO PARADO. `cronograma` traz o que a semana reservou para estudo
   //    de curso; se há bloco de curso e nenhum foi concluído, houve uma aula
   //    começada que ficou pelo caminho.
   const curso = (hoje?.blocos || []).find((b) => b.tipo === "curso" && !b.concluido);
@@ -158,7 +222,7 @@ export function eventosDoDia({
     });
   }
 
-  // 6. O RECONHECIMENTO, por último e de propósito: um elogio no topo de uma
+  // 7. O RECONHECIMENTO, por último e de propósito: um elogio no topo de uma
   //    lista de ações empurra as ações para baixo, e quem abriu o Hoje abriu
   //    para agir. O elogio é o fecho, não a manchete.
   const recente = conquistas.filter((c) => c.desbloqueada).slice(-1)[0];
@@ -167,7 +231,10 @@ export function eventosDoDia({
       chave: "conquista",
       icone: Trophy,
       cor: "text-amber-300",
-      titulo: `Você desbloqueou "${recente.nome || recente.titulo}"`,
+      // O catálogo (`lib/conquistas.js`) chama o nome de `label`. Lendo só
+      // `nome || titulo`, a linha saía "Você desbloqueou "undefined"" para
+      // todo aluno com uma conquista.
+      titulo: `Você desbloqueou "${recente.label || recente.nome || recente.titulo}"`,
       detalhe: "Está na sua sala de troféus.",
       rota: com(ROTAS.PROGRESSO, ANCORAS.PROGRESSO_CONQUISTAS),
       cta: "Ver",

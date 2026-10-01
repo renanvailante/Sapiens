@@ -279,6 +279,14 @@ export default function Progresso() {
 
           <ResumoDoPainel resumo={dados.resumo} />
 
+          {/* O RACIOCÍNIO sobe para logo depois dos números, e antes dos 17
+              gráficos. Era a última seção da página: quem abria o Progresso
+              para saber "no que eu sou bom e no que eu travo" tinha de rolar
+              por evolução, matérias, redação e hábitos — a pergunta de dez
+              segundos respondida depois de dez telas. Os gráficos continuam
+              todos, logo abaixo, para quem quer a prova de cada frase. */}
+          <Forcas forcas={dados.forcas} destacado={aceso("forcas")} />
+
           <Secao
             olho="A mudança"
             titulo="Como você está evoluindo"
@@ -335,8 +343,6 @@ export default function Progresso() {
               <DeOndeVemSuasRespostas origem={dados.habitos.origem} destacado={aceso("origem")} />
             </div>
           </Secao>
-
-          <Forcas forcas={dados.forcas} destacado={aceso("forcas")} />
 
           <Rodape cobertura={dados.cobertura} />
         </div>
@@ -416,7 +422,7 @@ function Forcas({ forcas, destacado }) {
   if (!fortes.length && !desenvolver.length) return null;
 
   return (
-    <section className="mt-8" id="forcas" style={{ scrollMarginTop: "6rem" }}>
+    <section id="forcas" style={{ scrollMarginTop: "6rem" }}>
       <div className="secao-olho">O raciocínio</div>
       <h2 className="mt-1.5 font-display text-xl font-bold tracking-tight text-white md:text-2xl">
         O que a sua prática mostra de você

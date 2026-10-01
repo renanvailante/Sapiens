@@ -80,4 +80,83 @@ describe("escolherPasso", () => {
     });
     expect(passo.chave).toBe("bloco-b1");
   });
+
+  // ---------------------------------------------------------------------
+  // O POR QUÊ (2026-09-28). A fila do motor já chegava ao Painel e não
+  // mudava a ação; agora ela entra na escada.
+  // ---------------------------------------------------------------------
+
+  const causa = {
+    origem: "error_trace",
+    processo_id: "P-10",
+    processo_nome: "Interpretar a relação entre grandezas",
+    sem_intervencao_catalogada: false,
+    provisorio: true,
+    ocorrencias_raiz: 4,
+    erro_dominante: { nome: "Inverter a direção da proporção", sem_catalogo: false },
+  };
+  const desempenho = {
+    origem: "desempenho",
+    processo_id: "P-12",
+    processo_nome: "Comparar frações",
+    percentual_acerto: 40,
+    respondidas: 10,
+  };
+
+  test("quem só fez provas NÃO recebe 'Seu primeiro passo' — o produto se lembra dele", () => {
+    // O defeito: a trilha só lê o treino (`treino_agregado`); quem tinha 200
+    // questões de prova e nunca abriu o mapa caía no degrau da conta nova.
+    const passo = escolherPasso({ ...vazio, habilidades: catalogoIntocado(), totalRespondidas: 200 });
+    expect(passo.chave).toBe("continuar");
+    expect(passo.olho).not.toMatch(/primeiro/i);
+    expect(passo.porque).toContain("200 respostas");
+  });
+
+  test("o padrão de erro com causa vence a trilha e abre prática dirigida", () => {
+    const habilidades = catalogoIntocado();
+    habilidades[7] = { ...habilidades[7], respondidas: 4, acertos: 1, percentual: 25, classificacao: "fraco" };
+    const passo = escolherPasso({ ...vazio, habilidades, padroes: [causa], totalRespondidas: 40 });
+    expect(passo.chave).toBe("padrao-P-10");
+    expect(passo.titulo).toBe("Interpretar a relação entre grandezas");
+    expect(passo.porque).toContain("«Inverter a direção da proporção»");
+    expect(passo.dirigida.processoId).toBe("P-10");
+    expect(passo.provisorio).toBe(true);
+  });
+
+  test("revisão e cronograma continuam acima do padrão", () => {
+    const comRevisao = escolherPasso({ ...vazio, revisoes: { resumo: { questoes: 2 } }, padroes: [causa] });
+    expect(comRevisao.chave).toBe("revisao");
+  });
+
+  test("a revisão diz DE QUE é a questão que voltou", () => {
+    const passo = escolherPasso({
+      ...vazio,
+      revisoes: { resumo: { questoes: 2 }, itens: [{ processo_nome: "Ler o gráfico", rotulo: "erro recorrente" }] },
+    });
+    expect(passo.porque).toContain("«Ler o gráfico»");
+    expect(passo.porque).toContain("erro recorrente");
+  });
+
+  test("desempenho sem traço é evidência mais fraca: fica ABAIXO da trilha", () => {
+    const habilidades = catalogoIntocado();
+    habilidades[2] = { ...habilidades[2], respondidas: 5, acertos: 1, percentual: 20, classificacao: "fraco" };
+    expect(escolherPasso({ ...vazio, habilidades, padroes: [desempenho] }).chave).toBe("hab-HAB-03");
+    const semTrilha = escolherPasso({ ...vazio, habilidades: catalogoIntocado(), padroes: [desempenho], totalRespondidas: 30 });
+    expect(semTrilha.chave).toBe("padrao-P-12");
+    expect(semTrilha.porque).toContain("40%");
+    expect(semTrilha.provisorio).toBe(false);
+  });
+
+  test("causa sem catálogo nunca mostra o nome do erro", () => {
+    const sentinela = {
+      ...causa,
+      sem_intervencao_catalogada: true,
+      erro_dominante: { nome: "erro não catalogado nesta versão", sem_catalogo: true },
+    };
+    const passo = escolherPasso({ ...vazio, padroes: [sentinela], totalRespondidas: 20 });
+    expect(passo.chave).toBe("padrao-P-10");
+    expect(passo.porque).not.toMatch(/catalogado/);
+    expect(passo.porque).toContain("4 dos seus erros");
+  });
 });
+
