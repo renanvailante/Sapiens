@@ -107,6 +107,10 @@ export function montarPraticaDirigida(detalhe, escolha = null) {
         comoPraticar: comEnquadramento ? (plano.como_praticar || []).slice(0, 2) : [],
         sinal: comEnquadramento ? plano.sinal_de_progresso || null : null,
         antes,
+        // As missões do mapa do Treino que exercitam este mesmo processo — o
+        // catálogo liga cada habilidade aos processos dela, e o Treino usa os
+        // mesmos ids. É a ponte prova → Treino no fechamento da série.
+        habilidades: (detalhe?.processo?.habilidades || []).map((h) => h?.id).filter(Boolean),
         provisorio: Boolean(detalhe?.provisorio),
         total: ids.length,
         restantes: Math.max(0, (plano.praticar?.total_disponivel ?? ids.length) - ids.length),
@@ -203,4 +207,21 @@ export function fraseDoFechamento(resumo) {
     return `Antes desta série você acertava ${c.antes}% neste ponto, e hoje saiu abaixo disso. Isso também é informação: vale voltar a este ponto antes de abrir outro.`;
   }
   return `Mesmo patamar do seu histórico neste ponto (${c.antes}%). Estabilizar vem antes de subir.`;
+}
+
+/** Missões medidas por questão respondida/acertada em QUALQUER lugar. */
+const MISSOES_DE_PRATICA = new Set(["responder5", "responder15", "acertar8"]);
+
+/**
+ * Para onde a missão leva. As de prática contam resposta em qualquer tela —
+ * então, quando o motor já aponta um padrão de erro, elas levam às questões
+ * daquele padrão em vez de a um caderno qualquer. A missão, o alvo e o prêmio
+ * não mudam (a linha ética de `engajamento.py` continua intacta): muda só o
+ * lugar onde as mesmas cinco questões rendem mais.
+ */
+export function destinoDaMissao(missao, pratica) {
+  if (pratica?.processoId && MISSOES_DE_PRATICA.has(missao?.id)) {
+    return { tipo: "dirigida", cta: "No seu ponto de atenção" };
+  }
+  return { tipo: "rota", rota: missao?.rota, cta: missao?.cta };
 }

@@ -112,8 +112,17 @@ def _agora() -> datetime:
 
 def _safe_reembolso(uid: str, cost: int):
     """Mesmo contrato de `skills_map_routes._safe_reembolso`: devolver os
-    Sparks não pode virar um segundo erro em cima do primeiro."""
+    Sparks não pode virar um segundo erro em cima do primeiro.
+
+    **Nunca devolve o que não foi debitado.** Quem tem a Mentis ilimitada não
+    paga nada em `_cobrar` (o saldo nem é tocado) — e até 2026-10-01 a falha
+    do modelo devolvia o custo mesmo assim: cada explicação, mensagem ou
+    intervenção que falhava CREDITAVA Sparks a quem não tinha pago nada. É a
+    mesma máquina de Spark de graça que `inviolaveis.md` proíbe no pagamento.
+    """
     try:
+        if cost <= 0 or fs.tem_mentis_ilimitada(uid):
+            return fs.read_sparks_balance(uid)
         return fs.refund_sparks(uid, cost)
     except Exception:  # noqa: BLE001
         logger.exception("REEMBOLSO FALHOU (mentis): %d Sparks devidos a %s.", cost, uid)
@@ -121,24 +130,56 @@ def _safe_reembolso(uid: str, cost: int):
 
 
 def _cobrar(uid: str, custo: int) -> int:
+    """O saldo depois da cobrança. Ver `_cobrar_com_recibo`."""
+    return _cobrar_com_recibo(uid, custo)[0]
+
+
+def _cobrar_com_recibo(uid: str, custo: int) -> tuple[int, int]:
     """Ponto ÚNICO de cobrança da Mentis — explicação, intervenção, abertura
-    de sessão e cada mensagem passam por aqui.
+    de sessão, cada mensagem, "explicar melhor", dissertativa e a leitura da
+    rodada (`firestore_routes.diagnostico_sessao`) passam por aqui.
+
+    Devolve `(saldo, cobrado)`: quem precisa estornar estorna `cobrado`, que
+    é zero para a Mentis ilimitada — nunca o preço de tabela.
 
     Por ser único, é também onde a **Mentis ilimitada** acontece: quem comprou
-    o pacote de R$119,90 (ver `sparks_store`) não paga nenhuma das quatro. O
+    o pacote de R$119,90 (ver `sparks_store`) não paga nenhuma delas. O
     atalho vem ANTES do débito, e não um desconto depois, porque "ilimitada"
     tem de significar que o saldo nem é tocado.
     """
     if fs.tem_mentis_ilimitada(uid):
-        return fs.read_sparks_balance(uid)
+        return fs.read_sparks_balance(uid), 0
     fs.ensure_sparks_balance(uid)
     try:
-        return fs.deduct_sparks(uid, custo)
+        return fs.deduct_sparks(uid, custo), custo
     except fs.InsufficientSparksError as exc:
         raise HTTPException(
             status_code=402,
             detail=f"Sparks insuficientes: saldo {exc.balance}, custo {exc.needed}.",
         ) from exc
+
+
+@router.get("/precos")
+async def precos(_: User = Depends(require_user)):
+    """Os preços da Mentis, lidos das MESMAS constantes que cobram.
+
+    Preço nunca é escrito no JavaScript (`economia-de-sparks.md`): telas que
+    só precisam ESCREVER o preço num botão leem daqui, em vez de espelhar o
+    número — a tela de provas espelhava 7 e 15 à mão. Quem tem a Mentis
+    ilimitada não paga nenhum destes; a tela sabe disso pelos `direitos` que
+    já vêm com o saldo.
+    """
+    from firestore_routes import RESUMO_SESSAO_COST  # import tardio: sem ciclo na carga
+
+    return {
+        "explicacao": EXPLICACAO_COST,
+        "sessao": SESSAO_COST,
+        "mensagem": MENSAGEM_COST,
+        "intervencao": INTERVENCAO_COST,
+        "explicacao_conteudo": EXPLICACAO_CONTEUDO_COST,
+        "dissertativa": DISSERTATIVA_COST,
+        "resumo_rodada": RESUMO_SESSAO_COST,
+    }
 
 
 # ---------- 1. Explicação de uma questão ("Saiba mais") ----------

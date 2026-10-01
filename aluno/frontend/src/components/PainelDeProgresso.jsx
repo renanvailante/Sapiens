@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { api, errMsg } from "../lib/api";
 import { avisarSparksMudou } from "./Navegacao";
 import AnelDeProgresso from "./AnelDeProgresso";
 import ContagemEnem from "./ContagemEnem";
+import { abrirPraticaDirigida, destinoDaMissao } from "../lib/praticaDirigida";
 import {
   Flame, Snowflake, Trophy, Zap, ArrowRight, Check, Loader2,
 } from "lucide-react";
@@ -149,7 +150,15 @@ function Liga({ dados }) {
   );
 }
 
-function Missoes({ missoes, aoResgatar, resgatando, celebrando }) {
+function Missoes({ missoes, aoResgatar, resgatando, celebrando, pratica }) {
+  const navegar = useNavigate();
+  const [abrindo, setAbrindo] = useState(false);
+  const irParaPratica = () => {
+    if (abrindo) return;
+    setAbrindo(true);
+    abrirPraticaDirigida({ api, navegar, processoId: pratica.processoId, escolha: pratica.escolha })
+      .finally(() => setAbrindo(false));
+  };
   return (
     <section className="mt-6" data-testid="progresso-missoes" data-tour="tour-missoes">
       <div className="secao-cabeca">
@@ -201,6 +210,17 @@ function Missoes({ missoes, aoResgatar, resgatando, celebrando }) {
                       {resgatando === m.id ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
                       Resgatar
                     </button>
+                  ) : destinoDaMissao(m, pratica).tipo === "dirigida" ? (
+                    <button
+                      type="button"
+                      onClick={irParaPratica}
+                      disabled={abrindo}
+                      className="-my-2 inline-flex items-center gap-1 py-2 text-xs font-semibold text-[#7FD8FF] hover:underline disabled:opacity-60"
+                      data-testid={`missao-dirigida-${m.id}`}
+                    >
+                      {abrindo ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+                      {destinoDaMissao(m, pratica).cta} <ArrowRight className="h-3 w-3" />
+                    </button>
                   ) : (
                     <Link
                       to={m.rota}
@@ -219,7 +239,7 @@ function Missoes({ missoes, aoResgatar, resgatando, celebrando }) {
   );
 }
 
-export default function PainelDeProgresso({ dados, aoMudar }) {
+export default function PainelDeProgresso({ dados, aoMudar, pratica = null }) {
   const [resgatando, setResgatando] = useState(null);
   const [comprando, setComprando] = useState(false);
   // Qual missão está comemorando. Meio segundo de pulso NO CARD que gerou o
@@ -336,6 +356,7 @@ export default function PainelDeProgresso({ dados, aoMudar }) {
         aoResgatar={resgatar}
         resgatando={resgatando}
         celebrando={celebrando}
+        pratica={pratica}
       />
     </section>
   );

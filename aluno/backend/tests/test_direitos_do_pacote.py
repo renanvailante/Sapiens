@@ -32,6 +32,7 @@ buraco, dos dois lados:
 """
 from __future__ import annotations
 
+import asyncio
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -403,3 +404,142 @@ class TestMentisIlimitadaComPrazo:
         ate = datetime.fromisoformat(antigo["mentis_ilimitada_ate"])
         dias = (ate - datetime.now(timezone.utc)).total_seconds() / 86400
         assert sparks_store.PRAZO_MENTIS_ILIMITADA_DIAS - 0.01 <= dias <= sparks_store.PRAZO_MENTIS_ILIMITADA_DIAS + 0.01
+
+
+class TestQuemNaoPagouNaoRecebeEstorno:
+    """O outro lado da ilimitada: quem não foi cobrado não pode ser
+    reembolsado. Até 2026-10-01 a falha do modelo devolvia o preço de tabela a
+    quem tem a Mentis ilimitada — cada explicação que falhava CREDITAVA Sparks
+    a quem não tinha pago nada."""
+
+    @pytest.fixture
+    def carteira(self, monkeypatch):
+        estado = {"saldo": 500, "debitos": [], "reembolsos": []}
+
+        def _deduct(uid, quantia):
+            estado["saldo"] -= quantia
+            estado["debitos"].append(quantia)
+            return estado["saldo"]
+
+        def _refund(uid, quantia):
+            estado["saldo"] += quantia
+            estado["reembolsos"].append(quantia)
+            return estado["saldo"]
+
+        monkeypatch.setattr(fs, "ensure_sparks_balance", lambda uid: estado["saldo"])
+        monkeypatch.setattr(fs, "read_sparks_balance", lambda uid: estado["saldo"])
+        monkeypatch.setattr(fs, "deduct_sparks", _deduct)
+        monkeypatch.setattr(fs, "refund_sparks", _refund)
+        return estado
+
+    def test_recibo_diz_quanto_foi_cobrado_de_verdade(self, carteira, monkeypatch):
+        monkeypatch.setattr(fs, "tem_mentis_ilimitada", lambda uid: True)
+        assert mr._cobrar_com_recibo("aluno-1", mr.EXPLICACAO_COST) == (500, 0)
+        monkeypatch.setattr(fs, "tem_mentis_ilimitada", lambda uid: False)
+        assert mr._cobrar_com_recibo("aluno-1", mr.EXPLICACAO_COST) == (500 - mr.EXPLICACAO_COST, mr.EXPLICACAO_COST)
+
+    def test_ilimitada_nao_ganha_sparks_quando_o_modelo_falha(self, carteira, monkeypatch):
+        monkeypatch.setattr(fs, "tem_mentis_ilimitada", lambda uid: True)
+        for custo in (mr.SESSAO_COST, mr.MENSAGEM_COST, mr.EXPLICACAO_COST, mr.INTERVENCAO_COST,
+                      mr.EXPLICACAO_CONTEUDO_COST, mr.DISSERTATIVA_COST):
+            assert mr._safe_reembolso("aluno-1", custo) == 500
+        assert carteira["reembolsos"] == []
+        assert carteira["saldo"] == 500
+
+    def test_quem_pagou_continua_recebendo_o_estorno(self, carteira, monkeypatch):
+        monkeypatch.setattr(fs, "tem_mentis_ilimitada", lambda uid: False)
+        mr._safe_reembolso("aluno-1", mr.EXPLICACAO_COST)
+        assert carteira["reembolsos"] == [mr.EXPLICACAO_COST]
+
+    def test_estorno_de_zero_nao_mexe_no_saldo(self, carteira, monkeypatch):
+        monkeypatch.setattr(fs, "tem_mentis_ilimitada", lambda uid: False)
+        assert mr._safe_reembolso("aluno-1", 0) == 500
+        assert carteira["reembolsos"] == []
+
+
+class TestLeituraDaRodadaEhMentis:
+    """"Ler com a Mentis" na devolutiva da rodada é ferramenta da Mentis e
+    passa pela cobrança dela — quem comprou a ilimitada não paga, e a falha
+    não devolve o que não foi cobrado."""
+
+    def _rodada(self, monkeypatch, resultado=None, explode=False):
+        import firestore_routes as fr
+
+        monkeypatch.setattr(fr.annotation_service, "montar_contexto_sessao", lambda respostas: {"n": len(respostas)})
+
+        async def _diagnose(contexto):
+            if explode:
+                raise RuntimeError("gemini fora do ar")
+            return resultado or {"pontos_fortes": ["leitura"], "pontos_de_atencao": [], "padroes_de_erro": []}
+
+        monkeypatch.setattr(fr.ai_service, "diagnose_sessao", _diagnose)
+        payload = fr.SessaoDiagnosticoPayload(respostas=[
+            {"item_id": f"I{i}", "alternativa_escolhida": "A", "acertou": i % 2 == 0} for i in range(10)
+        ])
+        from models import User
+        return asyncio.run(fr.diagnostico_sessao(payload, user=User(user_id="aluno-1", email="a@b.c", name="A"), _=None))
+
+    @pytest.fixture
+    def carteira(self, monkeypatch):
+        estado = {"saldo": 500, "debitos": [], "reembolsos": []}
+        monkeypatch.setattr(fs, "ensure_sparks_balance", lambda uid: estado["saldo"])
+        monkeypatch.setattr(fs, "read_sparks_balance", lambda uid: estado["saldo"])
+
+        def _deduct(uid, q):
+            estado["saldo"] -= q
+            estado["debitos"].append(q)
+            return estado["saldo"]
+
+        def _refund(uid, q):
+            estado["saldo"] += q
+            estado["reembolsos"].append(q)
+            return estado["saldo"]
+
+        monkeypatch.setattr(fs, "deduct_sparks", _deduct)
+        monkeypatch.setattr(fs, "refund_sparks", _refund)
+        return estado
+
+    def test_ilimitada_le_a_rodada_sem_pagar(self, carteira, monkeypatch):
+        import firestore_routes as fr
+        monkeypatch.setattr(fs, "tem_mentis_ilimitada", lambda uid: True)
+        saida = self._rodada(monkeypatch)
+        assert saida["cobrado"] == 0
+        assert carteira["debitos"] == []
+        assert fr.RESUMO_SESSAO_COST > 0
+
+    def test_sem_o_direito_cobra_o_preco_da_constante(self, carteira, monkeypatch):
+        import firestore_routes as fr
+        monkeypatch.setattr(fs, "tem_mentis_ilimitada", lambda uid: False)
+        saida = self._rodada(monkeypatch)
+        assert carteira["debitos"] == [fr.RESUMO_SESSAO_COST]
+        assert saida["cobrado"] == fr.RESUMO_SESSAO_COST
+
+    def test_falha_da_ilimitada_nao_vira_credito(self, carteira, monkeypatch):
+        monkeypatch.setattr(fs, "tem_mentis_ilimitada", lambda uid: True)
+        with pytest.raises(HTTPException) as erro:
+            self._rodada(monkeypatch, explode=True)
+        assert erro.value.status_code == 503
+        assert "Nada foi cobrado" in erro.value.detail
+        assert carteira["reembolsos"] == []
+
+    def test_falha_de_quem_pagou_devolve(self, carteira, monkeypatch):
+        import firestore_routes as fr
+        monkeypatch.setattr(fs, "tem_mentis_ilimitada", lambda uid: False)
+        with pytest.raises(HTTPException):
+            self._rodada(monkeypatch, explode=True)
+        assert carteira["reembolsos"] == [fr.RESUMO_SESSAO_COST]
+
+
+class TestPrecosDaMentisSaemDasConstantes:
+    def test_endpoint_devolve_as_constantes_que_cobram(self):
+        import firestore_routes as fr
+        precos = asyncio.run(mr.precos(None))
+        assert precos == {
+            "explicacao": mr.EXPLICACAO_COST,
+            "sessao": mr.SESSAO_COST,
+            "mensagem": mr.MENSAGEM_COST,
+            "intervencao": mr.INTERVENCAO_COST,
+            "explicacao_conteudo": mr.EXPLICACAO_CONTEUDO_COST,
+            "dissertativa": mr.DISSERTATIVA_COST,
+            "resumo_rodada": fr.RESUMO_SESSAO_COST,
+        }

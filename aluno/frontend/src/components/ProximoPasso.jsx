@@ -226,6 +226,7 @@ export default function ProximoPasso({
   totalRespondidas = 0,
   ofensiva = 0,
   estudouHoje = true,
+  diasNaSemana = 0,
   testid = "proximo-passo",
 }) {
   const passo = useMemo(
@@ -341,12 +342,23 @@ export default function ProximoPasso({
               linha só e o terceiro caía sozinho embaixo, com um vão do
               tamanho de dois deles ao lado — o que lia como erro de layout,
               não como continuação. */}
-          <div className="mt-7 grid grid-cols-3 gap-3">
-            {[
-              { n: pontosTocados, de: TOTAL_HABILIDADES, rotulo: "pontos explorados" },
-              { n: pontosDominados, rotulo: "dominados" },
-              { n: totalRespondidas, rotulo: "questões" },
-            ].map((x) => (
+          {/* Quem só faz prova não tem medida no MAPA (ela só sobe com missão
+              do Treino) — "0/56 explorados · 0 dominados" ao lado de "200
+              questões" lia como "você não fez nada". Para esse aluno a tira
+              mostra o que ele fez: volume, constância na semana, sequência. */}
+          <div className="mt-7 grid grid-cols-3 gap-3" data-testid={`${testid}-numeros`}>
+            {(pontosTocados === 0 && totalRespondidas > 0
+              ? [
+                  { n: totalRespondidas, rotulo: "questões" },
+                  { n: diasNaSemana, de: 7, rotulo: "dias nesta semana" },
+                  { n: ofensiva, rotulo: ofensiva === 1 ? "dia seguido" : "dias seguidos" },
+                ]
+              : [
+                  { n: pontosTocados, de: TOTAL_HABILIDADES, rotulo: "pontos explorados" },
+                  { n: pontosDominados, rotulo: "dominados" },
+                  { n: totalRespondidas, rotulo: "questões" },
+                ]
+            ).map((x) => (
               <div key={x.rotulo}>
                 <div className="medida-n text-2xl">
                   {x.n}

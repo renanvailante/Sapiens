@@ -16,6 +16,7 @@ import {
   pontoRepetido,
   resumoDaSerie,
   fraseDoFechamento,
+  destinoDaMissao,
   TETO_QUESTOES,
 } from "./praticaDirigida";
 
@@ -225,5 +226,22 @@ describe("resumoDaSerie e fraseDoFechamento", () => {
 
   test("série vazia (reabriu um conjunto já terminado) não divide por zero", () => {
     expect(resumoDaSerie([], dirigida)).toMatchObject({ total: 0, percentual: null, comparacao: null });
+  });
+});
+
+describe("destinoDaMissao", () => {
+  const pratica = { processoId: "P-10", escolha: { tipo: "causa" } };
+
+  test("missão de prática vai ao padrão quando o motor aponta um", () => {
+    for (const id of ["responder5", "responder15", "acertar8"]) {
+      expect(destinoDaMissao({ id, rota: "/estudar/provas", cta: "Praticar" }, pratica).tipo).toBe("dirigida");
+    }
+  });
+
+  test("sem padrão, ou missão de outro tipo, segue a rota do servidor", () => {
+    expect(destinoDaMissao({ id: "responder5", rota: "/estudar/provas", cta: "Praticar" }, null))
+      .toEqual({ tipo: "rota", rota: "/estudar/provas", cta: "Praticar" });
+    expect(destinoDaMissao({ id: "revisao", rota: "/agenda#revisoes", cta: "Revisar" }, pratica).tipo).toBe("rota");
+    expect(destinoDaMissao({ id: "treino", rota: "/estudar/treino", cta: "Treinar" }, pratica).tipo).toBe("rota");
   });
 });

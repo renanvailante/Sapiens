@@ -13,15 +13,18 @@ import Alternativas from "../components/questao/Alternativas";
 import ReportarQuestao from "../components/ReportarQuestao";
 import { ROTAS, ANCORAS, com } from "../lib/rotas";
 import { useDeclararContextoMentis } from "../lib/mentisContexto";
+import { MISSOES } from "../components/mapa3d/missoes";
 import {
   abrirPraticaDirigida, resumoDaSerie, fraseDoFechamento, pontoRepetido, TETO_QUESTOES,
 } from "../lib/praticaDirigida";
 
 const APP_VERSION = "sapiens-web-1.0";
-const MENTIS_COST = 7; // espelha EXPLICACAO_COST em mentis_routes.py — só p/ desabilitar o botão sem saldo, o servidor é quem cobra de fato
-// Espelha `RESUMO_SESSAO_COST` em firestore_routes.py. Mesma regra do de cima:
-// serve para ESCREVER o preço e desabilitar sem saldo; quem cobra é o servidor.
-const RESUMO_RODADA_COST = 15;
+// Preço nunca é escrito no JS (`economia-de-sparks.md`): os dois abaixo são
+// só a RESERVA enquanto `GET /mentis/precos` não responde — o número que a
+// tela escreve vem das constantes que cobram. Até 2026-10-01 eram o próprio
+// preço, espelhado à mão.
+const EXPLICACAO_PADRAO = 7;
+const RESUMO_RODADA_PADRAO = 15;
 
 // "AMARELO" -> "Amarelo" — só para exibição das cores de caderno do ENEM.
 const capitalizar = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : s);
@@ -151,6 +154,9 @@ function FechamentoDaSerie({ respostas, filtro, onExit, abrindo, aoPraticar }) {
   // ponto da série — dizer isso de novo seria redundante.
   const repetido = !dirigida ? resumo.repetido : null;
   const mais = dirigida?.processoId && dirigida.restantes > 0 ? Math.min(TETO_QUESTOES, dirigida.restantes) : 0;
+  // A missão do mapa que exercita o mesmo processo — a ponte prova → Treino.
+  // O rótulo é o do mapa ("Proporção I"), o mesmo que o aluno vê lá.
+  const missaoLigada = (dirigida?.habilidades || []).map((id) => ({ id, rotulo: MISSOES[id]?.rotulo })).find((m) => m.rotulo);
 
   const titulo = dirigida
     ? "Série concluída"
@@ -230,6 +236,15 @@ function FechamentoDaSerie({ respostas, filtro, onExit, abrindo, aoPraticar }) {
         >
           <Compass className="h-4 w-4" /> Ver o próximo passo
         </Link>
+        {missaoLigada && (
+          <Link
+            to={`${ROTAS.TREINO}?hab=${encodeURIComponent(missaoLigada.id)}`}
+            className={botaoSecundario}
+            data-testid="serie-missao-ligada"
+          >
+            Treinar no mapa: {missaoLigada.rotulo}
+          </Link>
+        )}
         {filtro?.origem === "revisao" ? (
           <Link to={com(ROTAS.AGENDA, ANCORAS.AGENDA_REVISOES)} className={botaoSecundario} data-testid="serie-voltar-revisoes">
             Voltar às revisões
@@ -285,13 +300,26 @@ function QuestionRunner({ filtro, onExit }) {
     abrirPraticaDirigida({ api, navegar, processoId, escolha }).finally(() => setAbrindoPonto(false));
   };
 
+  // Preços e direitos: o saldo já traz os `direitos` (um documento só), e
+  // quem tem a Mentis ilimitada não paga nenhuma das duas leituras desta tela.
+  const [precos, setPrecos] = useState(null);
+  const [ilimitada, setIlimitada] = useState(false);
   useEffect(() => {
     let ativo = true;
     api.get("/firestore/students/me/sparks")
-      .then(({ data }) => { if (ativo) setSparks(data.sparks_balance); })
+      .then(({ data }) => {
+        if (!ativo) return;
+        setSparks(data.sparks_balance);
+        setIlimitada(Boolean(data.direitos?.mentis_ilimitada));
+      })
       .catch(() => {});
+    api.get("/mentis/precos").then(({ data }) => { if (ativo) setPrecos(data); }).catch(() => {});
     return () => { ativo = false; };
   }, []);
+  const MENTIS_COST = precos?.explicacao ?? EXPLICACAO_PADRAO;
+  const RESUMO_RODADA_COST = precos?.resumo_rodada ?? RESUMO_RODADA_PADRAO;
+  const semSaldoExplicacao = !ilimitada && sparks != null && sparks < MENTIS_COST;
+  const semSaldoResumo = !ilimitada && sparks != null && sparks < RESUMO_RODADA_COST;
 
   useEffect(() => {
     let ativo = true;
@@ -755,15 +783,17 @@ function QuestionRunner({ filtro, onExit }) {
             {!explicacao?.paragrafos && (
               <button
                 onClick={pedirExplicacao}
-                disabled={explicacao?.loading || (sparks != null && sparks < MENTIS_COST)}
+                disabled={explicacao?.loading || semSaldoExplicacao}
                 data-testid="mentis-explicacao-btn"
                 className="mt-3 inline-flex items-center gap-2 rounded-full border border-sapiens-navy/15 bg-white px-3.5 py-2 text-xs font-bold text-sapiens-navy shadow-sm transition hover:border-sapiens-accent hover:shadow disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Mentis className="w-4 h-4" variante="icone" estado={explicacao?.loading ? "analise" : "neutra"} />
                 {explicacao?.loading
                   ? "Mentis está pensando…"
-                  : sparks != null && sparks < MENTIS_COST
+                  : semSaldoExplicacao
                   ? `Saldo insuficiente (${MENTIS_COST} Sparks)`
+                  : ilimitada
+                  ? "Solução da Mentis · incluída no seu pacote"
                   : `Solução da Mentis · ${MENTIS_COST} Sparks`}
               </button>
             )}
@@ -780,6 +810,8 @@ function QuestionRunner({ filtro, onExit }) {
                   processoId={result.causa_raiz.processo_id}
                   sparks={sparks}
                   onSparks={setSparks}
+                  custo={precos?.intervencao ?? null}
+                  ilimitada={ilimitada}
                   testid="mentis-intervencao"
                   evidencia={[{ banca: item?.fonte?.banca, ano: item?.fonte?.ano, numero: item?.fonte?.numero,
                                detalhe: `você marcou ${selected}` }]}
@@ -934,14 +966,16 @@ function QuestionRunner({ filtro, onExit }) {
                   </p>
                   <button
                     onClick={pedirResumoDaRodada}
-                    disabled={resumoIA?.loading || (sparks != null && sparks < RESUMO_RODADA_COST)}
+                    disabled={resumoIA?.loading || semSaldoResumo}
                     data-testid="rodada-pedir-ia-btn"
                     className="pill btn-sapiens mt-3 inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {resumoIA?.loading
                       ? "A Mentis está lendo a rodada…"
-                      : sparks != null && sparks < RESUMO_RODADA_COST
+                      : semSaldoResumo
                       ? `Saldo insuficiente (${RESUMO_RODADA_COST} Sparks)`
+                      : ilimitada
+                      ? "Ler com a Mentis · incluída no seu pacote"
                       : `Ler com a Mentis · ${RESUMO_RODADA_COST} Sparks`}
                   </button>
                   {resumoIA?.erro && (

@@ -9,7 +9,7 @@ import { ESTADO_LABEL } from "./sceneBuilder";
  * não modal administrativo: sem cortina cobrindo o mundo 3D inteiro, só uma
  * vinheta de um lado (o escurecimento de verdade vem do dolly da câmera).
  * Mesmo contrato de props do `Briefing` anterior — a página não muda. */
-export default function BriefingHUD({ hab, onFechar, onIniciar }) {
+export default function BriefingHUD({ hab, onFechar, onIniciar, ligadaAoPadrao = false }) {
   const bioma = hab.bioma;
   return (
     <motion.div
@@ -41,6 +41,17 @@ export default function BriefingHUD({ hab, onFechar, onIniciar }) {
         <h2 className="mt-2 font-display text-2xl font-extrabold tracking-tight text-zinc-950">
           Missão: {hab.rotulo}
         </h2>
+        {/* A ponte entre as duas medidas: o motor diz em que processo os erros
+            de PROVA começam, e o catálogo diz que esta missão exercita esse
+            processo. Sem isto o mapa parecia outro produto. */}
+        {ligadaAoPadrao && (
+          <div
+            className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-sm font-medium text-amber-900"
+            data-testid="mapa-briefing-ligada"
+          >
+            Esta missão treina o ponto em que mais erros seus nas provas começam.
+          </div>
+        )}
         <p className="mt-3 text-sm leading-relaxed text-zinc-600 italic">{bioma.ideia}</p>
         <div className="mt-4 rounded-xl bg-sapiens-accentSoft/60 border border-sapiens-accent/20 px-4 py-3 text-sm text-zinc-700">
           {bioma.resumo}

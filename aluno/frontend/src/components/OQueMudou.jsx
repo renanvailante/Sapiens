@@ -68,6 +68,29 @@ import { diaLocal } from "../lib/atividade";
  * `students/{uid}`); esta peça continua sem requisição própria.
  */
 
+/**
+ * As conquistas que são NOTÍCIA hoje. O catálogo é calculado no navegador e
+ * não guarda data de desbloqueio — então "a última desbloqueada" era sempre a
+ * mesma, e a linha "Você desbloqueou…" aparecia todo dia para sempre: um
+ * resumo disfarçado de evento, o que esta peça existe para não ser.
+ *
+ * `vistas` é `{id: "AAAA-MM-DD"}` do dia em que cada uma apareceu pela
+ * primeira vez NESTE aparelho (o Hoje guarda em `localStorage` — conveniência
+ * por aparelho, não estado do produto). Na primeira visita (`vistas` nulo)
+ * tudo vira "já visto" e nada é anunciado: não há como saber o que é novo, e
+ * anunciar o antigo como novo seria falso. Pura; quem persiste é o Hoje.
+ */
+export function conquistasDoDia(conquistas = [], vistas = null, hoje = diaLocal()) {
+  const desbloqueadas = (conquistas || []).filter((c) => c?.desbloqueada && c.id);
+  const primeiraVez = vistas == null;
+  const atualizadas = { ...(vistas || {}) };
+  for (const c of desbloqueadas) {
+    if (!atualizadas[c.id]) atualizadas[c.id] = primeiraVez ? "antes" : hoje;
+  }
+  const doDia = desbloqueadas.filter((c) => atualizadas[c.id] === hoje);
+  return { doDia, vistas: atualizadas };
+}
+
 /** Janela da microvitória: depois de três dias ela deixa de ser notícia. */
 const DIAS_DA_VITORIA = 3;
 

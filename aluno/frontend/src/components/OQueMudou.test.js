@@ -11,7 +11,7 @@ jest.mock("lucide-react", () => new Proxy({}, { get: () => () => null }), { virt
 jest.mock("react-router-dom", () => ({ Link: ({ children }) => children }), { virtual: true });
 
 // eslint-disable-next-line import/first
-import { eventosDoDia, microvitoria } from "./OQueMudou";
+import { eventosDoDia, microvitoria, conquistasDoDia } from "./OQueMudou";
 
 const haDias = (n) => new Date(Date.now() - n * 86400000).toISOString();
 
@@ -91,3 +91,27 @@ describe("a conquista", () => {
   });
 });
 
+
+describe("conquistasDoDia — conquista é notícia só no dia em que aparece", () => {
+  const c = (id, desbloqueada = true) => ({ id, label: id, desbloqueada });
+
+  test("primeira visita não anuncia nada (não há como saber o que é novo)", () => {
+    const { doDia, vistas } = conquistasDoDia([c("10q"), c("100q")], null, "2026-10-01");
+    expect(doDia).toEqual([]);
+    expect(vistas).toEqual({ "10q": "antes", "100q": "antes" });
+  });
+
+  test("a recém-desbloqueada vale no dia em que apareceu, e some no seguinte", () => {
+    const vistas = { "10q": "antes" };
+    const hoje = conquistasDoDia([c("10q"), c("100q")], vistas, "2026-10-01");
+    expect(hoje.doDia.map((x) => x.id)).toEqual(["100q"]);
+    const reabriu = conquistasDoDia([c("10q"), c("100q")], hoje.vistas, "2026-10-01");
+    expect(reabriu.doDia.map((x) => x.id)).toEqual(["100q"]);
+    const amanha = conquistasDoDia([c("10q"), c("100q")], hoje.vistas, "2026-10-02");
+    expect(amanha.doDia).toEqual([]);
+  });
+
+  test("bloqueada nunca entra", () => {
+    expect(conquistasDoDia([c("10q", false)], {}, "2026-10-01").doDia).toEqual([]);
+  });
+});

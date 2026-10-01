@@ -29,7 +29,9 @@ import { Lightbulb, AlertTriangle, CircleCheck, Loader2, ChevronDown, ChevronRig
  * quem já desbloqueou custaria uma leitura por render.
  */
 
-const CUSTO = 10; // espelha INTERVENCAO_COST; o servidor é quem cobra de fato
+// Reserva até o preço chegar do servidor (`GET /mentis/precos`, lido pela
+// tela que monta isto e passado em `custo`). Quem cobra é o servidor.
+const CUSTO_PADRAO = 10;
 
 function Secao({ titulo, children }) {
   return (
@@ -123,14 +125,18 @@ export default function IntervencaoMentis({
   sparks,
   onSparks,
   aberta: abertaInicial = false,
+  custo: custoDoServidor = null,
+  // Mentis ilimitada: o servidor não cobra; a tela não pode anunciar preço.
+  ilimitada = false,
   testid = "intervencao",
 }) {
+  const CUSTO = custoDoServidor ?? CUSTO_PADRAO;
   const [aberta, setAberta] = useState(abertaInicial);
   const [dados, setDados] = useState(null);
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState(null);
 
-  const semSaldo = sparks != null && sparks < CUSTO && !dados;
+  const semSaldo = !ilimitada && sparks != null && sparks < CUSTO && !dados;
 
   const abrir = async () => {
     if (dados) {
@@ -180,7 +186,11 @@ export default function IntervencaoMentis({
             </p>
             {!dados && !carregando && (
               <p className="mt-1.5 text-[11px] font-medium text-zinc-400">
-                {semSaldo ? `Saldo insuficiente — ${CUSTO} Sparks` : `${CUSTO} Sparks na primeira vez. Depois, sempre sua.`}
+                {ilimitada
+                  ? "Incluída no seu pacote."
+                  : semSaldo
+                    ? `Saldo insuficiente — ${CUSTO} Sparks`
+                    : `${CUSTO} Sparks na primeira vez. Depois, sempre sua.`}
               </p>
             )}
           </div>

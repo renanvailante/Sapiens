@@ -55,10 +55,18 @@ export function missaoAtual(habilidades) {
  *
  * `null` quando não sobra nada — aí o desfecho só oferece o mapa.
  */
-export function proximaMissaoNoMapa(biomas, arestas, atualId) {
+export function proximaMissaoNoMapa(biomas, arestas, atualId, ligadasAoPadrao = null) {
   const nos = (biomas || []).flatMap((b) => b?.nodes || []);
   const acessiveis = nos.filter((n) => n?.acesso === "acessivel" && n.hab_id !== atualId);
   const taxa = (n) => (n.respondidas ? (n.acertos || 0) / n.respondidas : 1);
+
+  // 0. A missão que treina o ponto em que os erros de PROVA do aluno começam
+  //    (`ligadasAoPadrao`, lido do motor). É a evidência mais forte que o
+  //    produto tem sobre ele, e ela vence a ordem interna do mapa.
+  const ligada = acessiveis.find(
+    (n) => ligadasAoPadrao?.has?.(n.hab_id) && (n.estadoBackend || n.estado) !== "mastered",
+  );
+  if (ligada) return ligada;
 
   const lacunas = acessiveis
     .filter((n) => n.respondidas > 0 && (n.estadoBackend || n.estado) !== "mastered")

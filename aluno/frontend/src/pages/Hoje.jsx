@@ -5,7 +5,7 @@ import { api } from "../lib/api";
 import { EVENTO_SPARKS } from "../components/Navegacao";
 import PainelDeProgresso from "../components/PainelDeProgresso";
 import ProximoPasso, { escolherPasso } from "../components/ProximoPasso";
-import OQueMudou from "../components/OQueMudou";
+import OQueMudou, { conquistasDoDia } from "../components/OQueMudou";
 import PortaisDaJornada from "../components/PortaisDaJornada";
 import ExplorarOSapiens from "../components/ExplorarOSapiens";
 import EsqueletoDoPainel from "../components/Esqueleto";
@@ -560,6 +560,20 @@ export default function Hoje() {
     melhorRedacao,
   });
 
+  // Só a conquista que é notícia HOJE chega ao "O que mudou" — ver
+  // `conquistasDoDia`. A marca de "já vista" é por aparelho (localStorage),
+  // e falhar em ler ou gravar só cala a linha, nunca quebra o Painel.
+  const chaveVistas = `sapiens:conquistas-vistas:${user?.user_id || "anon"}`;
+  const conquistasNovas = useMemo(() => {
+    if (!loaded) return [];
+    let vistas = null;
+    try { vistas = JSON.parse(localStorage.getItem(chaveVistas) || "null"); } catch { return []; }
+    const { doDia, vistas: atualizadas } = conquistasDoDia(conquistas, vistas);
+    try { localStorage.setItem(chaveVistas, JSON.stringify(atualizadas)); } catch { /* bloqueado */ }
+    return doDia;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loaded, chaveVistas, conquistas.filter((c) => c.desbloqueada).length]);
+
   // O MESMO passo que a peça do topo vai desenhar — a mesma função, não uma
   // segunda regra parecida. O Painel precisa dele aqui embaixo só para não
   // repetir a pendência: quando a ação do dia já é a fila de revisão, o card
@@ -658,6 +672,7 @@ export default function Hoje() {
             totalRespondidas={totalRespondidas}
             ofensiva={engajamento?.ofensiva?.dias ?? 0}
             estudouHoje={engajamento?.ofensiva?.estudou_hoje ?? true}
+            diasNaSemana={weekActiveDays}
           />
 
           {/* -------------------------------------------------------------
@@ -683,7 +698,7 @@ export default function Hoje() {
             cronograma={cronograma}
             redacoes={redacoes}
             engajamento={engajamento}
-            conquistas={conquistas}
+            conquistas={conquistasNovas}
             passoAtual={passoAtual}
             trajetoria={trajetoria}
           />
@@ -693,7 +708,13 @@ export default function Hoje() {
               `id="missoes"`: a Mentis e o guia levam direto até aqui.
               ------------------------------------------------------------- */}
           <div className="scroll-mt-24" id={ANCORAS.HOJE_MISSOES} data-tour="hoje-missoes">
-            <PainelDeProgresso dados={engajamento} aoMudar={recarregarEngajamento} />
+            {/* As missões de prática levam ao MESMO padrão que o Próximo
+                Passo anuncia — duas peças, um destino. */}
+            <PainelDeProgresso
+              dados={engajamento}
+              aoMudar={recarregarEngajamento}
+              pratica={passoAtual?.dirigida || null}
+            />
           </div>
 
           {/* -------------------------------------------------------------

@@ -509,6 +509,23 @@ export default function Treino() {
     api.get("/treino/precos").then(({ data }) => setCustoPorQuestao(data.custo_por_questao)).catch(() => {});
   }, []);
 
+  // As missões que treinam o ponto em que os erros de PROVA começam. A fila
+  // do motor (memorizada no servidor por `total_respostas` — a mesma chamada
+  // do Hoje) traz, em cada linha, as habilidades do catálogo ligadas ao
+  // processo, e o mapa usa os mesmos ids. Só as duas primeiras linhas com
+  // causa: o mapa inteiro aceso seria o mesmo que nenhum.
+  const [ligadasAoPadrao, setLigadasAoPadrao] = useState(() => new Set());
+  useEffect(() => {
+    api.get("/motor/perfil")
+      .then(({ data }) => {
+        const linhas = (data.habilidades_prioritarias || [])
+          .filter((l) => l.origem === "error_trace")
+          .slice(0, 2);
+        setLigadasAoPadrao(new Set(linhas.flatMap((l) => (l.habilidades || []).map((h) => h.id))));
+      })
+      .catch(() => {});
+  }, []);
+
   // Camada de progressão: o backend continua mandando as 56 habilidades com
   // o estado de sempre; aqui se decide o que já está acessível, o que é só
   // vislumbre e o que segue oculto. Nada de ontologia, id ou conteúdo muda.
@@ -580,9 +597,9 @@ export default function Treino() {
   // de `carregar()`), então ela enxerga o território que esta missão abriu.
   const proximaMissao = useMemo(() => {
     if (!desfecho || !mapaData) return null;
-    const no = proximaMissaoNoMapa(biomasVisiveis, mapaData.arestas, desfecho.hab.hab_id);
+    const no = proximaMissaoNoMapa(biomasVisiveis, mapaData.arestas, desfecho.hab.hab_id, ligadasAoPadrao);
     return no ? nodeIndex[no.hab_id] || null : null;
-  }, [desfecho, mapaData, biomasVisiveis, nodeIndex]);
+  }, [desfecho, mapaData, biomasVisiveis, nodeIndex, ligadasAoPadrao]);
 
   const iniciarProxima = (hab) => {
     setDesfecho(null);
@@ -626,7 +643,7 @@ export default function Treino() {
 
         <AnimatePresence>
           {briefingHab && (
-            <BriefingHUD hab={briefingHab} onFechar={fecharBriefing} onIniciar={iniciarMissao} />
+            <BriefingHUD hab={briefingHab} onFechar={fecharBriefing} onIniciar={iniciarMissao} ligadaAoPadrao={ligadasAoPadrao.has(briefingHab.hab_id)} />
           )}
         </AnimatePresence>
       </div>
@@ -717,7 +734,7 @@ export default function Treino() {
 
       <AnimatePresence>
         {briefingHab && (
-          <BriefingHUD hab={briefingHab} onFechar={fecharBriefing} onIniciar={iniciarMissao} />
+          <BriefingHUD hab={briefingHab} onFechar={fecharBriefing} onIniciar={iniciarMissao} ligadaAoPadrao={ligadasAoPadrao.has(briefingHab.hab_id)} />
         )}
       </AnimatePresence>
     </div>

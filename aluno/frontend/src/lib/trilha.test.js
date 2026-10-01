@@ -38,3 +38,22 @@ describe("proximaMissaoNoMapa", () => {
     expect(proximaMissaoNoMapa([], [], "A")).toBeNull();
   });
 });
+
+describe("proximaMissaoNoMapa com o padrão de erro das provas", () => {
+  test("a missão ligada ao padrão vence a lacuna interna do mapa", () => {
+    const biomas = [{ nodes: [
+      { hab_id: "A", acesso: "acessivel", estado: "in_progress", respondidas: 5, acertos: 1 },
+      { hab_id: "B", acesso: "acessivel", estado: "available", respondidas: 0, acertos: 0 },
+    ] }];
+    expect(proximaMissaoNoMapa(biomas, [], "Z", new Set(["B"])).hab_id).toBe("B");
+  });
+
+  test("ligada mas oculta ou dominada não conta", () => {
+    const biomas = [{ nodes: [
+      { hab_id: "A", acesso: "acessivel", estado: "in_progress", respondidas: 5, acertos: 1 },
+      { hab_id: "B", acesso: "oculto", estado: "unknown" },
+      { hab_id: "C", acesso: "acessivel", estado: "mastered", estadoBackend: "mastered", respondidas: 6, acertos: 6 },
+    ] }];
+    expect(proximaMissaoNoMapa(biomas, [], "Z", new Set(["B", "C"])).hab_id).toBe("A");
+  });
+});

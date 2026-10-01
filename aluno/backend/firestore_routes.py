@@ -318,24 +318,10 @@ class SessaoDiagnosticoPayload(BaseModel):
 RESUMO_SESSAO_COST = 15
 
 
-def _safe_reembolso(uid: str, custo: int) -> int | None:
-    """Devolver Sparks não pode virar um segundo erro em cima do primeiro."""
-    try:
-        return fs.refund_sparks(uid, custo)
-    except Exception:  # noqa: BLE001
-        logger.exception("REEMBOLSO FALHOU (resumo de sessão): %d Sparks devidos a %s.", custo, uid)
-        return None
-
-
-def _cobrar(uid: str, custo: int) -> int:
-    fs.ensure_sparks_balance(uid)
-    try:
-        return fs.deduct_sparks(uid, custo)
-    except fs.InsufficientSparksError as exc:
-        raise HTTPException(
-            status_code=402,
-            detail=f"Sparks insuficientes: saldo {exc.balance}, custo {exc.needed}.",
-        ) from exc
+# A cobrança e o estorno são os da Mentis (`mentis_routes._cobrar_com_recibo`
+# / `_safe_reembolso`): esta leitura é uma ferramenta da Mentis, e até
+# 2026-10-01 ela tinha a própria cobrança, que ignorava a Mentis ilimitada —
+# quem comprou "Mentis ilimitada" pagava 15 Sparks por "Ler com a Mentis".
 
 
 @router.post("/students/me/sessao/diagnostico")
@@ -355,29 +341,34 @@ async def diagnostico_sessao(
     o item de cada resposta para montar o contexto e chama o Gemini UMA vez
     por rodada, com `thinking_level=MINIMAL` (ver `ai_service.diagnose_sessao`).
     """
+    import mentis_routes  # tardio: a Mentis é dona da cobrança, e este módulo carrega antes
+
     respostas = [r.model_dump() for r in payload.respostas]
-    saldo = _cobrar(user.user_id, RESUMO_SESSAO_COST)
+    saldo, cobrado = mentis_routes._cobrar_com_recibo(user.user_id, RESUMO_SESSAO_COST)
     try:
         contexto = await asyncio.to_thread(annotation_service.montar_contexto_sessao, respostas)
         resultado = await ai_service.diagnose_sessao(contexto)
     except Exception:  # noqa: BLE001
-        saldo = _safe_reembolso(user.user_id, RESUMO_SESSAO_COST)
+        saldo = mentis_routes._safe_reembolso(user.user_id, cobrado)
         logger.exception("Resumo de rodada falhou para %s — %d Sparks devolvidos.",
-                         user.user_id, RESUMO_SESSAO_COST)
+                         user.user_id, cobrado)
         raise HTTPException(
             status_code=503,
-            detail="A Mentis não conseguiu ler esta rodada agora. Seus Sparks foram devolvidos.",
+            detail=(
+                "A Mentis não conseguiu ler esta rodada agora. Seus Sparks foram devolvidos."
+                if cobrado else "A Mentis não conseguiu ler esta rodada agora. Nada foi cobrado."
+            ),
         )
     # `diagnose_sessao` degrada para um texto neutro em vez de levantar; esse
     # texto não vale 15 Sparks, então o reembolso é decidido pelo conteúdo, não
     # pela ausência de exceção.
     if not (resultado or {}).get("pontos_fortes") and not (resultado or {}).get("pontos_de_atencao") \
             and not (resultado or {}).get("padroes_de_erro"):
-        saldo = _safe_reembolso(user.user_id, RESUMO_SESSAO_COST)
+        saldo = mentis_routes._safe_reembolso(user.user_id, cobrado)
         return {**resultado, "cobrado": 0, "sparks_balance": saldo, "degradado": True}
     return {
         **resultado,
-        "cobrado": RESUMO_SESSAO_COST,
+        "cobrado": cobrado,
         "sparks_balance": saldo,
         "degradado": False,
     }
