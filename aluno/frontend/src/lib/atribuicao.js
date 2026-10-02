@@ -40,3 +40,19 @@ export function lerAtribuicao() {
     return null;
   }
 }
+
+/**
+ * Em que modo o `/login` abre. Só um pedido EXPLÍCITO de cadastro abre em
+ * "Criar conta": o convite que veio na URL (alguém clicou no link de um
+ * amigo agora) ou o `?novo=1` do "Começar agora".
+ *
+ * A atribuição GUARDADA (`lerAtribuicao`, até 30 dias) não decide o modo — ela
+ * é a memória de um clique antigo num anúncio, e quem a carrega é muitas
+ * vezes alguém que já tem conta e só voltou para entrar. Até 2026-10-02 ela
+ * decidia: o botão "Entrar" abria em "Criar conta" com o cupom ADS-RETA
+ * preenchido, para o próprio dono do produto. O cupom continua preenchido —
+ * para quem trocar para "Criar conta" —, só não sequestra mais a tela.
+ */
+export function modoInicialDoLogin({ novo = false, conviteDaUrl = "" } = {}) {
+  return novo || Boolean(conviteDaUrl) ? "signup" : "login";
+}

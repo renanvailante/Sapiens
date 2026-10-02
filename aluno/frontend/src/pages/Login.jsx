@@ -6,7 +6,7 @@ import { useAuth } from "../lib/auth";
 import { cadastroConcluido } from "../lib/rastreio";
 import { api, errMsg, emailJaTemConta } from "../lib/api";
 import { googleDisponivel, mensagemDeErroGoogle } from "../lib/firebase";
-import { salvarAtribuicao, lerAtribuicao } from "../lib/atribuicao";
+import { salvarAtribuicao, lerAtribuicao, modoInicialDoLogin } from "../lib/atribuicao";
 import { navegadorEmbutido, esperaAteAvisarDoPopup } from "../lib/navegador";
 import { origemParaEnvio } from "../lib/campanha";
 import { toast } from "sonner";
@@ -89,8 +89,12 @@ export default function Login() {
   // `?novo=1` é a porta do "Começar agora" da landing. Mesma razão do
   // convite: quem clicou em começar não está voltando, está chegando, e abrir
   // no formulário de login é pedir uma senha que essa pessoa ainda não tem.
-  const querCadastro = params.get("novo") === "1" || Boolean(convite);
-  const [mode, setMode] = useState(querCadastro ? "signup" : "login");
+  //
+  // A atribuição GUARDADA preenche o cupom, mas não decide o modo — ver
+  // `modoInicialDoLogin`: ela fazia o "Entrar" abrir em "Criar conta".
+  const [mode, setMode] = useState(() =>
+    modoInicialDoLogin({ novo: params.get("novo") === "1", conviteDaUrl }),
+  );
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
