@@ -17,6 +17,7 @@ import {
   resumoDaSerie,
   fraseDoFechamento,
   destinoDaMissao,
+  recompensaDaSerie,
   TETO_QUESTOES,
 } from "./praticaDirigida";
 
@@ -243,5 +244,40 @@ describe("destinoDaMissao", () => {
       .toEqual({ tipo: "rota", rota: "/estudar/provas", cta: "Praticar" });
     expect(destinoDaMissao({ id: "revisao", rota: "/agenda#revisoes", cta: "Revisar" }, pratica).tipo).toBe("rota");
     expect(destinoDaMissao({ id: "treino", rota: "/estudar/treino", cta: "Treinar" }, pratica).tipo).toBe("rota");
+  });
+});
+
+describe("recompensaDaSerie — só celebra o que o servidor contou", () => {
+  const estado = {
+    nivel: { xp_total: 680 },
+    ofensiva: { dias: 4, estudou_hoje: true },
+    missoes: [
+      { id: "responder5", concluida: true, resgatada: false, sparks: 5 },
+      { id: "acertar8", concluida: false, resgatada: false },
+      { id: "revisao", concluida: true, resgatada: true },
+    ],
+  };
+
+  test("XP é a diferença real; sequência garantida; só missão pronta e não resgatada", () => {
+    const r = recompensaDaSerie(estado, 640, 4);
+    expect(r.xp).toBe(40);
+    expect(r.diaGarantido).toBe(4);
+    expect(r.seguidas).toBe(4);
+    expect(r.prontas.map((m) => m.id)).toEqual(["responder5"]);
+  });
+
+  test("sem baseline de XP, ou sem estudo hoje, não inventa", () => {
+    const r = recompensaDaSerie({ ...estado, ofensiva: { dias: 4, estudou_hoje: false } }, null, 2);
+    expect(r.xp).toBe(0);
+    expect(r.diaGarantido).toBe(0);
+    expect(r.seguidas).toBe(0); // dois seguidos acontecem por acaso
+  });
+
+  test("missão resgatada na própria tela some da lista", () => {
+    expect(recompensaDaSerie(estado, 640, 0, new Set(["responder5"])).prontas).toEqual([]);
+  });
+
+  test("sem estado (rede falhou), nada", () => {
+    expect(recompensaDaSerie(null, 640, 5)).toEqual({ xp: 0, diaGarantido: 0, seguidas: 5, prontas: [] });
   });
 });

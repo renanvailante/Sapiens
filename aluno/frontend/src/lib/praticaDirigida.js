@@ -225,3 +225,19 @@ export function destinoDaMissao(missao, pratica) {
   }
   return { tipo: "rota", rota: missao?.rota, cta: missao?.cta };
 }
+
+/**
+ * O que o fim da série pode CELEBRAR — só o que o servidor já contou
+ * (`GET /engajamento/me`). Pura, para o teste travar a régua: XP é a
+ * diferença real entre o começo e o fim; sequência só com estudo hoje;
+ * acertos seguidos só a partir de 3; missão só concluída e não resgatada.
+ * Sem dado, nada.
+ */
+export function recompensaDaSerie(estado, xpInicial = null, melhorSequencia = 0, jaResgatadas = new Set()) {
+  const xpFinal = estado?.nivel?.xp_total;
+  const xp = typeof xpFinal === "number" && typeof xpInicial === "number" ? Math.max(0, xpFinal - xpInicial) : 0;
+  const o = estado?.ofensiva;
+  const diaGarantido = o?.estudou_hoje && o?.dias > 0 ? o.dias : 0;
+  const prontas = (estado?.missoes || []).filter((m) => m?.concluida && !m.resgatada && !jaResgatadas.has(m.id));
+  return { xp, diaGarantido, seguidas: melhorSequencia >= 3 ? melhorSequencia : 0, prontas };
+}

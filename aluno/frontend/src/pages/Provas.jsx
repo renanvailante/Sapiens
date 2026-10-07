@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { api, API, errMsg} from "../lib/api";
 import ContagemEnem from "../components/ContagemEnem";
-import { ArrowRight, Check, X, RotateCw, Sparkles, BookOpen, ChevronLeft, Crosshair, Loader2, Compass } from "lucide-react";
+import { ArrowRight, Check, X, RotateCw, Sparkles, BookOpen, ChevronLeft, Crosshair, Loader2, Compass, Flame, Zap } from "lucide-react";
+import { toast } from "sonner";
+import { avisarSparksMudou } from "../components/Navegacao";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import FormulaMath from "../components/FormulaMath";
 import Mentis from "../components/Mentis";
@@ -15,7 +17,7 @@ import { ROTAS, ANCORAS, com } from "../lib/rotas";
 import { useDeclararContextoMentis } from "../lib/mentisContexto";
 import { MISSOES } from "../components/mapa3d/missoes";
 import {
-  abrirPraticaDirigida, resumoDaSerie, fraseDoFechamento, pontoRepetido, TETO_QUESTOES,
+  abrirPraticaDirigida, resumoDaSerie, fraseDoFechamento, pontoRepetido, TETO_QUESTOES, recompensaDaSerie,
 } from "../lib/praticaDirigida";
 
 const APP_VERSION = "sapiens-web-1.0";
@@ -139,7 +141,92 @@ function dimensoesIntrinsecas(asset) {
  *      série começaram, mais questões do mesmo ponto, ou o Próximo Passo do
  *      Hoje (que a esta altura já foi recalculado com estas respostas).
  */
-function FechamentoDaSerie({ respostas, filtro, onExit, abrindo, aoPraticar }) {
+/**
+ * O MOMENTO DE RECOMPENSA do fim da série — o que o Duolingo faz no fim de cada
+ * lição, com a régua da casa: só número que o servidor já contou
+ * (`engajamento.py`, linha ética). O XP é a diferença real entre o começo e o
+ * fim da série; a sequência é a ofensiva, que só conta dia com estudo de
+ * verdade; a missão cumprida é a do dia, com o prêmio fixo e anunciado — e o
+ * resgate acontece aqui, sem mandar o aluno para outra tela buscar o que já
+ * ganhou. Sem dado, a peça não aparece.
+ */
+function RecompensaDaSerie({ xpInicial, melhorSequencia }) {
+  const [estado, setEstado] = useState(null);
+  const [resgatando, setResgatando] = useState(null);
+  const [resgatadas, setResgatadas] = useState(() => new Set());
+
+  useEffect(() => {
+    let ativo = true;
+    api.get("/engajamento/me").then(({ data }) => { if (ativo) setEstado(data); }).catch(() => {});
+    return () => { ativo = false; };
+  }, []);
+
+  const { xp: xpGanho, diaGarantido, seguidas, prontas } = recompensaDaSerie(estado, xpInicial, melhorSequencia, resgatadas);
+
+  const resgatar = async (m) => {
+    setResgatando(m.id);
+    try {
+      const { data } = await api.post(`/engajamento/missoes/${m.id}/resgatar`);
+      setResgatadas((s) => new Set(s).add(m.id));
+      toast.success(`+${data.sparks_ganhos} Sparks e +${data.xp_ganho} XP.`);
+      avisarSparksMudou();
+    } catch (e) {
+      toast.error(errMsg(e, "Não foi possível resgatar agora."));
+    } finally {
+      setResgatando(null);
+    }
+  };
+
+  const itens = [
+    xpGanho > 0 && { chave: "xp", icone: Zap, cor: "text-amber-500", texto: `+${xpGanho} XP nesta série` },
+    diaGarantido > 0 && {
+      chave: "ofensiva", icone: Flame, cor: "text-orange-500",
+      texto: diaGarantido === 1 ? "Hoje já conta: sua sequência começou" : `Dia ${diaGarantido} da sua sequência garantido`,
+    },
+    seguidas > 0 && { chave: "seguidas", icone: Check, cor: "text-emerald-600", texto: `${seguidas} acertos seguidos` },
+  ].filter(Boolean);
+
+  if (!itens.length && !prontas.length) return null;
+  return (
+    <div className="mt-5 space-y-2.5" data-testid="serie-recompensa">
+      {itens.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {itens.map((i) => (
+            <span
+              key={i.chave}
+              className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-xs font-semibold text-zinc-800"
+              data-testid={`serie-recompensa-${i.chave}`}
+            >
+              <i.icone className={`h-3.5 w-3.5 ${i.cor}`} /> {i.texto}
+            </span>
+          ))}
+        </div>
+      )}
+      {prontas.map((m) => (
+        <div
+          key={m.id}
+          className="flex flex-col items-stretch gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 sm:flex-row sm:items-center"
+          data-testid={`serie-missao-${m.id}`}
+        >
+          <div className="min-w-0 flex-1 text-sm text-amber-900">
+            <span className="font-semibold">Missão do dia cumprida:</span> {m.titulo}
+          </div>
+          <button
+            onClick={() => resgatar(m)}
+            disabled={resgatando === m.id}
+            className="pill btn-sapiens inline-flex w-full items-center justify-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold disabled:opacity-60 sm:w-auto"
+            data-testid={`serie-missao-resgatar-${m.id}`}
+          >
+            {resgatando === m.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+            Resgatar +{m.sparks} Sparks
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function FechamentoDaSerie({ respostas, filtro, onExit, abrindo, aoPraticar, xpInicial = null, melhorSequencia = 0 }) {
   // O fechamento aparece no lugar da última questão, abaixo do cabeçalho da
   // série. No celular isso o deixava a 600px do topo — o resultado existia e
   // não era visto. Ele rola até si ao montar.
@@ -193,6 +280,8 @@ function FechamentoDaSerie({ respostas, filtro, onExit, abrindo, aoPraticar }) {
           <span className="font-semibold text-zinc-800">O que observar daqui para a frente:</span> {dirigida.sinal}
         </p>
       )}
+
+      {resumo.total > 0 && <RecompensaDaSerie xpInicial={xpInicial} melhorSequencia={melhorSequencia} />}
 
       {repetido && (
         <p className="mt-3 max-w-lg text-sm leading-relaxed text-zinc-600" data-testid="serie-fechamento-repetido">
@@ -304,6 +393,11 @@ function QuestionRunner({ filtro, onExit }) {
   // quem tem a Mentis ilimitada não paga nenhuma das duas leituras desta tela.
   const [precos, setPrecos] = useState(null);
   const [ilimitada, setIlimitada] = useState(false);
+  const [xpInicial, setXpInicial] = useState(null);
+  // Acertos seguidos NESTA sessão — o "combo" do Duolingo, feito de resposta
+  // real. Aparece a partir de 3 (dois seguidos acontecem por acaso).
+  const [seguidas, setSeguidas] = useState(0);
+  const melhorSequenciaRef = useRef(0);
   useEffect(() => {
     let ativo = true;
     api.get("/firestore/students/me/sparks")
@@ -314,6 +408,11 @@ function QuestionRunner({ filtro, onExit }) {
       })
       .catch(() => {});
     api.get("/mentis/precos").then(({ data }) => { if (ativo) setPrecos(data); }).catch(() => {});
+    // O XP no começo da série: o fechamento mostra a diferença REAL, e não
+    // uma conta feita aqui com valores que o servidor é quem decide.
+    api.get("/engajamento/me")
+      .then(({ data }) => { if (ativo) setXpInicial(data?.nivel?.xp_total ?? null); })
+      .catch(() => {});
     return () => { ativo = false; };
   }, []);
   const MENTIS_COST = precos?.explicacao ?? EXPLICACAO_PADRAO;
@@ -401,6 +500,11 @@ function QuestionRunner({ filtro, onExit }) {
       });
       setResult(data);
       setAnswered((n) => n + 1);
+      setSeguidas((n) => {
+        const proxima = data.acertou ? n + 1 : 0;
+        melhorSequenciaRef.current = Math.max(melhorSequenciaRef.current, proxima);
+        return proxima;
+      });
       setPulso(true);
       setTimeout(() => setPulso(false), 700);
       respostasSessaoRef.current.push({
@@ -615,6 +719,8 @@ function QuestionRunner({ filtro, onExit }) {
         respostas={respostasSessaoRef.current}
         filtro={filtro}
         onExit={onExit}
+        xpInicial={xpInicial}
+        melhorSequencia={melhorSequenciaRef.current}
         abrindo={abrindoPonto}
         aoPraticar={praticarPonto}
       />
@@ -775,6 +881,14 @@ function QuestionRunner({ filtro, onExit }) {
               <div className={`text-sm font-bold ${result.acertou ? "text-emerald-700" : "text-rose-700"}`}>
                 {result.feedback?.titulo || (result.acertou ? "Você acertou!" : "Resposta incorreta.")}
                 {!result.acertou && <span className="ml-1 font-normal">(correta: {result.correta})</span>}
+                {result.acertou && seguidas >= 3 && (
+                  <span
+                    className="ml-2 inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-800"
+                    data-testid="questao-seguidas"
+                  >
+                    <Flame className="h-3 w-3" /> {seguidas} seguidas
+                  </span>
+                )}
               </div>
               {(result.feedback?.mensagens || []).map((m, i) => (
                 <p key={i} className={`mt-2 text-sm leading-relaxed ${result.acertou ? "text-emerald-800" : "text-rose-800"}`}>{m}</p>

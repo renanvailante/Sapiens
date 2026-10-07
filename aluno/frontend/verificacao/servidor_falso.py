@@ -124,11 +124,19 @@ def rota_get(path, q):
         return {}
     if path == "/api/engajamento/me":
         return {
-            "ofensiva": {"dias": 3, "recorde": 5, "estudou_hoje": False, "em_risco": True, "congeladores": 0,
+            "ofensiva": {"dias": 4 if ESTADO["respostas"] else 3, "recorde": 5, "estudou_hoje": bool(ESTADO["respostas"]),
+                         "em_risco": not ESTADO["respostas"], "congeladores": 0,
                          "max_congeladores": 2, "custo_congelador": 50,
                          "semana": [{"dia": agora(i)[:10], "ativo": i in (1, 2, 3), "congelado": False, "hoje": i == 0} for i in range(6, -1, -1)]},
-            "nivel": {"nivel": 3, "xp_total": 640, "xp_no_nivel": 140, "xp_do_nivel": 400, "xp_para_o_proximo": 260, "percentual": 35},
-            "missoes": [], "liga": {"liga_id": "bronze", "nome": "Bronze", "cor": "#cd7f32", "minha_posicao": 3, "total": 3, "meus_pontos": 120,
+            # XP cresce com as respostas (10 por resposta), como o servidor faria.
+            "nivel": {"nivel": 3, "xp_total": 640 + 10 * ESTADO["respostas"], "xp_no_nivel": 140, "xp_do_nivel": 400,
+                      "xp_para_o_proximo": 260, "percentual": 35},
+            "missoes": [
+                {"id": "responder5", "titulo": "Responda 5 questões", "alvo": 5,
+                 "progresso": min(5, ESTADO["respostas"]), "concluida": ESTADO["respostas"] >= 5,
+                 "sparks": 5, "xp": 20, "rota": "/estudar/provas", "cta": "Praticar",
+                 "resgatada": ESTADO.get("resgatou", False)},
+            ], "liga": {"liga_id": "bronze", "nome": "Bronze", "cor": "#cd7f32", "minha_posicao": 3, "total": 3, "meus_pontos": 120,
                      "sobem": 3, "caem": 2, "fecha_em": agora(-3),
                      "tabela": [{"posicao": 1, "uid": "u1", "nome": "Colega A", "pontos": 300, "voce": False},
                                 {"posicao": 2, "uid": "u2", "nome": "Colega B", "pontos": 200, "voce": False},
@@ -224,6 +232,9 @@ def rota_post(path, corpo):
                 "sparks_ganhos": 1, "sparks_balance": 121}
     if path == "/api/firestore/students/me/rodada/concluir":
         return {"sparks_ganhos": 0}
+    if path.startswith("/api/engajamento/missoes/") and path.endswith("/resgatar"):
+        ESTADO["resgatou"] = True
+        return {"sparks_ganhos": 5, "xp_ganho": 20, "sparks_balance": 125}
     return {}
 
 
@@ -245,6 +256,7 @@ class H(BaseHTTPRequestHandler):
             ESTADO["cenario"] = u.path.split("/")[-1]
             ESTADO["respostas"] = 0
             ESTADO["treino"] = {"HAB-01": [5, 2]}
+            ESTADO["resgatou"] = False
             return self._json({"cenario": ESTADO["cenario"]})
         if u.path.startswith("/api/"):
             r = rota_get(u.path, parse_qs(u.query))
