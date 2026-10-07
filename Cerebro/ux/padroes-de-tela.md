@@ -160,6 +160,13 @@ na URL — `lib/praticaDirigida.js` é a única ponte (pura, testada):
   mais do mesmo ponto, o ponto em que dois erros da série começaram
   (`pontoRepetido`, lendo a `causa_raiz` que já vem em cada resposta), ou o
   Próximo Passo.
+- **O momento de recompensa** (`RecompensaDaSerie`, regra pura em
+  `praticaDirigida.recompensaDaSerie`): o que o Duolingo faz no fim da lição,
+  com a régua da linha ética — "+N XP nesta série" é a diferença REAL de
+  `/engajamento/me` entre o começo e o fim; "Dia N da sua sequência garantido"
+  só com `estudou_hoje`; a missão do dia cumprida é resgatada ali mesmo, com o
+  prêmio fixo. Durante a série, "N seguidas" a partir de 3 acertos. Sem dado,
+  a peça some. Não acrescente recompensa que o servidor não contou.
 - Navegar para a **mesma rota** com outros ids não remonta a página: o filtro
   é refeito por `location.key` e o `QuestionRunner` leva `key={location.key}`.
 
