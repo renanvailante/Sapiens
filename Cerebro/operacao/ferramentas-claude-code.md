@@ -39,8 +39,10 @@ Não reabra estes itens sem uma medição concreta que mude a conclusão:
   embeddings, para código. Subir um banco vetorial só para isso seria
   complexidade sem ganho medido.
 - **Pipeline fixo de agentes especializados (Explorer→Architect→Coder→Tester→Reviewer→Deploy).**
-  Já existem 23 subagents de domínio em `.claude/agents/` (enxutos: 20-31
-  linhas cada) mais o mecanismo de fork para pesquisa ad hoc. Forçar todo task
+  Os 23 subagentes de domínio que existiram em `.claude/agents/` foram apagados
+  em 2026-10-06: subagente, Workflow e ultracode **não herdam o modo sem
+  permissões** da sessão, e cada comando deles virava um pedido de autorização
+  ao dono. Regra no `CLAUDE.md`: não se usam neste repo. Forçar todo task
   por um pipeline de 6 estágios adiciona latência para o caso comum — a
   maioria das tarefas neste repo é uma edição localizada, não uma
   investigação arquitetural.
@@ -58,9 +60,8 @@ Não reabra estes itens sem uma medição concreta que mude a conclusão:
 - **`00_INDEX.md` / `CURRENT_STATE.md` novos.** Duplicariam `Cerebro/INDICE.md`
   e violariam a regra do próprio `Cerebro/README.md` ("cada fato mora em
   exatamente uma camada"; log de execução é `git log`, não memória).
-- **Load balancer / router formal entre agentes.** É o que a sessão principal
-  já faz ao ler a tarefa e escolher um subagent ou fazer fork — formalizar
-  como "serviço" adiciona indireção sem ganho mensurável numa máquina local.
+- **Load balancer / router formal entre agentes.** Não há agentes para rotear:
+  a sessão principal faz o trabalho inteiro (ver acima).
 
 ## O que foi construído
 

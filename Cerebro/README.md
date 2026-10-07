@@ -8,10 +8,10 @@ atualizado: 2026-09-20
 Conhecimento durável do projeto, versionado junto do código e navegável no Obsidian.
 Comece por [[INDICE]].
 
-## Para agentes: liberdade aqui, sem pedir permissão
+## Liberdade aqui, sem pedir permissão
 
-Se você é um agente (qualquer um dos definidos em `.claude/agents/`) trabalhando
-neste repo, isto vale antes de qualquer outra coisa:
+Para qualquer sessão trabalhando neste repo, isto vale antes de qualquer outra
+coisa:
 
 1. **Leia `CLAUDE.md`** antes de atuar — ele aponta pra cá.
 2. **Consulte `Cerebro/` antes de decisões relevantes.** Comece por [[INDICE]],
@@ -23,11 +23,10 @@ neste repo, isto vale antes de qualquer outra coisa:
 4. **Você não precisa pedir autorização para criar, editar ou reorganizar
    `.md` dentro de `Cerebro/`** quando isso melhora a memória estrutural do
    projeto. Essa liberdade é sobre **documentação e conhecimento do
-   projeto** — não sobre código de produto, arquitetura ou infraestrutura,
-   que continuam pedindo confirmação como sempre pediram.
+   projeto**.
 5. **Registre o que é durável**: descoberta arquitetural, decisão, regra,
    contrato entre sistemas, aprendizado, hipótese validada ou refutada —
-   qualquer coisa que uma sessão futura (sua ou de outro agente) precisaria
+   qualquer coisa que uma sessão futura precisaria
    redescobrir do zero se não estivesse escrita.
 6. **Atualize em vez de duplicar.** Se existe um nó sobre o assunto, edite-o
    no lugar. Crie nó novo só quando o conhecimento for uma unidade
@@ -157,14 +156,10 @@ Cerebro/
 └── historico/  superado
 ```
 
-Estas seis pastas cobrem o que o produto já tinha até 2026-09-20. Os agentes
-especializados em `.claude/agents/` (23 hoje — arquitetura, IA, backend,
-banco de dados, frontend, growth, monetização, pedagogia, performance,
-segurança, testes, UX e orquestrador, mais marketing, custo, analytics,
-conversão, conteúdo, observabilidade, devops, qualidade de dados, pesquisa e
-jurídico/privacidade) vão inevitavelmente encontrar conhecimento durável em
-áreas que ainda não têm pasta — CAC real de um canal, causa raiz de um
-incidente de latência, um contrato de dado entre Mongo e Firestore.
+Estas seis pastas cobrem o que o produto já tinha até 2026-09-20. O trabalho
+vai inevitavelmente encontrar conhecimento durável em áreas que ainda não têm
+pasta — CAC real de um canal, causa raiz de um incidente de latência, um
+contrato de dado entre Mongo e Firestore.
 
 **Isso é esperado, e não se resolve pré-criando pastas vazias.** Uma pasta
 nova (`marketing/`, `custo/`, `analytics/`, `observabilidade/` etc.) nasce
@@ -188,9 +183,8 @@ Migrado em 2026-09-18 de 54 memórias `project_*` do Claude (~200 KB), com
 deduplicação, resolução de contradições e verificação dos preços contra o código.
 O `CLAUDE.md` da raiz é a ponte: ele carrega só o mínimo e manda ler o [[INDICE]].
 
-Em 2026-09-20 o time de agentes cresceu de 13 para 23 especialistas (10 novos:
-marketing, custo, analytics, conversão, conteúdo, observabilidade, devops,
-qualidade de dados, pesquisa, jurídico/privacidade — ver `.claude/agents/` e
-`.claude/agents/orchestrator.md`), e este README ganhou a seção "Para agentes"
-e a distinção entre conhecimento permanente/decisão/hipótese/log para que a
-autonomia nova de criar e editar `Cerebro/` não vire ruído.
+Em 2026-09-20 este README ganhou a distinção entre conhecimento
+permanente/decisão/hipótese/log, para que a liberdade de criar e editar
+`Cerebro/` não vire ruído. Em 2026-10-06 os subagentes de `.claude/agents/`
+foram apagados a pedido do dono: não herdam o modo sem permissões e cada
+comando deles virava um pedido de autorização.

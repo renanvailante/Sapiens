@@ -80,29 +80,26 @@ E um que vale sempre que você for **escrever** neste repo:
 
 - [[sessoes-concorrentes]] — outras sessões editam esta mesma árvore agora.
 
-Se você é um **agente** (`.claude/agents/`) e é a primeira vez que toca no
-Cerebro nesta sessão: leia a seção "Para agentes" do [[README]] — ela explica
-a liberdade que você tem para criar/editar/reorganizar aqui, e a diferença
-entre conhecimento permanente, decisão, hipótese e log (o que **não** entra).
+Antes de **escrever** no Cerebro pela primeira vez numa sessão: leia o
+[[README]] — ele explica a liberdade que você tem para criar/editar/reorganizar
+aqui, e a diferença entre conhecimento permanente, decisão, hipótese e log (o
+que **não** entra).
 
 ## Áreas sem nó ainda — não é omissão
 
-Dez agentes especializados (marketing, cost, analytics, conversion, content,
-observability, devops, data-quality, research, legal-privacy — ver
-`.claude/agents/orchestrator.md`) cobrem domínios que o Sapiens ainda não tem
-nó dedicado no Cerebro, porque até 2026-09-20 ninguém tinha registrado
-conhecimento durável real sobre eles aqui. **Isso é deliberado** — o
-[[README]] explica por que não se pré-cria pasta vazia. Se sua tarefa é numa
-dessas áreas e você encontrar algo durável, você cria o primeiro nó (e a
-pasta, se fizer sentido) e acrescenta a linha aqui. Se ainda não achou nada
-que sobreviva à sessão, não force um nó só para preencher a lacuna.
+Marketing, custo de infraestrutura, analytics, conversão, observabilidade,
+qualidade de dados, pesquisa e jurídico/privacidade ainda não têm nó dedicado,
+porque ninguém registrou conhecimento durável real sobre eles aqui. **Isso é
+deliberado** — o [[README]] explica por que não se pré-cria pasta vazia. Se sua
+tarefa é numa dessas áreas e você encontrar algo durável, você cria o primeiro
+nó (e a pasta, se fizer sentido) e acrescenta a linha aqui.
 
 ## O mapa inteiro
 
 ```
 Cerebro/
 ├── INDICE.md               ← você está aqui
-├── README.md                ← como este cérebro funciona e se mantém, e como agentes devem usá-lo
+├── README.md                ← como este cérebro funciona e se mantém
 ├── ROADMAP_EXECUCAO.md      ← plano de execução datado (não é nó de conhecimento)
 ├── regras/     inviolaveis · decisoes-do-dono
 ├── operacao/   deploy · ambiente-local · sessoes-concorrentes · incidentes

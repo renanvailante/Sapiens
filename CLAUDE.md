@@ -19,6 +19,8 @@ estão em `Cerebro/README.md`.
 
 ## O mínimo que vale antes de qualquer leitura
 
+Não use subagentes, Workflow nem ultracode neste repositório.
+
 **Outras sessões do Claude editam esta mesma árvore agora.** Não são worktrees
 isolados. Antes de escrever em arquivo de backend, `git status --short` e olhe
 mtimes; releia o arquivo em vez de confiar no que leu antes. Um aviso de "changed on
