@@ -1,6 +1,6 @@
 ---
 tags: [produto, gamificacao, comunidade]
-atualizado: 2026-09-18
+atualizado: 2026-10-06
 ---
 
 # Engajamento, comunidade e conversão
@@ -33,6 +33,23 @@ cinco regras. A régua ao mexer: *"isto seria verdade se o aluno visse o código
 **Conquistas ficaram só no `Dashboard.jsx`** (o backend teve as dele removidas) para
 não existirem dois sistemas divergindo. **Conquista não paga Sparks nem XP** — quem
 paga são as missões diárias; o detalhe não inventa recompensa.
+
+## Os motivos para voltar são do próprio aluno
+
+Desde 2026-09-28 os eventos do Hoje e as missões falam do que ESTE aluno fez,
+não de metas genéricas (detalhes em [[padroes-de-tela]]):
+
+- **Missões de prática levam ao padrão de erro.** "Responda 5 questões" conta
+  resposta em qualquer tela; quando o motor aponta um padrão, o botão leva à
+  prática dirigida dele (`destinoDaMissao`). Missão, alvo e prêmio não mudam —
+  a linha ética continua intacta; muda o lugar onde as cinco questões rendem.
+- **Microvitória real:** revisão acertada ou acerto em contexto novo, da
+  trajetória.
+- **Trechos guardados que voltaram** (revisão programada, ver [[mentis]]).
+- **Conquista só no dia em que aparece.** O catálogo não guarda data, então
+  "a última desbloqueada" era a mesma todo dia; `conquistasDoDia` lembra, por
+  aparelho, o dia em que cada uma foi vista primeiro, e na primeira visita não
+  anuncia nada (não há como saber o que é novo).
 
 ## XP
 

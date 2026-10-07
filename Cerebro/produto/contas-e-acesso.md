@@ -1,6 +1,6 @@
 ---
 tags: [produto, auth, cadastro]
-atualizado: 2026-09-18
+atualizado: 2026-10-06
 ---
 
 # Contas, cadastro e acesso
@@ -169,6 +169,24 @@ logo depois do aviso. A detecção é `emailJaTemConta` em `lib/api.js` (ao lado
 > `auth.py` responde 400 + `"Email already registered"`. Mudar essa frase quebra a
 > tela **em silêncio** — nada falha, o aluno só volta a ver inglês. `api.test.js`
 > é o alarme; se mexer na mensagem, mexa nos dois.
+
+**O modo inicial do `/login` é decidido só por pedido explícito**
+(`atribuicao.modoInicialDoLogin`): convite na URL ou `?novo=1`. A atribuição
+GUARDADA de um anúncio (30 dias) preenche o cupom e **não** abre o cadastro — até
+2026-10-02 ela abria, e o "Entrar" da página inicial caía em "Criar conta" com
+ADS-RETA preenchido, para o próprio dono.
+
+## Destravar à mão quando o e-mail não chega
+
+`_entregar_link_de_reset` grava o link no log quando o envio falha ou não há
+provedor (`[RESET DE SENHA] … Link …`). O caminho para destravar alguém:
+`POST /api/auth/password/forgot` com o e-mail e
+`flyctl logs -a sapiens-aluno --no-tail | grep "RESET DE SENHA"` — o link vale
+30 minutos, e **cada pedido novo invalida o anterior** (pegue a última linha).
+Quem diz se o envio funciona é o `/ready`: `ultimo_envio` com `detalhe: "HTTP
+401"` é chave do Resend inválida ou revogada (gerar outra e `fly secrets set
+RESEND_API_KEY=…`, trabalho do dono); `HTTP 403` é a conta do Resend em modo de
+teste.
 
 ## Cupons e indicação
 

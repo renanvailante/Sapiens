@@ -1,6 +1,6 @@
 ---
 tags: [historico, anti-regressao]
-atualizado: 2026-09-18
+atualizado: 2026-10-06
 ---
 
 # O que já foi assim e não é mais
@@ -127,13 +127,20 @@ Três passadas grandes de UI/UX em ~3 semanas (08-24 "premium/gamificado", 09-15
 viram sistema"). **O estado atual é o de 09/18**; descrições das duas primeiras só
 valem como arqueologia. A identidade visual **não** mudou em nenhuma delas.
 
+## Coisas que existiram só pela metade
+
+- **Revisão programada dos lembretes** — de 2026-09 a 2026-10-01 o bloco
+  `agendamento` nascia pronto e ninguém o avançava. Hoje avança (ver [[mentis]]).
+  Não "restaure" o estado `aguardando`: lembrete sem data é legado, lido como
+  vencido no dia seguinte ao que foi guardado.
+- **O fim de série "Você concluiu todas as questões! 🎉 / Voltar"** — virou o
+  fechamento de série (ver [[padroes-de-tela]]).
+
 ## Coisas que nunca chegaram a existir
 
 - **`VIDEO_BOAS_VINDAS`** em `pages/BemVindo.jsx` está **vazia de propósito** —
   enquanto estiver, a tela desenha o lugar do vídeo.
 - **Conteúdo real de e-book** — a infraestrutura entrou vazia de propósito.
-- **Revisão programada** — o bloco `agendamento` existe e ninguém o avança, para não
-  haver migração quando for.
 - **Ponte automática aluno → professor** — decisão do dono.
 - **"site do Assad"** — referência visual pedida em 09/15 que nunca foi
   identificada com confiança. Ficou de fora, pendente do link.

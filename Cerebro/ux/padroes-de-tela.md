@@ -1,6 +1,6 @@
 ---
 tags: [ux, padroes, componentes]
-atualizado: 2026-10-01
+atualizado: 2026-10-06
 ---
 
 # Padrões de tela
@@ -96,6 +96,10 @@ carregava e só usava para vender a aula. **A trilha só enxerga o Treino**
 quem tinha 200 questões de prova e nunca abriu o mapa recebia "Seu primeiro
 passo" todo dia. "Primeiro passo" é só para `totalRespondidas === 0`.
 
+Pela mesma razão, a tira de três números do Próximo Passo troca para quem só faz
+prova: "0/56 explorados · 0 dominados" ao lado de "200 questões" lia como "você não
+fez nada", e vira questões · dias nesta semana · dias seguidos.
+
 Ordem desde 18/09, cinco seções: **Próximo Passo → O que mudou → Sua sequência
 → Com o mentor → Explorar**.
 
@@ -172,6 +176,13 @@ qualquer acessível, nunca a mesma). O efeito do deep-link `?hab=` **não age
 com desfecho na tela** — o React Router limpa a URL numa renderização
 posterior à que zera a missão, e nesse intervalo o briefing da missão que
 acabou reabria por cima do desfecho.
+
+**A ponte prova ↔ Treino.** O mapa e o motor usam os MESMOS 56 ids de habilidade
+(`HAB-01`…), e o catálogo liga cada habilidade aos processos que ela exercita
+(ver [[motor-cognitivo]]). O fechamento da série dirigida oferece "Treinar no mapa:
+<rótulo>" (rótulo de `mapa3d/missoes.js`, o mesmo do mapa — a frase interna da
+habilidade não aparece); o Treino lê `/motor/perfil`, marca no briefing a missão
+ligada ao padrão de erro das provas e a prefere como próxima missão.
 
 ## Um checkpoint só para a devolutiva de prática
 

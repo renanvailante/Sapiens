@@ -1,6 +1,6 @@
 ---
 tags: [arquitetura, pedagogia, motor]
-atualizado: 2026-10-01
+atualizado: 2026-10-06
 ---
 
 # O motor cognitivo — medir, explicar, intervir
@@ -58,6 +58,14 @@ processo: com mais de uma máquina no Fly, pode estar fria.
 A fila de `/motor/perfil` também decide o Próximo Passo: causa com catálogo
 vence a trilha; desempenho sem traço fica abaixo dela; sentinela aparece como
 "onde mais erros começam", **sem** o nome do erro.
+
+**As 56 habilidades do Treino SÃO as do catálogo.** `treino_habilidades` e
+`cat["habilidades"]` têm os mesmos ids, e cada habilidade lista os
+`processos_cognitivos` que exercita — então toda linha da fila (e o `detalhe`)
+já traz, em `habilidades`, as missões do mapa que treinam aquele processo. É a
+única ponte entre o erro de PROVA (`behavior`, Error Trace) e o mapa do Treino
+(`treino_agregado`), que até 2026-10-01 eram medidas sem contato. Lê-se o
+catálogo; nada na ontologia muda (ela está congelada, ver [[decisoes-do-dono]]).
 
 ## O portão de crença
 

@@ -1,6 +1,6 @@
 ---
 tags: [produto, ia, mentis]
-atualizado: 2026-09-18
+atualizado: 2026-10-06
 ---
 
 # Mentis — a IA e o mascote
@@ -35,7 +35,11 @@ Preços em [[economia-de-sparks]]. O que importa aqui é **o que cada uma é**:
 - **Reescrever os blocos da semana** — e se ela falhar, devolve os Sparks **e
   entrega a semana determinística assim mesmo**, nunca 503 seco.
 
-**Todo caminho pago segue o mesmo esqueleto: débito → try → reembolso.**
+**Todo caminho pago segue o mesmo esqueleto: débito → try → reembolso** — e o
+reembolso é do que foi COBRADO (`_cobrar_com_recibo` devolve o recibo), nunca o
+preço de tabela: a ilimitada não paga e por isso não recebe estorno. A leitura
+da rodada (`/students/me/sessao/diagnostico`) também passa por aqui. Ver
+[[economia-de-sparks]].
 
 ## As cinco decisões de economia de tokens
 
@@ -109,9 +113,13 @@ não-textual é opt-in por `data-lembrar` + `data-lembrar-ref` (marcados hoje: t
 e exemplo resolvido em `curso/Blocos.jsx`). `CardDeMelhora` **não** foi marcado de
 propósito — é um card clicável, e o toque longo terminaria em navegação.
 
-O bloco `agendamento` nasce com os nomes de `revisao_espacada` e **ninguém o
-avança**: a revisão programada não foi implementada de propósito, e o campo existe
-para não haver migração quando for.
+**A revisão programada existe desde 2026-10-01.** O trecho guardado volta no dia
+seguinte e sobe a escada de `revisao_espacada.INTERVALOS_DIAS` (1, 3, 7, 16, 35) a
+cada "Revisei" (`POST /lembretes/:id/revisei`, só no dia da volta); no último
+degrau o ciclo se completa e ele sai como revisado. Lembrete antigo, sem data,
+vence no dia seguinte ao que foi guardado — calculado na leitura, sem migração,
+que é o que o campo nascer pronto comprou. Rever é de graça, e nada disso chama
+modelo. O Hoje avisa os que voltaram (`vencidos`, no "O que mudou").
 
 ---
 Relacionado: [[economia-de-sparks]] · [[motor-cognitivo]] · [[marca]] · [[cursos-conteudo]]

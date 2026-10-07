@@ -1,6 +1,6 @@
 ---
 tags: [produto, preco, aluno, fonte-unica]
-atualizado: 2026-09-18
+atualizado: 2026-10-06
 ---
 
 # Economia de Sparks
@@ -99,10 +99,22 @@ não desconto do aluno. Não "corrija" isso.
 
 ## Direitos dispensam cobrança
 
-Quem tem `mentis_ilimitada` não paga **nenhuma** das quatro cobranças da Mentis —
-o atalho vive em `mentis_routes._cobrar`, **antes** do débito. "Ilimitada" tem de
-significar que o saldo nem é tocado, não um desconto aplicado depois. Ver
-[[catalogo]].
+Quem tem `mentis_ilimitada` não paga **nenhuma** cobrança da Mentis — explicação,
+intervenção, sessão, mensagem, "explicar melhor", dissertativa e a leitura da
+rodada. O atalho vive no ponto único `mentis_routes._cobrar_com_recibo`, **antes**
+do débito: "ilimitada" tem de significar que o saldo nem é tocado. Ver [[catalogo]].
+
+**O estorno devolve o que foi cobrado, nunca o preço de tabela.** A cobrança
+devolve `(saldo, cobrado)` e `_safe_reembolso` não devolve nada a quem tem a
+ilimitada. Até 2026-10-01 cada falha do modelo CREDITAVA o preço a quem não tinha
+pago — seis caminhos com a mesma máquina de Spark de graça que [[inviolaveis]]
+proíbe no pagamento. E a leitura da rodada tinha cobrança própria
+(`firestore_routes`), que ignorava a ilimitada: quem comprou "Mentis ilimitada"
+pagava 15 por "Ler com a Mentis". Testes em `test_direitos_do_pacote.py`.
+
+**Telas que só ESCREVEM o preço leem `GET /mentis/precos`**, que devolve as
+constantes que cobram. A tela de provas espelhava 7 e 15 à mão; as constantes
+`*_PADRAO` que sobram no JS são só reserva até a resposta chegar.
 
 ## Bônus de cadastro por influencer, e a comissão que sai por fora
 
