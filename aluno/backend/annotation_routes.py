@@ -10,6 +10,7 @@ from pydantic import BaseModel, ValidationError
 from auth import require_admin, require_user
 from annotation_models import AnnotationPayload, AnnotationRecord
 import annotation_service
+import rotulos_de_produto as rotulos
 from canonical_ontology import normalize_item, validate_item
 from models import User
 
@@ -163,4 +164,4 @@ async def get_annotation_by_question(banca: str, ano: int, prova: str, numero: i
 
 @router.get("/cognitive-profile")
 async def cognitive_profile(user: User = Depends(require_user)):
-    return await annotation_service.compute_cognitive_profile(user.user_id)
+    return rotulos.vestir(await annotation_service.compute_cognitive_profile(user.user_id))

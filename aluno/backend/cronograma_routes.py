@@ -53,6 +53,7 @@ import annotation_service
 import cronograma as cg
 import engajamento_service
 import firestore_service as fs
+import rotulos_de_produto as rotulos
 import llm_telemetry
 import onboarding_routes
 import prioridade_enem
@@ -318,7 +319,7 @@ async def _habilidades_fracas(uid: str, limite: int = 2) -> list[dict[str, Any]]
 
 async def _fila_de_revisao(uid: str, limite: int = cg.MAX_REVISOES_SEMANA) -> list[dict[str, Any]]:
     try:
-        fila = await asyncio.to_thread(revisao_service.fila, uid, limite=limite)
+        fila = rotulos.vestir(await asyncio.to_thread(revisao_service.fila, uid, limite=limite))
     except Exception:  # noqa: BLE001
         logger.exception("cronograma: fila de revisão indisponível para %s", uid)
         return []
@@ -370,7 +371,15 @@ def _semana_pedida(semana: Optional[str], doc: dict) -> str:
 
 
 def _montar_semana(doc: dict, semana_iso: str) -> dict[str, Any]:
-    """A tela inteira, a partir do documento já lido. Sem I/O."""
+    """A tela inteira, a partir do documento já lido. Sem I/O.
+
+    Sai por `rotulos.vestir`: o plano GUARDADO no Mongo pode ter sido montado
+    antes de 2026-10-06 com o nome real de um processo no título do bloco de
+    revisão, e a tela da semana é do aluno."""
+    return rotulos.vestir(_montar_semana_cru(doc, semana_iso))
+
+
+def _montar_semana_cru(doc: dict, semana_iso: str) -> dict[str, Any]:
     compromissos = cg.compromissos_da_semana(doc.get("compromissos") or [], semana_iso)
     plano = doc.get("plano") or {}
     blocos_plano = plano.get("blocos") or [] if plano.get("semana") == semana_iso else []

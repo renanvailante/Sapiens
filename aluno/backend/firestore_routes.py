@@ -21,6 +21,7 @@ import ai_service
 import annotation_service
 import engajamento_service
 import firestore_service as fs
+import rotulos_de_produto as rotulos
 import microdiagnostico
 import revisao_service
 from feedback_templates import build_feedback, causa_raiz
@@ -274,7 +275,9 @@ async def register_answer(payload: AnswerPayload, user: User = Depends(require_u
         nome=user.name,
     )
 
-    return {
+    # `vestir`: o gatilho do Professor Invisível traz o ponto e o erro pelo
+    # nome — que, para o aluno, é o rótulo de produto (`rotulos_de_produto`).
+    return rotulos.vestir({
         "acertou": acertou,
         "correta": correta_letra,
         "feedback": feedback,
@@ -290,7 +293,7 @@ async def register_answer(payload: AnswerPayload, user: User = Depends(require_u
         "microdiagnostico": await microdiagnostico.perguntar_por(
             causa_raiz=raiz, acertou=acertou, event_id=(evento or {}).get("event_id") or ""
         ),
-    }
+    })
 
 
 class RespostaSessao(BaseModel):

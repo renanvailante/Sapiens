@@ -74,6 +74,8 @@ import comunidade_routes as comunidade_module
 import influencers_routes as influencers_module
 import campaigns_routes as campaigns_module
 import microdiagnostico
+import push_routes as push_module
+import push_service
 import db_indexes
 from enem_seed import migrate_and_seed
 from feed_seed import seed_feed
@@ -120,6 +122,9 @@ campaigns_module.set_db(db)
 # O microdiagnóstico (Fase 3) guarda no Mongo apenas CONTADORES por par
 # (erro, processo) — o relato em si mora no evento de behavior, no Firestore.
 microdiagnostico.set_db(db)
+# Notificação no celular: aparelhos inscritos e a reivindicação diária, no
+# Mongo. O laço lê o Firestore no máximo uma vez por aluno inscrito por dia.
+push_service.set_db(db)
 
 app = FastAPI(
     title="Sapiens",
@@ -379,6 +384,7 @@ api_router.include_router(comunidade_module.router)
 api_router.include_router(influencers_module.router)
 api_router.include_router(campaigns_module.router)
 api_router.include_router(campaigns_module.router_publico)
+api_router.include_router(push_module.router)
 app.include_router(api_router)
 
 
@@ -737,6 +743,8 @@ async def _startup():
     asyncio.create_task(_auto_sync_loop())
     asyncio.create_task(_perfil_cognitivo_loop())
     asyncio.create_task(_sparks_reconciliacao_loop())
+    # Notificação no celular. A conta de custo do laço está no `fly.toml`.
+    asyncio.create_task(push_service.laco())
     if not settings.MERCADOPAGO_HABILITADO:
         # Alto e claro: a loja fechada é uma condição operacional silenciosa —
         # o site funciona, ninguém reclama, e a receita é zero. Tem que estar

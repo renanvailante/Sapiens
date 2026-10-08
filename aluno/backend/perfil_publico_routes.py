@@ -27,6 +27,7 @@ from models import User
 import annotation_service
 import cronograma_routes
 import firestore_service as fs
+import rotulos_de_produto as rotulos
 import perfil_painel
 import perfil_pedagogico
 
@@ -77,7 +78,7 @@ async def _avaliacoes_de_redacao(uid: str) -> list[dict]:
 @router.get("/perfil")
 async def get_perfil(user: User = Depends(require_user)):
     fs.ensure_student_profile(user.user_id, user.name, user.email)
-    return await perfil_pedagogico.perfil_publico(user.user_id)
+    return rotulos.vestir(await perfil_pedagogico.perfil_publico(user.user_id))
 
 
 @router.get("/perfil/painel")
@@ -106,10 +107,10 @@ async def get_painel(user: User = Depends(require_user)):
     prioridades = await cronograma_routes._prioridades(
         user.user_id, diagnostico=diagnostico
     )
-    return perfil_painel.montar(
+    return rotulos.vestir(perfil_painel.montar(
         telemetria=annotation_service.telemetria_de(agregado),
         prioridades=prioridades,
         forcas=perfil_pedagogico.perfil_de(diagnostico),
         diagnostico=diagnostico,
         avaliacoes_redacao=await _avaliacoes_de_redacao(user.user_id),
-    )
+    ))

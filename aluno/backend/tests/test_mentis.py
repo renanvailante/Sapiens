@@ -163,7 +163,11 @@ class TestSessao:
         assert carteira.debitos == [mr.SESSAO_COST] == [70]
         assert out["nova"] is True
         assert len(out["mensagens"]) == 1 and out["mensagens"][0]["papel"] == "mentis"
-        assert "Processo 1" in out["mensagens"][0]["texto"]
+        # Pela rota, o nome do catálogo vira rótulo de produto
+        # (`rotulos_de_produto`); o id do dublê não existe no catálogo, então
+        # sai o rótulo genérico — e o nome real não sai nunca.
+        assert "Ponto de atenção" in out["mensagens"][0]["texto"]
+        assert "Processo 1" not in out["mensagens"][0]["texto"]
 
     def test_reabrir_dentro_da_janela_nao_cobra_de_novo(self, monkeypatch, fake_db):
         """Recarregar a página não pode custar 70 Sparks."""
@@ -234,7 +238,10 @@ class TestMensagem:
 
         monkeypatch.setattr(mr.ai_service, "generate_json_resiliente", _captura)
         asyncio.run(mr.enviar_mensagem(mr.MensagemPayload(texto="e agora?"), user=_ALUNO))
-        assert "Processo 1 16.7% (1/6)" in visto["prompt"]
+        # O modelo recebe o rótulo de produto, nunca o nome do catálogo — o
+        # que ele escreve vai direto para o aluno.
+        assert "Ponto de atenção 16.7% (1/6)" in visto["prompt"]
+        assert "Processo 1" not in visto["prompt"]
 
     def test_falha_do_modelo_devolve_as_sparks(self, monkeypatch, fake_db):
         carteira = self._preparar(monkeypatch, fake_db)

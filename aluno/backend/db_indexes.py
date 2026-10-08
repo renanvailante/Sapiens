@@ -381,6 +381,18 @@ INDICES: list[tuple[str, list[tuple[str, int]], dict]] = [
      {"name": "votos_do_aluno"}),
     ("comunidade_reportes", [("resolvido", pymongo.ASCENDING), ("created_at", pymongo.DESCENDING)],
      {"name": "fila_de_moderacao"}),
+
+    # --- notificação no celular (push_service) ---
+    # Os aparelhos de um aluno: lidos a cada envio e a cada inscrição (teto
+    # de aparelhos). O `_id` é o hash do endpoint, então a inscrição repetida
+    # já cai na chave primária.
+    ("push_inscricoes", [("user_id", pymongo.ASCENDING)], {"name": "aparelhos_do_aluno"}),
+    # A consulta do laço: quem já foi avaliado HOJE. E o TTL, porque a
+    # reivindicação diária cresce um documento por aluno por dia e não é fonte
+    # de verdade de nada depois que o dia passou.
+    ("push_envios", [("dia", pymongo.ASCENDING)], {"name": "avaliados_do_dia"}),
+    ("push_envios", [("expurgo_em_dt", pymongo.ASCENDING)],
+     {"name": "push_envios_ttl", "expireAfterSeconds": 0}),
 ]
 
 

@@ -215,7 +215,27 @@ class FakeCollection:
                 saida["_id"] = doc["_id"]
             return saida
         excluir = {k for k, v in projection.items() if not v}
-        return {k: v for k, v in doc.items() if k not in excluir}
+        saida = {k: copy.deepcopy(v) for k, v in doc.items() if k not in excluir}
+        # Exclusão por caminho (`"questao.alternativas.correta": 0`), que o
+        # Mongo aplica atravessando arrays. É a projeção que esconde o
+        # gabarito do aluno; sem isto o dublê devolvia o gabarito e nenhum
+        # teste conseguia provar que a rota não devolve.
+        for caminho in (k for k in excluir if "." in k):
+            FakeCollection._excluir_caminho(saida, caminho.split("."))
+        return saida
+
+    @staticmethod
+    def _excluir_caminho(alvo, partes: list[str]) -> None:
+        if isinstance(alvo, list):
+            for x in alvo:
+                FakeCollection._excluir_caminho(x, partes)
+            return
+        if not isinstance(alvo, dict):
+            return
+        if len(partes) == 1:
+            alvo.pop(partes[0], None)
+            return
+        FakeCollection._excluir_caminho(alvo.get(partes[0]), partes[1:])
 
     async def find_one(self, query: dict, projection: dict | None = None, sort=None):
         candidatos = [d for d in self.docs if self._bate(d, query)]
@@ -518,12 +538,13 @@ def _sem_mongo_real_no_engajamento():
     import engajamento_service
     import mentoria_routes
     import onboarding_routes
+    import push_service
 
     # TODO MÓDULO NOVO QUE RECEBA `set_db` PRECISA ENTRAR AQUI. Sem isso a
     # suíte volta a escrever no Mongo da máquina, e o sintoma aparece longe da
     # causa (dados fantasma no banco, nenhum erro).
     modulos = (engajamento_service, comunidade, onboarding_routes, cursos_routes,
-               mentoria_routes)
+               mentoria_routes, push_service)
     for modulo in modulos:
         modulo.set_db(None)
     yield

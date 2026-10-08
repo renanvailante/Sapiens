@@ -9,6 +9,7 @@ cognitivo, e não tem por que morar no Firestore.
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 from datetime import datetime, timezone
 
@@ -18,7 +19,9 @@ from pydantic import BaseModel, Field
 import feed_comportamento as fb
 import feed_conteudo as fc
 import feed_ingestao as fi
+import feed_questoes as fq
 import rate_limit
+import rotulos_de_produto as rotulos
 from auth import require_admin, require_user
 from feed_models import FeedInteractionIn, FeedProgressIn, FeedItem, FeedItemIn
 from models import User
@@ -179,6 +182,67 @@ async def log_interaction(payload: FeedInteractionIn, user: User = Depends(requi
     if resposta_usuario:
         return {"ok": True, "is_correct": is_correct, **revelacao}
     return {"ok": True}
+
+
+# ---------- O feed infinito de questões reais (ver `feed_questoes`) ----------
+
+@router.get("/feed/questoes")
+async def feed_de_questoes(
+    limite: int = Query(6, ge=1, le=fq.LOTE_MAX),
+    excluir: str | None = Query(None, max_length=60_000),
+    processos: str | None = Query(None, max_length=400),
+    user: User = Depends(require_user),
+    _limite: None = Depends(rate_limit.por_usuario("acervo")),
+):
+    """O próximo lote do Folhear: questões do acervo, uma por tela, as do
+    padrão de erro primeiro. `excluir` é o que a tela já mostrou nesta
+    sessão; `processos`, a fila do motor (`/motor/perfil`) que ela já tem.
+
+    Uma leitura do Firestore por lote (o agregado); o resto é Mongo e cache
+    de processo. Nunca devolve gabarito."""
+    import annotation_service
+    import firestore_service as fs
+
+    try:
+        agregado = await asyncio.to_thread(fs.ler_agregado, user.user_id)
+    except Exception:  # noqa: BLE001
+        # Sem saber o que já foi respondido, o feed continua — no pior caso
+        # repete uma questão já feita, que é melhor que uma tela vazia.
+        logger.warning("feed: agregado indisponível para %s", user.user_id)
+        agregado = {}
+    try:
+        index = await asyncio.to_thread(annotation_service._build_item_index)
+    except Exception:  # noqa: BLE001
+        index = {}
+
+    acervo = await _db.questoes_public.find({}, {"_id": 0, "item_id": 1, "fonte": 1}).to_list(5000)
+    escolhidos = fq.escolher(
+        index=index,
+        acervo=acervo,
+        respondidos=set(agregado.get("item_ids_respondidos") or []),
+        excluir=fq.ids_validos(excluir),
+        processos=fq.processos_validos(processos),
+        limite=limite,
+        semente=f"{user.user_id}:{fs.dia_local()}",
+    )
+    ids = [e["item_id"] for e in escolhidos]
+    corpos = {
+        d["item_id"]: d
+        for d in await _db.questoes_public.find({"item_id": {"$in": ids}}, fq.PROJECAO_SEM_GABARITO).to_list(len(ids) or 1)
+    }
+    itens = []
+    for e in escolhidos:
+        corpo = corpos.get(e["item_id"])
+        if not corpo:
+            continue
+        itens.append({
+            **corpo,
+            "motivo": e["motivo"],
+            "processo_id": e.get("processo_id"),
+            # O rótulo de produto do ponto, nunca o nome do catálogo.
+            "ponto": rotulos.rotulo_do_processo(e["processo_id"]) if e.get("processo_id") else None,
+        })
+    return {"itens": itens, "fim": not itens}
 
 
 # ---------- Progress ----------

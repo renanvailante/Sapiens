@@ -26,6 +26,7 @@ from pydantic import BaseModel, Field
 
 import engajamento_service
 import firestore_service as fs
+import rotulos_de_produto as rotulos
 import microdiagnostico
 import revisao_service
 from auth import require_admin, require_user
@@ -42,13 +43,13 @@ async def minha_fila(
     user: User = Depends(require_user),
 ):
     fs.ensure_student_profile(user.user_id, user.name, user.email)
-    return await asyncio.to_thread(revisao_service.fila, user.user_id, limite=limite)
+    return rotulos.vestir(await asyncio.to_thread(revisao_service.fila, user.user_id, limite=limite))
 
 
 @router.get("/trajetoria")
 async def minha_trajetoria(user: User = Depends(require_user)):
     fs.ensure_student_profile(user.user_id, user.name, user.email)
-    return await asyncio.to_thread(revisao_service.trajetoria, user.user_id)
+    return rotulos.vestir(await asyncio.to_thread(revisao_service.trajetoria, user.user_id))
 
 
 class IntervencaoRequest(BaseModel):

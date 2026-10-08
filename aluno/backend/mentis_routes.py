@@ -48,6 +48,7 @@ import annotation_service
 import intervencoes
 import cursos_progresso
 import firestore_service as fs
+import rotulos_de_produto as rotulos
 import llm_cache
 import llm_telemetry
 import motor_cognitivo
@@ -392,16 +393,19 @@ def _chave_intervencao(par: dict) -> str:
 
 
 def _montar_prompt_intervencao(par: dict) -> str:
-    linhas = [f"Dificuldade: {par['erro_nome']}"]
+    # O modelo recebe o RÓTULO DE PRODUTO, não o nome do catálogo: o texto que
+    # ele escreve vai direto para o aluno (ver `rotulos_de_produto`). A
+    # definição operacional continua indo — é ela que carrega o conteúdo.
+    linhas = [f"Dificuldade: {rotulos.rotulo_do_erro(par['erro_id'])}"]
     if par["mecanismo"]:
         linhas.append(f"Como ela funciona: {par['mecanismo']}")
     if par["evidencia_observavel"]:
         linhas.append(f"Como ela aparece na resposta: {par['evidencia_observavel']}")
-    linhas.append(f"Capacidade afetada: {par['processo_nome']}")
+    linhas.append(f"Capacidade afetada: {rotulos.rotulo_do_processo(par['processo_id'])}")
     if par["processo_definicao"]:
         linhas.append(f"O que essa capacidade envolve: {par['processo_definicao']}")
     if par["intervencao_nome"]:
-        linhas.append(f"Abordagem pedagógica prescrita: {par['intervencao_nome']}")
+        linhas.append(f"Abordagem pedagógica prescrita: {rotulos.trocar_no_texto(par['intervencao_nome'])}")
     if par["sentinela"]:
         linhas.append(
             "Observação: esta dificuldade ainda não tem causa nomeada no catálogo. "
@@ -544,7 +548,9 @@ async def abrir_intervencao(
             # conciliação — mas nunca derruba a entrega que ele pagou.
             logger.exception("Mentis: desbloqueio NÃO registrado para %s / %s.", user.user_id, chave)
 
-    return {
+    # O texto gerado é compartilhado entre alunos e pode ter sido escrito
+    # antes de 2026-10-06 com o nome real do catálogo: sai vestido.
+    return rotulos.vestir({
         "causa": par,
         "previa": intervencoes.previa(par["erro_id"]),
         "conteudo": conteudo,
@@ -553,7 +559,7 @@ async def abrir_intervencao(
         "cobrado": 0 if ja_paga else INTERVENCAO_COST,
         "sparks_balance": saldo,
         "gerada_agora": gerou,
-    }
+    })
 
 
 # ---------- 1c. Explicação de um trecho de conteúdo (curso ou e-book) ----------
@@ -1061,7 +1067,9 @@ class MensagemPayload(BaseModel):
 def _serializar_sessao(
     sessao: dict, saldo: Optional[int] = None, ilimitada: bool = False,
 ) -> dict[str, Any]:
-    return {
+    # Sessões abertas antes de 2026-10-06 guardaram o dossiê e as mensagens
+    # com o nome real do catálogo — a leitura sai vestida.
+    return rotulos.vestir({
         "ativa": True,
         "sessao_id": sessao["_id"],
         "criada_em": sessao["criada_em"],
@@ -1072,7 +1080,7 @@ def _serializar_sessao(
         "custo_sessao": SESSAO_COST,
         "sparks_balance": saldo,
         "mentis_ilimitada": ilimitada,
-    }
+    })
 
 
 async def _sessao_ativa(uid: str) -> Optional[dict]:
@@ -1128,7 +1136,9 @@ async def abrir_sessao(
 
     saldo = _cobrar(user.user_id, SESSAO_COST)
     try:
-        diagnostico = await annotation_service.compute_diagnostico_real(user.user_id)
+        # Vestido ANTES do dossiê: o modelo só conhece o rótulo de produto, e
+        # é com ele que responde ao aluno.
+        diagnostico = rotulos.vestir(await annotation_service.compute_diagnostico_real(user.user_id))
         agregado = fs.ler_agregado(user.user_id)
         # `compute_diagnostico_real` já traz a contagem por disciplina, então
         # o ranking de rendimento não custa nenhuma leitura a mais aqui.
@@ -1271,7 +1281,7 @@ async def enviar_mensagem(
         {"papel": "mentis", "texto": resposta, "sugestoes": sugestoes, "acao": acao, "em": agora_iso},
     ]
     await _db.mentis_sessoes.update_one({"_id": sessao["_id"]}, {"$push": {"mensagens": {"$each": novas}}})
-    return {"mensagens": novas, "sparks_balance": saldo, "custo_mensagem": MENSAGEM_COST}
+    return {"mensagens": rotulos.vestir(novas), "sparks_balance": saldo, "custo_mensagem": MENSAGEM_COST}
 
 
 # ---------- 5. Correção da questão dissertativa de um curso ----------

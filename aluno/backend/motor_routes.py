@@ -22,6 +22,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 import firestore_service as fs
+import rotulos_de_produto as rotulos
 import motor_cognitivo
 from auth import require_admin, require_user
 from models import User
@@ -34,7 +35,9 @@ router = APIRouter(prefix="/motor", tags=["motor-cognitivo"])
 @router.get("/perfil")
 async def meu_perfil(user: User = Depends(require_user)):
     fs.ensure_student_profile(user.user_id, user.name, user.email)
-    return await asyncio.to_thread(motor_cognitivo.perfil, user.user_id)
+    # Rótulo de produto no lugar do nome da ontologia — ver `rotulos_de_produto`.
+    # A rota de admin abaixo continua com o nome real.
+    return rotulos.vestir(await asyncio.to_thread(motor_cognitivo.perfil, user.user_id))
 
 
 @router.get("/habilidade/{processo_id}")
@@ -43,7 +46,7 @@ async def minha_habilidade(processo_id: str, user: User = Depends(require_user))
     detalhe = await asyncio.to_thread(motor_cognitivo.detalhe, user.user_id, processo_id)
     if detalhe is None:
         raise HTTPException(status_code=404, detail=f"Processo '{processo_id}' não existe no catálogo vigente.")
-    return detalhe
+    return rotulos.vestir(detalhe)
 
 
 # ---------------------------------------------------------------------------

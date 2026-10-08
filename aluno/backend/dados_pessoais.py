@@ -131,6 +131,12 @@ COLECOES_POR_USUARIO: tuple[tuple[str, str], ...] = (
     # confundir com o lado do influencer: um influencer não é apagado por
     # `aluno_id`, ver `COLECOES_TRATAMENTO_ESPECIAL` abaixo.
     ("growth_events", "aluno_id"),
+    # Notificação no celular (2026-10-06). O aparelho inscrito (endereço do
+    # serviço de push + chaves para cifrar) e a reivindicação diária com o
+    # TIPO do que foi enviado — "sua sequência estava em risco" é um fato
+    # sobre o comportamento do titular. As duas saem com a conta.
+    ("push_inscricoes", "user_id"),
+    ("push_envios", "user_id"),
 )
 
 # Coleções que guardam dado de aluno mas NÃO cabem no padrão acima — cada uma
@@ -207,7 +213,11 @@ COLECOES_SEM_DADO_PESSOAL: tuple[str, ...] = (
 # Campos que NUNCA saem numa exportação: credencial ou material de sessão.
 # Entregar o hash da senha ao titular não atende direito nenhum e cria um
 # alvo offline; entregar token de sessão é entregar a própria sessão.
-CAMPOS_SENSIVEIS = ("password_hash", "session_token", "token_hash")
+# `chaves_push` é o segredo que cifra a notificação para UM aparelho
+# (`push_inscricoes`): não é dado sobre o titular, é credencial do aparelho, e
+# numa cópia exportada só serviria para alguém mandar notificação em nome do
+# Sapiens.
+CAMPOS_SENSIVEIS = ("password_hash", "session_token", "token_hash", "chaves_push")
 
 # Subcoleções de `students/{uid}` no Firestore. `recursive_delete` apaga todas
 # sozinho; esta lista é para a EXPORTAÇÃO, que precisa saber o que ler.

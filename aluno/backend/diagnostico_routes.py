@@ -14,6 +14,7 @@ from auth import require_user
 from models import User
 import annotation_service
 import firestore_service as fs
+import rotulos_de_produto as rotulos
 
 router = APIRouter(prefix="", tags=["diagnostico"])
 
@@ -21,4 +22,4 @@ router = APIRouter(prefix="", tags=["diagnostico"])
 @router.get("/diagnostico")
 async def get_diagnostico(user: User = Depends(require_user)):
     fs.ensure_student_profile(user.user_id, user.name, user.email)
-    return await annotation_service.compute_diagnostico_real(user.user_id)
+    return rotulos.vestir(await annotation_service.compute_diagnostico_real(user.user_id))

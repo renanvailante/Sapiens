@@ -49,6 +49,12 @@ httpx==0.28.1
 # menor, sem nenhum sinal de erro em lugar nenhum.
 pyspellchecker==0.9.0
 
+# --- Notificação no celular (Web Push do PWA) ---
+# Cifra a mensagem (RFC 8291) e assina com VAPID (RFC 8292). Implementar isso
+# à mão seria criptografia escrita em casa; é a biblioteca de referência do
+# protocolo, mantida pela Mozilla. Traz `py-vapid`, `http-ece` e `requests`.
+pywebpush==2.0.3
+
 # --- Suporte ---
 python-dotenv>=1.0.1
 tzdata>=2024.2

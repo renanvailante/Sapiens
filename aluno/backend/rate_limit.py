@@ -114,6 +114,9 @@ LIMITES: dict[str, tuple[int, int]] = {
     # assim uma chamada de Gemini por clique, então ganha teto próprio em vez
     # de herdar o "llm" genérico (pensado para o aluno, não para o admin).
     "pesquisa_aquisicao_mensagem": (120, 3600),
+    # Ligar/desligar a notificação no celular. Um aluno faz isto uma vez por
+    # aparelho; o teto só impede um script de encher `push_inscricoes`.
+    "push": (30, 3600),
 }
 
 _eventos: dict[str, deque[float]] = defaultdict(deque)
