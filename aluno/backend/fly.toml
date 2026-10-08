@@ -64,6 +64,28 @@ primary_region = "gru"          # São Paulo: menor latência para o piloto
   # Foto do cartão-resposta: o frontend já redimensiona, isto é a rede de
   # segurança do servidor.
   MAX_UPLOAD_MB = "8"
+  # Notificação no celular (Web Push) — `push_service.laco`. A CONTA, feita
+  # antes de ligar, porque um laço de fundo já derrubou este app (04/09):
+  #
+  #   Fora de 19h-21h (Brasília): ZERO I/O — o ciclo só lê o relógio.
+  #   Dentro: 900s => 8 ciclos/dia. Cada ciclo = 2 consultas ao Mongo,
+  #   O(inscritos) (quem está inscrito; quem já foi avaliado hoje).
+  #   Por aluno inscrito: NO MÁXIMO 1 avaliação por dia — a reivindicação
+  #   `push_envios._id = "{uid}:{dia}"` impede a segunda, inclusive entre
+  #   máquinas. A avaliação custa 1 leitura do Firestore (`students/{uid}`,
+  #   agregado + revisão no mesmo documento), ~4 consultas ao Mongo e 1 POST
+  #   por aparelho.
+  #
+  #   Firestore/dia = nº de inscritos. 500 inscritos = 500 leituras (1% da
+  #   cota gratuita de 50.000); 5.000 inscritos = 10%. Nunca O(eventos).
+  #   `PUSH_MAX_POR_CICLO` (400) limita a rajada de um ciclo; quem não coube
+  #   entra no ciclo seguinte (capacidade de 3.200 alunos/dia na janela).
+  #
+  # A chave privada VAPID NÃO mora aqui: é o secret `VAPID_PRIVATE_KEY`
+  # (`flyctl secrets set`). A pública é derivada dela no processo.
+  PUSH_LACO_SEGUNDOS = "900"
+  PUSH_HORA_AVALIACAO = "19"
+  PUSH_MAX_POR_CICLO = "400"
   # Corpus canônico dentro da imagem (ver Dockerfile).
   SAPIENS_ONTOLOGY_PATH = "/app/contracts/ontology/ontology_v1.4.json"
   SAPIENS_CONTRACTS_PATH = "/app/contracts"
