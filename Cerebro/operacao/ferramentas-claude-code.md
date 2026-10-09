@@ -42,7 +42,10 @@ Não reabra estes itens sem uma medição concreta que mude a conclusão:
   Os 23 subagentes de domínio que existiram em `.claude/agents/` foram apagados
   em 2026-10-06: subagente, Workflow e ultracode **não herdam o modo sem
   permissões** da sessão, e cada comando deles virava um pedido de autorização
-  ao dono. Regra no `CLAUDE.md`: não se usam neste repo. Forçar todo task
+  ao dono. Regra no `CLAUDE.md`: não se usam neste repo. A trava não é só
+  texto: `.claude/settings.local.json` nega as ferramentas `Agent`, `Task` e
+  `Workflow`, e a sessão nem as recebe (em 2026-10-09 o
+  `subagentStatusLine` órfão também saiu de `.claude/settings.json`). Forçar todo task
   por um pipeline de 6 estágios adiciona latência para o caso comum — a
   maioria das tarefas neste repo é uma edição localizada, não uma
   investigação arquitetural.
