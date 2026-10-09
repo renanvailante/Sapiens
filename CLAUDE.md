@@ -31,8 +31,12 @@ worktree em HEAD, com `.env` copiado à mão e `--branch main` no wrangler. O ba
 do aluno só builda **da raiz do repo**. Valide sempre por evidência no alvo, nunca
 pela saída do comando. → `Cerebro/operacao/deploy.md`
 
-Publicar o frontend do aluno depois de mudá-lo é **pré-autorizado** (o dono pediu
-"SEMPRE faça isso"). Nada mais é.
+**Não peça autorização no meio do trabalho.** Em 2026-10-09 o dono deu "total
+liberdade pra fazer o que for necessário": ler, editar, testar, commitar, dar push e
+publicar qualquer superfície (frontend e backend do aluno, professor) quando a tarefa
+pedir — decida, faça, prove no alvo e relate no fim. Publicar o frontend do aluno
+depois de mudá-lo continua obrigatório ("SEMPRE faça isso"). Só as travas de
+segurança seguem valendo: credencial, dinheiro, apagar dado de vez.
 
 **Nenhum aluno baixa nada do ecossistema** — só admin. Regra permanente e sem
 escopo: material se lê dentro do app.
