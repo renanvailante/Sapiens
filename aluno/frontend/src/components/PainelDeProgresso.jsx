@@ -6,6 +6,9 @@ import { avisarSparksMudou } from "./Navegacao";
 import AnelDeProgresso from "./AnelDeProgresso";
 import ContagemEnem from "./ContagemEnem";
 import { abrirPraticaDirigida, destinoDaMissao } from "../lib/praticaDirigida";
+import { Chama } from "./celebracao/TelaDaOfensiva";
+import { tocar } from "../lib/som";
+import { soltarConfete } from "../lib/confete";
 import {
   Flame, Snowflake, Trophy, Zap, ArrowRight, Check, Loader2,
 } from "lucide-react";
@@ -76,7 +79,10 @@ function Ofensiva({ dados }) {
       testid="progresso-ofensiva"
       tour="tour-ofensiva"
     >
-      <div className="mt-2 flex items-baseline gap-1.5">
+      <div className="mt-2 flex items-center gap-2">
+        {/* A chama viva do Duolingo: tremula quando o dia de hoje já conta,
+            fica cinza quando a sequência está esperando o estudo de hoje. */}
+        <Chama tamanho={26} acesa={dias > 0 && dados.estudou_hoje} className="chama-mini shrink-0" />
         <span className={`medida-n text-3xl ${dias > 0 ? "text-amber-100" : ""}`}>{dias}</span>
         <span className="text-sm text-white/45">{dias === 1 ? "dia" : "dias"}</span>
       </div>
@@ -150,7 +156,7 @@ function Liga({ dados }) {
   );
 }
 
-function Missoes({ missoes, aoResgatar, resgatando, celebrando, pratica }) {
+function Missoes({ missoes, aoResgatar, resgatando, celebrando, pratica, ganho }) {
   const navegar = useNavigate();
   const [abrindo, setAbrindo] = useState(false);
   const irParaPratica = () => {
@@ -181,6 +187,9 @@ function Missoes({ missoes, aoResgatar, resgatando, celebrando, pratica }) {
               ].join(" ")}
               data-testid={`missao-${m.id}`}
             >
+              {ganho?.id === m.id && ganho.sparks > 0 && (
+                <span className="moeda-sobe text-sm" aria-hidden="true">+{ganho.sparks} ⚡</span>
+              )}
               <div className="flex items-start justify-between gap-2">
                 <p className="text-sm font-semibold leading-snug text-white">{m.titulo}</p>
                 <span className="chip shrink-0 border-amber-300/25 bg-amber-400/10 px-2 py-0.5 text-[11px] text-amber-200">
@@ -246,13 +255,22 @@ export default function PainelDeProgresso({ dados, aoMudar, pratica = null }) {
   // ganho — o toast continua existindo, mas ele aparece num canto da tela que
   // o olho tem de ir procurar, e um ganho que o aluno não vê não motiva.
   const [celebrando, setCelebrando] = useState(null);
+  // A moeda que sobe do card resgatado — o ganho aparece NO objeto que o gerou.
+  const [ganho, setGanho] = useState(null);
 
   const resgatar = async (missaoId) => {
     setResgatando(missaoId);
     try {
       const { data } = await api.post(`/engajamento/missoes/${missaoId}/resgatar`);
       setCelebrando(missaoId);
+      setGanho({ id: missaoId, sparks: data.sparks_ganhos });
       setTimeout(() => setCelebrando(null), 700);
+      setTimeout(() => setGanho(null), 1400);
+      tocar("moeda");
+      soltarConfete({
+        de: document.querySelector(`[data-testid="missao-${missaoId}"]`),
+        quantidade: 40, forca: 8, cores: ["#FFD166", "#FFC85C", "#FF9F1C", "#FFFFFF"],
+      });
       toast.success(`+${data.sparks_ganhos} Sparks e +${data.xp_ganho} XP.`);
       avisarSparksMudou();
       aoMudar?.();
@@ -357,6 +375,7 @@ export default function PainelDeProgresso({ dados, aoMudar, pratica = null }) {
         resgatando={resgatando}
         celebrando={celebrando}
         pratica={pratica}
+        ganho={ganho}
       />
     </section>
   );

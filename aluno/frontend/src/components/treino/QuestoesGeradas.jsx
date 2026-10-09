@@ -5,6 +5,7 @@ import { api, errMsg } from "../../lib/api";
 import GerarQuestoesPainel from "../GerarQuestoesPainel";
 import Alternativas from "../questao/Alternativas";
 import Veredito from "../questao/Veredito";
+import { reagirAResposta } from "../../lib/reacao";
 
 /**
  * AS QUESTÕES QUE A MENTIS GEROU — uma fonte de prática do Treino, não uma tela.
@@ -61,6 +62,7 @@ function CartaoQuestao({ item, onResolvida }) {
       .post(`/treino/questoes-geradas/${item.questao_id}/responder`, { alternativa: letra })
       .then(({ data }) => {
         setResultado(data);
+        reagirAResposta(Boolean(data.acertou));
         onResolvida?.(data);
       })
       .catch((e) => setErro(errMsg(e, "Não foi possível registrar sua resposta.")))

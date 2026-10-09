@@ -7,6 +7,9 @@ import Mentis from "../components/Mentis";
 import Logo from "../components/Logo";
 import VideoDoMentor from "../components/VideoDoMentor";
 import { MENTOR } from "../lib/mentor";
+import { CaminhoDoPlus, Chama } from "../components/celebracao/TelaDaOfensiva";
+import { BENEFICIOS_DO_PLUS } from "../lib/celebracao";
+import { tocar } from "../lib/som";
 
 /**
  * O primeiro acesso: um vídeo curto e três perguntas, conduzidas pela Mentis.
@@ -35,7 +38,10 @@ import { MENTOR } from "../lib/mentor";
  * aluno era pior que a de quem ainda nem tinha entrado.
  */
 
-const ETAPAS = ["video", "dificuldades", "objetivo", "meta"];
+// "desafio" (2026-10-08): o dono pediu que o aluno saiba DESDE O INÍCIO que
+// 5 dias de ofensiva valem 2 dias de Sapiens Plus. É a última coisa que ele
+// ouve antes de entrar — e a primeira que vê no Hoje (`DesafioPlus`).
+const ETAPAS = ["video", "dificuldades", "objetivo", "meta", "desafio"];
 
 const AREAS = [
   { chave: "matematica", rotulo: "Matemática" },
@@ -116,6 +122,12 @@ export default function BemVindo() {
   const [minutos, setMinutos] = useState(null);
   const [meta, setMeta] = useState(null);
   const [salvando, setSalvando] = useState(false);
+  // Os números do desafio vêm do servidor (`engajamento.PLUS_META_DIAS`), não
+  // daqui: a promessa e quem a cumpre leem a mesma constante.
+  const [plus, setPlus] = useState(null);
+  useEffect(() => {
+    api.get("/engajamento/me").then(({ data }) => setPlus(data?.plus || null)).catch(() => {});
+  }, []);
 
   const primeiroNome = (user?.name || "").split(" ")[0] || "";
 
@@ -166,7 +178,10 @@ export default function BemVindo() {
   }, [nav, marcarVisto]);
 
   const avancar = () => {
-    if (etapa >= ETAPAS.length - 1) return concluir();
+    if (etapa >= ETAPAS.length - 1) {
+      tocar("ofensiva");
+      return concluir();
+    }
     setEtapa((i) => i + 1);
   };
 
@@ -369,6 +384,43 @@ export default function BemVindo() {
               </div>
             </section>
           )}
+
+          {/* ---------------- Etapa 4: o desafio dos 5 dias ---------------- */}
+          {nome === "desafio" && (
+            <section className="reveal text-center" data-testid="onb-desafio">
+              <div className="relative mx-auto inline-flex">
+                <span className="chama-aura" aria-hidden="true" />
+                <Chama tamanho={96} />
+              </div>
+              <div className="secao-olho mt-4 text-amber-200/90">Seu primeiro desafio</div>
+              <h2 className="mt-2 font-display text-2xl font-extrabold leading-snug tracking-tight text-white md:text-3xl">
+                {plus
+                  ? <>Estude {plus.meta_dias} dias seguidos e ganhe {plus.presente_dias} dias de <span className="texto-plus">Sapiens Plus</span>.</>
+                  : <>Mantenha a sua ofensiva e ganhe dias de <span className="texto-plus">Sapiens Plus</span>.</>}
+              </h2>
+              <p className="mx-auto mt-2 max-w-md text-sm text-white/55">
+                Uma questão por dia já acende a chama. Sem pagar nada: é o prêmio por voltar.
+              </p>
+              {plus && (
+                <div className="mt-6">
+                  <CaminhoDoPlus plus={{ ...plus, progresso: 0, faltam: plus.meta_dias }} />
+                </div>
+              )}
+              <ul className="mx-auto mt-6 max-w-sm space-y-2 text-left">
+                {BENEFICIOS_DO_PLUS.map((b) => (
+                  <li key={b.chave} className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3">
+                    <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-400 text-[#2a1600]">
+                      <Check className="h-3.5 w-3.5" strokeWidth={3.5} />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-sm font-bold text-white">{b.texto}</span>
+                      <span className="block text-xs text-white/50">{b.detalhe}</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
         </div>
 
         {nome !== "video" && (
@@ -399,7 +451,7 @@ export default function BemVindo() {
               data-testid="onb-avancar"
             >
               {salvando ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-              {nome === "meta" ? "Entrar no Sapiens" : "Continuar"}
+              {nome === "desafio" ? "Aceitar o desafio" : "Continuar"}
               <ArrowRight className="h-4 w-4" />
             </button>
           </div>

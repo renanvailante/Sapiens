@@ -193,6 +193,22 @@ async def estado(uid: str, *, nome: str | None = None) -> dict[str, Any]:
     if ofensiva.congelar:
         await _consumir_congeladores(uid, list(ofensiva.congelar))
 
+    # O Sapiens Plus da primeira ofensiva de 5 dias. Concedido AQUI, na
+    # leitura, e não na resposta da questão: é o único ponto que já tem a
+    # ofensiva calculada na mão, e o aluno que completa o 5º dia chega nele em
+    # segundos (o fim da série relê `/engajamento/me`). Leitura que falhou não
+    # concede nada — `dias` viria 0 de qualquer jeito, mas a guarda deixa isso
+    # explícito.
+    ja_premiado = list(perfil.get("ja_premiado") or [])
+    plus_ate = perfil.get("plus_ate")
+    plus_em = perfil.get("plus_concedido_em")
+    devido = None if agregado.get("_indisponivel") else eng.marco_plus_devido(ofensiva.dias, ja_premiado)
+    if devido:
+        concedido = await _conceder_plus(uid, *devido)
+        if concedido:
+            ja_premiado.append(devido[0])
+            plus_ate, plus_em = concedido
+
     nivel = eng.nivel_de_xp(int(perfil.get("xp_total") or 0))
     liga = await _liga(uid, semana, nome=nome)
 
@@ -211,6 +227,13 @@ async def estado(uid: str, *, nome: str | None = None) -> dict[str, Any]:
             "custo_congelador": eng.CUSTO_CONGELADOR,
             "semana": _semana_visual(dias_ativos, perfil.get("dias_congelados") or [], dia),
         },
+        "plus": eng.estado_do_plus(
+            ofensiva.dias,
+            ja_premiado=ja_premiado,
+            plus_ate=plus_ate,
+            concedido_em=plus_em,
+            agora=_now_iso(),
+        ),
         "nivel": nivel,
         "missoes": eng.missoes_do_dia(uid, dia, contadores, doc_dia.get("resgatadas") or []),
         "liga": liga,
@@ -258,6 +281,64 @@ async def _consumir_congeladores(uid: str, dias: list[str]) -> None:
         logger.info("Ofensiva de %s salva por congelador nos dias %s.", uid, dias)
     except Exception:  # noqa: BLE001
         logger.exception("Falha ao consumir congelador de %s", uid)
+
+
+async def _conceder_plus(uid: str, chave: str, dias_de_plus: int) -> tuple[str, str] | None:
+    """Concede o Sapiens Plus de um marco de ofensiva — uma vez na vida.
+
+    A ordem é a de toda concessão desta casa: primeiro a guarda, depois o
+    efeito, e o efeito que falhar desfaz a guarda.
+
+    1. `$addToSet` da chave em `ja_premiado` (a mesma lista de `chave_unica`):
+       duas abas abertas no 5º dia chegam aqui juntas, e só uma delas muda o
+       documento — a outra vê `modified_count == 0` e não concede de novo.
+    2. O prazo vai para o Firestore (`students/{uid}.plus_ate`), que é de onde
+       `ler_direitos` lê — a porta da Mentis, dos cursos e da sala VIP.
+    3. Se o Firestore falhar, a chave SAI de `ja_premiado`: a próxima leitura
+       tenta de novo. Marcar como pago um prêmio que não foi entregue seria
+       a pior falha possível de uma promessa anunciada desde o primeiro dia.
+
+    Devolve `(plus_ate, concedido_em)` ou `None`.
+    """
+    try:
+        marca = await _db.engajamento_perfil.update_one(
+            {"_id": uid},
+            {"$addToSet": {"ja_premiado": chave}, "$set": {"uid": uid}},
+            upsert=True,
+        )
+        if marca.modified_count == 0 and marca.upserted_id is None:
+            return None  # outra requisição concedeu primeiro
+    except Exception:  # noqa: BLE001
+        logger.exception("Guarda do Plus falhou para %s (%s)", uid, chave)
+        return None
+
+    agora = datetime.now(timezone.utc)
+    ate = agora + timedelta(days=dias_de_plus)
+    try:
+        await asyncio.to_thread(fs.conceder_plus, uid, ate, chave)
+    except Exception:  # noqa: BLE001
+        logger.exception("Plus não gravado no Firestore para %s — devolvendo a chave", uid)
+        try:
+            await _db.engajamento_perfil.update_one({"_id": uid}, {"$pull": {"ja_premiado": chave}})
+        except Exception:  # noqa: BLE001
+            logger.exception("E a chave do Plus não saiu de %s: o prêmio não será retentado", uid)
+        return None
+
+    plus_ate, concedido_em = ate.isoformat(), agora.isoformat()
+    try:
+        await _db.engajamento_perfil.update_one(
+            {"_id": uid},
+            {"$set": {"plus_ate": plus_ate, "plus_concedido_em": concedido_em, "atualizado_em": _now_iso()}},
+        )
+    except Exception:  # noqa: BLE001
+        # O direito já vale (o Firestore é a fonte); só a tela fica sem o prazo.
+        logger.exception("Prazo do Plus não espelhado no Mongo para %s", uid)
+    try:
+        await product_analytics.registrar(_db, uid, "plus_pela_ofensiva")
+    except Exception:  # noqa: BLE001
+        logger.exception("Marco de analytics (plus_pela_ofensiva) não registrado para %s.", uid)
+    logger.info("Sapiens Plus concedido a %s até %s (%s).", uid, plus_ate, chave)
+    return plus_ate, concedido_em
 
 
 def _semana_visual(dias_ativos: list[str], congelados: list[str], hoje: str) -> list[dict[str, Any]]:

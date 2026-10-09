@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Check, X } from "lucide-react";
 
 /**
@@ -61,6 +61,10 @@ export default function Alternativas({
   const corretas = letrasCorretas(resultado);
   const respondida = Boolean(resultado);
   const travado = respondida || desabilitado;
+  // Questão que JÁ chega respondida (o lote de questões geradas reaberto) não
+  // anima: o salto do acerto e o tremor do erro são a reação a uma resposta
+  // dada AGORA, e dez cartões tremendo ao abrir a página não diriam nada.
+  const [respondidaAoMontar] = useState(respondida);
 
   useEffect(() => {
     if (!teclado || travado) return undefined;
@@ -109,6 +113,10 @@ export default function Alternativas({
             disabled={travado || !alt.texto}
             data-testid={`${testidPrefixo}-${letra}`}
             data-estado={estado}
+            // Separa a certa que o aluno MARCOU (salta e comemora) da certa
+            // que só está sendo mostrada depois de um erro (acende sem festa).
+            data-escolhida={escolhida}
+            data-anima={!respondidaAoMontar}
             className={`alternativa ${escolhida && !respondida ? "select-pop" : ""}`}
           >
             <span className="alternativa-letra">

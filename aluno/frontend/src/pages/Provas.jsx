@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { api, API, errMsg} from "../lib/api";
 import ContagemEnem from "../components/ContagemEnem";
-import { ArrowRight, Check, X, RotateCw, Sparkles, BookOpen, ChevronLeft, Crosshair, Loader2, Compass, Flame, Zap } from "lucide-react";
+import { ArrowRight, Check, X, RotateCw, Sparkles, BookOpen, ChevronLeft, Crosshair, Loader2, Compass, Flame, Zap, Volume2, VolumeX, Target, Timer, Trophy } from "lucide-react";
 import { toast } from "sonner";
 import { avisarSparksMudou } from "../components/Navegacao";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
@@ -12,6 +12,10 @@ import IntervencaoMentis from "../components/IntervencaoMentis";
 import ProfessorInvisivel from "../components/ProfessorInvisivel";
 import Microdiagnostico from "../components/Microdiagnostico";
 import Alternativas from "../components/questao/Alternativas";
+import Comemoracoes from "../components/celebracao/Comemoracoes";
+import { elogio, reagirAResposta } from "../lib/reacao";
+import { tocar, somLigado, definirSom } from "../lib/som";
+import { chuvaDeConfete } from "../lib/confete";
 import ReportarQuestao from "../components/ReportarQuestao";
 import { ROTAS, ANCORAS, com } from "../lib/rotas";
 import { useDeclararContextoMentis } from "../lib/mentisContexto";
@@ -65,7 +69,7 @@ function rodadaNaPosicao(posicao, total) {
  *  As duas chamadas vivem sobre superfície ESCURA (a tela da prova e o card de
  *  conclusão), então não há variante clara; `tone` fica só porque a chamada de
  *  conclusão ainda o passa. */
-function ProgressoProva({ respondidas, total, pulso }) {
+function ProgressoProva({ respondidas, total, pulso, combo = false }) {
   const pct = total > 0 ? Math.min(100, Math.round((respondidas / total) * 100)) : 0;
   return (
     <div className="mb-5" data-testid="progresso-prova">
@@ -78,6 +82,7 @@ function ProgressoProva({ respondidas, total, pulso }) {
       <div
         className={`barra transition-shadow duration-300 ${pulso ? "ring-2 ring-[#4FD9FF]/70 ring-offset-2 ring-offset-[#050a14]" : ""}`}
         data-cheia={pct >= 100}
+        data-combo={combo}
       >
         <i style={{ width: `${pct}%` }} data-testid="progresso-barra" data-pct={pct} />
       </div>
@@ -150,16 +155,9 @@ function dimensoesIntrinsecas(asset) {
  * resgate acontece aqui, sem mandar o aluno para outra tela buscar o que já
  * ganhou. Sem dado, a peça não aparece.
  */
-function RecompensaDaSerie({ xpInicial, melhorSequencia }) {
-  const [estado, setEstado] = useState(null);
+function RecompensaDaSerie({ estado, xpInicial, melhorSequencia }) {
   const [resgatando, setResgatando] = useState(null);
   const [resgatadas, setResgatadas] = useState(() => new Set());
-
-  useEffect(() => {
-    let ativo = true;
-    api.get("/engajamento/me").then(({ data }) => { if (ativo) setEstado(data); }).catch(() => {});
-    return () => { ativo = false; };
-  }, []);
 
   const { xp: xpGanho, diaGarantido, seguidas, prontas } = recompensaDaSerie(estado, xpInicial, melhorSequencia, resgatadas);
 
@@ -168,6 +166,7 @@ function RecompensaDaSerie({ xpInicial, melhorSequencia }) {
     try {
       const { data } = await api.post(`/engajamento/missoes/${m.id}/resgatar`);
       setResgatadas((s) => new Set(s).add(m.id));
+      tocar("moeda");
       toast.success(`+${data.sparks_ganhos} Sparks e +${data.xp_ganho} XP.`);
       avisarSparksMudou();
     } catch (e) {
@@ -226,16 +225,71 @@ function RecompensaDaSerie({ xpInicial, melhorSequencia }) {
   );
 }
 
-function FechamentoDaSerie({ respostas, filtro, onExit, abrindo, aoPraticar, xpInicial = null, melhorSequencia = 0 }) {
+/** "1min 42s" — o tempo da série, medido nesta sessão. */
+function duracao(segundos) {
+  if (!(segundos > 0)) return null;
+  const m = Math.floor(segundos / 60);
+  const s = Math.round(segundos % 60);
+  return m > 0 ? `${m}:${String(s).padStart(2, "0")}` : `${s}s`;
+}
+
+/** O PLACAR do fim da lição — as três caixinhas do Duolingo. Cada número é
+ *  medido: XP é a diferença real de `/engajamento/me` (some sem ela), a
+ *  precisão é acerto desta série, o tempo é o relógio desta sessão. */
+function PlacarDaSerie({ xp, percentual, segundos }) {
+  const caixas = [
+    xp > 0 && { classe: "placar-xp", rotulo: "XP total", icone: Zap, valor: `+${xp}` },
+    percentual != null && {
+      classe: "placar-precisao",
+      rotulo: percentual >= 90 ? "Incrível" : percentual >= 70 ? "Ótimo" : "Precisão",
+      icone: Target,
+      valor: `${percentual}%`,
+    },
+    duracao(segundos) && { classe: "placar-tempo", rotulo: "Tempo", icone: Timer, valor: duracao(segundos) },
+  ].filter(Boolean);
+  if (!caixas.length) return null;
+  return (
+    <div className="mt-5 grid grid-cols-3 gap-2.5 sm:max-w-md" data-testid="serie-placar">
+      {caixas.map((c, i) => (
+        <div key={c.classe} className={`placar ${c.classe}`} style={{ animationDelay: `${250 + i * 160}ms` }}>
+          <div className="placar-cabeca">{c.rotulo}</div>
+          <div className="placar-corpo">
+            <c.icone className="h-5 w-5" /> {c.valor}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function FechamentoDaSerie({ respostas, filtro, onExit, abrindo, aoPraticar, xpInicial = null, melhorSequencia = 0, segundos = 0 }) {
   // O fechamento aparece no lugar da última questão, abaixo do cabeçalho da
   // série. No celular isso o deixava a 600px do topo — o resultado existia e
   // não era visto. Ele rola até si ao montar.
   const ref = useRef(null);
-  useEffect(() => {
-    ref.current?.scrollIntoView?.({ behavior: "smooth", block: "start" });
-  }, []);
+  const trofeu = useRef(null);
   const dirigida = filtro?.dirigida || null;
   const resumo = resumoDaSerie(respostas, dirigida);
+  // O estado de engajamento DEPOIS da série: o XP ganho, o dia de ofensiva
+  // garantido, a missão cumprida e — se este foi o primeiro estudo do dia —
+  // a tela da chama. Uma leitura só para as quatro peças.
+  const [estado, setEstado] = useState(null);
+  useEffect(() => {
+    ref.current?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+    let ativo = true;
+    if (resumo.total > 0) {
+      // A fanfarra do fim de lição, e confete saindo do troféu.
+      tocar("fim");
+      setTimeout(() => (resumo.percentual >= 60 ? chuvaDeConfete() : null), 350);
+      api.get("/engajamento/me").then(({ data }) => { if (ativo) setEstado(data); }).catch(() => {});
+    }
+    return () => { ativo = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const xpGanho = recompensaDaSerie(estado, xpInicial, melhorSequencia).xp;
+  // O tempo congela no instante em que a série acabou; sem isto ele andaria a
+  // cada nova renderização do fechamento.
+  const [tempo] = useState(segundos);
   const frase = fraseDoFechamento(resumo);
   // Dentro de uma série dirigida, dois erros no mesmo ponto são o próprio
   // ponto da série — dizer isso de novo seria redundante.
@@ -265,6 +319,16 @@ function FechamentoDaSerie({ respostas, filtro, onExit, abrindo, aoPraticar, xpI
 
   return (
     <div ref={ref} className="card-sapiens scroll-mt-24 rounded-2xl p-7 md:p-10" data-testid="serie-fechamento">
+      {/* A chama do dia vem DEPOIS do placar, como no Duolingo: abrir as duas
+          juntas apagaria o placar que o aluno acabou de ganhar. */}
+      {estado && <Comemoracoes engajamento={estado} atraso={2600} />}
+      {resumo.total > 0 && (
+        <div ref={trofeu} className="trofeu-salta mb-4 inline-flex" aria-hidden="true">
+          <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-200 to-amber-500 text-amber-950 shadow-[0_5px_0_0_#92400e,0_0_40px_-8px_rgba(251,191,36,0.9)]">
+            <Trophy className="h-8 w-8" />
+          </span>
+        </div>
+      )}
       <div className="secao-olho">{olho}</div>
       <div className="mt-1.5 font-display text-2xl font-bold text-zinc-950" data-testid="serie-fechamento-titulo">
         {resumo.total > 0 ? `${titulo}: ${resumo.acertos} de ${resumo.total}` : titulo}
@@ -281,7 +345,9 @@ function FechamentoDaSerie({ respostas, filtro, onExit, abrindo, aoPraticar, xpI
         </p>
       )}
 
-      {resumo.total > 0 && <RecompensaDaSerie xpInicial={xpInicial} melhorSequencia={melhorSequencia} />}
+      {resumo.total > 0 && <PlacarDaSerie xp={xpGanho} percentual={resumo.percentual} segundos={tempo} />}
+
+      {resumo.total > 0 && <RecompensaDaSerie estado={estado} xpInicial={xpInicial} melhorSequencia={melhorSequencia} />}
 
       {repetido && (
         <p className="mt-3 max-w-lg text-sm leading-relaxed text-zinc-600" data-testid="serie-fechamento-repetido">
@@ -348,6 +414,31 @@ function FechamentoDaSerie({ respostas, filtro, onExit, abrindo, aoPraticar, xpI
   );
 }
 
+/** Mudo / som, sempre à vista na tela de questão. A escolha é do aparelho
+ *  (`lib/som.js`): quem estuda na biblioteca desliga uma vez e pronto. */
+function BotaoDeSom() {
+  const [ligado, setLigado] = useState(somLigado);
+  const alternar = () => {
+    const novo = !ligado;
+    definirSom(novo);
+    setLigado(novo);
+    if (novo) tocar("acerto");
+  };
+  return (
+    <button
+      type="button"
+      onClick={alternar}
+      className="chip pill"
+      aria-label={ligado ? "Desligar o som" : "Ligar o som"}
+      aria-pressed={ligado}
+      title={ligado ? "Som ligado" : "Som desligado"}
+      data-testid="questao-som"
+    >
+      {ligado ? <Volume2 className="h-3.5 w-3.5" /> : <VolumeX className="h-3.5 w-3.5" />}
+    </button>
+  );
+}
+
 function QuestionRunner({ filtro, onExit }) {
   const [lightbox, setLightbox] = useState(null);
   const [itens, setItens] = useState([]);
@@ -398,6 +489,9 @@ function QuestionRunner({ filtro, onExit }) {
   // real. Aparece a partir de 3 (dois seguidos acontecem por acaso).
   const [seguidas, setSeguidas] = useState(0);
   const melhorSequenciaRef = useRef(0);
+  const [elogioAtual, setElogioAtual] = useState("Você acertou!");
+  // Quando a série começou NESTA sessão — o placar do fim mostra o tempo.
+  const inicioSerieRef = useRef(Date.now());
   useEffect(() => {
     let ativo = true;
     api.get("/firestore/students/me/sparks")
@@ -500,11 +594,12 @@ function QuestionRunner({ filtro, onExit }) {
       });
       setResult(data);
       setAnswered((n) => n + 1);
-      setSeguidas((n) => {
-        const proxima = data.acertou ? n + 1 : 0;
-        melhorSequenciaRef.current = Math.max(melhorSequenciaRef.current, proxima);
-        return proxima;
-      });
+      const proximaSeguida = data.acertou ? seguidas + 1 : 0;
+      melhorSequenciaRef.current = Math.max(melhorSequenciaRef.current, proximaSeguida);
+      setSeguidas(proximaSeguida);
+      setElogioAtual(elogio());
+      // O "plim" e o confetinho — e, nos marcos de combo, um som maior.
+      reagirAResposta(Boolean(data.acertou), { seguidas: proximaSeguida });
       setPulso(true);
       setTimeout(() => setPulso(false), 700);
       respostasSessaoRef.current.push({
@@ -721,6 +816,7 @@ function QuestionRunner({ filtro, onExit }) {
         onExit={onExit}
         xpInicial={xpInicial}
         melhorSequencia={melhorSequenciaRef.current}
+        segundos={Math.round((Date.now() - inicioSerieRef.current) / 1000)}
         abrindo={abrindoPonto}
         aoPraticar={praticarPonto}
       />
@@ -746,11 +842,12 @@ function QuestionRunner({ filtro, onExit }) {
           {/* Sair era um texto sublinhado em cinza. Numa tela em que tudo o
               mais é botão, a única porta de saída não pode ser a única coisa
               que não parece clicável. */}
+          <BotaoDeSom />
           <button onClick={onExit} className="chip pill" data-testid="questao-sair">Sair</button>
         </div>
       </div>
 
-      <ProgressoProva respondidas={Math.min(answered, itens.length)} total={itens.length} pulso={pulso} />
+      <ProgressoProva respondidas={Math.min(answered, itens.length)} total={itens.length} pulso={pulso} combo={seguidas >= 3} />
 
       {retomado > 0 && idx === retomado && (
         <div className="mb-4 rounded-xl bg-white/10 border border-white/20 px-4 py-2.5 text-sm text-white">
@@ -867,7 +964,7 @@ function QuestionRunner({ filtro, onExit }) {
 
         {result && (
           <div
-            className={`veredito reveal mt-5 ${result.acertou ? "recompensa" : ""}`}
+            className={`veredito veredito-sobe mt-5 ${result.acertou ? "recompensa" : ""}`}
             data-acertou={result.acertou}
             data-testid="result-banner"
           >
@@ -879,14 +976,13 @@ function QuestionRunner({ filtro, onExit }) {
             </span>
             <div className="min-w-0 flex-1">
               <div className={`text-sm font-bold ${result.acertou ? "text-emerald-700" : "text-rose-700"}`}>
-                {result.feedback?.titulo || (result.acertou ? "Você acertou!" : "Resposta incorreta.")}
+                {result.feedback?.titulo || (result.acertou ? elogioAtual : "Resposta incorreta.")}
                 {!result.acertou && <span className="ml-1 font-normal">(correta: {result.correta})</span>}
                 {result.acertou && seguidas >= 3 && (
-                  <span
-                    className="ml-2 inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-800"
-                    data-testid="questao-seguidas"
-                  >
-                    <Flame className="h-3 w-3" /> {seguidas} seguidas
+                  // O combo do Duolingo: o número é de acertos REAIS desta
+                  // sessão, e o selo só nasce a partir de 3.
+                  <span key={seguidas} className="combo-selo ml-2 align-middle" data-testid="questao-seguidas">
+                    <Flame className="h-3.5 w-3.5" /> {seguidas} seguidas
                   </span>
                 )}
               </div>

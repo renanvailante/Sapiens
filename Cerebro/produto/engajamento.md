@@ -1,6 +1,6 @@
 ---
 tags: [produto, gamificacao, comunidade]
-atualizado: 2026-10-06
+atualizado: 2026-10-09
 ---
 
 # Engajamento, comunidade e conversão
@@ -24,6 +24,43 @@ garante que sequência mede **estudo real** e não chamada de API.
 
 O congelador (50 Sparks, teto 2) liga a corrente **sem contar como dia estudado**, e
 só é consumido quando de fato salva a sequência.
+
+## Sapiens Plus pela ofensiva
+
+Decisão do dono em [[decisoes-do-dono]]. Como ela é cumprida, e por quê:
+
+- **O Plus é um prazo, não um pacote.** `students/{uid}.plus_ate` (Firestore) e
+  `firestore_service._aplicar_plus`, chamado dentro de `ler_direitos` e
+  `ler_saldo_e_direitos`. Toda porta paga já passava por ali, então nenhuma rota
+  precisou saber que o Plus existe — e ele **só liga**, nunca desliga: vencido o
+  prazo, o que o aluno comprou continua, o que não comprou volta a ser cobrado.
+  Não grave `True` nos campos do pacote para "dar Plus": isso viraria direito
+  permanente e se misturaria com compra.
+- **Fica sem a live, de propósito** (`sparks_store.DIREITOS_DO_PLUS`). Ler
+  `GET /cursos` com `lives_inclusas` INSCREVE o aluno na edição da quinta — uma
+  vaga com gente de verdade do outro lado, que sobreviveria às 48h.
+- **Concedido na leitura de `/engajamento/me`**, o único ponto que já tem a
+  ofensiva calculada. Guarda de uma vez em `engajamento_perfil.ja_premiado`
+  (`plus:ofensiva:5`), a mesma lista de `chave_unica`; se o Firestore falhar, a
+  chave sai e a próxima leitura tenta de novo — prêmio anunciado marcado como pago
+  sem ter chegado seria a pior falha possível. Agregado indisponível não concede.
+- **Uma vez por aluno.** 2 a cada 5 dias daria Plus a quem estuda todo dia em 40%
+  do tempo, e a Mentis ilimitada é o que mais custa rodar. `MARCOS_PLUS` é tabela
+  para que outro marco (30, 100 dias) seja uma linha.
+- **48h a partir da concessão**, não "até o fim de amanhã": o "2 dias" da tela é o
+  que o relógio entrega a qualquer hora em que o 5º dia vire.
+- Congelador liga a corrente sem somar dia — **Sparks não compram o Plus**.
+
+## A camada de comemoração (Duolingo)
+
+Pedido de 2026-10-08: "inspire-se totalmente no Duolingo, com muito mais
+animação". Peças em `components/celebracao/` e `lib/{som,confete,reacao,celebracao}.js`:
+a tela da chama na primeira vez do dia em que o aluno estuda (uma vez por dia, por
+aparelho), o presente abrindo no dia do Plus, o placar XP · precisão · tempo no
+fim da série, o combo a partir de 3 seguidas, e o som sintetizado (Web Audio, zero
+arquivo, mudo na tela de questão). **A regra que segura tudo: só se comemora
+número que o servidor contou** — a mesma régua de `recompensaDaSerie`. A tela da
+chama abre só com `estudou_hoje`; o XP do placar some sem a diferença real.
 
 ## A linha ética
 

@@ -30,7 +30,7 @@ Se nada aqui casar, vá direto ao código (`graft ask "<tarefa>"`) — o Cerebro
 | criar **tela nova** | [[padroes-de-tela]] · [[sistema-visual]] |
 | mexer no **Próximo Passo, prática dirigida, fechamento de série, desfecho de missão** | [[padroes-de-tela]] · [[motor-cognitivo]] |
 | mexer em algo que o **celular** toca | [[mobile]] |
-| mexer em **gamificação, liga, mural, venda** | [[engajamento]] |
+| mexer em **gamificação, liga, mural, venda, ofensiva, Sapiens Plus, comemoração/animação** | [[engajamento]] · [[decisoes-do-dono]] |
 | mexer em **copy, landing, logo, mentor** | [[marca]] |
 | mexer em **landing de anúncio, `/ads/*`, criativo pago** | [[landings-de-anuncio]] |
 | mexer em **Meta Pixel, `fbq`, evento de conversão, `Lead`, rastreio de anúncio** | [[meta-pixel]] |

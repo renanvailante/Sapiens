@@ -155,6 +155,23 @@ DIREITOS: tuple[str, ...] = (
     "comunidade_vip",
 )
 
+# SAPIENS PLUS — o que o aluno ganha, por um prazo curto e sem comprar nada,
+# quando completa a primeira ofensiva de `engajamento.PLUS_META_DIAS` dias.
+# Pedido do dono em 2026-10-08: "se ele mantiver a ofensiva de cinco dias,
+# ganha dois dias como se fosse pago, como se fosse do Sapiens Plus".
+#
+# É um SUBCONJUNTO de `DIREITOS`, lido pelo mesmo `ler_direitos` — nenhuma
+# porta do backend precisou saber que o Plus existe. Fica de fora, de
+# propósito, `lives_inclusas`: ler `GET /cursos` com o direito ligado INSCREVE
+# o aluno na edição da quinta (`cursos_live_acessos`), uma vaga que sobrevive
+# às 48 horas — e a aula é a única coisa do catálogo com hora de gente por
+# trás. O Plus dá o que é digital e acaba quando o prazo acaba.
+DIREITOS_DO_PLUS: tuple[str, ...] = (
+    "cursos_inclusos",
+    "mentis_ilimitada",
+    "comunidade_vip",
+)
+
 
 def direitos_do_pacote(package_id: str) -> tuple[str, ...]:
     """O que ESTE pacote concede. Fonte única, lida tanto pela loja (para

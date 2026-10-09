@@ -1,6 +1,6 @@
 ---
 tags: [regra, produto]
-atualizado: 2026-09-18
+atualizado: 2026-10-09
 ---
 
 # Decisões que são do dono, não minhas
@@ -66,6 +66,18 @@ completo constrói — a credencial pertence a uma pessoa pública e verificáve
 Declarados como meus na revisão de 2026-09-17, portanto os mais baratos de mudar:
 remontagem do cronograma (10), existência e preço do OCR de redação (25), e o
 preço inicial do e-book. Todos são uma constante só.
+
+## A ofensiva de 5 dias vale 2 dias de Sapiens Plus — e o aluno sabe desde o início
+
+Pedido de 2026-10-08: *"quero que o aluno saiba desde o início que, se manter a
+ofensiva de cinco dias, ele vai obter dois dias como se fosse pago, como se fosse
+do Sapiens Plus"*. Os dois números (`engajamento.PLUS_META_DIAS`,
+`PLUS_PRESENTE_DIAS`) e o "desde o início" (etapa final do `/bem-vindo` e o card
+no Hoje desde a conta nova) são dele. **O que é meu e foi declarado como meu**, e
+portanto o mais barato de mudar: o prêmio ser **uma vez por aluno** e não a cada 5
+dias; "Plus" ser Mentis ilimitada + cursos/e-books + sala VIP, **sem a live**; e
+a conta que já tinha ≥ 5 dias no dia da entrada ganhar na primeira leitura.
+Mecânica em [[engajamento]].
 
 ## O pipeline está CONGELADO
 

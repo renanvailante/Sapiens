@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { Check, Sparkles, X } from "lucide-react";
 import { letrasCorretas } from "./Alternativas";
+import { elogio } from "../../lib/reacao";
 
 /**
  * O VEREDITO — a mesma devolutiva, venha a questão de onde vier.
@@ -32,6 +34,9 @@ export default function Veredito({
   children = null,
   testid = "veredito",
 }) {
+  // Escolhido UMA vez por veredito: trocar de palavra a cada render seria
+  // ruído, não comemoração.
+  const [frase] = useState(elogio);
   if (!resultado) return null;
 
   const acertou = Boolean(resultado.acertou);
@@ -39,7 +44,7 @@ export default function Veredito({
   const titulo =
     resultado.feedback?.titulo ||
     (acertou
-      ? "Você acertou!"
+      ? frase
       : corretas.length
       ? `Resposta incorreta. Correta: ${corretas.join(" ou ")}.`
       : "Resposta incorreta.");
@@ -55,7 +60,7 @@ export default function Veredito({
 
   return (
     <div
-      className={`veredito reveal mt-5 ${acertou ? "recompensa" : ""}`}
+      className={`veredito veredito-sobe mt-5 ${acertou ? "recompensa" : ""}`}
       data-acertou={acertou}
       data-testid={testid}
     >

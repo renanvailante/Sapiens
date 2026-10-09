@@ -543,3 +543,54 @@ class TestPrecosDaMentisSaemDasConstantes:
             "dissertativa": mr.DISSERTATIVA_COST,
             "resumo_rodada": fr.RESUMO_SESSAO_COST,
         }
+
+
+class TestSapiensPlus:
+    """O Plus da primeira ofensiva de 5 dias liga, por 48 horas, os direitos
+    digitais do pacote de cima — lido pelo MESMO `ler_direitos`, então
+    nenhuma porta precisou saber que ele existe."""
+
+    def _doc(self, monkeypatch, dados):
+        class _Snap:
+            def to_dict(self):
+                return dados
+
+        class _Ref:
+            def get(self):
+                return _Snap()
+
+        monkeypatch.setattr(fs, "_student_doc_ref", lambda uid: _Ref())
+
+    def test_plus_vigente_libera_mentis_cursos_e_vip(self, monkeypatch):
+        futuro = (datetime.now(timezone.utc) + timedelta(hours=40)).isoformat()
+        self._doc(monkeypatch, {"plus_ate": futuro})
+        d = fs.ler_direitos("u1")
+        assert d["mentis_ilimitada"] and d["cursos_inclusos"] and d["comunidade_vip"]
+
+    def test_plus_nao_inclui_a_live(self, monkeypatch):
+        """A live inscreve na leitura de `/cursos` — uma vaga que sobreviveria
+        às 48 horas. Fica fora do Plus de propósito."""
+        futuro = (datetime.now(timezone.utc) + timedelta(hours=40)).isoformat()
+        self._doc(monkeypatch, {"plus_ate": futuro})
+        assert fs.ler_direitos("u1")["lives_inclusas"] is False
+        assert "lives_inclusas" not in sparks_store.DIREITOS_DO_PLUS
+
+    def test_plus_vencido_volta_a_cobrar(self, monkeypatch):
+        passado = (datetime.now(timezone.utc) - timedelta(minutes=1)).isoformat()
+        self._doc(monkeypatch, {"plus_ate": passado})
+        assert not any(fs.ler_direitos("u1").values())
+
+    def test_plus_nunca_desliga_o_que_foi_comprado(self, monkeypatch):
+        passado = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
+        self._doc(monkeypatch, {"plus_ate": passado, "cursos_inclusos": True, "lives_inclusas": True})
+        d = fs.ler_direitos("u1")
+        assert d["cursos_inclusos"] and d["lives_inclusas"]
+
+    def test_saldo_e_direitos_tambem_enxerga_o_plus(self, monkeypatch):
+        futuro = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
+        self._doc(monkeypatch, {"plus_ate": futuro, "sparks_balance": 42})
+        saldo, d = fs.ler_saldo_e_direitos("u1")
+        assert saldo == 42 and d["cursos_inclusos"] is True
+
+    def test_plus_e_subconjunto_dos_direitos(self):
+        assert set(sparks_store.DIREITOS_DO_PLUS) <= set(sparks_store.DIREITOS)

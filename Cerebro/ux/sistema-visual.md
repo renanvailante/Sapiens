@@ -1,6 +1,6 @@
 ---
 tags: [ux, css, design]
-atualizado: 2026-09-18
+atualizado: 2026-10-09
 ---
 
 # Sistema visual — bioluminescência tecnológica
@@ -78,6 +78,22 @@ quadro. Comprovado por eliminação.
 > **Não use `.shimmer` em palavra curta que PRECISA ser lida** (sigla, nome,
 > número). Ele foi feito para "Sapiens" no herói, onde errar uma letra não muda nada.
 
+## Comemoração: revisto em 2026-10-08
+
+Até essa data o arquivo dizia "não é confete" e tratava `.premio-pop` como a única
+animação que celebrava algo. O dono pediu o oposto (Duolingo, muito mais
+animação), e a camada "DUOLINGO" no fim do `index.css` existe por isso. O que
+**sobreviveu** da regra antiga, e não deve cair:
+
+- **nada bloqueia** — o confete é um canvas com `pointer-events: none` que se
+  remove sozinho; o botão de seguir é clicável no meio da chuva;
+- **o acerto que o aluno marcou salta, a certa revelada depois de um erro só
+  acende** (`data-escolhida`) — comemorar ali seria falso;
+- **questão que já chega respondida não anima** (`data-anima`, decidido na
+  montagem de `Alternativas`) — dez cartões tremendo ao reabrir não dizem nada;
+- "Sapiens Plus" usa degradê **parado** (`.texto-plus`), não `.shimmer`;
+- `prefers-reduced-motion` desliga tudo no fim do bloco.
+
 ## As primitivas (camada "PRODUTO", no fim do arquivo)
 
 Ritmo: `.pagina-entra`, `.cascata`, `.esqueleto`.
@@ -103,8 +119,9 @@ reprova** na faixa de luminosidade — dentro do gráfico entra um passo mais fu
 
 ## Referências visuais e o que cada uma virou
 
-- **Duolingo** → `TrilhaDeMissoes.jsx` / `CaminhoDoCurso.jsx` (caminho serpenteado)
-  e o pé sólido dos botões.
+- **Duolingo** → `TrilhaDeMissoes.jsx` / `CaminhoDoCurso.jsx` (caminho serpenteado),
+  o pé sólido dos botões e, desde 2026-10-08, a camada de comemoração (chama,
+  combo, placar, som) — ver [[engajamento]].
 - **Animal Crossing** → `.macio` e nós redondos: peça de interface como **objeto**,
   não retângulo de conteúdo.
 - **Khan Academy** → `lib/dominio.js`: o domínio por frente tem **nome**

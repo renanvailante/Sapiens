@@ -1239,6 +1239,49 @@ def _mentis_ilimitada_valida(dados: dict) -> bool:
         return False
 
 
+def _plus_valido(dados: dict) -> bool:
+    """O Sapiens Plus da ofensiva vale enquanto `plus_ate` está no futuro.
+
+    Mesma disciplina de `_mentis_ilimitada_valida`: data ausente ou ilegível
+    é Plus EXPIRADO, nunca Plus eterno."""
+    ate = dados.get("plus_ate")
+    if not ate:
+        return False
+    try:
+        return datetime.fromisoformat(ate) > datetime.now(timezone.utc)
+    except (TypeError, ValueError):
+        return False
+
+
+def _aplicar_plus(dados: dict, direitos: dict[str, bool]) -> dict[str, bool]:
+    """Liga, por cima do que o aluno comprou, os direitos do Plus vigente.
+
+    Só LIGA — nunca desliga. O Plus é um empréstimo de prazo curto e não toca
+    nos campos de compra (`mentis_ilimitada`, `cursos_inclusos`...): quando
+    ele vence, o que o aluno pagou continua exatamente onde estava, e o que
+    ele não pagou volta a ser cobrado. É por isso que ele mora num campo
+    próprio (`plus_ate`) em vez de escrever `True` nos campos do pacote."""
+    import sparks_store
+
+    if _plus_valido(dados):
+        for d in sparks_store.DIREITOS_DO_PLUS:
+            if d in direitos:
+                direitos[d] = True
+    return direitos
+
+
+def conceder_plus(uid: str, ate: datetime, origem: str) -> None:
+    """Grava o prazo do Sapiens Plus no documento do aluno — uma escrita.
+
+    Quem decide SE concede é `engajamento_service` (a guarda de "uma vez só"
+    mora lá, no Mongo, junto com as outras chaves de prêmio). Aqui só se
+    persiste o prazo que ele calculou."""
+    _student_doc_ref(uid).set(
+        {"plus_ate": ate.isoformat(), "plus_origem": origem, "plus_concedido_em": _now_iso()},
+        merge=True,
+    )
+
+
 def ler_direitos(uid: str) -> dict[str, bool]:
     """Todos os direitos do aluno em UMA leitura.
 
@@ -1261,7 +1304,7 @@ def ler_direitos(uid: str) -> dict[str, bool]:
     resultado = {d: bool(dados.get(d)) for d in sparks_store.DIREITOS}
     if "mentis_ilimitada" in resultado:
         resultado["mentis_ilimitada"] = _mentis_ilimitada_valida(dados)
-    return resultado
+    return _aplicar_plus(dados, resultado)
 
 
 def ler_saldo_e_direitos(uid: str) -> tuple[int | None, dict[str, bool]]:
@@ -1286,7 +1329,7 @@ def ler_saldo_e_direitos(uid: str) -> tuple[int | None, dict[str, bool]]:
     direitos = {d: bool(dados.get(d)) for d in sparks_store.DIREITOS}
     if "mentis_ilimitada" in direitos:
         direitos["mentis_ilimitada"] = _mentis_ilimitada_valida(dados)
-    return dados.get("sparks_balance", SPARKS_INITIAL_BALANCE), direitos
+    return dados.get("sparks_balance", SPARKS_INITIAL_BALANCE), _aplicar_plus(dados, direitos)
 
 
 def tem_mentis_ilimitada(uid: str) -> bool:

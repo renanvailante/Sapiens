@@ -448,3 +448,128 @@ class TestLinhaEtica:
         assert sum(1 for d in semana if d["ativo"]) == 1
         assert len(semana) == 7
         assert semana[-1]["hoje"] is True
+
+
+# ---------------------------------------------------------------------------
+# Sapiens Plus pela ofensiva (pedido do dono em 2026-10-08)
+# ---------------------------------------------------------------------------
+
+class TestPlusDaOfensiva:
+    """"Se ele mantiver a ofensiva de cinco dias, ganha dois dias como se fosse
+    pago." A promessa é anunciada desde o primeiro acesso — então ela precisa
+    ser exatamente o que o servidor entrega."""
+
+    AGORA = "2026-09-15T15:00:00+00:00"
+
+    def test_a_promessa_e_5_dias_valem_2(self):
+        assert eng.PLUS_META_DIAS == 5
+        assert eng.PLUS_PRESENTE_DIAS == 2
+
+    def test_marco_so_e_devido_com_5_dias_de_ofensiva(self):
+        assert eng.marco_plus_devido(4, []) is None
+        assert eng.marco_plus_devido(5, []) == ("plus:ofensiva:5", 2)
+        # Conta antiga que já passou do marco recebe o de 5 no primeiro acesso.
+        assert eng.marco_plus_devido(12, []) == ("plus:ofensiva:5", 2)
+
+    def test_marco_pago_nao_e_devido_de_novo(self):
+        assert eng.marco_plus_devido(10, ["plus:ofensiva:5"]) is None
+
+    def test_estado_conta_o_caminho_ate_o_presente(self):
+        e = eng.estado_do_plus(3, agora=self.AGORA)
+        assert (e["progresso"], e["faltam"], e["conquistado"], e["ativo"]) == (3, 2, False, False)
+
+    def test_estado_ativo_ate_o_prazo(self):
+        e = eng.estado_do_plus(
+            5, ja_premiado=["plus:ofensiva:5"], plus_ate="2026-09-17T15:00:00+00:00", agora=self.AGORA,
+        )
+        assert e["ativo"] is True and e["conquistado"] is True and e["faltam"] == 0
+        assert e["ate"] == "2026-09-17T15:00:00+00:00"
+
+    def test_vencido_e_conquistado_mas_inativo(self):
+        e = eng.estado_do_plus(
+            0, ja_premiado=["plus:ofensiva:5"], plus_ate="2026-09-14T15:00:00+00:00", agora=self.AGORA,
+        )
+        assert e["conquistado"] is True and e["ativo"] is False and e["ate"] is None
+        # Quem já ganhou não volta a "faltam 5": o presente é de uma vez só.
+        assert e["progresso"] == 5 and e["faltam"] == 0
+
+    def test_prazo_ilegivel_e_plus_vencido(self):
+        e = eng.estado_do_plus(5, ja_premiado=["plus:ofensiva:5"], plus_ate="amanhã", agora=self.AGORA)
+        assert e["ativo"] is False
+
+
+def _cinco_dias():
+    return ["2026-09-15", "2026-09-14", "2026-09-13", "2026-09-12", "2026-09-11"]
+
+
+class TestConcessaoDoPlus:
+    def test_quinto_dia_concede_48h_uma_vez(self, servico_com_db, monkeypatch):
+        gravados = []
+        monkeypatch.setattr(servico.fs, "ler_agregado", lambda uid: {"dias_ativos": _cinco_dias()})
+        monkeypatch.setattr(servico.fs, "conceder_plus", lambda uid, ate, origem: gravados.append((uid, ate, origem)))
+
+        e = roda(servico.estado("u1"))
+        assert e["plus"]["ativo"] is True and e["plus"]["conquistado"] is True
+        assert len(gravados) == 1 and gravados[0][2] == "plus:ofensiva:5"
+        uid, ate, _ = gravados[0]
+        from datetime import datetime, timedelta, timezone
+        restante = ate - datetime.now(timezone.utc)
+        assert timedelta(hours=47, minutes=59) < restante <= timedelta(hours=48)
+
+        # Segunda leitura, mesma ofensiva: nada novo é gravado.
+        e2 = roda(servico.estado("u1"))
+        assert len(gravados) == 1
+        assert e2["plus"]["ativo"] is True
+
+    def test_quatro_dias_nao_concede(self, servico_com_db, monkeypatch):
+        gravados = []
+        monkeypatch.setattr(servico.fs, "ler_agregado", lambda uid: {"dias_ativos": _cinco_dias()[:4]})
+        monkeypatch.setattr(servico.fs, "conceder_plus", lambda *a: gravados.append(a))
+        e = roda(servico.estado("u1"))
+        assert gravados == []
+        assert e["plus"]["faltam"] == 1 and e["plus"]["ativo"] is False
+
+    def test_firestore_falhou_a_chave_volta_e_a_proxima_leitura_concede(self, servico_com_db, monkeypatch):
+        """Marcar como pago um prêmio que não chegou seria quebrar a promessa
+        anunciada desde o primeiro dia."""
+        monkeypatch.setattr(servico.fs, "ler_agregado", lambda uid: {"dias_ativos": _cinco_dias()})
+
+        def explode(*a):
+            raise RuntimeError("cota estourada")
+
+        monkeypatch.setattr(servico.fs, "conceder_plus", explode)
+        e = roda(servico.estado("u1"))
+        assert e["plus"]["conquistado"] is False
+        perfil = roda(servico_com_db.engajamento_perfil.find_one({"_id": "u1"}))
+        assert "plus:ofensiva:5" not in (perfil or {}).get("ja_premiado", [])
+
+        gravados = []
+        monkeypatch.setattr(servico.fs, "conceder_plus", lambda *a: gravados.append(a))
+        e = roda(servico.estado("u1"))
+        assert len(gravados) == 1 and e["plus"]["ativo"] is True
+
+    def test_agregado_indisponivel_nao_concede(self, servico_com_db, monkeypatch):
+        def explode(uid):
+            raise RuntimeError("cota estourada")
+
+        gravados = []
+        monkeypatch.setattr(servico.fs, "ler_agregado", explode)
+        monkeypatch.setattr(servico.fs, "conceder_plus", lambda *a: gravados.append(a))
+        roda(servico.estado("u1"))
+        assert gravados == []
+
+    def test_congelador_nao_compra_o_plus(self, servico_com_db, monkeypatch):
+        """4 dias estudados + 1 congelado são 4 dias de ofensiva: o Plus é
+        prêmio de estudo, e Sparks não o compram."""
+        gravados = []
+        monkeypatch.setattr(
+            servico.fs, "ler_agregado",
+            lambda uid: {"dias_ativos": ["2026-09-15", "2026-09-14", "2026-09-12", "2026-09-11"]},
+        )
+        monkeypatch.setattr(servico.fs, "conceder_plus", lambda *a: gravados.append(a))
+        roda(servico_com_db.engajamento_perfil.insert_one(
+            {"_id": "u1", "uid": "u1", "dias_congelados": ["2026-09-13"], "congeladores": 0}
+        ))
+        e = roda(servico.estado("u1"))
+        assert e["ofensiva"]["dias"] == 4
+        assert gravados == []

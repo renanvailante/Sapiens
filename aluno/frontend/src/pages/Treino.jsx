@@ -9,6 +9,7 @@ import {
 import ReportarQuestao from "../components/ReportarQuestao";
 import Alternativas from "../components/questao/Alternativas";
 import Veredito from "../components/questao/Veredito";
+import { reagirAResposta } from "../lib/reacao";
 import { useDeclararContextoMentis } from "../lib/mentisContexto";
 import { MapaMundo3D, BriefingHUD, GuiaMissoes, aplicarProgressao } from "../components/mapa3d";
 import QuestoesGeradas from "../components/treino/QuestoesGeradas";
@@ -119,6 +120,7 @@ function Missao({ hab, onSair, onConcluida }) {
       .post(`/treino/habilidade/${hab.hab_id}/responder`, { indice: questao.indice, alternativa: letra })
       .then(({ data }) => {
         setResultado(data);
+        reagirAResposta(Boolean(data.acertou));
         if (data.acertou) setAcertosMissao((n) => n + 1);
         if (data.sparks_ganhos > 0) setSparksMissao((s) => s + data.sparks_ganhos);
       })

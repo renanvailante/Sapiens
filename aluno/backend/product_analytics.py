@@ -46,10 +46,11 @@ TIPOS = (
     "primeira_microvitoria",    # primeira missão diária resgatada
     "primeira_compra",          # primeiro pagamento de Sparks aprovado
     "recompra",                 # segundo pagamento aprovado em diante
+    "plus_pela_ofensiva",       # primeira ofensiva de 5 dias: ganhou os 2 dias de Plus
 )
 
 # Tipos "uma vez na vida" — `_id` é só `{uid}:{tipo}`, sem sufixo extra.
-_UNICOS = {"primeiro_proximo_passo", "primeira_microvitoria", "primeira_compra"}
+_UNICOS = {"primeiro_proximo_passo", "primeira_microvitoria", "primeira_compra", "plus_pela_ofensiva"}
 
 
 def _now_iso() -> str:

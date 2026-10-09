@@ -20,6 +20,8 @@ O que ele FAZ (pressão real, honesta):
     se não estudar hoje"). Enquadrar perda é legítimo quando a perda existe.
   * Congelador de ofensiva comprável: um bem real, preço à vista, teto de 2.
   * Missões diárias que PAGAM Sparks — ganhar, não gastar.
+  * Sapiens Plus pela primeira ofensiva de 5 dias: prêmio fixo (2 dias),
+    anunciado desde o primeiro acesso, pago uma vez, por estudo de verdade.
   * Liga semanal com subida e queda entre gente de verdade.
 
 O que ele NÃO FAZ, e por quê (cada item é uma tentação que foi recusada):
@@ -52,7 +54,7 @@ from __future__ import annotations
 
 import hashlib
 from dataclasses import dataclass
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from typing import Any, Iterable
 import rotas_do_app as rotas
 
@@ -244,6 +246,83 @@ def _maior_sequencia(vivos: set[str], ativos: set[str]) -> int:
             maior = max(maior, atual)
         anterior = d
     return maior
+
+
+# ---------------------------------------------------------------------------
+# Sapiens Plus pela ofensiva
+# ---------------------------------------------------------------------------
+# Pedido do dono em 2026-10-08: o aluno sabe DESDE O INÍCIO que, se mantiver a
+# ofensiva por 5 dias, ganha 2 dias "como se fosse pago" — o Sapiens Plus
+# (os direitos de `sparks_store.DIREITOS_DO_PLUS`).
+#
+# Três escolhas, cada uma com o porquê:
+#
+# * **Uma vez por aluno, não a cada 5 dias.** Um prêmio recorrente de 2 em
+#   cada 5 dias daria Plus a quem estuda todo dia durante 40% do tempo — a
+#   Mentis ilimitada é a coisa mais cara do catálogo de rodar (cada mensagem
+#   é uma chamada de modelo), e o pacote que vende os mesmos direitos deixaria
+#   de ter motivo para existir. É o "primeiro presente": o aluno prova o
+#   produto inteiro depois de provar a si mesmo que volta. `MARCOS_PLUS` é uma
+#   tabela para que um marco novo (30 dias, 100 dias) seja uma linha, não uma
+#   refatoração.
+# * **A régua é a ofensiva, e a ofensiva é estudo.** `dias` sai de
+#   `calcular_ofensiva`, que só conta dia com resposta real; congelador liga a
+#   corrente sem somar dia, então não se compra o Plus com Sparks.
+# * **48 horas a partir da concessão**, não "até o fim de amanhã": o número
+#   que a tela promete ("2 dias") é o número que o relógio entrega, ganhe o
+#   aluno o prêmio às 8h ou às 23h59.
+PLUS_META_DIAS = 5
+PLUS_PRESENTE_DIAS = 2
+# marco (dias de ofensiva) -> (chave única do prêmio, dias de Plus)
+MARCOS_PLUS: dict[int, tuple[str, int]] = {
+    PLUS_META_DIAS: ("plus:ofensiva:5", PLUS_PRESENTE_DIAS),
+}
+
+
+def marco_plus_devido(dias_ofensiva: int, ja_premiado: Iterable[str]) -> tuple[str, int] | None:
+    """O marco de Plus que esta ofensiva acabou de alcançar e ainda não foi
+    pago — ou `None`. O menor primeiro: quem chega com 12 dias numa conta
+    antiga recebe o de 5, e o próximo marco (se um dia existir) no seu dia."""
+    pagos = set(ja_premiado or ())
+    for meta in sorted(MARCOS_PLUS):
+        chave, dias_de_plus = MARCOS_PLUS[meta]
+        if dias_ofensiva >= meta and chave not in pagos:
+            return chave, dias_de_plus
+    return None
+
+
+def estado_do_plus(
+    dias_ofensiva: int,
+    *,
+    ja_premiado: Iterable[str] = (),
+    plus_ate: str | None = None,
+    concedido_em: str | None = None,
+    agora: str,
+) -> dict[str, Any]:
+    """O que a interface precisa para contar a promessa e o prêmio.
+
+    Tudo derivado de dado gravado: a ofensiva medida, a chave de prêmio no
+    perfil e o prazo que o servidor escreveu. `agora` entra como parâmetro
+    para a função continuar pura (e testável sem relógio)."""
+    chave, _ = MARCOS_PLUS[PLUS_META_DIAS]
+    ganhou = chave in set(ja_premiado or ())
+    ativo = False
+    if plus_ate:
+        try:
+            ativo = datetime.fromisoformat(plus_ate) > datetime.fromisoformat(agora)
+        except (TypeError, ValueError):
+            ativo = False  # prazo ilegível é Plus vencido, nunca eterno
+    rumo = PLUS_META_DIAS if ganhou else max(0, min(int(dias_ofensiva or 0), PLUS_META_DIAS))
+    return {
+        "meta_dias": PLUS_META_DIAS,
+        "presente_dias": PLUS_PRESENTE_DIAS,
+        "progresso": rumo,
+        "faltam": 0 if ganhou else PLUS_META_DIAS - rumo,
+        "conquistado": ganhou,
+        "ativo": ativo,
+        "ate": plus_ate if ativo else None,
+        "concedido_em": concedido_em if ganhou else None,
+    }
 
 
 # ---------------------------------------------------------------------------

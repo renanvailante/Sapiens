@@ -4,6 +4,8 @@ import { Link, useLocation, useNavigate, useSearchParams } from "react-router-do
 import { api } from "../lib/api";
 import { EVENTO_SPARKS } from "../components/Navegacao";
 import PainelDeProgresso from "../components/PainelDeProgresso";
+import DesafioPlus from "../components/celebracao/DesafioPlus";
+import Comemoracoes from "../components/celebracao/Comemoracoes";
 import ProximoPasso, { escolherPasso } from "../components/ProximoPasso";
 import OQueMudou, { conquistasDoDia } from "../components/OQueMudou";
 import PortaisDaJornada from "../components/PortaisDaJornada";
@@ -715,6 +717,13 @@ export default function Hoje() {
               `id="missoes"`: a Mentis e o guia levam direto até aqui.
               ------------------------------------------------------------- */}
           <div className="scroll-mt-24" id={ANCORAS.HOJE_MISSOES} data-tour="hoje-missoes">
+            {/* O desafio dos 5 dias → 2 dias de Sapiens Plus. Está aqui desde
+                a conta nova (0 de 5): o dono pediu que o aluno saiba "desde o
+                início". Vira o selo do Plus ativo quando ele ganha, e some
+                depois que o presente foi usado. */}
+            <div className="mb-3">
+              <DesafioPlus plus={engajamento?.plus} estudouHoje={engajamento?.ofensiva?.estudou_hoje} />
+            </div>
             {/* As missões de prática levam ao MESMO padrão que o Próximo
                 Passo anuncia — duas peças, um destino. */}
             <PainelDeProgresso
@@ -767,6 +776,10 @@ export default function Hoje() {
 
         </div>
       </div>
+
+      {/* A chama do dia (e o presente do Plus, no 5º dia). Nunca por cima
+          do guia: quem está no primeiro acesso ainda não estudou nada. */}
+      {loaded && !showTour && <Comemoracoes engajamento={engajamento} atraso={500} />}
 
       {loaded && showTour && (
         <OnboardingTour
