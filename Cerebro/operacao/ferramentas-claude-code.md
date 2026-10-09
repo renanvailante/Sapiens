@@ -44,7 +44,9 @@ Não reabra estes itens sem uma medição concreta que mude a conclusão:
   permissões** da sessão, e cada comando deles virava um pedido de autorização
   ao dono. Regra no `CLAUDE.md`: não se usam neste repo. A trava não é só
   texto: `.claude/settings.local.json` nega as ferramentas `Agent`, `Task` e
-  `Workflow`, e a sessão nem as recebe (em 2026-10-09 o
+  `Workflow`, e a sessão nem as recebe. Desde 2026-10-09 o mesmo `deny`, mais
+  `enableWorkflows: false`, está em `~/.claude/settings.json` e vale para
+  qualquer projeto da máquina (no mesmo dia o
   `subagentStatusLine` órfão também saiu de `.claude/settings.json`). Forçar todo task
   por um pipeline de 6 estágios adiciona latência para o caso comum — a
   maioria das tarefas neste repo é uma edição localizada, não uma
