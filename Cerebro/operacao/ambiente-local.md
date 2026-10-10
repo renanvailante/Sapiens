@@ -37,6 +37,16 @@ aparecia com dois competidores que nunca existiram.
 em `tests/conftest.py`. **Todo módulo novo que receba `set_db` precisa entrar
 nessa lista**, senão a suíte volta a escrever no banco da máquina.
 
+## Tocar fora do repo abre pedido de permissão, mesmo em bypass
+
+A config global do dono tem `blockReadsOutsideWorkingDirectories: true`: qualquer
+leitura ou comando com caminho fora dos diretórios de trabalho para e pede
+aprovação, com bypass ligado ou não. Por isso o `.claude/settings.local.json` lista
+a memória do Claude e `/private/tmp/claude-501` em `additionalDirectories`
+(2026-10-09). Arquivo temporário vai **só** no scratchpad da sessão, que fica sob
+esse caminho. `/tmp` solto, `~/Downloads` ou qualquer outro lugar volta a abrir
+prompt, e o dono pediu explicitamente para nunca ser interrompido assim.
+
 ## Convenções de teste
 
 - **Backend, offline.** Chamada direta de função, `asyncio.run()` dentro de testes
