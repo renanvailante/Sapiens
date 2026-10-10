@@ -420,8 +420,19 @@ function DesfechoMissao({ hab, resultado, novosPontos, proxima, onProxima, custo
         )}
       </div>
 
-      {/* O QUE VEM AGORA. Um clique e a próxima missão começa — sem reabrir o
-          globo, sem escolher entre 56 pontos. O mapa continua a um botão. */}
+      {/* CONTINUAR A TRILHA — a saída grande, a mesma do fim de série das
+          provas (2026-10-09). A missão de treino do dia é um nó da trilha do
+          Hoje: voltar para lá é ver o nó acender e saber o próximo passo. */}
+      <Link
+        to={ROTAS.HOJE}
+        className="pill btn-sapiens btn-grande flex w-full items-center justify-center gap-2.5"
+        data-testid="mapa-continuar-trilha"
+      >
+        Continuar a trilha <ArrowRight className="h-5 w-5" />
+      </Link>
+
+      {/* O QUE VEM AGORA NO MAPA. Um clique e a próxima missão começa — sem
+          reabrir o globo, sem escolher entre 56 pontos. */}
       {proxima && (
         <div className="superficie flex flex-col items-stretch gap-4 p-5 sm:flex-row sm:items-center" data-testid="mapa-proxima-missao">
           <div className="flex min-w-0 flex-1 items-start gap-3 sm:items-center">
@@ -438,7 +449,7 @@ function DesfechoMissao({ hab, resultado, novosPontos, proxima, onProxima, custo
           </div>
           <button
             onClick={() => onProxima(proxima)}
-            className="pill btn-sapiens inline-flex w-full items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-bold sm:w-auto"
+            className="pill btn-vidro inline-flex w-full items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-bold sm:w-auto"
             data-testid="mapa-proxima-missao-btn"
           >
             Começar <ArrowRight className="h-4 w-4" />

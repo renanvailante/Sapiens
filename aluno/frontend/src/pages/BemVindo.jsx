@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ArrowRight, ArrowLeft, SkipForward, Check, Loader2, Target } from "lucide-react";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
-import Mentis from "../components/Mentis";
+import BalaoDaMentis from "../components/caminho/BalaoDaMentis";
 import Logo from "../components/Logo";
 import VideoDoMentor from "../components/VideoDoMentor";
 import { MENTOR } from "../lib/mentor";
@@ -73,19 +73,14 @@ const OBJETIVOS_SUGERIDOS = [
   "Organizar meus estudos",
 ];
 
-/** A fala da Mentis no topo de cada etapa. Curta: ela guia, não disserta. */
+/** A fala da Mentis no topo de cada etapa. Curta: ela guia, não disserta.
+ *
+ *  Desde 2026-10-09 é o MESMO balão do Hoje (`caminho/BalaoDaMentis`): ela
+ *  flutua, "fala" enquanto o texto entra e tem o botão de voz. O primeiro
+ *  acesso é onde o aluno conhece a guia — ela precisa ser a mesma que ele vai
+ *  encontrar na trilha logo depois. */
 function FalaDaMentis({ texto, subtexto }) {
-  return (
-    <div className="flex items-start gap-3.5">
-      <Mentis className="h-11 w-11 shrink-0" estado="neutra" />
-      <div className="min-w-0 flex-1 pt-0.5">
-        <h2 className="font-display text-xl font-bold leading-snug tracking-tight text-white md:text-2xl">
-          {texto}
-        </h2>
-        {subtexto && <p className="mt-1 text-sm text-white/45">{subtexto}</p>}
-      </div>
-    </div>
-  );
+  return <BalaoDaMentis titulo={texto} texto={subtexto || ""} tamanho="p" olhar={0.4} testid="onb-mentis" />;
 }
 
 function Slider({ area, valor, aoMudar }) {

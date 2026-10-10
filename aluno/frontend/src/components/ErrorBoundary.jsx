@@ -39,6 +39,16 @@ export default class ErrorBoundary extends Component {
     return { erro };
   }
 
+  // Trocar de tela desfaz o erro (2026-10-09). A fronteira é UMA, em volta de
+  // todas as rotas: sem isto, uma tela que quebrou deixava "Algo quebrou" em
+  // TODAS as seguintes — o aluno tocava em Hoje, em Estudar, e a navegação
+  // parecia morta até recarregar. `chave` é o caminho da rota (ver App.js).
+  componentDidUpdate(anterior) {
+    if (this.state.erro && anterior.chave !== this.props.chave) {
+      this.setState({ erro: null });
+    }
+  }
+
   componentDidCatch(erro, info) {
     if (_eErroDeChunk(erro)) {
       try {

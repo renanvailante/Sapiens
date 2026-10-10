@@ -31,6 +31,20 @@
         "start"
       ],
       "port": 3002
+    },
+    {
+      "name": "aluno-verificacao",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "REACT_APP_BACKEND_URL=http://localhost:8799",
+        "BROWSER=none",
+        "PORT=3010",
+        "yarn",
+        "--cwd",
+        "/Users/renanvailante/Documents/Projetos/Sapiens/aluno/frontend",
+        "start"
+      ],
+      "port": 3010
     }
   ]
 }

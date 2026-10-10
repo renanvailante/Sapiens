@@ -248,7 +248,11 @@ function Missoes({ missoes, aoResgatar, resgatando, celebrando, pratica, ganho }
   );
 }
 
-export default function PainelDeProgresso({ dados, aoMudar, pratica = null }) {
+// `semMissoes`: desde 2026-10-09 as missões do dia moram na TRILHA do Hoje
+// (`components/caminho/TrilhaDoDia.jsx`), como nós do caminho com o prêmio
+// dentro. Aqui sobram as medidas — ofensiva, nível, liga, ENEM — e o
+// congelador, que continuam sendo "o detalhe" do placar do topo.
+export default function PainelDeProgresso({ dados, aoMudar, pratica = null, semMissoes = false }) {
   const [resgatando, setResgatando] = useState(null);
   const [comprando, setComprando] = useState(false);
   // Qual missão está comemorando. Meio segundo de pulso NO CARD que gerou o
@@ -369,14 +373,14 @@ export default function PainelDeProgresso({ dados, aoMudar, pratica = null }) {
         </p>
       )}
 
-      <Missoes
+      {!semMissoes && <Missoes
         missoes={dados.missoes}
         aoResgatar={resgatar}
         resgatando={resgatando}
         celebrando={celebrando}
         pratica={pratica}
         ganho={ganho}
-      />
+      />}
     </section>
   );
 }

@@ -1,6 +1,6 @@
 ---
 tags: [indice, entrada]
-atualizado: 2026-10-01
+atualizado: 2026-10-10
 ---
 
 # Índice — o que ler antes de cada tarefa
@@ -28,7 +28,8 @@ Se nada aqui casar, vá direto ao código (`graft ask "<tarefa>"`) — o Cerebro
 | mexer em **CSS, cor, tema escuro** | [[sistema-visual]] |
 | **acrescentar área, item de menu ou ROTA** | [[navegacao]] |
 | criar **tela nova** | [[padroes-de-tela]] · [[sistema-visual]] |
-| mexer no **Próximo Passo, prática dirigida, fechamento de série, desfecho de missão** | [[padroes-de-tela]] · [[motor-cognitivo]] |
+| mexer na **trilha do dia, Hoje, Próximo Passo, prática dirigida, fechamento de série, desfecho de missão** | [[padroes-de-tela]] · [[motor-cognitivo]] |
+| mexer na **Mentis como guia, animação da Mentis, voz, dicas por tela, botão flutuante** | [[mentis]] · [[padroes-de-tela]] |
 | mexer em algo que o **celular** toca | [[mobile]] |
 | mexer em **gamificação, liga, mural, venda, ofensiva, Sapiens Plus, comemoração/animação** | [[engajamento]] · [[decisoes-do-dono]] |
 | mexer em **copy, landing, logo, mentor** | [[marca]] |

@@ -1,6 +1,6 @@
 ---
 tags: [ux, padroes, componentes]
-atualizado: 2026-10-06
+atualizado: 2026-10-10
 ---
 
 # Padrões de tela
@@ -35,8 +35,12 @@ Montado uma vez, ao lado das rotas — **tela nova não precisa fazer nada**:
 
 - `Navegacao` — as duas barras e o Menu (ver [[navegacao]])
 - `LembrarComAMentis` — a captura global de trecho (ver [[mentis]])
-- `MentisWidget` — o ícone flutuante
+- `MentisWidget` — a Mentis flutuante: guia, próximo passo e chat
 - `ContinuidadeDaPagina` — a pista de continuidade
+- `FronteiraDeErro` — o `ErrorBoundary` com `chave={pathname}`. Ele é UM em
+  volta de todas as rotas, e até 2026-10-09 uma tela que quebrava deixava
+  "Algo quebrou" em **todas as seguintes**: o aluno tocava nas abas e a
+  navegação parecia morta até recarregar. Trocar de rota desfaz o erro.
 
 ## A camada de continuidade
 
@@ -80,40 +84,67 @@ afirme que uma letra é a correta sem saber** — ver [[inviolaveis]].
 Não migrados de propósito: `Feed.jsx` e `components/curso/Blocos.jsx` (já usava o CSS
 certo).
 
-## O Hoje abre pela AÇÃO
+## O Hoje é a TRILHA DO DIA (2026-10-09)
 
-`ProximoPasso.jsx` é a primeira coisa: **uma** ação, escolhida numa escada de
-prioridade sobre dados que a página **já carregou** — `escolherPasso`, pura e
-testada em `ProximoPasso.test.js`:
+Pedido do dono: *"tenho dificuldade de saber o que fazer, onde tenho que clicar.
+Parece que eu tenho que aprender a usar a plataforma antes de realmente estudar
+nela"* — Duolingo como referência total. O Hoje anterior já tinha "uma pergunta
+por dobra" e mesmo assim abria com o Próximo Passo **e três botões ao lado**
+(passo, mapa, provas), a trilha do mapa como segunda porta e as missões numa
+grade lá embaixo: ~15 alvos na primeira rolagem, cada um certo sozinho.
 
-    revisão vencida > bloco de hoje no cronograma > PADRÃO DE ERRO COM CAUSA
-    > missão atual da trilha > ponto de medida mais baixa
-    > "Continue de onde parou" (já respondeu) > "Seu primeiro passo" (conta nova)
+Agora, de cima para baixo: **placar** (chama · nível · liga, `caminho/HudDoDia`)
+→ **a Mentis falando** com UM botão grande (`caminho/BalaoDaMentis`) →
+**a trilha** (`caminho/TrilhaDoDia`) → desafio do Plus → O que mudou → Seu
+ritmo (o `PainelDeProgresso` com `semMissoes`) → mentor → Explorar.
+`ExplorarOSapiens.test.js` trava essa ordem.
 
-Os degraus de padrão leem a fila do motor (`/motor/perfil`), que o Hoje já
-carregava e só usava para vender a aula. **A trilha só enxerga o Treino**
-(`treino_agregado`, incrementado só por missão do mapa): antes de 2026-09-28,
-quem tinha 200 questões de prova e nunca abriu o mapa recebia "Seu primeiro
-passo" todo dia. "Primeiro passo" é só para `totalRespondidas === 0`.
+**A regra é pura e testada** (`lib/trilhaDoDia.js`, `montarTrilhaDoDia`):
 
-Pela mesma razão, a tira de três números do Próximo Passo troca para quem só faz
-prova: "0/56 explorados · 0 dominados" ao lado de "200 questões" lia como "você não
-fez nada", e vira questões · dias nesta semana · dias seguidos.
+    revisão vencida → blocos de hoje (até 3, pelo horário) → as 3 missões do
+    dia → troféu → (dia completo) lição extra
 
-Ordem desde 18/09, cinco seções: **Próximo Passo → O que mudou → Sua sequência
-→ Com o mentor → Explorar**.
+- **Um nó aceso, sempre**: o primeiro prêmio pronto (baú dourado, abre no
+  próprio nó) e, sem prêmio, o primeiro pendente. Os outros pendentes ficam
+  tocáveis e quietos. Trilha vazia não existe — sem engajamento, o passo do
+  motor vira o único nó.
+- **Feito é o que o servidor contou** (contador da missão, `concluido` do
+  bloco). A trilha anda sozinha porque o servidor conta, não porque a tela acha.
+- **As missões de revisão e de cronograma se fundem** ao nó da coisa em si.
+  Missão de revisão sem nada vencido vira `espera` (não acende, não conta no
+  "N de M").
+- **A revisão feita hoje não some.** Revisar esvazia a fila, e o nó sumiria
+  justo quando devia ficar dourado. A trilha vista é gravada por aparelho e
+  por dia (`gravarTrilhaVista`, com `presentes`); revisão presente antes e fila
+  vazia agora = revisada. Só vale no mesmo dia.
+- **Destino sem escolha no meio**: revisão abre direto `?item_ids=` das que
+  voltaram; prática vai à prática dirigida do padrão (`escolherPasso` continua
+  sendo a escada — ela virou o DESTINO das missões de prática e da lição
+  extra) ou a `?area=` (a mais fraca do último gabarito, senão Matemática).
+  **Nunca a lista de cadernos** — um nó da trilha não pede escolha.
 
-Saíram quatro blocos que eram, cada um, o resumo de outra aba: a tira da semana
-(Agenda), o aviso de revisão (Agenda de novo), a grade de focos e domínio
-(Progresso) e a fileira de conquistas (Progresso de novo). Eram ~12 blocos
-simultâneos e vitrines de vitrines — quem clicasse em qualquer uma achava a
-MESMA informação maior do lado de lá.
+**A volta é o Duolingo.** O fim de série (`FechamentoDaSerie`) e o desfecho de
+missão do Treino têm **uma** saída grande, "Continuar a trilha" (eram até cinco
+botões do mesmo peso); as outras ficam menores embaixo. De volta ao Hoje,
+`novidadesDaTrilha` compara com a última visita DE HOJE: o nó cumprido salta,
+solta confete, toca o som e a Mentis fica feliz ("Mais um passo feito: «X»").
+Na primeira visita do dia nada é anunciado — seria comemorar o que não
+aconteceu agora.
 
-`components/OQueMudou.jsx` os substituiu por **eventos**, não resumos: um
-resumo ("você tem 12 blocos na semana") existe sempre e por isso não chama
-atenção; um evento ("sua redação foi corrigida") só existe quando aconteceu.
-Mesma disciplina do Próximo Passo — **zero requisição própria**, teto de quatro
-linhas, e nada genérico (toda linha cita um número do próprio aluno).
+**O nó aceso é publicado para o resto do app** (`publicarPassoAtual`, do
+aparelho, do dia): a Mentis flutuante e o "Na dúvida, siga a trilha" do
+Estudar levam a ele **sem requisição nenhuma**. Sem passo publicado hoje, o
+próximo passo é abrir o Hoje.
+
+> **Armadilha de empilhamento:** cada filho de `.cascata` vira contexto de
+> empilhamento durante a entrada, e a seção seguinte pintava POR CIMA do cartão
+> aberto de um nó. A seção da trilha tem `relative z-20` por isso.
+
+`components/OQueMudou.jsx` mostra **eventos**, não resumos: um resumo ("você
+tem 12 blocos na semana") existe sempre e por isso não chama atenção; um
+evento ("sua redação foi corrigida") só existe quando aconteceu. **Zero
+requisição própria**, teto de quatro linhas, e nada genérico (toda linha cita
+um número do próprio aluno).
 
 A **microvitória** é o terceiro evento, antes das pendências (o teto a
 cortaria no fim): o marco mais recente de `reteste_ok` ou `transferencia` da
@@ -127,9 +158,23 @@ As 10 Portas (`PortaisDaJornada.jsx`) moram na seção **Explorar**
 (`ExplorarOSapiens.jsx`), **fechada por padrão** e aberta só para quem nunca
 respondeu nada. A preferência do aluno vence e mora em `localStorage`.
 
+### A escada do Próximo Passo (ainda viva, agora como destino)
+
+`escolherPasso` (em `ProximoPasso.jsx`, testada em `ProximoPasso.test.js`) não
+desenha mais a primeira dobra, mas é ela que escolhe para onde vão a prática e
+a lição extra:
+
+    revisão vencida > bloco de hoje no cronograma > PADRÃO DE ERRO COM CAUSA
+    > missão atual da trilha > ponto de medida mais baixa
+    > "Continue de onde parou" (já respondeu) > "Seu primeiro passo" (conta nova)
+
+**A trilha do mapa só enxerga o Treino** (`treino_agregado`): antes de
+2026-09-28, quem tinha 200 questões de prova recebia "Seu primeiro passo" todo
+dia. "Primeiro passo" é só para `totalRespondidas === 0`.
+
 > [!warning] Antes de reordenar a primeira dobra de novo, leia
 > `ExplorarOSapiens.test.js` — a regra está travada lá **de propósito**, porque cada
-> uma das três passadas anteriores desfez a anterior sem saber.
+> uma das passadas anteriores desfez a anterior sem saber.
 
 **Números das Portas só quando MEDIDOS:** fila é `revisoes.resumo.questoes` (não
 existe `resumo.vencidas`), semana é `cronograma.total_concluidos/total_blocos`,
@@ -218,7 +263,8 @@ Duas portas para rever, as duas com `?guia=1`, e **nenhuma mexe na marca**. O ef
 de `?guia=1` **ouve a URL** em vez de rodar só na montagem.
 
 Cada passo aponta um elemento real por `data-tour="..."`. **Alvo ausente não quebra a
-sequência: o balão centraliza.**
+sequência: o balão centraliza.** `dash-agora` mora no nó aceso da trilha do dia
+(muda de elemento conforme o dia; é sempre o próximo passo).
 
 > **Ao acrescentar uma ferramenta, acrescente o passo no guia E a âncora `data-tour`
 > no elemento.** O ponto único que decide se o guia abre é o segundo `useEffect` de

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { api, API, errMsg} from "../lib/api";
 import ContagemEnem from "../components/ContagemEnem";
-import { ArrowRight, Check, X, RotateCw, Sparkles, BookOpen, ChevronLeft, Crosshair, Loader2, Compass, Flame, Zap, Volume2, VolumeX, Target, Timer, Trophy } from "lucide-react";
+import { ArrowRight, Check, X, RotateCw, Sparkles, BookOpen, ChevronLeft, Crosshair, Loader2, Flame, Zap, Volume2, VolumeX, Target, Timer, Trophy } from "lucide-react";
 import { toast } from "sonner";
 import { avisarSparksMudou } from "../components/Navegacao";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
@@ -314,7 +314,6 @@ function FechamentoDaSerie({ respostas, filtro, onExit, abrindo, aoPraticar, xpI
       ? "Revisão espaçada"
       : [filtro?.banca, filtro?.ano].filter(Boolean).join(" ") || filtro?.area || "Prática");
 
-  const botaoPrimario = "pill btn-sapiens inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-bold disabled:opacity-50";
   const botaoSecundario = "pill btn-vidro inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm";
 
   return (
@@ -356,12 +355,27 @@ function FechamentoDaSerie({ respostas, filtro, onExit, abrindo, aoPraticar, xpI
         </p>
       )}
 
-      <div className="mt-6 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap">
+      {/* UMA saída grande, sempre a mesma: de volta à trilha do dia, onde o
+          nó que esta série cumpriu acende e a Mentis diz qual é o próximo
+          (2026-10-09, o "CONTINUAR" do fim de lição do Duolingo). Até aqui
+          eram até cinco botões do mesmo tamanho — praticar o ponto, mais do
+          ponto, próximo passo, mapa, voltar — e o aluno tinha de decidir
+          entre eles logo depois de terminar. As outras continuam, menores,
+          embaixo: são escolha, não o caminho. */}
+      <Link
+        to={ROTAS.HOJE}
+        className="pill btn-sapiens btn-grande mt-7 inline-flex w-full items-center justify-center gap-2.5 sm:w-auto sm:min-w-[18rem]"
+        data-testid="serie-proximo-passo"
+      >
+        Continuar a trilha <ArrowRight className="h-5 w-5" />
+      </Link>
+
+      <div className="mt-4 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap">
         {repetido && (
           <button
             onClick={() => aoPraticar(repetido.processoId, { tipo: "repetido", linha: { processo_id: repetido.processoId } })}
             disabled={abrindo}
-            className={botaoPrimario}
+            className={botaoSecundario}
             data-testid="serie-praticar-ponto"
           >
             {abrindo ? <>Separando as questões <Loader2 className="h-4 w-4 animate-spin" /></> : <><Crosshair className="h-4 w-4" /> Praticar esse ponto</>}
@@ -375,19 +389,12 @@ function FechamentoDaSerie({ respostas, filtro, onExit, abrindo, aoPraticar, xpI
               linha: { processo_id: dirigida.processoId, erro_dominante: dirigida.erroId || null },
             })}
             disabled={abrindo}
-            className={botaoPrimario}
+            className={botaoSecundario}
             data-testid="serie-mais-do-ponto"
           >
             {abrindo ? <>Separando as questões <Loader2 className="h-4 w-4 animate-spin" /></> : <>Mais {mais} deste ponto <ArrowRight className="h-4 w-4" /></>}
           </button>
         )}
-        <Link
-          to={ROTAS.HOJE}
-          className={repetido || mais > 0 ? botaoSecundario : botaoPrimario}
-          data-testid="serie-proximo-passo"
-        >
-          <Compass className="h-4 w-4" /> Ver o próximo passo
-        </Link>
         {missaoLigada && (
           <Link
             to={`${ROTAS.TREINO}?hab=${encodeURIComponent(missaoLigada.id)}`}

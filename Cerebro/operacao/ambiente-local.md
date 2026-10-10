@@ -1,6 +1,6 @@
 ---
 tags: [operacao, dev, teste]
-atualizado: 2026-10-01
+atualizado: 2026-10-10
 ---
 
 # Ambiente local e testes
@@ -92,6 +92,14 @@ script, que responde às rotas com um aluno de teste na **mesma origem** (sem
 CORS); o token de teste vai no `localStorage`. Instruções e cenários no
 cabeçalho do arquivo. Foi como o fluxo Hoje → prática dirigida → fechamento e
 o desfecho do Treino foram verificados em 2026-09-30.
+
+**Com recarga a quente (2026-10-09):** o servidor falso responde CORS, então o
+dev server pode falar com ele — `preview_start` com `aluno-verificacao` (porta
+3010, `REACT_APP_BACKEND_URL` pelo processo) e o servidor rodando à parte. O
+servidor **não sobe pelo `preview_start`**: o processo do painel não tem
+permissão de ler `~/Documents` (macOS) e morre em "Operation not permitted";
+rode-o por Bash em segundo plano. O cenário `dia_cheio` traz revisão vencida,
+bloco de hoje e as três missões — a trilha do dia com todo tipo de nó.
 
 > **Tela que quebra só ali é, primeiro, dado falso incompleto** (`ANCORA_BIOMA_SRC`
 > exige id de bioma real; a liga lê `tabela`). O script loga `SEM MOCK GET …`

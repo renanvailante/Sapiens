@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { X, Send, Zap, Sparkles } from "lucide-react";
+import { X, Send, Zap, ArrowRight, Loader2 } from "lucide-react";
 import { api, errMsg } from "../lib/api";
+import { EVENTO_PASSO, lerPassoAtual } from "../lib/trilhaDoDia";
+import { dicaPara, marcarDicaVista } from "../lib/dicasDaMentis";
+import { abrirPraticaDirigida } from "../lib/praticaDirigida";
 import { useAuth } from "../lib/auth";
 import { useContextoMentisAtual } from "../lib/mentisContexto";
 import Mentis, { MentisPensando } from "./Mentis";
@@ -18,6 +21,18 @@ const MAX_CHARS = 600;
  * logado. Abre o MESMO chat de `/mentis` (mesma sessão no servidor — este
  * widget só é outra janela sobre ela), então nunca aparece dobrado com a
  * página cheia: fica escondido enquanto o aluno já está em /mentis.
+ *
+ * DESDE 2026-10-09 ELA É A GUIA EM TODA TELA, não só a porta do chat:
+ *
+ *   · o botão é a própria Mentis (olhos, órbita, flutuando), e não um ícone
+ *     de brilho genérico — a mesma personagem que fala no Hoje;
+ *   · na primeira visita a cada área ela diz, num balão, o que se faz ali
+ *     (`lib/dicasDaMentis.js`) — e some sozinha;
+ *   · o painel abre com **"Seu próximo passo"** antes da conversa: o nó aceso
+ *     da trilha do dia, que o Hoje publica (`trilhaDoDia.publicarPassoAtual`).
+ *     De qualquer tela, um toque nela e um toque no botão levam ao próximo
+ *     passo — de graça, porque navegar nunca custa Spark. É a garantia de que
+ *     o aluno nunca fica sem saber para onde ir.
  */
 export default function MentisWidget() {
   const { user, loading } = useAuth() || {};
@@ -35,6 +50,36 @@ export default function MentisWidget() {
   const [saldo, setSaldo] = useState(null);
   const fimRef = useRef(null);
   const inputRef = useRef(null);
+  const [passo, setPasso] = useState(lerPassoAtual);
+  const [indo, setIndo] = useState(false);
+  const [dica, setDica] = useState(null);
+
+  // O passo aceso muda quando o Hoje recalcula a trilha (no mesmo aparelho).
+  useEffect(() => {
+    const reler = () => setPasso(lerPassoAtual());
+    window.addEventListener(EVENTO_PASSO, reler);
+    window.addEventListener("storage", reler);
+    return () => {
+      window.removeEventListener(EVENTO_PASSO, reler);
+      window.removeEventListener("storage", reler);
+    };
+  }, []);
+
+  // A dica da área: entra um instante depois da tela (para não competir com a
+  // chegada dela), fica uns segundos e sai. Marcada como vista ao APARECER —
+  // quem a viu e não fechou não precisa dela de novo amanhã.
+  useEffect(() => {
+    setDica(null);
+    if (!user) return undefined;
+    const d = dicaPara(location.pathname, location.search);
+    if (!d) return undefined;
+    const entra = setTimeout(() => {
+      marcarDicaVista(d.rota);
+      setDica(d);
+    }, 1100);
+    const sai = setTimeout(() => setDica(null), 13000);
+    return () => { clearTimeout(entra); clearTimeout(sai); };
+  }, [location.pathname, location.search, user]);
 
   const mensagens = sessao?.mensagens || [];
   const custoMensagem = sessao?.custo_mensagem ?? CUSTO_MENSAGEM_PADRAO;
@@ -68,6 +113,26 @@ export default function MentisWidget() {
   // conduzindo o onboarding. O ícone flutuante ali seria ela oferecendo abrir
   // uma conversa consigo mesma, por cima da conversa em curso.
   if (location.pathname === "/bem-vindo") return null;
+
+  // Leva ao próximo passo da trilha. Sem passo publicado (o aluno ainda não
+  // abriu o Hoje neste aparelho hoje), o próximo passo É abrir a trilha.
+  const irAoPasso = () => {
+    setAberto(false);
+    setDica(null);
+    const acao = passo?.acao;
+    if (!acao || passo?.estado === "resgatar") {
+      navigate(ROTAS.HOJE);
+      return;
+    }
+    if (acao.tipo === "dirigida") {
+      setIndo(true);
+      abrirPraticaDirigida({ api, navegar: navigate, processoId: acao.processoId, escolha: acao.escolha })
+        .finally(() => setIndo(false));
+      return;
+    }
+    navigate(acao.rota || ROTAS.HOJE);
+  };
+  const naTrilha = location.pathname === ROTAS.HOJE;
 
   const abrirSessao = async () => {
     setAbrindo(true);
@@ -165,6 +230,31 @@ export default function MentisWidget() {
               <X className="w-4 h-4" />
             </button>
           </div>
+
+          {/* SEU PRÓXIMO PASSO — grátis, antes de qualquer conversa. No Hoje
+              ele sai: lá a trilha inteira já está na tela. */}
+          {!naTrilha && (
+            <div className="border-b border-white/10 px-4 py-3" data-testid="mentis-widget-passo">
+              <div className="secao-olho">Seu próximo passo</div>
+              <div className="mt-1 flex items-center gap-3">
+                <p className="min-w-0 flex-1 text-sm font-semibold leading-snug text-white">
+                  {passo?.completo
+                    ? "Sua trilha de hoje está completa."
+                    : passo?.titulo || "Ver a sua trilha de hoje"}
+                </p>
+                <button
+                  type="button"
+                  onClick={irAoPasso}
+                  disabled={indo}
+                  className="pill btn-sapiens inline-flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold disabled:opacity-60"
+                  data-testid="mentis-widget-ir-passo"
+                >
+                  {indo ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                  {passo?.titulo && !passo?.completo ? passo.cta || "Ir" : "Abrir"} <ArrowRight className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
 
           {!carregado ? (
             <div className="flex flex-1 items-center justify-center text-xs text-white/45">Procurando a Mentis…</div>
@@ -270,16 +360,44 @@ export default function MentisWidget() {
         </div>
       )}
 
+      {/* A DICA DA ÁREA — o balão do Duolingo saindo da própria Mentis. */}
+      {!aberto && dica && (
+        <div className="dica-mentis mb-3" role="status" data-testid="mentis-dica">
+          <button
+            type="button"
+            onClick={() => setDica(null)}
+            className="dica-mentis-fechar"
+            aria-label="Fechar dica"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+          <p className="pr-5 text-[13px] leading-relaxed text-white/85">{dica.texto}</p>
+          {passo?.titulo && !passo?.completo && !naTrilha && (
+            <button
+              type="button"
+              onClick={irAoPasso}
+              className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-[#9FE9FF] hover:underline"
+              data-testid="mentis-dica-passo"
+            >
+              Continuar a trilha <ArrowRight className="h-3 w-3" />
+            </button>
+          )}
+        </div>
+      )}
+
       <button
         type="button"
-        onClick={() => setAberto((v) => !v)}
-        className="flex h-14 w-14 items-center justify-center rounded-full shadow-xl transition hover:scale-105"
-        style={{ background: "radial-gradient(circle at 35% 30%, #4FD9FF, #123A78)" }}
-        aria-label={aberto ? "Fechar chat da Mentis" : "Conversar com a Mentis"}
+        onClick={() => { setDica(null); setAberto((v) => !v); }}
+        className="mentis-botao"
+        aria-label={aberto ? "Fechar a Mentis" : "Falar com a Mentis"}
         data-testid="mentis-widget-toggle"
         data-tour="mentis-widget"
       >
-        {aberto ? <X className="h-5 w-5 text-white" /> : <Sparkles className="h-5 w-5 text-white" />}
+        {aberto ? (
+          <X className="h-5 w-5 text-white" />
+        ) : (
+          <Mentis className="h-[60px] w-[60px]" estado={dica ? "falando" : "neutra"} olhar={-0.6} flutuar />
+        )}
       </button>
     </div>
   );

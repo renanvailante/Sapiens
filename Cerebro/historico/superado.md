@@ -1,6 +1,6 @@
 ---
 tags: [historico, anti-regressao]
-atualizado: 2026-10-06
+atualizado: 2026-10-10
 ---
 
 # O que já foi assim e não é mais
@@ -82,6 +82,12 @@ alcançável por um único botão dentro de `/analysis/:id`. O produto já tem U
 mapa — o do Treino, que é vivo. Dois mapas com nomes parecidos e conteúdos
 diferentes fazem o aluno duvidar do que está olhando.
 
+## A Mentis sem movimento
+
+Até 2026-10-09 a direção de arte proibia salto e euforia também no MOVIMENTO
+("mentor confirma, não comemora"). Hoje ela flutua, fala, fica feliz e olha —
+a proibição ficou só na fala (sem emoji, sem euforia). Ver [[mentis]].
+
 ## O tour de boas-vindas
 
 22 balões → 5 (17/09) → **21** (cobrindo todas as ferramentas). Alvos antigos que
@@ -100,6 +106,21 @@ fechada. **Travado em `ExplorarOSapiens.test.js`.** Ver [[padroes-de-tela]].
 Saíram do Painel: o parágrafo de manifesto por seção, a tira de estatísticas, o card
 "Próxima ação", três banners de largura total, a grade "Ferramentas" (7 azulejos), a
 linha da Mentis e a linha "faltam X dias".
+
+## O Hoje virou trilha (2026-10-09)
+
+A quarta passada da primeira dobra. Saíram do Hoje: o `ProximoPasso` como peça
+(com seus três botões lado a lado — passo, "Mapa de treino", "Provas do ENEM" —,
+a trilha do mapa à direita e a tira de números), a grade de missões do
+`PainelDeProgresso` (as missões viraram nós da trilha, `semMissoes`), o chip da
+meta declarada no cabeçalho e, com ele, a leitura de `/onboarding` que só o
+alimentava. **Não restaure nenhum como segunda resposta a "e agora?"** — a
+regra é um nó aceso. Ver [[padroes-de-tela]].
+
+O fim de série tinha até cinco botões do mesmo peso (praticar o ponto, mais do
+ponto, "Ver o próximo passo", mapa, voltar); hoje tem UM grande, "Continuar a
+trilha". O botão flutuante da Mentis era um ícone de brilho num disco; hoje é
+a própria personagem.
 
 ## Direitos dos pacotes
 

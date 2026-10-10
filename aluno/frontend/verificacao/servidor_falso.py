@@ -16,6 +16,8 @@ Cenários (GET /__cenario/<nome>, também zera os contadores):
   padrao    — 40 respostas de prova, um padrão de erro com causa, uma revisão acertada ontem
   so_provas — 40 respostas, motor sem padrão (Próximo Passo "Continue de onde parou")
   novo      — conta sem resposta nenhuma
+  dia_cheio — o "padrao" + 2 revisões vencidas e um bloco de hoje no cronograma
+              (a trilha do dia com todos os tipos de nó)
 
 Rota sem mock aparece no stderr como "SEM MOCK GET ..." — é o primeiro lugar
 para olhar quando uma tela quebra aqui e não em produção (o dado falso
@@ -117,8 +119,18 @@ def rota_get(path, q):
     if path == "/api/redacao":
         return {"items": []}
     if path == "/api/revisao/fila":
+        if c == "dia_cheio" and not ESTADO.get("revisou"):
+            return {"itens": [{"processo_id": "P-10", "rotulo": "a reforçar",
+                               "praticar": [{"item_id": ITENS[0]}, {"item_id": ITENS[1]}]}],
+                    "resumo": {"questoes": 2}}
         return {"itens": [], "resumo": {"questoes": 0}}
     if path == "/api/cronograma":
+        if c == "dia_cheio":
+            return {"dias": [{"data": hoje_local(), "blocos": [
+                {"id": "b1", "titulo": "Matemática · razão e proporção", "inicio": "19:00", "fim": "19:40",
+                 "concluido": bool(ESTADO.get("bloco_feito")), "rota": "/estudar/provas?area=Matem%C3%A1tica",
+                 "frente_nome": "Matemática"}], "compromissos": []}],
+                    "total_blocos": 1, "total_concluidos": 1 if ESTADO.get("bloco_feito") else 0}
         return {"dias": []}
     if path == "/api/onboarding":
         return {}
@@ -131,11 +143,18 @@ def rota_get(path, q):
             # XP cresce com as respostas (10 por resposta), como o servidor faria.
             "nivel": {"nivel": 3, "xp_total": 640 + 10 * ESTADO["respostas"], "xp_no_nivel": 140, "xp_do_nivel": 400,
                       "xp_para_o_proximo": 260, "percentual": 35},
+            # Três missões, como `engajamento.missoes_do_dia` sempre devolve.
             "missoes": [
                 {"id": "responder5", "titulo": "Responda 5 questões", "alvo": 5,
                  "progresso": min(5, ESTADO["respostas"]), "concluida": ESTADO["respostas"] >= 5,
                  "sparks": 5, "xp": 20, "rota": "/estudar/provas", "cta": "Praticar",
-                 "resgatada": ESTADO.get("resgatou", False)},
+                 "resgatada": "responder5" in ESTADO.get("resgatadas", set())},
+                {"id": "treino", "titulo": "Faça 10 questões do banco de treino", "alvo": 10,
+                 "progresso": 0, "concluida": False,
+                 "sparks": 10, "xp": 20, "rota": "/estudar/treino", "cta": "Treinar", "resgatada": False},
+                {"id": "comunidade", "titulo": "Responda a dúvida de um colega", "alvo": 1,
+                 "progresso": 0, "concluida": False,
+                 "sparks": 10, "xp": 20, "rota": "/comunidade", "cta": "Ajudar", "resgatada": False},
             ], "liga": {"liga_id": "bronze", "nome": "Bronze", "cor": "#cd7f32", "minha_posicao": 3, "total": 3, "meus_pontos": 120,
                      "sobem": 3, "caem": 2, "fecha_em": agora(-3),
                      "tabela": [{"posicao": 1, "uid": "u1", "nome": "Colega A", "pontos": 300, "voce": False},
@@ -149,6 +168,16 @@ def rota_get(path, q):
                 "tabela": [{"posicao": 1, "uid": "u1", "nome": "Colega A", "pontos": 300, "voce": False},
                            {"posicao": 2, "uid": "u2", "nome": "Colega B", "pontos": 200, "voce": False},
                            {"posicao": 3, "uid": "aluno-teste", "nome": "Aluno Teste", "pontos": 120, "voce": True}]}
+    # O que o Estudar lista: catálogo vazio é o formato certo (lista), e é
+    # o que faz `/estudar` montar aqui em vez de quebrar em `exams.reduce`.
+    if path in ("/api/exams", "/api/provas"):
+        return []
+    if path == "/api/cursos":
+        return {"cursos": [], "ebooks": []}
+    if path == "/api/firestore/students/me/provas-progresso":
+        return {"progresso": {}}
+    if path == "/api/lembretes":
+        return {"itens": [], "vencidos": 0, "total": 0}
     if path == "/api/cursos/precos":
         return {"custo_live": 200}
     if path == "/api/revisao/trajetoria":
@@ -212,6 +241,10 @@ def rota_get(path, q):
 def rota_post(path, corpo):
     if path == "/api/firestore/students/me/answer":
         ESTADO["respostas"] += 1
+        # As duas questões da revisão vencida: respondidas, a fila esvazia.
+        if corpo.get("item_id") in ITENS[:2]:
+            ESTADO.setdefault("revisadas", set()).add(corpo.get("item_id"))
+            ESTADO["revisou"] = len(ESTADO["revisadas"]) >= 2
         n = ESTADO["respostas"]
         acertou = n % 5 not in (1, 4)  # 1ª e 4ª de cada cinco erram
         return {
@@ -233,7 +266,7 @@ def rota_post(path, corpo):
     if path == "/api/firestore/students/me/rodada/concluir":
         return {"sparks_ganhos": 0}
     if path.startswith("/api/engajamento/missoes/") and path.endswith("/resgatar"):
-        ESTADO["resgatou"] = True
+        ESTADO.setdefault("resgatadas", set()).add(path.split("/")[4])
         return {"sparks_ganhos": 5, "xp_ganho": 20, "sparks_balance": 125}
     return {}
 
@@ -242,9 +275,26 @@ class H(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         sys.stderr.write("%s\n" % (fmt % args))
 
+    def _cors(self):
+        # O dev server (`yarn start`, outra porta) também pode falar com este
+        # servidor: ecoa a origem e aceita credenciais, como o axios pede
+        # (`withCredentials`). Só vale aqui — nada disto existe em produção.
+        origem = self.headers.get("Origin")
+        if origem:
+            self.send_header("Access-Control-Allow-Origin", origem)
+            self.send_header("Access-Control-Allow-Credentials", "true")
+            self.send_header("Access-Control-Allow-Headers", "Authorization, Content-Type")
+            self.send_header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+
+    def do_OPTIONS(self):
+        self.send_response(204)
+        self._cors()
+        self.end_headers()
+
     def _json(self, obj, code=200):
         b = json.dumps(obj).encode()
         self.send_response(code)
+        self._cors()
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(b)))
         self.end_headers()
@@ -256,7 +306,10 @@ class H(BaseHTTPRequestHandler):
             ESTADO["cenario"] = u.path.split("/")[-1]
             ESTADO["respostas"] = 0
             ESTADO["treino"] = {"HAB-01": [5, 2]}
-            ESTADO["resgatou"] = False
+            ESTADO["resgatadas"] = set()
+            ESTADO["revisou"] = False
+            ESTADO["revisadas"] = set()
+            ESTADO["bloco_feito"] = False
             return self._json({"cenario": ESTADO["cenario"]})
         if u.path.startswith("/api/"):
             r = rota_get(u.path, parse_qs(u.query))

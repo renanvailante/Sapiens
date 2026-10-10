@@ -1,6 +1,6 @@
 ---
 tags: [produto, gamificacao, comunidade]
-atualizado: 2026-10-09
+atualizado: 2026-10-10
 ---
 
 # Engajamento, comunidade e conversão
@@ -61,6 +61,12 @@ fim da série, o combo a partir de 3 seguidas, e o som sintetizado (Web Audio, z
 arquivo, mudo na tela de questão). **A regra que segura tudo: só se comemora
 número que o servidor contou** — a mesma régua de `recompensaDaSerie`. A tela da
 chama abre só com `estudou_hoje`; o XP do placar some sem a diferença real.
+
+**As missões do dia são nós da trilha do Hoje** desde 2026-10-09: o prêmio
+(`sparks`, `xp` da própria missão) aparece no nó, e a missão cumprida vira um
+baú que se abre ali mesmo (`POST /engajamento/missoes/:id/resgatar`). A grade
+de missões do `PainelDeProgresso` saiu do Hoje (`semMissoes`). Ver
+[[padroes-de-tela]].
 
 ## A linha ética
 

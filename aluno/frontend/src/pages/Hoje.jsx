@@ -1,12 +1,22 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { MENTOR } from "../lib/mentor";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { api } from "../lib/api";
-import { EVENTO_SPARKS } from "../components/Navegacao";
+import { toast } from "sonner";
+import { api, errMsg } from "../lib/api";
+import { EVENTO_SPARKS, avisarSparksMudou } from "../components/Navegacao";
 import PainelDeProgresso from "../components/PainelDeProgresso";
 import DesafioPlus from "../components/celebracao/DesafioPlus";
 import Comemoracoes from "../components/celebracao/Comemoracoes";
-import ProximoPasso, { escolherPasso } from "../components/ProximoPasso";
+import { escolherPasso } from "../components/ProximoPasso";
+import BalaoDaMentis from "../components/caminho/BalaoDaMentis";
+import TrilhaDoDia from "../components/caminho/TrilhaDoDia";
+import HudDoDia from "../components/caminho/HudDoDia";
+import {
+  montarTrilhaDoDia, falaDaMentis, novidadesDaTrilha, lerTrilhaVista, gravarTrilhaVista, publicarPassoAtual,
+} from "../lib/trilhaDoDia";
+import { abrirPraticaDirigida } from "../lib/praticaDirigida";
+import { tocar } from "../lib/som";
+import { soltarConfete } from "../lib/confete";
 import OQueMudou, { conquistasDoDia } from "../components/OQueMudou";
 import PortaisDaJornada from "../components/PortaisDaJornada";
 import ExplorarOSapiens from "../components/ExplorarOSapiens";
@@ -21,50 +31,47 @@ import { quintasAteAProva } from "../lib/enem";
 import MentorUSP from "../components/MentorUSP";
 import { useDeclararContextoMentis } from "../lib/mentisContexto";
 import {
-  ArrowRight, CloudOff, RotateCw, HelpCircle, Video, Medal, Target,
+  ArrowRight, CloudOff, RotateCw, HelpCircle, Video, Medal, Gift, Loader2,
 } from "lucide-react";
 import { useAuth } from "../lib/auth";
 import { ROTAS, ANCORAS } from "../lib/rotas";
 import { MISSOES } from "../components/mapa3d/missoes";
 
 /**
- * O PAINEL — uma pergunta por dobra.
+ * O HOJE — a trilha do dia, com a Mentis conduzindo (2026-10-09).
  *
- * Esta tela foi reordenada três vezes em três dias, e a terceira passada
- * deixou duas aberturas ao mesmo tempo: as dez Portas e o Próximo Passo, uma
- * em cima da outra. São duas respostas para a mesma pergunta — "e agora?" — e
- * a de cima ganha sempre. O comentário do próprio `ProximoPasso` já dizia que
- * escolher entre dez coisas é o jeito mais confiável de não fazer nenhuma; a
- * vitrine tinha sido posta exatamente acima dele.
+ * Pedido do dono: *"estou sentindo muita fricção (…) tenho dificuldade de saber
+ * o que fazer, onde tenho que clicar. Parece que eu tenho que aprender a usar
+ * a plataforma antes de realmente estudar nela"* — e a referência total é o
+ * Duolingo, onde a tela inicial é um caminho com UM ponto aceso.
  *
- * A regra desta reescrita (2026-09-17) é uma só: **cada dobra responde a uma
- * pergunta, e nenhuma pergunta é respondida duas vezes.**
+ * O Hoje anterior (2026-09-17) já tinha a regra certa — "uma pergunta por
+ * dobra" — e mesmo assim abria com o Próximo Passo e TRÊS botões ao lado dele
+ * (o passo, o mapa, as provas), a trilha de missões do mapa como segunda
+ * porta, a tira de números, e as missões do dia numa grade lá embaixo. Cada
+ * peça respondia "e agora?" de um jeito, e o aluno tinha de escolher entre
+ * respostas — que é exatamente pensar "onde eu clico".
  *
- *   1. **Agora** — a única ação primária. Revisão vencida > bloco de hoje >
- *      missão atual > praticar. A vitrine do Mapa continua sendo o fundo
- *      desta peça: mostrar o produto e dizer o que fazer não competem mais.
- *   2. **Seu ritmo** — ofensiva, nível, liga, relógio do ENEM e as missões do
- *      dia, em azulejos baixos. O "como vai indo" numa varredura.
- *   3. **Seu foco** — a causa (cards acionáveis) e o mapa (domínio por
- *      frente) numa seção só, com UM link para o desempenho. Eram duas
- *      seções e três links para a mesma tela, com três nomes diferentes.
- *   4. **Hoje** — o que tem hora marcada. A fila de revisão só entra quando
- *      não é o passo do topo.
- *   5. **Com o mentor** — mentoria e aula ao vivo, juntas.
- *   6. **Explorar** — as dez Portas, atrás de um clique, abertas por padrão
- *      só para quem ainda não respondeu nada (ver `ExplorarOSapiens`).
- *   7. **Conquistas** — o reforço, no fim, onde reforço pertence.
- *   8. **Rodapé** — instalar o app e falar com a equipe.
+ * Agora, de cima para baixo:
  *
- * O QUE SAIU, e por quê: a grade "Ferramentas" (sete azulejos que já existiam
- * no Lançador e nas Portas) e a linha da Mentis (que já tem aba no topo, alvo
- * na barra do celular e ícone flutuante em toda tela). O Painel tinha três
- * menus de ferramentas e quatro portas para a mesma Mentis; de ~30 alvos
- * simultâneos passou a ~12 com a seção Explorar fechada.
+ *   1. **O placar** — chama, nível, liga (o topo do Duolingo).
+ *   2. **A Mentis falando** — o nome do aluno, a ofensiva e o próximo passo
+ *      numa frase, com UM botão grande. É a guia, não um rótulo de seção.
+ *   3. **A trilha do dia** — revisão vencida → blocos de hoje → as três
+ *      missões → troféu. Um nó aceso; os prêmios das missões se abrem NO nó
+ *      (`lib/trilhaDoDia.js` decide, `caminho/TrilhaDoDia.jsx` desenha).
+ *   4. O desafio do Plus, o que mudou, seu ritmo, o mentor e Explorar — tudo
+ *      depois da trilha, onde convida sem disputar a decisão.
+ *
+ * O que SAIU daqui: o `ProximoPasso` como peça (a escolha dele virou o
+ * destino das missões de prática e a lição extra — `escolherPasso` continua
+ * sendo a mesma função), a grade de missões do `PainelDeProgresso` (os nós da
+ * trilha são as missões) e os botões paralelos "Mapa de treino" / "Provas do
+ * ENEM" (estão em Estudar, que é onde se escolhe).
  *
  * A espera continua nascendo com a própria silhueta
- * (`components/Esqueleto.jsx`), então o conteúdo não empurra nada quando
- * chega.
+ * (`components/Esqueleto.jsx`), e nenhuma requisição nova entrou: a trilha é
+ * feita das mesmas dezesseis leituras O(1) que o Hoje já fazia.
  */
 
 // `by_area` (do fluxo de gabarito/Analysis) usa códigos ENEM curtos; o filtro
@@ -276,7 +283,6 @@ export default function Hoje() {
   const [redacoes, setRedacoes] = useState([]);
   const [revisoes, setRevisoes] = useState(null);
   const [cronograma, setCronograma] = useState(null);
-  const [onboarding, setOnboarding] = useState(null);
   const [custoLive, setCustoLive] = useState(null);
   // O estado de engajamento (ofensiva, nível, liga, missões) passou a ser
   // carregado AQUI em 2026-09-16, e não mais dentro de `PainelDeProgresso`:
@@ -314,9 +320,6 @@ export default function Hoje() {
       api.get("/redacao", { params: { limit: 3 } }).then(({ data }) => data.items || []),
       api.get("/revisao/fila").then(({ data }) => data),
       api.get("/cronograma").then(({ data }) => data),
-      // O que o aluno declarou no primeiro acesso: 1 `find_one` por chave
-      // primária no Mongo. É daqui que sai a meta que o cabeçalho mostra.
-      api.get("/onboarding").then(({ data }) => data),
       api.get("/engajamento/me").then(({ data }) => data),
       // Preço da aula ao vivo (`ChamadaDaLive`) — nunca escrito à mão aqui;
       // sai de `cursos.LIVE_CUSTO_SPARKS` via `GET /cursos/precos`.
@@ -326,7 +329,7 @@ export default function Hoje() {
       api.get("/revisao/trajetoria").then(({ data }) => data),
       api.get("/lembretes", { params: { limite: 1 } }).then(({ data }) => data),
     ]).then((resultados) => {
-      const [a, s, dates, h, respondidas, r, f, habs, reds, fila, semana, onb, eng, live, traj, lemb] = resultados;
+      const [a, s, dates, h, respondidas, r, f, habs, reds, fila, semana, eng, live, traj, lemb] = resultados;
       const valor = (res, vazio) => (res.status === "fulfilled" ? res.value : vazio);
 
       setAnalyses(valor(a, []));
@@ -343,7 +346,6 @@ export default function Hoje() {
       setRedacoes(valor(reds, []));
       setRevisoes(valor(fila, null));
       setCronograma(valor(semana, null));
-      setOnboarding(valor(onb, null));
       setEngajamento(valor(eng, null));
       setCustoLive(valor(live, null));
       setFalhou(resultados.some((res) => res.status === "rejected"));
@@ -595,6 +597,94 @@ export default function Hoje() {
     [revisoes, cronograma, habilidades, prioritarias, totalRespondidas],
   );
 
+  // A TRILHA DO DIA. A área da prática genérica é a mais fraca do último
+  // gabarito; sem gabarito, Matemática — a de maior peso no ENEM pela ordem do
+  // dono (`prioridade_enem.py`).
+  const areaDePratica = (weakestArea && AREA_CODE_TO_LABEL[weakestArea.area]) || "Matemática";
+  // A trilha como estava na última visita de hoje, lida UMA vez ao abrir: é
+  // dela que sai a revisão já feita (a fila esvazia, o nó fica).
+  const [vistaAoAbrir] = useState(() => lerTrilhaVista(user?.user_id));
+  const trilha = useMemo(
+    () => montarTrilhaDoDia({ revisoes, cronograma, engajamento, passo: passoAtual, area: areaDePratica, anterior: vistaAoAbrir }),
+    [revisoes, cronograma, engajamento, passoAtual, areaDePratica, vistaAoAbrir],
+  );
+
+  // O QUE FICOU PRONTO DESDE A ÚLTIMA VISITA DE HOJE. É a volta do Duolingo:
+  // o aluno termina a série, toca "Continuar a trilha" e o nó que ele acabou
+  // de cumprir salta, acende e solta confete — e a Mentis diz qual é o
+  // próximo. O estado vem do servidor (contador da missão, bloco concluído);
+  // a memória do que já foi visto é só do aparelho e só do dia.
+  const [novos, setNovos] = useState([]);
+  const [voltouDe, setVoltouDe] = useState(null);
+  useEffect(() => {
+    if (!loaded) return undefined;
+    const anterior = lerTrilhaVista(user?.user_id);
+    const chaves = novidadesDaTrilha(trilha.nos, anterior);
+    gravarTrilhaVista(user?.user_id, trilha.nos);
+    // O passo aceso fica disponível para a Mentis de qualquer outra tela.
+    publicarPassoAtual(trilha.atual);
+    if (!chaves.length) return undefined;
+    setNovos(chaves);
+    setVoltouDe(trilha.nos.find((n) => n.chave === chaves[0])?.titulo || null);
+    const comemora = setTimeout(() => {
+      tocar("combo");
+      soltarConfete({
+        de: document.querySelector(`[data-testid="trilha-dia-no-${chaves[0]}"]`),
+        quantidade: 70, forca: 10,
+      });
+    }, 500);
+    const apaga = setTimeout(() => setNovos([]), 1800);
+    return () => { clearTimeout(comemora); clearTimeout(apaga); };
+  }, [loaded, trilha, user]);
+
+  // Tocar num nó (ou no botão da Mentis). Três caminhos e nenhuma tela no
+  // meio: o baú abre aqui mesmo, a prática dirigida busca o plano do motor e
+  // entra direto nas questões, e o resto navega.
+  const [ocupado, setOcupado] = useState(null);
+  const executar = useCallback(async (no) => {
+    if (!no || ocupado) return;
+    if (no.estado === "resgatar" && no.premio?.missaoId) {
+      setOcupado(no.chave);
+      try {
+        const { data } = await api.post(`/engajamento/missoes/${no.premio.missaoId}/resgatar`);
+        tocar("moeda");
+        soltarConfete({
+          de: document.querySelector(`[data-testid="trilha-dia-no-${no.chave}"]`),
+          quantidade: 60, forca: 10, cores: ["#FFD166", "#FFC85C", "#FF9F1C", "#FFFFFF"],
+        });
+        toast.success(`+${data.sparks_ganhos} Sparks e +${data.xp_ganho} XP.`);
+        avisarSparksMudou();
+        recarregarEngajamento();
+      } catch (err) {
+        toast.error(errMsg(err, "Não foi possível abrir o baú agora."));
+      } finally {
+        setOcupado(null);
+      }
+      return;
+    }
+    // Analytics de produto (`primeiro_proximo_passo`): o mesmo marco que o
+    // Próximo Passo registrava. Idempotente no servidor, nunca bloqueia.
+    if (no.atual) api.post("/analytics/proximo-passo-iniciado").catch(() => {});
+    const acao = no.acao;
+    if (!acao) return;
+    if (acao.tipo === "dirigida") {
+      setOcupado(no.chave);
+      abrirPraticaDirigida({ api, navegar: nav, processoId: acao.processoId, escolha: acao.escolha })
+        .finally(() => setOcupado(null));
+      return;
+    }
+    nav(acao.rota);
+  }, [ocupado, nav, recarregarEngajamento]);
+
+  const fala = falaDaMentis({
+    trilha,
+    nome: user?.name,
+    ofensiva: engajamento?.ofensiva || null,
+    voltouDe,
+  });
+
+  const irParaRitmo = () => document.getElementById("ritmo")?.scrollIntoView({ behavior: "smooth", block: "start" });
+
   if (!loaded) {
     return (
       <div className="min-h-screen">
@@ -605,35 +695,24 @@ export default function Hoje() {
     );
   }
 
+  const atual = trilha.atual;
+  const pct = trilha.total ? Math.round((100 * trilha.feitos) / trilha.total) : 0;
+
   return (
     <div className="min-h-screen">
-      <div className="mx-auto max-w-5xl px-5 py-7 md:px-10 md:py-10">
-        {/* CABEÇALHO — nome, meta declarada e a porta do guia. Nada mais. */}
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex min-w-0 flex-wrap items-center gap-2.5">
-            <h1 className="titulo-tela" data-testid="dash-title">
-              Olá, {user?.name?.split(" ")[0] || "aluno"}.
-            </h1>
-            {onboarding?.meta && (
-              <span
-                className="chip"
-                data-testid="dash-meta"
-                title="Sua meta declarada no primeiro acesso"
-              >
-                <Target className="h-3.5 w-3.5 text-[#7FD8FF]" />
-                {onboarding.meta.acertos_min}–{onboarding.meta.acertos_max} acertos
-              </span>
-            )}
-          </div>
+      <div className="mx-auto max-w-3xl px-5 py-6 md:px-10 md:py-9">
+        {/* O PLACAR — chama, nível, liga — e a porta do guia. Nada mais. */}
+        <div className="mb-5 flex items-center justify-between gap-2">
+          <HudDoDia engajamento={engajamento} aoTocar={irParaRitmo} />
+          {/* Só o ícone abaixo de `sm`: a 375px o rótulo empurrava o placar
+              para duas linhas. */}
           <button
             onClick={() => setShowTour(true)}
-            // `ml-auto`: a 375px o cabeçalho quebra em duas linhas e, sem
-            // isto, o botão do guia caía alinhado à ESQUERDA embaixo do nome,
-            // parecendo um segundo título.
             className="chip pill ml-auto shrink-0"
             data-testid="dash-rever-tour"
+            aria-label="Rever o guia"
           >
-            <HelpCircle className="h-3.5 w-3.5" /> Guia
+            <HelpCircle className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Guia</span>
           </button>
         </div>
 
@@ -658,51 +737,84 @@ export default function Hoje() {
           </div>
         )}
 
-        {/* `cascata`: os blocos entram em sequência, 45ms de passo, com teto
-            no sexto. É o que dá ritmo à chegada da tela sem transformar a
-            rolagem numa espera. */}
-        <div className="cascata space-y-7">
+        <div className="cascata space-y-8">
           {/* -------------------------------------------------------------
-              1. AGORA — a ÚNICA ação primária da tela.
-
-              Esta posição foi disputada três vezes em três dias (mapa de
-              missões → próximo passo → dez portas) e a disputa era o próprio
-              problema: quem abre o app às sete da noite com uma hora livre
-              não precisa ser convencido de que o produto tem coisas, precisa
-              saber onde pisar. A vitrine continua existindo — desceu para a
-              seção "Explorar", no fim desta mesma tela, onde ela convida sem
-              disputar a decisão.
-
-              Uma pergunta por dobra. Esta dobra responde "e agora?".
+              1. A MENTIS — quem diz o que fazer, numa frase, com UM botão.
+              O botão é o mesmo nó aceso da trilha logo abaixo: duas formas
+              de chegar ao MESMO lugar, nunca dois lugares.
               ------------------------------------------------------------- */}
-          <ProximoPasso
-            habilidades={habilidades}
-            revisoes={revisoes}
-            cronograma={cronograma}
-            padroes={prioritarias}
-            totalRespondidas={totalRespondidas}
-            ofensiva={engajamento?.ofensiva?.dias ?? 0}
-            estudouHoje={engajamento?.ofensiva?.estudou_hoje ?? true}
-            diasNaSemana={weekActiveDays}
-          />
+          <div data-testid="dash-titulo-bloco">
+            <h1 className="sr-only" data-testid="dash-title">Hoje</h1>
+            <BalaoDaMentis
+              titulo={fala.titulo}
+              texto={fala.texto}
+              comemorando={Boolean(voltouDe) || trilha.completo}
+              testid="dash-mentis"
+            >
+              {atual && (
+                <button
+                  type="button"
+                  onClick={() => executar(atual)}
+                  disabled={ocupado === atual.chave}
+                  className={`pill btn-grande inline-flex w-full items-center justify-center gap-2.5 sm:w-auto ${
+                    atual.estado === "resgatar" ? "btn-calor" : "btn-sapiens"
+                  }`}
+                  data-testid="dash-cta-principal"
+                >
+                  {ocupado === atual.chave ? (
+                    <>Preparando <Loader2 className="h-5 w-5 animate-spin" /></>
+                  ) : atual.estado === "resgatar" ? (
+                    <><Gift className="h-5 w-5" /> Abrir o baú</>
+                  ) : (
+                    <>
+                      <span className="flex min-w-0 flex-col items-center leading-tight">
+                        <span>{atual.cta || "Começar"}</span>
+                        <span className="mt-0.5 max-w-[16rem] truncate text-[12px] font-semibold normal-case tracking-normal opacity-75">
+                          {atual.titulo}
+                        </span>
+                      </span>
+                      <ArrowRight className="h-5 w-5 shrink-0" />
+                    </>
+                  )}
+                </button>
+              )}
+            </BalaoDaMentis>
+          </div>
 
           {/* -------------------------------------------------------------
-              2. O QUE MUDOU — os EVENTOS, não os resumos das outras abas.
+              2. A TRILHA DO DIA. `id="missoes"`: os links antigos para as
+              missões do dia (Mentis, guia) chegam aqui — elas SÃO os nós.
+              ------------------------------------------------------------- */}
+          {/* `relative z-20`: o cartão de um nó abre POR CIMA das seções de
+              baixo, e cada filho da `.cascata` vira um contexto de
+              empilhamento próprio durante a entrada — sem isto, "O que mudou"
+              pintava por cima do cartão aberto. */}
+          <section className="relative z-20 scroll-mt-24" id={ANCORAS.HOJE_MISSOES} data-tour="hoje-missoes">
+            <div className="mb-2 flex items-end justify-between gap-3">
+              <div>
+                <div className="secao-olho">Sua trilha de hoje</div>
+                <h2 className="mt-1 font-display text-xl font-extrabold tracking-tight text-white">
+                  {trilha.completo ? "Dia completo" : `${trilha.feitos} de ${trilha.total} ${trilha.total === 1 ? "passo" : "passos"}`}
+                </h2>
+              </div>
+              <span className="text-xs text-white/40">Recomeça à meia-noite</span>
+            </div>
+            <div className="barra mb-6" data-cheia={trilha.completo}>
+              <i style={{ width: `${pct}%` }} />
+            </div>
+            <TrilhaDoDia trilha={trilha} aoExecutar={executar} ocupado={ocupado} novos={novos} />
+          </section>
 
-              Aqui havia QUATRO blocos, e cada um era o resumo de outra aba: a
-              tira da semana (Agenda), o aviso de revisão (Agenda de novo), a
-              grade de focos e domínio (Progresso) e a fileira de conquistas
-              (Progresso de novo). Somados com o resto, davam ~12 blocos
-              simultâneos e três respostas para "e agora?" na mesma rolagem.
+          {/* -------------------------------------------------------------
+              3. O DESAFIO DO PLUS — 5 dias de ofensiva → 2 dias de Sapiens
+              Plus. Está aqui desde a conta nova (0 de 5): o dono pediu que o
+              aluno saiba "desde o início".
+              ------------------------------------------------------------- */}
+          <DesafioPlus plus={engajamento?.plus} estudouHoje={engajamento?.ofensiva?.estudou_hoje} />
 
-              Nenhum deles era a coisa em si — eram vitrines de vitrines, e o
-              aluno que clicasse em qualquer uma encontrava a MESMA informação
-              maior do lado de lá. O Hoje deixou de resumir as outras abas e
-              passou a dizer o que ACONTECEU: um resumo existe sempre e por
-              isso não chama atenção; um evento só existe quando aconteceu.
-
-              Ver `components/OQueMudou.jsx` — e a regra de zero requisição
-              nova, que é a mesma do Próximo Passo.
+          {/* -------------------------------------------------------------
+              4. O QUE MUDOU — os EVENTOS, não os resumos das outras abas
+              (ver `components/OQueMudou.jsx`). Zero requisição própria.
               ------------------------------------------------------------- */}
           <OQueMudou
             revisoes={revisoes}
@@ -716,34 +828,25 @@ export default function Hoje() {
           />
 
           {/* -------------------------------------------------------------
-              3. SUA SEQUÊNCIA — ofensiva, XP e as missões do dia.
-              `id="missoes"`: a Mentis e o guia levam direto até aqui.
+              5. SEU RITMO — o detalhe do placar do topo: a semana da
+              ofensiva, o nível, a liga, o ENEM e o congelador. As missões
+              não estão aqui: elas são os nós da trilha.
               ------------------------------------------------------------- */}
-          <div className="scroll-mt-24" id={ANCORAS.HOJE_MISSOES} data-tour="hoje-missoes">
-            {/* O desafio dos 5 dias → 2 dias de Sapiens Plus. Está aqui desde
-                a conta nova (0 de 5): o dono pediu que o aluno saiba "desde o
-                início". Vira o selo do Plus ativo quando ele ganha, e some
-                depois que o presente foi usado. */}
-            <div className="mb-3">
-              <DesafioPlus plus={engajamento?.plus} estudouHoje={engajamento?.ofensiva?.estudou_hoje} />
+          <section className="scroll-mt-24" id="ritmo">
+            <div className="secao-cabeca">
+              <h2 className="secao-titulo">Seu ritmo</h2>
             </div>
-            {/* As missões de prática levam ao MESMO padrão que o Próximo
-                Passo anuncia — duas peças, um destino. */}
             <PainelDeProgresso
               dados={engajamento}
               aoMudar={recarregarEngajamento}
               pratica={passoAtual?.dirigida || null}
+              semMissoes
             />
-          </div>
+          </section>
 
           {/* -------------------------------------------------------------
-              4. COM O MENTOR. Duas peças, nesta ordem, e a ordem é o
-              argumento: a MENTORIA (um a um, o ativo mais valioso do produto)
-              e depois a AULA AO VIVO (um para muitos, toda quinta).
-
-              As duas são o mesmo mentor em graus diferentes de proximidade,
-              então ficam juntas: separá-las fazia a mentoria competir com
-              atalhos de utilidade lá embaixo, onde ela perdia sempre.
+              6. COM O MENTOR — mentoria (um a um) e aula ao vivo (toda
+              quinta), juntas: o mesmo mentor em graus de proximidade.
               ------------------------------------------------------------- */}
           <div className="space-y-3">
             <ChamadaDaMentoria />
@@ -755,13 +858,8 @@ export default function Hoje() {
           </div>
 
           {/* -------------------------------------------------------------
-              5. EXPLORAR — a descoberta, atrás de um clique.
-
-              As dez portas continuam inteiras aqui dentro. O que mudou é que
-              elas não disputam mais a primeira dobra com a ação do dia: quem
-              já tem trajetória encontra a seção fechada, e quem ainda não
-              respondeu nada a encontra aberta, porque para ele a vitrine é a
-              peça forte e o Próximo Passo é o degrau genérico.
+              7. EXPLORAR — a descoberta, atrás de um clique, aberta só para
+              quem ainda não respondeu nada (`ExplorarOSapiens`).
               ------------------------------------------------------------- */}
           <ExplorarOSapiens abertoInicial={totalRespondidas === 0} testid="dash-explorar">
             <PortaisDaJornada
@@ -776,7 +874,6 @@ export default function Hoje() {
               testid="dash-portais"
             />
           </ExplorarOSapiens>
-
         </div>
       </div>
 

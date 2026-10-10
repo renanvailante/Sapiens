@@ -54,30 +54,31 @@ test("a preferência gravada vence o padrão sugerido pelo Painel", () => {
 });
 
 /**
- * A hierarquia do Painel, travada.
+ * A hierarquia do Hoje, travada.
  *
- * A ordem das dobras foi reescrita quatro vezes em três dias, e cada passada
- * desfez a anterior sem saber que ela era uma decisão. A ordem de hoje
- * responde a uma pergunta por dobra, e cada uma responde uma diferente:
+ * A ordem das dobras foi reescrita cinco vezes, e cada passada desfez a
+ * anterior sem saber que ela era uma decisão. Desde 2026-10-09 o Hoje é a
+ * TRILHA DO DIA (Duolingo como referência total, pedido do dono), e a ordem
+ * responde a uma pergunta por dobra:
  *
- *   1. Agora ......... o que eu faço neste minuto
- *   2. Sua semana .... o que eu faço na quinta        (subiu da 4ª)
- *   3. Seu ritmo ..... como eu venho indo
- *   4. Seu desempenho. no que eu preciso mexer        (era "Seu foco")
- *   5. Com o mentor .. quem me ensina
- *   6. Explorar ...... o que mais existe aqui         (fechado por padrão)
- *   7. Conquistas .... o reforço
+ *   1. Guia ......... a Mentis diz o próximo passo, com UM botão
+ *   2. Trilha ....... o caminho de hoje, com um nó aceso (as missões são nós)
+ *   3. Plus ......... o desafio dos 5 dias, visível desde a conta nova
+ *   4. Mudou ........ os eventos, não os resumos das outras abas
+ *   5. Ritmo ........ o detalhe do placar: ofensiva, nível, liga, ENEM
+ *   6. Mentor ....... quem me ensina
+ *   7. Explorar ..... o que mais existe aqui         (fechado por padrão)
  *
  * Se você vier mexer nisto, mexa porque tem evidência de que uma dessas
  * dobras está no lugar errado — não porque a ordem pareceu estranha.
  */
-test("a ordem das dobras do Painel é a decisão, não o acaso", () => {
-  const DOBRAS = ["agora", "semana", "ritmo", "desempenho", "mentor", "explorar", "conquistas"];
-  // Explorar vem DEPOIS de tudo que é ação, planejamento e medida.
-  expect(DOBRAS.indexOf("explorar")).toBeGreaterThan(DOBRAS.indexOf("agora"));
-  expect(DOBRAS.indexOf("explorar")).toBeGreaterThan(DOBRAS.indexOf("semana"));
-  expect(DOBRAS.indexOf("explorar")).toBeGreaterThan(DOBRAS.indexOf("desempenho"));
-  // A semana é planejamento: fica logo abaixo da ação, acima da medida.
-  expect(DOBRAS.indexOf("semana")).toBe(DOBRAS.indexOf("agora") + 1);
-  expect(DOBRAS.indexOf("semana")).toBeLessThan(DOBRAS.indexOf("desempenho"));
+test("a ordem das dobras do Hoje é a decisão, não o acaso", () => {
+  const DOBRAS = ["guia", "trilha", "plus", "mudou", "ritmo", "mentor", "explorar"];
+  // Quem diz o que fazer e onde fazer vêm antes de tudo, colados.
+  expect(DOBRAS.indexOf("guia")).toBe(0);
+  expect(DOBRAS.indexOf("trilha")).toBe(1);
+  // Explorar vem DEPOIS de tudo que é ação e medida.
+  expect(DOBRAS.indexOf("explorar")).toBe(DOBRAS.length - 1);
+  // O desafio do Plus é o dono pedindo "desde o início": logo depois da trilha.
+  expect(DOBRAS.indexOf("plus")).toBe(DOBRAS.indexOf("trilha") + 1);
 });

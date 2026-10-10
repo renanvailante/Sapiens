@@ -130,6 +130,13 @@ function Carregando() {
  *  Sapiens buscam dados na montagem. Duas montadas ao mesmo tempo é o dobro
  *  das chamadas em cada navegação — e a disciplina de leitura do Firestore do
  *  produto não paga esse preço por uma transição. */
+/** A fronteira de erro, reiniciada a cada troca de rota — ver o
+ *  `componentDidUpdate` de `ErrorBoundary`. */
+function FronteiraDeErro({ children }) {
+  const { pathname } = useLocation();
+  return <ErrorBoundary chave={pathname}>{children}</ErrorBoundary>;
+}
+
 function Transicao({ children }) {
   const { pathname } = useLocation();
   return <div key={pathname} className="pagina-entra">{children}</div>;
@@ -318,13 +325,13 @@ export default function App() {
                 de 1024px. É a mesma razão das três camadas abaixo. */}
             <Navegacao />
 
-            <ErrorBoundary>
+            <FronteiraDeErro>
               <Suspense fallback={<Carregando />}>
                 <Transicao>
                   <AppRouter />
                 </Transicao>
               </Suspense>
-            </ErrorBoundary>
+            </FronteiraDeErro>
 
             {/* Ícone sempre visível, em toda página logada — ver
                 `MentisWidget.jsx` para por que ele se esconde em `/mentis`. */}

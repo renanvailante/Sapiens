@@ -1,9 +1,13 @@
-import { useCallback, useState, lazy, Suspense } from "react";
-import { Link } from "react-router-dom";
-import { Compass, PenLine, Layers } from "lucide-react";
+import { useCallback, useEffect, useState, lazy, Suspense } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Compass, PenLine, Layers, ArrowRight, Loader2 } from "lucide-react";
 import { Bloco } from "../components/Esqueleto";
+import Mentis from "../components/Mentis";
 import { ROTAS } from "../lib/rotas";
+import { api } from "../lib/api";
 import { useDeclararContextoMentis } from "../lib/mentisContexto";
+import { EVENTO_PASSO, lerPassoAtual } from "../lib/trilhaDoDia";
+import { abrirPraticaDirigida } from "../lib/praticaDirigida";
 
 // `Estudar` entra no bundle principal (ver App.js) — mas Cursos e Provas
 // arrastam KaTeX e o resto da árvore de conteúdo, e essas duas telas já são
@@ -84,6 +88,64 @@ function Modo({ para, icone: Icone, nome, frase, cor, testid }) {
   );
 }
 
+/**
+ * "NA DÚVIDA, SIGA A TRILHA" — a ponte de volta ao caminho do dia.
+ *
+ * Estudar é a tela da escolha livre, e escolha livre é exatamente onde o aluno
+ * sem plano trava (2026-10-09: "tenho dificuldade de saber o que fazer"). A
+ * Mentis lembra, no topo, que o próximo passo já está escolhido — o nó aceso
+ * da trilha que o Hoje publicou (`trilhaDoDia.publicarPassoAtual`), sem
+ * requisição nenhuma. Sem passo publicado hoje, ela manda abrir a trilha.
+ */
+function SigaATrilha() {
+  const navegar = useNavigate();
+  const [passo, setPasso] = useState(lerPassoAtual);
+  const [indo, setIndo] = useState(false);
+  useEffect(() => {
+    const reler = () => setPasso(lerPassoAtual());
+    window.addEventListener(EVENTO_PASSO, reler);
+    return () => window.removeEventListener(EVENTO_PASSO, reler);
+  }, []);
+
+  const pendente = passo && !passo.completo && passo.titulo;
+  const ir = () => {
+    const acao = passo?.acao;
+    if (!pendente || !acao || passo.estado === "resgatar") return navegar(ROTAS.HOJE);
+    if (acao.tipo === "dirigida") {
+      setIndo(true);
+      abrirPraticaDirigida({ api, navegar, processoId: acao.processoId, escolha: acao.escolha }).finally(() => setIndo(false));
+      return undefined;
+    }
+    return navegar(acao.rota || ROTAS.HOJE);
+  };
+
+  return (
+    <div className="superficie-viva superficie mb-8 flex flex-col items-stretch gap-4 p-4 sm:flex-row sm:items-center" data-testid="estudar-siga-a-trilha">
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        <Mentis className="h-12 w-12 shrink-0" variante="icone" estado="confirmando" olhar={0.6} flutuar />
+        <div className="min-w-0 flex-1">
+          <div className="secao-olho">Na dúvida, siga a trilha</div>
+          <p className="mt-0.5 text-sm font-semibold leading-snug text-white">
+            {pendente ? passo.titulo : passo?.completo ? "Sua trilha de hoje está completa — escolha à vontade." : "Seu próximo passo já está escolhido no Hoje."}
+          </p>
+        </div>
+      </div>
+      {(pendente || !passo?.completo) && (
+        <button
+          type="button"
+          onClick={ir}
+          disabled={indo}
+          className="pill btn-sapiens inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-bold disabled:opacity-60 sm:w-auto"
+          data-testid="estudar-siga-a-trilha-ir"
+        >
+          {indo ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+          {pendente ? passo.cta || "Começar" : "Ver a trilha"} <ArrowRight className="h-4 w-4" />
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function Estudar() {
   const [modoDaProva, setModoDaProva] = useState("provas");
   const respondendo = modoDaProva === "practice";
@@ -108,6 +170,8 @@ export default function Estudar() {
                 em cima, as duas coisas que pedem a tela inteira.
               </p>
             </header>
+
+            <SigaATrilha />
 
             {/* OS MODOS QUE NÃO CABEM EM COLUNA. Ficam no topo porque são os
                 dois que o aluno não encontraria sozinho: um acabou de sair da

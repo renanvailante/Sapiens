@@ -49,17 +49,19 @@ const STEPS = [
     },
   },
   // O QUE FAZER. O único passo que importa de verdade no primeiro minuto.
+  // Desde 2026-10-09 o alvo é o nó aceso da TRILHA DO DIA — o caminho do
+  // Duolingo no Hoje (`components/caminho/TrilhaDoDia.jsx`).
   {
     target: "dash-agora",
-    title: "Comece por aqui",
-    text: "Esta é a sua próxima ação, escolhida pelo que você já respondeu. Quando estiver em dúvida sobre o que estudar, é esta a resposta.",
+    title: "Sua trilha de hoje",
+    text: "O círculo que brilha é sempre o seu próximo passo. Toque nele e comece — quando terminar, eu acendo o seguinte.",
   },
   // ONDE PEDIR AJUDA. A camada, não a página.
   {
     target: "mentis-widget",
     mascote: true,
     title: "Estou em toda tela",
-    text: "Este ícone me chama de qualquer lugar do Sapiens, sem você perder o que estava fazendo.",
+    text: "Toque em mim de qualquer lugar para ver o seu próximo passo ou para conversar. No meu balão, o alto-falante faz eu falar em voz alta.",
   },
   // ONDE ESTÁ O RESTO. Não o que É o resto — só onde ele mora.
   // ONDE ESTÃO AS SUAS COISAS. Não é mais "onde mora o resto do produto":

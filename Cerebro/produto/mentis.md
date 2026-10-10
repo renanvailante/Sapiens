@@ -1,6 +1,6 @@
 ---
 tags: [produto, ia, mentis]
-atualizado: 2026-10-06
+atualizado: 2026-10-10
 ---
 
 # Mentis — a IA e o mascote
@@ -13,13 +13,45 @@ fala como Mentis mora em `mentis_routes.py` (`/api/mentis/*`); a rota antiga
 ## A regra de arte, que vale mais que qualquer detalhe
 
 > **Mentor, não bichinho.** Sem emoji, sem euforia, olhos em cápsula estreita —
-> ponto redondo lê como companion de robô.
+> ponto redondo lê como companion de robô. **A forma não muda**: núcleo de luz,
+> sem animal, sem boca.
+
+**Revisto em 2026-10-09: a regra passou a valer para a FALA, não para o
+movimento.** O dono pediu a Mentis conduzindo o aluno "com muitas animações, e
+até mesmo uma voz". Ela ganhou estados em `Mentis.jsx`: `falando` (o núcleo
+respira no ritmo e duas ondas saem do lado — é como ela fala sem boca),
+`feliz` (olhos em arco e um salto; **só** quando há o que celebrar, contado pelo
+servidor), `surpresa`, e as props `olhar` (-1 a 1, ela olha para o que aponta)
+e `flutuar`. O que **não** mudou: o texto dela continua sem emoji e sem
+euforia — `trilhaDoDia.test.js` falha se uma fala da trilha tiver emoji.
 
 `components/Mentis.jsx` tem `variante="icone"` porque em 16–24px a órbita vira
 borrão; só núcleo + olhos sobrevive.
 
 Na narrativa da marca ela é **o guia, nunca o herói** ([[marca]]). O bloco "você é
 o guia" está nos prompts `CHAT_SYSTEM` e `INTERVENCAO_SYSTEM`.
+
+## A guia do produto (2026-10-09)
+
+Ela deixou de ser só a porta do chat e virou **quem diz o que fazer**, como o
+personagem do Duolingo — de graça, sem chamar modelo:
+
+- **No Hoje, no conteúdo:** o balão (`caminho/BalaoDaMentis`) com saudação, a
+  ofensiva e o nó aceso da trilha numa frase, e UM botão. As frases são
+  template sobre dado real (`trilhaDoDia.falaDaMentis`), como a abertura do chat.
+  O mesmo balão conduz o `/bem-vindo`.
+- **Em toda tela, flutuando:** o botão é a própria personagem (não mais um
+  ícone de brilho). Na primeira visita a cada área ela diz, num balão, o que se
+  faz ali (`lib/dicasDaMentis.js` — uma vez por área por aparelho, nunca por
+  cima de questão, nunca no Hoje). O painel abre com **"Seu próximo passo"**
+  antes da conversa paga: o nó que o Hoje publicou. Navegar nunca custa Spark.
+- **A voz** (`lib/vozDaMentis.js`) é a síntese do próprio aparelho
+  (`speechSynthesis`): zero arquivo, zero custo, nada sai do aparelho.
+  **Desligada por padrão** — frase falada sem aviso no ônibus é
+  constrangimento — com o alto-falante sempre no balão; quem liga fica com ela
+  ligada (por aparelho). Prefere voz pt-BR "natural"/feminina. O Chrome só fala
+  depois de um gesto do aluno; antes disso a chamada é silenciosa e o texto
+  continua no balão.
 
 ## As superfícies pagas
 

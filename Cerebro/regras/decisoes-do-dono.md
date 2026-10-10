@@ -1,6 +1,6 @@
 ---
 tags: [regra, produto]
-atualizado: 2026-10-09
+atualizado: 2026-10-10
 ---
 
 # Decisões que são do dono, não minhas
@@ -78,6 +78,18 @@ portanto o mais barato de mudar: o prêmio ser **uma vez por aluno** e não a ca
 dias; "Plus" ser Mentis ilimitada + cursos/e-books + sala VIP, **sem a live**; e
 a conta que já tinha ≥ 5 dias no dia da entrada ganhar na primeira leitura.
 Mecânica em [[engajamento]].
+
+## O aluno nunca pensa "e agora?" — o Hoje é uma trilha (Duolingo)
+
+Pedido de 2026-10-09: *"quero que o aluno saiba exatamente o que fazer sempre
+(…) nunca ele pode ficar pensando 'e agora? onde tenho que ir?'. Você pode usar
+a Mentis pra guiar (…) com muitas animações, e até mesmo uma voz"*. A régua
+(um caminho, um nó aceso, a Mentis dizendo o próximo passo em toda tela) é
+dele. **O que é meu e foi declarado como meu**, portanto o mais barato de
+mudar: a ordem dos nós (revisão → blocos → missões → troféu → lição extra), a
+voz **desligada** por padrão, a dica de cada área aparecer uma vez por
+aparelho, e Matemática como área da prática quando não há gabarito. Mecânica
+em [[padroes-de-tela]] e [[mentis]].
 
 ## O pipeline está CONGELADO
 
