@@ -132,7 +132,7 @@ function Cartao({ no, aoExecutar, aoFechar, ocupado }) {
 }
 
 export default function TrilhaDoDia({ trilha, aoExecutar, ocupado = null, novos = [], testid = "trilha-dia" }) {
-  const nos = trilha?.nos || [];
+  const nos = useMemo(() => trilha?.nos || [], [trilha]);
   const [aberto, setAberto] = useState(null);
   const raiz = useRef(null);
 
