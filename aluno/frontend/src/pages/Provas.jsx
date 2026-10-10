@@ -371,11 +371,8 @@ function FechamentoDaSerie({ respostas, filtro, onExit, abrindo, aoPraticar, xpI
           <button
             onClick={() => aoPraticar(dirigida.processoId, {
               tipo: dirigida.tipo,
-              linha: {
-                processo_id: dirigida.processoId,
-                processo_nome: dirigida.foco,
-                erro_dominante: dirigida.erro ? { nome: dirigida.erro } : null,
-              },
+              // Só o id: o rótulo do ponto sai de `lib/rotulosDoMotor`.
+              linha: { processo_id: dirigida.processoId, erro_dominante: dirigida.erroId || null },
             })}
             disabled={abrindo}
             className={botaoPrimario}

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { api, errMsg } from "../lib/api";
 import Mentis from "./Mentis";
+import { rotuloDaIntervencao } from "../lib/rotulosDoMotor";
 import { Lightbulb, AlertTriangle, CircleCheck, Loader2, ChevronDown, ChevronRight } from "lucide-react";
 
 /**
@@ -107,9 +108,9 @@ function Conteudo({ dados, evidencia }) {
         </Secao>
       )}
 
-      {previa?.intervencao_nome && (
+      {rotuloDaIntervencao(previa?.intervencao_id) && (
         <div className="pt-3 border-t border-zinc-100 text-[11px] text-zinc-400">
-          Abordagem catalogada: {previa.intervencao_nome}
+          Abordagem catalogada: {rotuloDaIntervencao(previa.intervencao_id)}
         </div>
       )}
     </div>

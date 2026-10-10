@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../lib/auth";
 import { ROTAS, ANCORAS } from "../lib/rotas";
+import { MISSOES } from "../components/mapa3d/missoes";
 
 /**
  * O PAINEL — uma pergunta por dobra.
@@ -520,7 +521,9 @@ export default function Hoje() {
       .forEach((h) => {
         lista.push({
           key: `hab-${h.hab_id}`,
-          titulo: h.nome,
+          // O rótulo da missão do mapa (`mapa3d/missoes.js`): a frase da
+          // habilidade é nome de catálogo e não aparece para o aluno.
+          titulo: MISSOES[h.hab_id]?.rotulo || "Uma habilidade do mapa",
           descricao: "Há uma missão curta do mapa sobre isto.",
           medida: `${Math.round(h.percentual ?? 0)}%`,
           medidaLabel: "no treino",

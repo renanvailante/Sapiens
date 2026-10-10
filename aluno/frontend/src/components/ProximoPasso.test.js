@@ -88,17 +88,17 @@ describe("escolherPasso", () => {
 
   const causa = {
     origem: "error_trace",
-    processo_id: "P-10",
-    processo_nome: "Interpretar a relação entre grandezas",
+    processo_id: "PROC-QUANT-02",
+    processo_nome: "Inferir e aplicar relacao proporcional entre grandezas",
     sem_intervencao_catalogada: false,
     provisorio: true,
     ocorrencias_raiz: 4,
-    erro_dominante: { nome: "Inverter a direção da proporção", sem_catalogo: false },
+    erro_dominante: { id: "ERR-05", nome: "Confusao de direcao em relacao proporcional", sem_catalogo: false },
   };
   const desempenho = {
     origem: "desempenho",
-    processo_id: "P-12",
-    processo_nome: "Comparar frações",
+    processo_id: "PROC-QUANT-01",
+    processo_nome: "Comparar e ordenar grandezas",
     percentual_acerto: 40,
     respondidas: 10,
   };
@@ -116,10 +116,12 @@ describe("escolherPasso", () => {
     const habilidades = catalogoIntocado();
     habilidades[7] = { ...habilidades[7], respondidas: 4, acertos: 1, percentual: 25, classificacao: "fraco" };
     const passo = escolherPasso({ ...vazio, habilidades, padroes: [causa], totalRespondidas: 40 });
-    expect(passo.chave).toBe("padrao-P-10");
-    expect(passo.titulo).toBe("Interpretar a relação entre grandezas");
-    expect(passo.porque).toContain("«Inverter a direção da proporção»");
-    expect(passo.dirigida.processoId).toBe("P-10");
+    expect(passo.chave).toBe("padrao-PROC-QUANT-02");
+    // O RÓTULO DE PRODUTO, nunca o nome do catálogo (inviolável).
+    expect(passo.titulo).toBe("Proporção");
+    expect(passo.porque).toContain("«Proporção invertida»");
+    expect(passo.titulo + passo.porque).not.toMatch(/relacao proporcional|Confusao de direcao/);
+    expect(passo.dirigida.processoId).toBe("PROC-QUANT-02");
     expect(passo.provisorio).toBe(true);
   });
 
@@ -131,9 +133,10 @@ describe("escolherPasso", () => {
   test("a revisão diz DE QUE é a questão que voltou", () => {
     const passo = escolherPasso({
       ...vazio,
-      revisoes: { resumo: { questoes: 2 }, itens: [{ processo_nome: "Ler o gráfico", rotulo: "erro recorrente" }] },
+      revisoes: { resumo: { questoes: 2 }, itens: [{ processo_id: "PROC-TEXT-01", processo_nome: "Identificar informacao explicita em texto ou representacao estruturada", rotulo: "erro recorrente" }] },
     });
-    expect(passo.porque).toContain("«Ler o gráfico»");
+    expect(passo.porque).toContain("«Achar o dado»");
+    expect(passo.porque).not.toMatch(/Identificar informacao/);
     expect(passo.porque).toContain("erro recorrente");
   });
 
@@ -142,7 +145,7 @@ describe("escolherPasso", () => {
     habilidades[2] = { ...habilidades[2], respondidas: 5, acertos: 1, percentual: 20, classificacao: "fraco" };
     expect(escolherPasso({ ...vazio, habilidades, padroes: [desempenho] }).chave).toBe("hab-HAB-03");
     const semTrilha = escolherPasso({ ...vazio, habilidades: catalogoIntocado(), padroes: [desempenho], totalRespondidas: 30 });
-    expect(semTrilha.chave).toBe("padrao-P-12");
+    expect(semTrilha.chave).toBe("padrao-PROC-QUANT-01");
     expect(semTrilha.porque).toContain("40%");
     expect(semTrilha.provisorio).toBe(false);
   });
@@ -154,7 +157,7 @@ describe("escolherPasso", () => {
       erro_dominante: { nome: "erro não catalogado nesta versão", sem_catalogo: true },
     };
     const passo = escolherPasso({ ...vazio, padroes: [sentinela], totalRespondidas: 20 });
-    expect(passo.chave).toBe("padrao-P-10");
+    expect(passo.chave).toBe("padrao-PROC-QUANT-02");
     expect(passo.porque).not.toMatch(/catalogado/);
     expect(passo.porque).toContain("4 dos seus erros");
   });

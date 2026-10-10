@@ -17,6 +17,7 @@ import ContagemEnem from "../components/ContagemEnem";
 import { useDeclararContextoMentis } from "../lib/mentisContexto";
 import { marcarAcessoDaLive } from "../lib/live";
 import { quintasAteAProva } from "../lib/enem";
+import { rotuloDaLinha } from "../lib/rotulosDoMotor";
 
 /**
  * `/aula-ao-vivo` — a AULA AO VIVO DE QUINTA, sozinha, como ferramenta.
@@ -236,8 +237,8 @@ export default function AulaAoVivo() {
         .filter((l) => !l.erro_dominante && l.percentual_acerto != null && l.respondidas > 0)
         .slice(0, 1)
         .map((l) => ({
-          titulo: l.processo_nome,
-          evidencia: `${Math.round(l.percentual_acerto)}% de acerto em ${l.respondidas} questões de ${l.processo_nome}`,
+          titulo: rotuloDaLinha(l),
+          evidencia: `${Math.round(l.percentual_acerto)}% de acerto em ${l.respondidas} questões de ${rotuloDaLinha(l)}`,
         })),
     [perfil],
   );

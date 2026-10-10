@@ -32,6 +32,8 @@
  * catálogo do servidor (`GET /sparks/packages`).
  */
 
+import { idDoErro, rotuloDaLinha, rotuloDoErro } from "./rotulosDoMotor";
+
 /** Uma frase só sobrevive se tiver número verdadeiro atrás. */
 const pct = (n) => `${Math.round(n)}%`;
 
@@ -57,18 +59,18 @@ export function argumentosDaLive({
   //    vai mal em matemática", é "o padrão que se repete nos SEUS erros tem
   //    nome". Só aparece com `erro_dominante` — sem causa nomeada, esta linha
   //    seria a de desempenho com roupa de diagnóstico.
-  const raiz = fracos.find((f) => f?.erro_dominante?.nome);
+  const raiz = fracos.find((f) => idDoErro(f));
   if (raiz) {
     const medida =
       raiz.percentual_acerto != null
-        ? ` Você acerta ${pct(raiz.percentual_acerto)} em ${raiz.processo_nome}.`
+        ? ` Você acerta ${pct(raiz.percentual_acerto)} em ${rotuloDaLinha(raiz)}.`
         : "";
     lista.push({
       id: "causa-raiz",
       forca: 100,
       titulo: "A pergunta que você devia levar para quinta",
       texto:
-        `O padrão que mais se repete nos seus erros é «${raiz.erro_dominante.nome}».${medida}` +
+        `O padrão que mais se repete nos seus erros é «${rotuloDoErro(idDoErro(raiz))}».${medida}` +
         " Os últimos minutos da aula são de perguntas abertas — essa é a sua.",
     });
   }

@@ -23,11 +23,11 @@ import {
 
 const linhaCausa = {
   origem: "error_trace",
-  processo_id: "P-10",
-  processo_nome: "Interpretar a relação entre grandezas",
+  processo_id: "PROC-QUANT-02",
+  processo_nome: "Inferir e aplicar relacao proporcional entre grandezas",
   sem_intervencao_catalogada: false,
   provisorio: true,
-  erro_dominante: { id: "E-3", nome: "Inverter a direção da proporção", sem_catalogo: false },
+  erro_dominante: { id: "ERR-05", nome: "Confusao de direcao em relacao proporcional", sem_catalogo: false },
   percentual_acerto: 38,
   respondidas: 13,
 };
@@ -48,7 +48,7 @@ const linhaDesempenho = {
 };
 
 const detalhe = (over = {}) => ({
-  processo: { id: "P-10", nome: "Interpretar a relação entre grandezas" },
+  processo: { id: "PROC-QUANT-02", nome: "Inferir e aplicar relacao proporcional entre grandezas" },
   desempenho: { respondidas: 13, acertos: 5, percentual_acerto: 38.5 },
   provisorio: true,
   intervencao: {
@@ -75,7 +75,7 @@ describe("escolherPadrao", () => {
   test("causa com catálogo vence sentinela, mesmo vindo depois na fila", () => {
     const e = escolherPadrao([linhaSentinela, linhaCausa]);
     expect(e.tipo).toBe("causa");
-    expect(e.linha.processo_id).toBe("P-10");
+    expect(e.linha.processo_id).toBe("PROC-QUANT-02");
   });
 
   test("só sentinela: o ponto aparece, mas como traço (sem nome de erro)", () => {
@@ -107,8 +107,10 @@ describe("montarPraticaDirigida", () => {
 
   test("o porquê viaja junto: foco, erro, objetivo, dois passos e o sinal", () => {
     const d = montarPraticaDirigida(detalhe(), { tipo: "causa", linha: linhaCausa }).state.dirigida;
-    expect(d.foco).toBe("Interpretar a relação entre grandezas");
-    expect(d.erro).toBe("Inverter a direção da proporção");
+    // Rótulos de produto: o nome do catálogo não viaja nem no state.
+    expect(d.foco).toBe("Proporção");
+    expect(d.erro).toBe("Proporção invertida");
+    expect(JSON.stringify(d)).not.toMatch(/relacao proporcional|Confusao de direcao/);
     expect(d.objetivo).toBe("Fixar a direção da relação.");
     expect(d.comoPraticar).toEqual(["Passo 1", "Passo 2"]);
     expect(d.sinal).toBe("Você detecta a resposta absurda.");
@@ -152,11 +154,11 @@ describe("abrirPraticaDirigida", () => {
   test("navega para a prática com o state quando o plano tem questões", async () => {
     const api = { get: jest.fn().mockResolvedValue({ data: detalhe() }) };
     const navegar = jest.fn();
-    const ok = await abrirPraticaDirigida({ api, navegar, processoId: "P-10", escolha: { tipo: "causa", linha: linhaCausa } });
+    const ok = await abrirPraticaDirigida({ api, navegar, processoId: "PROC-QUANT-02", escolha: { tipo: "causa", linha: linhaCausa } });
     expect(ok).toBe(true);
-    expect(api.get).toHaveBeenCalledWith("/motor/habilidade/P-10");
+    expect(api.get).toHaveBeenCalledWith("/motor/habilidade/PROC-QUANT-02");
     expect(navegar.mock.calls[0][0]).toMatch(/^\/estudar\/provas\?item_ids=/);
-    expect(navegar.mock.calls[0][1].state.dirigida.foco).toBe("Interpretar a relação entre grandezas");
+    expect(navegar.mock.calls[0][1].state.dirigida.foco).toBe("Proporção");
   });
 
   test("falha de rede nunca deixa o clique sem destino", async () => {
@@ -231,7 +233,7 @@ describe("resumoDaSerie e fraseDoFechamento", () => {
 });
 
 describe("destinoDaMissao", () => {
-  const pratica = { processoId: "P-10", escolha: { tipo: "causa" } };
+  const pratica = { processoId: "PROC-QUANT-02", escolha: { tipo: "causa" } };
 
   test("missão de prática vai ao padrão quando o motor aponta um", () => {
     for (const id of ["responder5", "responder15", "acertar8"]) {

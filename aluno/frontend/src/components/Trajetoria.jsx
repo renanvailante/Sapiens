@@ -1,4 +1,5 @@
 import { Sprout, Repeat, Lightbulb, CircleCheck, CircleX, Shuffle } from "lucide-react";
+import { rotuloDaLinha } from "../lib/rotulosDoMotor";
 
 /**
  * Trajetória cognitiva (Fase 4) — a única evidência de que o produto funcionou.
@@ -78,7 +79,7 @@ export default function Trajetoria({ dados }) {
 
       {habilidades.map((h) => (
         <div key={h.processo_id} className="card-sapiens rounded-2xl p-5" data-testid={`trajetoria-${h.processo_id}`}>
-          <div className="font-display text-lg font-bold tracking-tight text-zinc-950">{h.processo_nome}</div>
+          <div className="font-display text-lg font-bold tracking-tight text-zinc-950">{rotuloDaLinha(h)}</div>
 
           <ol className="mt-4 space-y-0">
             {h.marcos.map((m, i) => {

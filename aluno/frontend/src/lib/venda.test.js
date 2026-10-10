@@ -33,10 +33,10 @@ const PACOTE_BARATO_COM_LIVES = {
 };
 
 const RAIZ = {
-  processo_id: "PC-07",
-  processo_nome: "Leitura de gráficos",
+  processo_id: "PROC-TEXT-01",
+  processo_nome: "Identificar informacao explicita em texto ou representacao estruturada",
   percentual_acerto: 41.6,
-  erro_dominante: { id: "ERR-3", nome: "Confundir eixo com escala" },
+  erro_dominante: { id: "ERR-06", nome: "Leitura equivocada de representacao grafica/tabular" },
 };
 
 describe("qual argumento ganha", () => {
@@ -48,7 +48,10 @@ describe("qual argumento ganha", () => {
       ofensiva: 30,
     });
     expect(a.id).toBe("causa-raiz");
-    expect(a.texto).toContain("Confundir eixo com escala");
+    // O rótulo de produto — o nome do catálogo nunca chega ao aluno.
+    expect(a.texto).toContain("Ponto errado no gráfico");
+    expect(a.texto).toContain("Achar o dado");
+    expect(a.texto).not.toMatch(/Leitura equivocada|Identificar informacao/);
     expect(a.texto).toContain("42%"); // 41,6 arredondado, o número que ele vê no Painel
   });
 

@@ -6,6 +6,7 @@ import Baloes, { BALOES_INICIAIS } from "../components/MentisBaloes";
 import MentisAtalhos from "../components/MentisAtalhos";
 import MentisAcao from "../components/MentisAcao";
 import { useContextoMentisAtual } from "../lib/mentisContexto";
+import { rotuloDoProcesso, rotuloDoErro } from "../lib/rotulosDoMotor";
 import { Send, Zap, Clock, Target, TrendingUp, AlertCircle, Infinity as InfinityIcon } from "lucide-react";
 
 /**
@@ -64,7 +65,7 @@ function Dossie({ dossie }) {
           <ul className="mt-2 space-y-1.5">
             {fracos.map((f) => (
               <li key={f.id} className="text-xs text-white/70 flex items-baseline justify-between gap-2">
-                <span className="truncate">{f.nome}</span>
+                <span className="truncate">{rotuloDoProcesso(f.id)}</span>
                 <span className="font-mono-alt shrink-0 text-white/40">
                   {f.acertos}/{f.respondidas}
                 </span>
@@ -82,7 +83,7 @@ function Dossie({ dossie }) {
           <ul className="mt-2 space-y-1.5">
             {fortes.map((f) => (
               <li key={f.id} className="text-xs text-white/70 flex items-baseline justify-between gap-2">
-                <span className="truncate">{f.nome}</span>
+                <span className="truncate">{rotuloDoProcesso(f.id)}</span>
                 <span className="font-mono-alt shrink-0 text-white/40">
                   {f.acertos}/{f.respondidas}
                 </span>
@@ -99,7 +100,7 @@ function Dossie({ dossie }) {
           </div>
           {padroes.map((p, i) => (
             <div key={i} className="mt-2 text-xs text-white/70 leading-relaxed">
-              <span className="text-[#7FD8FF]">{p.erro_nome}</span> em {p.processo_nome}.
+              <span className="text-[#7FD8FF]">{rotuloDoErro(p.erro_id)}</span> em {rotuloDoProcesso(p.processo_id)}.
             </div>
           ))}
         </div>

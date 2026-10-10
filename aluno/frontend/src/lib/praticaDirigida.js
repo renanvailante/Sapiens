@@ -1,4 +1,5 @@
 import { ROTAS } from "./rotas";
+import { idDoErro, rotuloDoErro, rotuloDoProcesso } from "./rotulosDoMotor";
 
 /**
  * PRÁTICA DIRIGIDA — o erro virando sequência.
@@ -56,7 +57,7 @@ export function escolherPadrao(prioritarias = []) {
   const deTraco = linhas.filter((l) => l.origem === "error_trace" && l.processo_id);
 
   const comCausa = deTraco.find(
-    (l) => l.erro_dominante?.nome && !l.erro_dominante?.sem_catalogo && !l.sem_intervencao_catalogada,
+    (l) => idDoErro(l) && !l.erro_dominante?.sem_catalogo && !l.sem_intervencao_catalogada,
   );
   if (comCausa) return { tipo: "causa", linha: comCausa };
 
@@ -101,8 +102,12 @@ export function montarPraticaDirigida(detalhe, escolha = null) {
         // (erros da própria série). É o que a tela de questões diz ao aluno.
         tipo: escolha?.tipo || null,
         processoId: detalhe?.processo?.id || escolha?.linha?.processo_id || null,
-        foco: detalhe?.processo?.nome || escolha?.linha?.processo_nome || null,
-        erro: escolha?.tipo === "causa" ? escolha.linha.erro_dominante?.nome || null : null,
+        // Rótulo de produto, nunca o nome do catálogo (`lib/rotulosDoMotor`).
+        foco: rotuloDoProcesso(detalhe?.processo?.id || escolha?.linha?.processo_id),
+        erro: escolha?.tipo === "causa" && idDoErro(escolha.linha) ? rotuloDoErro(idDoErro(escolha.linha)) : null,
+        // O id viaja para a PRÓXIMA série do mesmo ponto (modo contínuo e
+        // "Mais deste ponto") manter o mesmo porquê sem buscar o perfil de novo.
+        erroId: escolha?.tipo === "causa" ? idDoErro(escolha.linha) : null,
         objetivo: comEnquadramento ? plano.objetivo || null : null,
         comoPraticar: comEnquadramento ? (plano.como_praticar || []).slice(0, 2) : [],
         sinal: comEnquadramento ? plano.sinal_de_progresso || null : null,

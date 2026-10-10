@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import CardDeMelhora from "./CardDeMelhora";
 import { CalendarClock, Repeat, TrendingDown, Shuffle, CircleAlert, Sprout } from "lucide-react";
 import { ROTAS } from "../lib/rotas";
+import { rotuloDaLinha } from "../lib/rotulosDoMotor";
 
 /**
  * A fila de revisões de hoje — o que a Fase 1 entrega ao aluno.
@@ -170,11 +171,11 @@ export default function FilaDeRevisao({ fila, onSaldo }) {
               key={item.processo_id}
               testid={`fila-item-${item.processo_id}`}
               rotuloTopo={est.rotulo}
-              titulo={item.processo_nome}
+              titulo={rotuloDaLinha(item)}
               descricao={est.explicacao}
               medida={item.vencido ? "hoje" : null}
               medidaLabel={item.vencido ? "revisar" : null}
-              assunto={item.processo_nome}
+              assunto={rotuloDaLinha(item)}
               evidencia={evidenciaDe(item)}
               // O destino principal do card é sempre a prática — a fila só faz
               // sentido se levar a responder questão. Quando o acervo tem

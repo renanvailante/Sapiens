@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import Mentis from "./Mentis";
+import { rotuloDaLinha } from "../lib/rotulosDoMotor";
 import { Lightbulb, ArrowRight, X, Repeat, TrendingDown, CalendarClock } from "lucide-react";
 
 /**
@@ -79,7 +80,7 @@ export default function ProfessorInvisivel({ gatilho, onFechar }) {
       </div>
 
       <div className="mt-2 font-display text-lg font-bold leading-snug tracking-tight text-zinc-950">
-        {gatilho.processo_nome}
+        {rotuloDaLinha(gatilho)}
       </div>
       <p className="mt-1 text-sm leading-relaxed text-zinc-600">{gatilho.explicacao}</p>
 

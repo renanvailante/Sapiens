@@ -4,6 +4,7 @@ import {
 } from "lucide-react";
 import { ROTAS, ANCORAS, com } from "../lib/rotas";
 import { diaLocal } from "../lib/atividade";
+import { rotuloDoProcesso } from "../lib/rotulosDoMotor";
 
 /**
  * O QUE MUDOU — os EVENTOS do aluno, não os lugares do produto.
@@ -110,8 +111,9 @@ export function microvitoria(trajetoria) {
   let melhor = null;
   for (const h of trajetoria?.habilidades || []) {
     for (const m of h?.marcos || []) {
-      if (!FRASES_DA_VITORIA[m?.tipo] || !m.quando || !h.processo_nome) continue;
-      if (!melhor || m.quando > melhor.quando) melhor = { ...m, processo_nome: h.processo_nome };
+      if (!FRASES_DA_VITORIA[m?.tipo] || !m.quando || !h.processo_id) continue;
+      // O rótulo de produto, nunca o nome do catálogo (`lib/rotulosDoMotor`).
+      if (!melhor || m.quando > melhor.quando) melhor = { ...m, processo_nome: rotuloDoProcesso(h.processo_id) };
     }
   }
   if (!melhor) return null;

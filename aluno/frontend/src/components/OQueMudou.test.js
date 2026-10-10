@@ -16,7 +16,7 @@ import { eventosDoDia, microvitoria, conquistasDoDia } from "./OQueMudou";
 const haDias = (n) => new Date(Date.now() - n * 86400000).toISOString();
 
 const trajetoria = (marcos, nome = "Interpretar a relação entre grandezas") => ({
-  habilidades: [{ processo_id: "P-10", processo_nome: nome, marcos }],
+  habilidades: [{ processo_id: "PROC-QUANT-02", processo_nome: nome, marcos }],
 });
 
 describe("microvitoria", () => {
@@ -37,13 +37,14 @@ describe("microvitoria", () => {
   test("pega o acerto mais recente entre todas as habilidades", () => {
     const t = {
       habilidades: [
-        { processo_nome: "A", marcos: [{ tipo: "reteste_ok", quando: haDias(2) }] },
-        { processo_nome: "B", marcos: [{ tipo: "transferencia", quando: haDias(1) }] },
+        { processo_id: "PROC-QUANT-01", processo_nome: "A", marcos: [{ tipo: "reteste_ok", quando: haDias(2) }] },
+        { processo_id: "PROC-TEXT-02", processo_nome: "B", marcos: [{ tipo: "transferencia", quando: haDias(1) }] },
       ],
     };
     const v = microvitoria(t);
     expect(v.tipo).toBe("transferencia");
-    expect(v.processo_nome).toBe("B");
+    // Rótulo de produto do processo, não o nome que veio na linha.
+    expect(v.processo_nome).toBe("Ler nas entrelinhas");
   });
 
   test("velha demais deixa de ser notícia", () => {
@@ -55,7 +56,7 @@ describe("eventosDoDia com a vitória", () => {
   test("revisão acertada aparece com o nome do ponto e leva à trajetória", () => {
     const eventos = eventosDoDia({ trajetoria: trajetoria([{ tipo: "reteste_ok", quando: haDias(0) }]) });
     const v = eventos.find((e) => e.chave === "vitoria");
-    expect(v.titulo).toBe("A revisão de «Interpretar a relação entre grandezas» saiu certa");
+    expect(v.titulo).toBe("A revisão de «Proporção» saiu certa");
     expect(v.rota).toBe("/progresso#trajetoria");
   });
 

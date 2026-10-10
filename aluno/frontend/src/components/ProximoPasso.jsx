@@ -9,6 +9,7 @@ import { diaLocal } from "../lib/atividade";
 import { ROTAS } from "../lib/rotas";
 import { api } from "../lib/api";
 import { escolherPadrao, abrirPraticaDirigida } from "../lib/praticaDirigida";
+import { rotuloDaLinha, rotuloDoErro, idDoErro } from "../lib/rotulosDoMotor";
 
 // Analytics de produto: `primeiro_proximo_passo` (ver `product_analytics.py`).
 // Fire-and-forget — nunca atrasa nem bloqueia o clique real do aluno, e o
@@ -83,7 +84,7 @@ function passoDoPadrao(escolha) {
   const texto = {
     causa: {
       olho: "O padrão que mais se repete",
-      porque: `Nos seus erros aqui, o que mais se repete é «${linha.erro_dominante?.nome}». Separei questões novas que exercitam exatamente esse ponto.`,
+      porque: `Nos seus erros aqui, o que mais se repete é «${rotuloDoErro(idDoErro(linha))}». Separei questões novas que exercitam exatamente esse ponto.`,
     },
     traco: {
       olho: "Onde mais erros começam",
@@ -98,7 +99,8 @@ function passoDoPadrao(escolha) {
     chave: `padrao-${linha.processo_id}`,
     icone: Crosshair,
     olho: texto.olho,
-    titulo: linha.processo_nome,
+    // Rótulo de produto, nunca o nome do catálogo (`lib/rotulosDoMotor`).
+    titulo: rotuloDaLinha(linha),
     porque: texto.porque,
     // A rota é a RESERVA (sem JS, clique do meio, plano indisponível). O
     // clique normal busca o plano do motor e abre as questões dirigidas.
@@ -115,14 +117,14 @@ export function escolherPasso({ revisoes, cronograma, habilidades, padroes = [],
   if (vencidas > 0) {
     // A fila já diz QUAL ponto voltou e em que estado ele está — "3 questões
     // voltaram" sem dizer de quê é um lembrete; com o nome, é memória.
-    const primeira = (revisoes?.itens || []).find((i) => i?.processo_nome);
+    const primeira = (revisoes?.itens || []).find((i) => i?.processo_id);
     return {
       chave: "revisao",
       icone: RotateCw,
       olho: "Venceu hoje",
       titulo: vencidas === 1 ? "1 questão voltou para revisão" : `${vencidas} questões voltaram para revisão`,
       porque: primeira
-        ? `${vencidas === 1 ? "É" : "A primeira é"} de «${primeira.processo_nome}», marcada como ${primeira.rotulo || "revisão"}. Revisar no dia em que vence é o que faz a memória durar.`
+        ? `${vencidas === 1 ? "É" : "A primeira é"} de «${rotuloDaLinha(primeira)}», marcada como ${primeira.rotulo || "revisão"}. Revisar no dia em que vence é o que faz a memória durar.`
         : "Revisar no dia em que vence é o que faz a memória durar. Depois disso, rende menos.",
       rota: "/agenda#revisoes",
       cta: "Revisar agora",
