@@ -37,15 +37,19 @@ aparecia com dois competidores que nunca existiram.
 em `tests/conftest.py`. **Todo módulo novo que receba `set_db` precisa entrar
 nessa lista**, senão a suíte volta a escrever no banco da máquina.
 
-## Tocar fora do repo abre pedido de permissão, mesmo em bypass
+## Tocar fora do repo: liberado, e o prompt que aparecia em bypass
 
-A config global do dono tem `blockReadsOutsideWorkingDirectories: true`: qualquer
-leitura ou comando com caminho fora dos diretórios de trabalho para e pede
-aprovação, com bypass ligado ou não. Por isso o `.claude/settings.local.json` lista
-a memória do Claude e `/private/tmp/claude-501` em `additionalDirectories`
-(2026-10-09). Arquivo temporário vai **só** no scratchpad da sessão, que fica sob
-esse caminho. `/tmp` solto, `~/Downloads` ou qualquer outro lugar volta a abrir
-prompt, e o dono pediu explicitamente para nunca ser interrompido assim.
+Desde 2026-10-09 o agente pode ler e editar em **qualquer lugar da máquina** quando a
+tarefa pedir — o dono revogou o veto antigo a tudo fora do repo. Só ficam as travas
+de segurança (credencial, dinheiro, apagar dado de vez).
+
+O prompt que parava o trabalho mesmo com bypass ligado vinha de
+`blockReadsOutsideWorkingDirectories: true` na config global
+(`~/.claude/settings.json`): qualquer leitura ou comando com caminho fora dos
+diretórios de trabalho pedia aprovação. A chave foi **removida** no mesmo dia. Os
+`additionalDirectories` do `.claude/settings.local.json` (memória do Claude e
+`/private/tmp/claude-501`) eram o contorno e podem ficar. Se o prompt voltar, alguém
+religou a chave — o dono pediu explicitamente para nunca ser interrompido assim.
 
 ## Convenções de teste
 
