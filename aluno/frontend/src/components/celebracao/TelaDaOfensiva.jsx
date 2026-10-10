@@ -149,7 +149,10 @@ function AtoDaOfensiva({ engajamento, aoContinuar, temPresente }) {
     botao.current?.focus();
     return () => clearTimeout(t);
   }, []);
-  const frase = fraseDoDesafio(plus);
+  // No dia do presente o caminho continua na tela, cheio: é a 5ª chama
+  // acendendo que dá sentido ao botão "Abrir meu presente".
+  const mostrarCaminho = plus && (!plus.conquistado || temPresente);
+  const frase = temPresente ? "Cinco dias seguidos. Seu presente chegou!" : fraseDoDesafio(plus);
   const recorde = ofensiva.dias > 1 && ofensiva.dias >= ofensiva.recorde;
 
   return (
@@ -187,7 +190,7 @@ function AtoDaOfensiva({ engajamento, aoContinuar, temPresente }) {
 
       <Semana semana={ofensiva.semana} />
 
-      {plus && !plus.conquistado && (
+      {mostrarCaminho && (
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
