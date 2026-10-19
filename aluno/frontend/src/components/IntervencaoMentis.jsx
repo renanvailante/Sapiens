@@ -37,7 +37,7 @@ const CUSTO_PADRAO = 10;
 function Secao({ titulo, children }) {
   return (
     <div>
-      <div className="font-mono-alt text-[10px] uppercase tracking-[0.2em] text-zinc-400 mb-1.5">{titulo}</div>
+      <div className="font-mono-alt text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500 mb-1.5">{titulo}</div>
       {children}
     </div>
   );
@@ -57,7 +57,7 @@ function Conteudo({ dados, evidencia }) {
         </Secao>
         <div className="border-l-2 border-rose-200 pl-3">
           <div className="text-[11px] font-bold uppercase tracking-wide text-rose-600">O passo em falso</div>
-          <p className="text-sm text-zinc-600">{c.exemplo.raciocinio_errado}</p>
+          <p className="text-sm text-zinc-700">{c.exemplo.raciocinio_errado}</p>
         </div>
         <div className="border-l-2 border-emerald-200 pl-3">
           <div className="text-[11px] font-bold uppercase tracking-wide text-emerald-700">Onde corrigir</div>
@@ -98,7 +98,7 @@ function Conteudo({ dados, evidencia }) {
           <div className="space-y-1.5">
             {evidencia.slice(0, 4).map((e, i) => (
               <div key={i} className="text-sm text-zinc-600">
-                <span className="font-mono-alt text-[11px] text-zinc-400">
+                <span className="font-mono-alt text-[11px] text-zinc-500">
                   {[e.banca, e.ano, e.numero ? `nº ${e.numero}` : null].filter(Boolean).join(" · ")}
                 </span>
                 {e.detalhe && <span className="ml-2">{e.detalhe}</span>}
@@ -109,7 +109,7 @@ function Conteudo({ dados, evidencia }) {
       )}
 
       {rotuloDaIntervencao(previa?.intervencao_id) && (
-        <div className="pt-3 border-t border-zinc-100 text-[11px] text-zinc-400">
+        <div className="pt-3 border-t border-zinc-200 text-[11px] text-zinc-500">
           Abordagem catalogada: {rotuloDaIntervencao(previa.intervencao_id)}
         </div>
       )}
@@ -159,7 +159,7 @@ export default function IntervencaoMentis({
   };
 
   return (
-    <div className="rounded-xl border border-sapiens-navy/10 bg-white/70 p-4" data-testid={testid}>
+    <div className="rounded-xl border border-zinc-200 bg-white/70 p-4 shadow-sm" data-testid={testid}>
       <button
         onClick={abrir}
         disabled={carregando || semSaldo}
@@ -177,16 +177,16 @@ export default function IntervencaoMentis({
                 </span>
               )}
             </div>
-            <p className="mt-0.5 text-xs text-zinc-500">
+            <p className="mt-0.5 text-xs text-zinc-600">
               {causaNome ? (
                 <>Trata a causa: <span className="font-medium text-zinc-700">{causaNome}</span></>
               ) : (
                 <>Trata a causa do seu erro, não a questão</>
               )}
-              {processoNome && <span className="text-zinc-400"> · {processoNome}</span>}
+              {processoNome && <span className="text-zinc-500"> · {processoNome}</span>}
             </p>
             {!dados && !carregando && (
-              <p className="mt-1.5 text-[11px] font-medium text-zinc-400">
+              <p className="mt-1.5 text-[11px] font-medium text-zinc-500">
                 {ilimitada
                   ? "Incluída no seu pacote."
                   : semSaldo
@@ -195,7 +195,7 @@ export default function IntervencaoMentis({
               </p>
             )}
           </div>
-          <span className="shrink-0 text-zinc-400 pt-0.5">
+          <span className="shrink-0 text-zinc-500 pt-0.5">
             {carregando ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : aberta && dados ? (

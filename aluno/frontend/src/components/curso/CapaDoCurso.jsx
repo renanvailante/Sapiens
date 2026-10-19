@@ -39,14 +39,26 @@ const GLIFOS = {
   citacao: Quote,
 };
 
-export default function CapaDoCurso({ capa, className = "", altura = "h-28", testid }) {
-  const Glifo = GLIFOS[capa?.glifo] || GraduationCap;
+/** O componente do glifo de uma capa. Exportado para o cartão do Estudar
+ *  (`components/estudar/CartaoDeCurso.jsx`) desenhar o MESMO glifo sem uma
+ *  segunda tabela de nomes. */
+export function glifoDaCapa(capa) {
+  return GLIFOS[capa?.glifo] || GraduationCap;
+}
+
+// `largura` é prop e não `className`: as duas classes de largura no MESMO
+// elemento (`w-full` daqui e `w-14` de quem chamava) eram decididas pela ordem
+// do CSS do Tailwind, e `w-full` vencia — a capa do cartão "Continue de onde
+// parou" virou uma barra da largura do card e empurrou o título para fora
+// (2026-09-18 a 2026-10-10, em produção).
+export default function CapaDoCurso({ capa, className = "", altura = "h-28", largura = "w-full", testid }) {
+  const Glifo = glifoDaCapa(capa);
   const de = capa?.de || "#4FD9FF";
   const para = capa?.para || "#2F6BFF";
 
   return (
     <div
-      className={`relative ${altura} w-full overflow-hidden ${className}`}
+      className={`relative ${altura} ${largura} overflow-hidden ${className}`}
       style={{ background: `linear-gradient(135deg, ${de} 0%, ${para} 100%)` }}
       aria-hidden="true"
       data-testid={testid}

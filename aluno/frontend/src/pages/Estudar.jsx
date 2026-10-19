@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, lazy, Suspense } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Compass, PenLine, Layers, ArrowRight, Loader2 } from "lucide-react";
+import ContagemEnem from "../components/ContagemEnem";
 import { Bloco } from "../components/Esqueleto";
 import Mentis from "../components/Mentis";
 import { ROTAS } from "../lib/rotas";
@@ -32,16 +33,29 @@ const Provas = lazy(() => import("./Provas"));
  *     FOLHEAR    feed                  três minutos e nenhuma intenção
  *
  * A divisão entre eles é do ALUNO (o que ele tem energia e tempo para fazer
- * agora), não do produto. Por isso as duas colunas mostram o catálogo de
- * verdade — capas, cadernos, progresso — em vez de dois botões que levam a
- * dois menus: a escolha é feita OLHANDO, não adivinhando. Quem não sabia o
- * que tinha em "Cursos" nunca descobriu enquanto isso era um rótulo.
+ * agora), não do produto. Por isso a tela mostra o catálogo de verdade —
+ * capas, cadernos, progresso — em vez de dois botões que levam a dois menus:
+ * a escolha é feita OLHANDO, não adivinhando. Quem não sabia o que tinha em
+ * "Cursos" nunca descobriu enquanto isso era um rótulo.
  *
- * Escrever e Folhear entram como CHAMADAS, não como colunas, e a razão é de
+ * ---------------------------------------------------------------------------
+ * UMA COLUNA, COMO O DUOLINGO (2026-10-10)
+ * ---------------------------------------------------------------------------
+ *
+ * De 2026-09-18 a 2026-10-10 Aprender e Praticar eram DUAS colunas de meia
+ * tela, lado a lado. Era a causa de quase tudo que o dono chamou de "muito
+ * ruim e pouco atrativo": meia tela cortava todo título ("ENEM 20…",
+ * "Curso de Matemática…"), forçava o catálogo a virar quadrados de 150px que
+ * escondiam o nome atrás de um hover, e punha dois títulos do mesmo tamanho
+ * disputando a mesma dobra. Agora são seções empilhadas na largura inteira,
+ * cada uma com o seu cabeçalho de ícone (`CabecaDeSecao`): primeiro as
+ * provas (o que o aluno faz em dez minutos), depois os cursos. Os cartões
+ * são `.cartao-gordo` — ver `index.css`.
+ *
+ * Escrever e Folhear entram como CHAMADAS, não como seções, e a razão é de
  * forma: redação é uma sessão de uma hora em tela cheia, e o folhear é uma
- * pilha de cartões em sangria total — nenhum dos dois sobrevive espremido numa
- * coluna de 560px. O que eles precisam é de uma porta visível, e é isso que
- * eles ganharam aqui.
+ * pilha de cartões em sangria total. O que eles precisam é de uma porta
+ * visível, e é isso que eles ganharam aqui.
  *
  * ---------------------------------------------------------------------------
  * O QUE MUDOU NESTA PASSADA
@@ -59,31 +73,33 @@ const Provas = lazy(() => import("./Provas"));
  * clicar.
  *
  * ---------------------------------------------------------------------------
- * A COLUNA DA ESQUERDA RECOLHE DURANTE A PROVA
+ * O RESTO RECOLHE DURANTE A PROVA
  * ---------------------------------------------------------------------------
  *
  * Quando o aluno escolhe um caderno, `Provas` avisa (`onModo`) e esta página
- * esconde tudo o que não é a prova: o motor roda com a largura inteira,
- * exatamente como rodava quando era tela própria. Nada dentro do
- * `QuestionRunner` mudou.
+ * esconde tudo o que não é a prova: o motor roda sozinho na tela, exatamente
+ * como rodava quando era tela própria. Nada dentro do `QuestionRunner` mudou.
  */
 
-/** Uma porta para um modo que não cabe em coluna. Link inteiro clicável, no
- *  mouse, no toque e no teclado — nada nesta tela é beco sem saída. */
+/** Uma porta para um modo que não cabe numa seção. Link inteiro clicável, no
+ *  mouse, no toque e no teclado — nada nesta tela é beco sem saída. Mesma
+ *  peça dos cartões do catálogo (`.cartao-gordo`), deitada. */
 function Modo({ para, icone: Icone, nome, frase, cor, testid }) {
   return (
-    <Link to={para} className="superficie lift flex items-start gap-3.5 p-4" data-testid={testid}>
-      <span
-        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border ${cor}`}
-      >
-        <Icone className="h-5 w-5" strokeWidth={1.8} />
+    <Link
+      to={para}
+      className="cartao-gordo cartao-gordo--modo gap-2 px-2 py-3 sm:gap-3.5 sm:p-3.5"
+      style={{ "--de": cor.de, "--para": cor.para, "--pe": cor.pe, "--tinta": cor.de }}
+      data-testid={testid}
+    >
+      <span className="cartao-gordo-icone" style={{ width: 46, height: 46, borderRadius: 15 }} aria-hidden="true">
+        <Icone strokeWidth={2.2} style={{ width: 23, height: 23 }} />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block font-display text-base font-bold tracking-tight text-white">
-          {nome}
-        </span>
-        <span className="block text-xs leading-relaxed text-white/50">{frase}</span>
+        <span className="block font-display text-[13px] font-extrabold leading-tight tracking-tight text-white sm:text-base">{nome}</span>
+        <span className="hidden text-xs leading-snug text-white/65 sm:block">{frase}</span>
       </span>
+      <ArrowRight className="hidden h-4 w-4 shrink-0 text-white/40 sm:block" aria-hidden="true" />
     </Link>
   );
 }
@@ -159,81 +175,71 @@ export default function Estudar() {
 
   return (
     <div className="min-h-screen">
-      <div className="mx-auto max-w-7xl px-5 py-7 md:px-10 md:py-10">
+      <div className="mx-auto max-w-6xl px-5 py-7 md:px-10 md:py-10">
         {!respondendo && (
           <>
-            <header className="mb-7">
+            <header className="mb-6">
               <div className="secao-olho">Estudar</div>
-              <h1 className="titulo-tela">O que você vai fazer agora.</h1>
-              <p className="mt-2.5 max-w-2xl text-sm leading-relaxed text-white/55">
-                À esquerda, o conteúdo para aprender. À direita, as provas para se testar. E, aqui
-                em cima, as duas coisas que pedem a tela inteira.
-              </p>
+              <h1 className="titulo-tela">O que vamos estudar agora?</h1>
+              {/* O relógio do ENEM numa linha só: ele morava dentro da coluna
+                  das provas, num azulejo de 13rem que empurrava os cadernos
+                  para baixo. Aqui ele dá o contexto da página inteira. */}
+              <div className="mt-3">
+                <ContagemEnem variante="linha" testid="estudar-contagem-enem" />
+              </div>
             </header>
 
             <SigaATrilha />
 
-            {/* OS MODOS QUE NÃO CABEM EM COLUNA. Ficam no topo porque são os
+            {/* OS MODOS QUE NÃO CABEM NUMA SEÇÃO. Ficam no topo porque são os
                 dois que o aluno não encontraria sozinho: um acabou de sair da
                 barra, o outro estava atrás do Menu. */}
-            <div className="mb-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mb-12 grid grid-cols-3 gap-2.5 sm:gap-3">
               <Modo
                 para={ROTAS.REDACAO}
                 icone={PenLine}
-                nome="Escrever uma redação"
-                frase="Tema, correção nas cinco competências e foto da folha manuscrita."
-                cor="border-emerald-400/30 bg-emerald-400/10 text-emerald-200"
+                nome="Escrever redação"
+                frase="Correção nas cinco competências."
+                cor={{ de: "#A78BFA", para: "#5B3FD0", pe: "#3B2A8A" }}
                 testid="estudar-modo-redacao"
               />
               <Modo
                 para={ROTAS.TREINO}
                 icone={Compass}
                 nome="Mapa de Treino"
-                frase="Missões curtas num mapa que se revela conforme você avança."
-                cor="border-[#8B7BFF]/30 bg-[#8B7BFF]/10 text-[#C4B5FD]"
+                frase="Missões curtas num mapa que se revela."
+                cor={{ de: "#5EEAD4", para: "#0E7490", pe: "#0B4F5C" }}
                 testid="estudar-modo-treino"
               />
               <Modo
                 para={ROTAS.FOLHEAR}
                 icone={Layers}
                 nome="Folhear"
-                frase="Três minutos e nenhuma intenção? Passe o dedo por questões soltas."
-                cor="border-white/15 bg-white/[0.06] text-white/70"
+                frase="Questões soltas, sem compromisso."
+                cor={{ de: "#94A3B8", para: "#475569", pe: "#2A3444" }}
                 testid="estudar-modo-folhear"
               />
             </div>
           </>
         )}
 
-        <div
-          className={
-            respondendo
-              ? ""
-              : "grid gap-x-10 gap-y-12 lg:grid-cols-2 lg:items-start lg:divide-x lg:divide-white/8"
-          }
-        >
-          {/* APRENDER. Recolhida enquanto o aluno responde questão: ela não
-              tem o que dizer nesse momento e competiria com o enunciado. */}
-          {!respondendo && (
-            <section className="order-2 min-w-0 lg:order-1 lg:pr-10" data-testid="estudar-aprender">
-              <Suspense fallback={<Bloco className="rounded-3xl" altura={420} />}>
-                <Cursos embutido />
-              </Suspense>
-            </section>
-          )}
+        {/* PRATICAR primeiro: quem abre esta aba costuma ter dez minutos e
+            uma fila, não uma mesa para ler um curso. */}
+        <section className="min-w-0" data-testid="estudar-praticar">
+          <Suspense fallback={<Bloco className="rounded-3xl" altura={420} />}>
+            <Provas embutido onModo={aoMudarModo} />
+          </Suspense>
+        </section>
 
-          {/* PRATICAR. `order-1` no celular: quem abre o app no telefone
-              costuma ter dez minutos e uma fila, não uma mesa para ler um
-              curso. No desktop volta para a direita. */}
-          <section
-            className={respondendo ? "min-w-0" : "order-1 min-w-0 lg:order-2 lg:pl-10"}
-            data-testid="estudar-praticar"
-          >
+        {/* APRENDER. Recolhida enquanto o aluno responde questão: ela não
+            tem o que dizer nesse momento e competiria com o enunciado. */}
+        {!respondendo && (
+          <section className="mt-14 min-w-0 border-t border-white/10 pt-12" data-testid="estudar-aprender">
             <Suspense fallback={<Bloco className="rounded-3xl" altura={420} />}>
-              <Provas embutido onModo={aoMudarModo} />
+              <Cursos embutido />
             </Suspense>
           </section>
-        </div>
+        )}
       </div>
     </div>
   );

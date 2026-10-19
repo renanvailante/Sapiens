@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { api, API, errMsg} from "../lib/api";
-import ContagemEnem from "../components/ContagemEnem";
-import { ArrowRight, Check, X, RotateCw, Sparkles, BookOpen, ChevronLeft, Crosshair, Loader2, Flame, Zap, Volume2, VolumeX, Target, Timer, Trophy } from "lucide-react";
+import CabecaDeSecao from "../components/estudar/CabecaDeSecao";
+import CartaoDeCaderno from "../components/estudar/CartaoDeCaderno";
+import { agruparPorEdicao, rotuloDoCaderno } from "../lib/cadernos";
+import { ArrowRight, Check, X, RotateCw, Sparkles, ChevronLeft, Crosshair, Loader2, Flame, Zap, Volume2, VolumeX, Target, Timer, Trophy, ScrollText } from "lucide-react";
 import { toast } from "sonner";
 import { avisarSparksMudou } from "../components/Navegacao";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
@@ -1290,7 +1292,7 @@ function _progressoPorBloco(provasProgresso) {
   return stats;
 }
 
-function ProvasGrid({ onSelect, onExit }) {
+function ProvasGrid({ onSelect, onExit, embutido = false }) {
   const [provas, setProvas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
@@ -1323,15 +1325,23 @@ function ProvasGrid({ onSelect, onExit }) {
     onSelect(p, { reiniciar: true });
   };
 
+  const grupos = agruparPorEdicao(provas);
+  const rotuloDoAlvo = resetAlvo ? rotuloDoCaderno(resetAlvo) : null;
+
   return (
     <div>
-      <button onClick={onExit} className="mb-6 inline-flex items-center gap-1.5 text-sm text-white/60 hover:text-white">
-        <ChevronLeft className="w-4 h-4" /> Voltar
-      </button>
+      {/* "Voltar" só na tela própria (`/estudar/provas`). Dentro do Estudar
+          ele levava ao Hoje no meio de uma seção — um botão de sair que não
+          sai de nada que o aluno abriu. */}
+      {!embutido && (
+        <button onClick={onExit} className="mb-6 inline-flex items-center gap-1.5 text-sm text-white/60 hover:text-white">
+          <ChevronLeft className="w-4 h-4" /> Voltar
+        </button>
+      )}
 
       {loading && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {[...Array(2)].map((_, i) => <div key={i} className="animate-pulse h-32 bg-white/10 rounded-2xl" />)}
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+          {[...Array(4)].map((_, i) => <div key={i} className="animate-pulse h-44 bg-white/10 rounded-3xl" />)}
         </div>
       )}
 
@@ -1346,79 +1356,33 @@ function ProvasGrid({ onSelect, onExit }) {
         </div>
       )}
 
-      {/* O RETÂNGULO PEQUENO — um por prova, e não mais o card de coluna
-          inteira com ementa, três chips de estatística e uma barra de
-          progresso de 6px. Numa coluna de meia tela ao lado do catálogo de
-          cursos (`pages/Estudar.jsx`), aquele card era o dobro da largura
-          disponível; isto aqui é uma LINHA: capa pequena, título, uma
-          estatística só (a última nota) e a porcentagem, tudo numa faixa que
-          cabe de relance. Nada saiu — reiniciar continua no canto e o clique
-          no corpo inteiro continua abrindo a prova — só a apresentação
-          encolheu. */}
-      {!loading && !erro && provas.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3" data-testid="provas-grade">
-          {provas.map((p, i) => {
-            const stats = roundStats[_blocoKey(p)];
-            const prog = progresso[_blocoKey(p)];
-            const respondidas = Math.min(prog?.respondidas || 0, p.count || 0);
-            const pct = p.count > 0 ? Math.round((100 * respondidas) / p.count) : 0;
-            const concluida = p.count > 0 && respondidas >= p.count;
-            return (
-              <div
-                key={`${p.banca}-${p.ano}-${p.prova}-${p.numero_min}-${i}`}
-                className="relative lift card-sapiens rounded-2xl p-3"
-              >
-                {respondidas > 0 && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setResetAlvo(p); }}
-                    title="Reiniciar prova"
-                    data-testid={`prova-reset-${p.banca}-${p.ano}-${p.prova}-${p.numero_min}`}
-                    aria-label={`Reiniciar ${p.banca} ${p.ano} caderno ${p.prova}`}
-                    className="absolute top-1.5 right-1.5 z-10 p-2 text-zinc-300 hover:text-rose-500 transition-colors"
-                  >
-                    <RotateCw className="w-3.5 h-3.5" />
-                  </button>
-                )}
-                <button
-                  onClick={() => onSelect(p)}
-                  data-testid={`prova-card-${p.banca}-${p.ano}-${p.prova}-${p.numero_min}`}
-                  className="flex w-full items-center gap-3 text-left"
-                >
-                  <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-sapiens-accent to-sapiens-navy text-white flex items-center justify-center shrink-0">
-                    <BookOpen className="w-4 h-4" strokeWidth={1.7} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="font-display font-bold text-sm tracking-tight text-zinc-950 truncate pr-6">
-                      {p.banca} {p.ano} · Caderno {capitalizar(p.prova)}
-                    </div>
-                    <div
-                      className="mt-0.5 truncate text-[11px] text-zinc-500"
-                      data-testid={`prova-stats-${p.banca}-${p.ano}-${p.prova}-${p.numero_min}`}
-                    >
-                      {respondidas}/{p.count} respondidas
-                      {stats ? ` · última ${stats.lastAccuracy}%` : ""}
-                    </div>
-                    <div
-                      className="mt-1.5 h-1 w-full rounded-full bg-zinc-100 overflow-hidden"
-                      data-testid={`prova-progresso-${p.banca}-${p.ano}-${p.prova}-${p.numero_min}`}
-                    >
-                      <div
-                        className="h-full rounded-full bg-gradient-to-r from-sapiens-accentSoft to-sapiens-accent transition-all duration-500 ease-out"
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                  </div>
-                  <div className="shrink-0 text-right">
-                    <div className="font-mono-alt text-xs font-bold text-zinc-700">{pct}%</div>
-                    <span className="mt-0.5 flex items-center gap-0.5 text-[10px] font-medium text-zinc-500">
-                      {concluida ? "Ver" : respondidas > 0 ? "Continuar" : "Praticar"}
-                      <ArrowRight className="w-3 h-3" />
-                    </span>
-                  </div>
-                </button>
+      {/* OS CADERNOS, por edição — 2026-10-10. Um cartão por área (o título
+          é a matéria, com cor e glifo próprios) em vez da linha
+          "ENEM 2023 · Caderno Azul" que cortava em "ENEM 20…" e deixava seis
+          cadernos com a mesma cara. A edição sobe para o cabeçalho do grupo.
+          A regra de nome, cor e dia é pura e testada: `lib/cadernos.js`. */}
+      {!loading && !erro && grupos.length > 0 && (
+        <div className="space-y-8" data-testid="provas-grade">
+          {grupos.map((g) => (
+            <section key={g.chave} data-testid={`provas-edicao-${g.chave.replace(/\|/g, "-")}`}>
+              <div className="mb-3 flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
+                <h3 className="font-display text-lg font-extrabold tracking-tight text-white">{g.titulo}</h3>
+                <span className="text-sm font-semibold text-white/55">{g.caderno}</span>
               </div>
-            );
-          })}
+              <ul className="grid grid-cols-2 gap-x-3 gap-y-5 sm:gap-x-4 md:grid-cols-4">
+                {g.itens.map((p, i) => (
+                  <CartaoDeCaderno
+                    key={`${_blocoKey(p)}-${i}`}
+                    prova={p}
+                    respondidas={progresso[_blocoKey(p)]?.respondidas || 0}
+                    ultima={roundStats[_blocoKey(p)]?.lastAccuracy ?? null}
+                    aoAbrir={onSelect}
+                    aoReiniciar={setResetAlvo}
+                  />
+                ))}
+              </ul>
+            </section>
+          ))}
         </div>
       )}
 
@@ -1428,7 +1392,7 @@ function ProvasGrid({ onSelect, onExit }) {
             <DialogTitle className="font-display text-2xl tracking-tight">Reiniciar esta prova?</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-zinc-600 leading-relaxed">
-            Você vai poder responder {resetAlvo?.banca} {resetAlvo?.ano} · Caderno {resetAlvo && capitalizar(resetAlvo.prova)} do começo.
+            Você vai poder responder {rotuloDoAlvo?.titulo} do {rotuloDoAlvo?.edicao} ({rotuloDoAlvo?.caderno}) do começo.
             Questões já respondidas não dão Sparks de novo, e seu histórico de respostas nunca é apagado — cada tentativa fica registrada.
           </p>
           <DialogFooter>
@@ -1469,36 +1433,46 @@ function ExamsByYear() {
 
   const goWithLanguage = (lang) => { nav(`${ROTAS.PROVAS}/${selected.exam_id}?lang=${lang}`); setSelected(null); };
 
-  if (loading) return <div className="grid grid-cols-1 md:grid-cols-3 gap-4">{[...Array(3)].map((_, i) => <div key={i} className="animate-pulse h-32 bg-white/10 rounded-2xl" />)}</div>;
+  if (loading) return <div className="grid grid-cols-2 gap-4 md:grid-cols-4">{[...Array(2)].map((_, i) => <div key={i} className="animate-pulse h-40 bg-white/10 rounded-3xl" />)}</div>;
   if (years.length === 0)
     return <div className="text-sm text-white/60">Nenhuma prova completa disponível ainda. Use a prática por caderno acima.</div>;
 
+  // Uma lista só, do ano mais novo para o mais velho e pelo dia — o ano já
+  // está escrito em cada cartão, e um cabeçalho por ano para dois cartões era
+  // mais título do que conteúdo.
+  const provasInteiras = years.flatMap((y) => [...grouped[y]].sort((a, b) => (a.day || 0) - (b.day || 0)));
+
   return (
-    <div className="space-y-8">
-      {years.map(y => (
-        <div key={y}>
-          <div className="mb-3 flex items-baseline gap-3">
-            <div className="font-display font-bold text-xl text-zinc-950">ENEM {y}</div>
-            <div className="text-xs text-zinc-500 font-mono-alt">{grouped[y].length} caderno(s)</div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {grouped[y].map(e => (
-              <button key={e.exam_id} onClick={() => setSelected(e)} className="lift card-sapiens text-left rounded-2xl p-6 hover:border-sapiens-accent" data-testid={`exam-card-${e.exam_id}`}>
-                <div className="flex items-center justify-between">
-                  <div className="font-mono-alt text-[10px] uppercase tracking-[0.25em] text-zinc-500">Dia {e.day} · {e.color}</div>
-                  <div className="text-xs text-zinc-400">{e.total_questions}q</div>
+    <div>
+      <ul className="grid grid-cols-2 gap-x-3 gap-y-5 sm:gap-x-4 md:grid-cols-4">
+        {provasInteiras.map((e) => (
+          <li key={e.exam_id} className="list-none">
+            <button
+              type="button"
+              onClick={() => setSelected(e)}
+              className="cartao-gordo h-full w-full gap-3 p-4"
+              style={{ "--de": "#C4B5FD", "--para": "#6A6BF0", "--pe": "#3A2F9A", "--tinta": "#D9D2FF" }}
+              data-testid={`exam-card-${e.exam_id}`}
+            >
+              <span className="cartao-gordo-icone" aria-hidden="true">
+                <ScrollText strokeWidth={2.2} />
+              </span>
+              <div className="min-w-0">
+                <div className="cartao-gordo-titulo">ENEM {e.year}</div>
+                <div className="cartao-gordo-sub mt-0.5">
+                  {e.day}º dia{e.color ? ` · ${capitalizar(String(e.color))}` : ""}
                 </div>
-                <div className="mt-4 font-display font-bold text-lg tracking-tight text-zinc-950">{e.title}</div>
-                <div className="mt-2 text-xs text-zinc-500">
-                  {e.has_english && <span className="mr-2">EN</span>}
-                  {e.has_spanish && <span>ES</span>}
-                </div>
-                <div className="mt-6 flex items-center gap-2 text-sm text-zinc-900 font-medium">Escolher <ArrowRight className="w-4 h-4" /></div>
-              </button>
-            ))}
-          </div>
-        </div>
-      ))}
+              </div>
+              <div className="mt-auto flex items-center justify-between gap-2">
+                <span className="text-xs font-semibold tabular-nums text-white/65">{e.total_questions} questões</span>
+                <span className="cartao-gordo-acao">
+                  Escolher <ArrowRight className="h-3.5 w-3.5" strokeWidth={2.6} />
+                </span>
+              </div>
+            </button>
+          </li>
+        ))}
+      </ul>
 
       <Dialog open={!!selected} onOpenChange={(v) => !v && setSelected(null)}>
         <DialogContent className="rounded-2xl">
@@ -1693,49 +1667,44 @@ export default function Provas({ embutido = false, onModo = null }) {
           />
         ) : mode === "provas" ? (
           <>
-            {/* O relógio pequeno — só aqui, e só embutido. `/estudar` tinha
-                DOIS relógios grandes (um no cabeçalho da aba, outro dentro do
-                catálogo de cursos) competindo pela mesma dobra; agora existe
-                um só, do lado das provas, na variante "medida" que já existe
-                para caber num azulejo pequeno (ver `PainelDeProgresso`). */}
-            {embutido && (
-              <div className="mb-6 max-w-[13rem]">
-                <ContagemEnem variante="medida" testid="estudar-contagem-enem" />
-              </div>
-            )}
-
-            {/* O cabeçalho encolhe quando esta tela é uma COLUNA e não uma
-                página: um `titulo-tela` de 42px dentro de meia largura, ao
-                lado de outro título do mesmo tamanho, cria dois donos para a
-                mesma tela. Embutido, quem manda é o título da página. */}
-            <div className={embutido ? "mb-6" : "mb-10"}>
-              <div className="secao-olho">Praticar</div>
-              {embutido ? (
-                <h2 className="mt-1.5 font-display text-2xl font-extrabold tracking-tight text-white" data-testid="exam-select-title">
-                  Escolha um caderno
-                </h2>
-              ) : (
+            {/* O cabeçalho: no Estudar é uma SEÇÃO (ícone, título e uma frase,
+                a mesma peça do catálogo de cursos logo abaixo); na tela própria
+                (`/estudar/provas`) continua sendo o título da página. O relógio
+                do ENEM subiu para o cabeçalho do Estudar em 2026-10-10. */}
+            {embutido ? (
+              <CabecaDeSecao
+                icone={Target}
+                titulo="Provas do ENEM"
+                frase="Escolha uma matéria: 45 questões de uma prova real. Cada resposta ensina o Sapiens sobre você."
+                cor={{ de: "#5FDCFF", para: "#3E86E8", pe: "#1F4F95" }}
+                testid="exam-select-title"
+              />
+            ) : (
+              <div className="mb-10">
+                <div className="secao-olho">Praticar</div>
                 <h1 className="titulo-tela" data-testid="exam-select-title">
                   Escolha um caderno
                 </h1>
-              )}
-              <p className={`mt-3 max-w-lg text-white/60 ${embutido ? "text-sm" : ""}`}>
-                Cada caderno é uma prova real, agrupada por banca, ano e cor. Cada questão
-                que você responde aqui vira informação sobre você.
-              </p>
-            </div>
-            <ProvasGrid onSelect={escolherProva} onExit={() => nav("/hoje")} />
+                <p className="mt-3 max-w-lg text-white/60">
+                  Cada caderno tem 45 questões de uma área, de uma prova real. Cada questão
+                  que você responde aqui vira informação sobre você.
+                </p>
+              </div>
+            )}
+            <ProvasGrid onSelect={escolherProva} onExit={() => nav("/hoje")} embutido={embutido} />
 
             {/* A prova oficial inteira, por edição. Fica ao PÉ da grade e não
                 numa tela anterior: quem procura "o ENEM 2019 completo" já está
                 olhando para cadernos quando pensa nisso. */}
-            <div className="mt-14">
-              <div className="mb-1 flex items-center gap-3">
-                <RotateCw className="h-4 w-4 text-white/40" />
-                <div className="font-mono-alt text-xs uppercase tracking-[0.3em] text-white/50">Ou a prova inteira</div>
-              </div>
-              <h2 className="font-display text-2xl font-bold tracking-tight text-white">Praticar por ano (ENEM)</h2>
-              <p className="mb-6 mt-2 text-sm text-white/60">Provas oficiais completas por edição.</p>
+            <div className="mt-12">
+              <CabecaDeSecao
+                nivel={3}
+                icone={ScrollText}
+                titulo="Ou a prova inteira"
+                frase="O dia inteiro de prova, na ordem oficial — como no dia do ENEM."
+                cor={{ de: "#C4B5FD", para: "#6A6BF0", pe: "#3A2F9A" }}
+                testid="provas-inteiras-cabeca"
+              />
               <ExamsByYear />
             </div>
           </>

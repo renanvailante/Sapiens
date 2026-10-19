@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { toast } from "sonner";
 import {
   Bell, BellRing, Lock, ArrowRight, PlayCircle, BookOpen,
-  Infinity as Infinito, PackageCheck,
+  Infinity as Infinito, PackageCheck, GraduationCap,
 } from "lucide-react";
 import { api, errMsg } from "../lib/api";
 import { formatBRL } from "../lib/utils";
@@ -14,8 +14,10 @@ import { MENTOR } from "../lib/mentor";
 import ContagemEnem from "../components/ContagemEnem";
 import ContinuarAprendendo from "../components/curso/ContinuarAprendendo";
 import CapaDoCurso from "../components/curso/CapaDoCurso";
-import LadrilhoDeCatalogo from "../components/curso/LadrilhoDeCatalogo";
 import CartaoDestaque from "../components/curso/CartaoDestaque";
+import CartaoDeCurso from "../components/estudar/CartaoDeCurso";
+import CabecaDeSecao from "../components/estudar/CabecaDeSecao";
+import { Bloco } from "../components/Esqueleto";
 import { porArea, emAndamento } from "../lib/recomendacao";
 import { useDeclararContextoMentis } from "../lib/mentisContexto";
 import { marcarAcessoDaLive } from "../lib/live";
@@ -69,10 +71,6 @@ import { ROTAS } from "../lib/rotas";
  * pelo produto e porque uma coluna de 560px não é onde se lê uma ementa.
  */
 export default function Cursos({ embutido = false }) {
-  // Qual ladrilho está aberto pelo TOQUE. No mouse quem abre é o `:hover` do
-  // CSS; no telefone não há cursor, e um por vez é o que impede quatro
-  // cartões grandes sobrepostos sem jeito de fechar nenhum.
-  const [abertoNoToque, setAbertoNoToque] = useState(null);
   const { hash } = useLocation();
   const [dados, setDados] = useState(null);
   const [erro, setErro] = useState(null);
@@ -220,153 +218,21 @@ export default function Cursos({ embutido = false }) {
     [dados],
   );
 
-  /** O card de um curso. Função e não componente de módulo porque ele depende
-   *  de quatro estados desta tela (comprando, marcando, a conta do pacote) —
-   *  passar os quatro por props seria mudar a assinatura toda vez que a
-   *  vitrine ganha um estado. */
-  /**
-   * O LADRILHO — a forma do catálogo dentro da aba "Estudar".
-   *
-   * Aqui há DUAS apresentações do mesmo catálogo, e a duplicação é deliberada:
-   *
-   * · `/estudar` (embutido) usa ladrilhos. É uma coluna de meia tela ao lado
-   *   das provas, e o gesto ali é PASSAR O OLHO — reconhecer o curso pela capa
-   *   e pelo nome, abrir o que interessa.
-   * · `/cursos` (a página inteira) continua com os cards completos. É onde se
-   *   LÊ: a ementa com os módulos, a descrição, o texto do que está incluso.
-   *   Um ladrilho de 150px não comporta uma lista de seis módulos, e enfiá-la
-   *   lá dentro desfaria a única coisa que o ladrilho resolve.
-   *
-   * Ou seja: nada de informação saiu do produto: ela mudou de endereço, e o
-   * ladrilho aponta para ele.
-   *
-   * `abertoNoToque` existe porque no telefone não há cursor. A página mantém
-   * UM ladrilho aberto por vez — sem isso, tocar em quatro deixaria quatro
-   * cartões grandes sobrepostos, e o aluno não teria como fechar nenhum.
-   *
-   * Em `/estudar` a grade também é PLANA — sem cabeçalho de área — e leva
-   * cursos e e-books juntos (ver o `if (embutido)` mais abaixo): a
-   * hierarquia por área ajuda quem está lendo dezoito cursos, não quem quer
-   * reconhecer sete ou oito pela capa numa coluna estreita.
-   */
-  const ladrilhoDoCurso = (c) => (
-    <LadrilhoDeCatalogo
-      key={c.curso_id}
-      capa={c.capa}
-      titulo={c.titulo}
-      chamada={c.chamada}
-      olho={`${c.carga} · ${c.nivel}`}
-      meu={c.tenho_acesso && !c.progresso?.comecou}
-      progresso={c.progresso?.comecou ? c.progresso.percentual : null}
-      selo={
-        <span className="ladrilho-selo">
-          {c.tem_conteudo ? "No ar" : "Em breve"}
-        </span>
-      }
-      aberto={abertoNoToque === `curso-${c.curso_id}`}
-      aoAbrir={() => setAbertoNoToque(`curso-${c.curso_id}`)}
-      testid={`ladrilho-curso-${c.curso_id}`}
-    >
-      {c.tenho_acesso && c.tem_conteudo ? (
-        <Link
-          to={`${ROTAS.CURSOS}/${c.curso_id}`}
-          className="pill btn-sapiens inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-bold"
-          data-testid={`ladrilho-curso-${c.curso_id}-estudar`}
-        >
-          <PlayCircle className="h-3.5 w-3.5" />
-          {c.progresso?.comecou ? `Continuar · ${c.progresso.percentual}%` : "Começar"}
-        </Link>
-      ) : c.tenho_acesso ? (
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-100">
-          <Infinito className="h-3.5 w-3.5" /> Avisamos quando abrir
-        </span>
-      ) : (
-        <>
-          <button
-            onClick={() => comprarCurso(c)}
-            disabled={comprandoCurso === c.curso_id}
-            className="pill btn-sapiens inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-medium disabled:opacity-50"
-            data-testid={`ladrilho-curso-${c.curso_id}-comprar`}
-          >
-            <Infinito className="h-3.5 w-3.5" />
-            {comprandoCurso === c.curso_id ? "Garantindo…" : `${c.custo_sparks} Sparks`}
-          </button>
-          <button
-            onClick={() => alternarInteresse(c)}
-            disabled={marcando === c.curso_id}
-            className={[
-              "pill inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium disabled:opacity-50",
-              c.tenho_interesse
-                ? "border border-emerald-400/30 bg-emerald-500/15 text-emerald-200"
-                : "btn-vidro",
-            ].join(" ")}
-            data-testid={`ladrilho-curso-${c.curso_id}-avisar`}
-          >
-            {c.tenho_interesse ? <BellRing className="h-3.5 w-3.5" /> : <Bell className="h-3.5 w-3.5" />}
-          </button>
-        </>
-      )}
-    </LadrilhoDeCatalogo>
-  );
-
-  const ladrilhoDoEbook = (e) => (
-    <LadrilhoDeCatalogo
-      key={e.ebook_id}
-      capa={e.capa}
-      titulo={e.titulo}
-      chamada={e.chamada}
-      olho={`${e.paginas} páginas`}
-      meu={e.tenho_acesso}
-      selo={<span className="ladrilho-selo">E-book</span>}
-      aberto={abertoNoToque === `ebook-${e.ebook_id}`}
-      aoAbrir={() => setAbertoNoToque(`ebook-${e.ebook_id}`)}
-      testid={`ladrilho-ebook-${e.ebook_id}`}
-    >
-      {e.tenho_acesso && e.tem_conteudo ? (
-        <Link
-          to={`${ROTAS.EBOOK.replace(":ebookId", e.ebook_id)}`}
-          className="pill btn-sapiens inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-bold"
-          data-testid={`ladrilho-ebook-${e.ebook_id}-ler`}
-        >
-          <BookOpen className="h-3.5 w-3.5" /> Ler agora
-        </Link>
-      ) : e.tenho_acesso ? (
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-100">
-          <BookOpen className="h-3.5 w-3.5" /> Em breve
-        </span>
-      ) : (
-        <button
-          onClick={() => comprarEbook(e)}
-          disabled={comprandoEbook === e.ebook_id}
-          className="pill btn-sapiens inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-medium disabled:opacity-50"
-          data-testid={`ladrilho-ebook-${e.ebook_id}-comprar`}
-        >
-          <BookOpen className="h-3.5 w-3.5" />
-          {comprandoEbook === e.ebook_id ? "Garantindo…" : `${e.custo_sparks} Sparks`}
-        </button>
-      )}
-    </LadrilhoDeCatalogo>
-  );
-
   // ---------------------------------------------------------------
-  // A ABA ESTUDAR (embutido) — 2026-09-18.
+  // A ABA ESTUDAR (embutido) — 2026-09-18, refeita em 2026-10-10.
   // ---------------------------------------------------------------
   // Retorna ANTES da montagem da vitrine de `/cursos`: as duas telas param de
   // compartilhar layout aqui, porque pedem coisas diferentes. `/cursos` é
-  // para LER (ementa, narrativa de venda, área por área); `/estudar` é meia
-  // tela ao lado das provas, e o pedido era "imediatamente todos os cursos e
-  // e-books" — sem cabeçalho de venda entre o aluno e o catálogo.
-  //
-  // O relógio do ENEM saiu daqui: ele agora é só do lado das provas (ver
-  // `ExamSelect.jsx`), porque só cabe UM relógio na dobra de uma coluna de
-  // meia tela.
+  // para LER (ementa, narrativa de venda, área por área); `/estudar` é para
+  // ESCOLHER, e o pedido era "imediatamente todos os cursos e e-books" — sem
+  // cabeçalho de venda entre o aluno e o catálogo.
   //
   // O destaque é o curso mais avançado em andamento (`emAndamento`, a MESMA
-  // regra que já escolhia o herói de `ContinuarAprendendo`) — só que agora
-  // desenhado com o pedaço de caminho andado (`CartaoDestaque`), não um anel
-  // sozinho. Os outros cursos e todos os e-books caem juntos na mesma grade
-  // de ladrilhos, sem cabeçalho de área: são sete a doze itens, não setenta —
-  // a capa (glifo + degradê) já é o que separa um do outro de relance.
+  // regra que já escolhia o herói de `ContinuarAprendendo`), desenhado com o
+  // pedaço de caminho andado (`CartaoDestaque`). Os outros cursos vêm em
+  // cartões (`CartaoDeCurso`) e os e-books numa prateleira própria logo
+  // abaixo — no ladrilho de 2026-09-18 os dois se misturavam e só um selo
+  // em mono de 10px dizia qual era qual.
   if (embutido) {
     const destaque = emAndamento(dados?.cursos || [])[0] || null;
     const outrosCursos = (dados?.cursos || []).filter((c) => c.curso_id !== destaque?.curso_id);
@@ -379,13 +245,62 @@ export default function Cursos({ embutido = false }) {
           </div>
         )}
 
+        <CabecaDeSecao
+          icone={GraduationCap}
+          titulo="Cursos"
+          frase={`Aulas gravadas pelo ${MENTOR.nome}, do zero à prova.`}
+          cor={{ de: "#C4B5FD", para: "#6A6BF0", pe: "#3A2F9A" }}
+          testid="estudar-cursos-cabeca"
+        />
+
         {destaque && <CartaoDestaque curso={destaque} />}
 
+        {!dados && !erro && (
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            {[0, 1, 2, 3].map((i) => <Bloco key={i} className="rounded-3xl" altura={210} />)}
+          </div>
+        )}
+
         {dados && (
-          <ul className={`grade-ladrilhos ${destaque ? "mt-5" : ""}`} data-testid="estudar-catalogo">
-            {outrosCursos.map((c) => ladrilhoDoCurso(c))}
-            {(dados.ebooks || []).map((e) => ladrilhoDoEbook(e))}
+          <ul
+            className={`grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-3 sm:gap-x-4 lg:grid-cols-4 ${destaque ? "mt-6" : ""}`}
+            data-testid="estudar-catalogo"
+          >
+            {outrosCursos.map((c) => (
+              <CartaoDeCurso
+                key={c.curso_id}
+                item={c}
+                comprando={comprandoCurso === c.curso_id}
+                marcando={marcando === c.curso_id}
+                aoComprar={comprarCurso}
+                aoAvisar={alternarInteresse}
+              />
+            ))}
           </ul>
+        )}
+
+        {(dados?.ebooks?.length || 0) > 0 && (
+          <div className="mt-10">
+            <CabecaDeSecao
+              nivel={3}
+              icone={BookOpen}
+              titulo="E-books"
+              frase="Material curto e direto, para ler aqui mesmo no app."
+              cor={{ de: "#FFD98A", para: "#D9661F", pe: "#8A4413" }}
+              testid="estudar-ebooks-cabeca"
+            />
+            <ul className="grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-3 sm:gap-x-4 lg:grid-cols-4" data-testid="estudar-ebooks">
+              {dados.ebooks.map((e) => (
+                <CartaoDeCurso
+                  key={e.ebook_id}
+                  item={e}
+                  tipo="ebook"
+                  comprando={comprandoEbook === e.ebook_id}
+                  aoComprar={comprarEbook}
+                />
+              ))}
+            </ul>
+          </div>
         )}
 
         {/* As pontes de venda continuam existindo — só não competem mais com
@@ -491,6 +406,10 @@ export default function Cursos({ embutido = false }) {
     );
   }
 
+  /** O card de um curso. Função e não componente de módulo porque ele depende
+   *  de quatro estados desta tela (comprando, marcando, a conta do pacote) —
+   *  passar os quatro por props seria mudar a assinatura toda vez que a
+   *  vitrine ganha um estado. */
   const cartaoDoCurso = (c) => (
     <article
       key={c.curso_id}

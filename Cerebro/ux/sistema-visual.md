@@ -1,6 +1,6 @@
 ---
 tags: [ux, css, design]
-atualizado: 2026-10-09
+atualizado: 2026-10-19
 ---
 
 # Sistema visual — bioluminescência tecnológica
@@ -46,6 +46,19 @@ duas entradas.**
 > Garanta a forma **sem espaço** (`.leitura-clara.text-zinc-800`) além da
 > descendente. As duas formas já existem para `text-zinc-400..950`,
 > `text-amber/emerald/rose/sky-900` e os selos de recompensa.
+
+### A volta cobria só metade da camada (achado em 2026-10-10)
+
+Das 81 classes com `:root .x`, **44 não tinham `.leitura-clara .x`** — e cada
+uma delas pinta ESCURO dentro da folha clara. O caso que o dono viu: o card da
+Intervenção da Mentis (`bg-white/70`) recebia o vidro escuro de 50% por cima
+do rosa do veredito, e o texto cinza ficava sobre cinza, justamente depois de
+um erro. As caixas `bg-sky-50` da mesma tela também pintavam escuro.
+
+Todas ganharam a volta, com a cor **original** do Tailwind. A conferência é um
+script, não leitura: liste os seletores `:root (\.[\w\\/-]+)` e os
+`.leitura-clara ?(\.[\w\\/-]+)` do `index.css` e compare. O que sobra na
+diferença hoje (`text-white/*`, `aba-*`) não é da camada de tradução.
 
 Achado em 17/09 com o curso já no ar: **o conteúdo inteiro de Matemática Básica
 estava invisível**, e nenhum teste pega isso — o projeto não tem teste de
@@ -93,6 +106,19 @@ animação), e a camada "DUOLINGO" no fim do `index.css` existe por isso. O que
   montagem de `Alternativas`) — dez cartões tremendo ao reabrir não dizem nada;
 - "Sapiens Plus" usa degradê **parado** (`.texto-plus`), não `.shimmer`;
 - `prefers-reduced-motion` desliga tudo no fim do bloco.
+
+## O cartão gordo (2026-10-10)
+
+`.cartao-gordo` é a peça do catálogo do Estudar (cadernos, cursos, e-books,
+modos): borda de 2px, **pé sólido de 5px** que afunda no toque, cor da matéria
+por variável (`--de`, `--para`, `--pe`, `--tinta`). Ver [[padroes-de-tela]].
+
+> [!warning] Esta folha vem DEPOIS de `@tailwind utilities`
+> Utilitário do Tailwind que conflita com uma classe própria **perde**:
+> `flex-row` ao lado de `.cartao-gordo` (que é coluna) não pega, e `text-lg`
+> ao lado de `.cartao-gordo-titulo` também não. Por isso existem os
+> modificadores `--deitado`, `--modo`, `-titulo--p` e `-titulo--g`. Não
+> "conserte" acrescentando utilitário: ele não vai pintar.
 
 ## As primitivas (camada "PRODUTO", no fim do arquivo)
 

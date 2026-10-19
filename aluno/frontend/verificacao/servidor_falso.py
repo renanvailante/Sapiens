@@ -58,6 +58,72 @@ LINHA_CAUSA = {
 
 ITENS = [f"ENEM-2023-AZUL-{n}" for n in (136, 141, 150, 158, 172, 177)]
 
+# O CATÁLOGO vem do próprio backend (`cursos.py` só importa a biblioteca
+# padrão): títulos, capas e preços reais, nunca inventados aqui. O que é do
+# aluno de teste (acesso, progresso) é que é montado abaixo.
+sys.path.insert(0, os.path.join(AQUI, "..", "..", "backend"))
+try:
+    import cursos as _cursos_reais  # noqa: E402
+except Exception:  # pragma: no cover — o servidor sobe mesmo sem o catálogo
+    _cursos_reais = None
+
+# Quais cursos têm estação publicada e onde o aluno de teste está em cada um.
+_PROGRESSO_TESTE = {
+    "cinematica": {"estacoes": 6, "concluidas": 1, "proxima": {"estacao_id": "e2", "titulo": "Velocidade média"}},
+    "matematica-basica": {"estacoes": 24, "concluidas": 0, "proxima": {"estacao_id": "e1", "titulo": "Primeira estação"}},
+    "calculos-quimicos": {"estacoes": 10, "concluidas": 0, "proxima": {"estacao_id": "e1", "titulo": "Primeira estação"}},
+}
+_SEM_CONTEUDO = {"hackeando-a-tri"}
+
+
+def catalogo_de_cursos(c):
+    """`GET /cursos` no formato de `cursos_routes.listar`. No cenário `novo`
+    o aluno não tem nada (a vitrine com preço); nos outros, o pacote inteiro."""
+    if _cursos_reais is None:
+        return {"cursos": [], "ebooks": []}
+    tem_tudo = c != "novo"
+    cursos = []
+    for k in _cursos_reais.listar_cursos():
+        cid = k["curso_id"]
+        item = {**k, "tenho_interesse": False, "tenho_acesso": tem_tudo, "incluso_no_plano": tem_tudo,
+                "tem_conteudo": cid not in _SEM_CONTEUDO}
+        if item["tem_conteudo"] and tem_tudo:
+            p = _PROGRESSO_TESTE.get(cid, {"estacoes": 8, "concluidas": 0, "proxima": None})
+            comecou = cid in _PROGRESSO_TESTE
+            item["progresso"] = {"estacoes": p["estacoes"], "concluidas": p["concluidas"],
+                                 "percentual": round(100 * p["concluidas"] / p["estacoes"]),
+                                 "comecou": comecou, "proxima": p["proxima"]}
+        cursos.append(item)
+    ebooks = [{**e, "tenho_acesso": tem_tudo, "incluso_no_plano": tem_tudo, "tem_conteudo": True}
+              for e in _cursos_reais.listar_ebooks()]
+    return {"areas": _cursos_reais.listar_areas(), "cursos": cursos, "ebooks": ebooks,
+            "custo_ebook": _cursos_reais.EBOOK_CUSTO_SPARKS,
+            "live": {"tenho_acesso": tem_tudo, "incluso_no_plano": tem_tudo, "custo_sparks": 200,
+                     "duracao_minutos": 60, "ao_vivo_agora": False, "edicao": hoje_local()},
+            "direitos": {"cursos_inclusos": tem_tudo}}
+
+
+# Os cadernos no formato de `server.list_provas_publico`: blocos de 45 por
+# (banca, ano, prova). Duas edições, uma delas só com o dia 2 sincronizado —
+# o acervo real é assim, irregular.
+CADERNOS = [
+    {"banca": "ENEM", "ano": 2023, "prova": "AZUL", "numero_min": a, "numero_max": a + 44,
+     "count": n, "total_bloco": 45, "disciplinas": [d]}
+    for a, n, d in ((1, 45, "Linguagens e Códigos"), (46, 45, "Ciências Humanas"),
+                    (91, 44, "Ciências da Natureza"), (136, 45, "Matemática"))
+] + [
+    {"banca": "ENEM", "ano": 2022, "prova": "AMARELO", "numero_min": a, "numero_max": a + 44,
+     "count": n, "total_bloco": 45, "disciplinas": [d]}
+    for a, n, d in ((91, 45, "Ciências da Natureza"), (136, 44, "Matemática"))
+]
+
+PROVAS_INTEIRAS = [
+    {"exam_id": "enem-2023-d1-azul", "year": 2023, "day": 1, "color": "Azul", "title": "ENEM 2023 · 1º dia",
+     "total_questions": 90, "has_english": True, "has_spanish": True},
+    {"exam_id": "enem-2023-d2-azul", "year": 2023, "day": 2, "color": "Azul", "title": "ENEM 2023 · 2º dia",
+     "total_questions": 90, "has_english": False, "has_spanish": False},
+]
+
 
 def habilidades():
     nomes = ["Ordenar valores", "Razão entre grandezas", "Proporção direta e inversa"]
@@ -170,12 +236,26 @@ def rota_get(path, q):
                            {"posicao": 3, "uid": "aluno-teste", "nome": "Aluno Teste", "pontos": 120, "voce": True}]}
     # O que o Estudar lista: catálogo vazio é o formato certo (lista), e é
     # o que faz `/estudar` montar aqui em vez de quebrar em `exams.reduce`.
-    if path in ("/api/exams", "/api/provas"):
-        return []
+    if path == "/api/exams":
+        return PROVAS_INTEIRAS
+    if path == "/api/provas":
+        return {"provas": CADERNOS}
     if path == "/api/cursos":
-        return {"cursos": [], "ebooks": []}
+        return catalogo_de_cursos(c)
+    if path == "/api/sparks/packages":
+        return {"packages": [], "precos_avulsos": None}
+    if path == "/api/mentis/precos":
+        return {"explicacao": 7, "intervencao": 10}
     if path == "/api/firestore/students/me/provas-progresso":
-        return {"progresso": {}}
+        if c == "novo":
+            return {"provas": []}
+        # Matemática 2023 pela metade e Linguagens 2023 terminada.
+        return {"provas": [
+            {"banca": "ENEM", "ano": 2023, "prova": "AZUL", "numero_min": 136, "numero_max": 180,
+             "respondidas": 18, "total": 45},
+            {"banca": "ENEM", "ano": 2023, "prova": "AZUL", "numero_min": 1, "numero_max": 45,
+             "respondidas": 45, "total": 45},
+        ]}
     if path == "/api/lembretes":
         return {"itens": [], "vencidos": 0, "total": 0}
     if path == "/api/cursos/precos":
@@ -265,6 +345,22 @@ def rota_post(path, corpo):
                 "sparks_ganhos": 1, "sparks_balance": 121}
     if path == "/api/firestore/students/me/rodada/concluir":
         return {"sparks_ganhos": 0}
+    if path == "/api/mentis/intervencao":
+        # O formato de `mentis_routes`; o texto é o exemplo da receita, que é
+        # o caso em que a cor da folha clara já falhou (2026-10-10).
+        return {
+            "cobrado": 10, "sparks_balance": 110,
+            "previa": {"intervencao_id": "INT-03"},
+            "conteudo": {
+                "o_que_acontece": "Muitas vezes o cérebro tenta simplificar relações complexas usando só somas.",
+                "exemplo": {"situacao": "Você adapta uma receita de 4 para 8 pessoas.",
+                            "raciocinio_errado": "Somar dois ovos em vez de multiplicar tudo pelo mesmo fator.",
+                            "correcao": "Se a escala dobrou, cada componente é multiplicado por dois."},
+                "treino": ["Identifique as duas grandezas.", "Escreva a constante antes de calcular."],
+                "sinal_de_alerta": "Você somou um valor fixo onde a relação era de multiplicação.",
+                "checagem": "Se uma grandeza dobrar, a outra dobra ou cai pela metade?",
+            },
+        }
     if path.startswith("/api/engajamento/missoes/") and path.endswith("/resgatar"):
         ESTADO.setdefault("resgatadas", set()).add(path.split("/")[4])
         return {"sparks_ganhos": 5, "xp_ganho": 20, "sparks_balance": 125}

@@ -1,6 +1,6 @@
 ---
 tags: [ux, padroes, componentes]
-atualizado: 2026-10-10
+atualizado: 2026-10-19
 ---
 
 # Padrões de tela
@@ -270,19 +270,44 @@ sequência: o balão centraliza.** `dash-agora` mora no nó aceso da trilha do d
 > no elemento.** O ponto único que decide se o guia abre é o segundo `useEffect` de
 > `Dashboard.jsx`; quem grava é `finish()`.
 
-## Duas apresentações de catálogo, de propósito
+## O Estudar é uma coluna de cartões gordos (2026-10-10)
 
-**Ladrilhos** quadrados (`LadrilhoDeCatalogo`, abrem no cursor) na coluna "Aprender" de `/estudar`;
-**cards completos** em `/estudar/cursos`. O ladrilho cresce **só para baixo** — crescer para
-os lados entra no respiro do contêiner e empurra a régua horizontal da página.
+Pedido do dono, com print: *"muito ruim e pouco atrativo… quero que tudo seja
+simples e atrativo, assim como o Duolingo"*. De 2026-09-18 a 2026-10-10 o
+`/estudar` tinha Aprender e Praticar em **duas colunas de meia tela**, e quase
+todo defeito vinha disso: títulos cortados ("ENEM 20…", "Curso de
+Matemática…"), cursos em ladrilhos de 150px que só mostravam nome e ação no
+hover (`LadrilhoDeCatalogo`, removido), seis cadernos com a mesma cara.
 
-O curso em andamento ganha `curso/CartaoDestaque.jsx` + `curso/CaminhoMini.jsx` —
-versão pequena e não-interativa do caminho serpenteado, desenhada só a partir de
-`total`/`concluidas` (o `mapa_de_estados` completo só existe no endpoint de **um**
-curso, não na listagem). Janela de 6 nós centrada em onde o aluno está.
+Hoje, de cima para baixo: cabeçalho com o relógio do ENEM em linha → Siga a
+trilha → os três modos (Redação, Treino, Folhear; três quadrados no celular)
+→ **Provas do ENEM** → **Cursos** → E-books → pontes de venda. Cada seção abre
+com `estudar/CabecaDeSecao` (ícone com pé + título + uma frase).
 
-O selo de % **substitui** o selo "Meu", não se soma a ele. E-books não têm essa noção
-(sem tracking de leitura).
+- **Caderno** (`estudar/CartaoDeCaderno`): o título é a **ÁREA**, não a
+  edição — o aluno escolhe "vou fazer Matemática". A edição ("ENEM 2023 ·
+  Caderno Azul") é o cabeçalho do grupo. A regra é pura e testada em
+  `lib/cadernos.js`: área pela moda que o servidor manda em `disciplinas`,
+  cor de caderno **só se a palavra está em `prova`** (nunca deduzida do
+  número do caderno), dia pela numeração (1–90 / 91–180).
+- **Curso / e-book** (`estudar/CartaoDeCurso`): capa com glifo grande, nome
+  em até três linhas, **uma ação escrita**. Se é do aluno e tem conteúdo, o
+  cartão inteiro é o link. Se não é, o botão de preço (número do servidor) —
+  e o sino de "me avise" só existe para curso **em breve**, na capa: no pé
+  ele espremia o preço em "350 S…" a 375px.
+- **Destaque** (`curso/CartaoDestaque` + `CaminhoMini`): o curso mais avançado
+  em andamento, com o trecho de caminho e um botão "Continuar". O
+  `CaminhoMini` é desenhado só de `total`/`concluidas` (o `mapa_de_estados`
+  completo só existe no endpoint de **um** curso). Janela de 6 nós.
+
+> [!warning] `CapaDoCurso` recebe a largura por `largura`, nunca por `className`
+> Ela tinha `w-full` fixo e o destaque passava `w-14`: duas larguras no mesmo
+> elemento são decididas pela ordem do CSS do Tailwind, `w-full` vencia, e a
+> capa virou uma barra da largura do card que empurrava o título para fora
+> da tela — em produção por três semanas.
+
+`/cursos` (página inteira) continua com os **cards completos** — é onde se
+lê a ementa. As duas apresentações são deliberadas.
 
 ## Gráficos
 
