@@ -79,8 +79,8 @@ const OBJETIVOS_SUGERIDOS = [
  *  flutua, "fala" enquanto o texto entra e tem o botão de voz. O primeiro
  *  acesso é onde o aluno conhece a guia — ela precisa ser a mesma que ele vai
  *  encontrar na trilha logo depois. */
-function FalaDaMentis({ texto, subtexto }) {
-  return <BalaoDaMentis titulo={texto} texto={subtexto || ""} tamanho="p" olhar={0.4} testid="onb-mentis" />;
+function FalaDaMentis({ texto, subtexto, voz }) {
+  return <BalaoDaMentis titulo={texto} texto={subtexto || ""} frases={voz ? [voz] : []} tamanho="p" olhar={0.4} testid="onb-mentis" />;
 }
 
 function Slider({ area, valor, aoMudar }) {
@@ -266,6 +266,7 @@ export default function BemVindo() {
               <FalaDaMentis
                 texto="Onde você sente mais dificuldade?"
                 subtexto="0 = tranquilo · 10 = é o meu maior problema"
+                voz="onb-dificuldades"
               />
               <div className="mt-7 space-y-5">
                 {AREAS.map((a) => (
@@ -287,7 +288,7 @@ export default function BemVindo() {
           {/* ---------------- Etapa 2: objetivo + tempo ---------------- */}
           {nome === "objetivo" && (
             <section className="reveal" data-testid="onb-objetivo">
-              <FalaDaMentis texto="Qual é o seu principal objetivo com o Sapiens?" />
+              <FalaDaMentis texto="Qual é o seu principal objetivo com o Sapiens?" voz="onb-objetivo" />
               <input
                 value={objetivo}
                 onChange={(e) => setObjetivo(e.target.value.slice(0, 180))}
@@ -344,6 +345,7 @@ export default function BemVindo() {
               <FalaDaMentis
                 texto="Onde você quer chegar no ENEM 2026?"
                 subtexto="Acertos nas 180 questões objetivas. Dá para mudar depois."
+                voz="onb-meta"
               />
               <div className="mt-7 space-y-3">
                 {METAS.map((m) => {

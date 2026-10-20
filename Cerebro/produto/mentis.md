@@ -1,6 +1,6 @@
 ---
 tags: [produto, ia, mentis]
-atualizado: 2026-10-10
+atualizado: 2026-10-19
 ---
 
 # Mentis — a IA e o mascote
@@ -45,13 +45,49 @@ personagem do Duolingo — de graça, sem chamar modelo:
   faz ali (`lib/dicasDaMentis.js` — uma vez por área por aparelho, nunca por
   cima de questão, nunca no Hoje). O painel abre com **"Seu próximo passo"**
   antes da conversa paga: o nó que o Hoje publicou. Navegar nunca custa Spark.
-- **A voz** (`lib/vozDaMentis.js`) é a síntese do próprio aparelho
-  (`speechSynthesis`): zero arquivo, zero custo, nada sai do aparelho.
-  **Desligada por padrão** — frase falada sem aviso no ônibus é
-  constrangimento — com o alto-falante sempre no balão; quem liga fica com ela
-  ligada (por aparelho). Prefere voz pt-BR "natural"/feminina. O Chrome só fala
-  depois de um gesto do aluno; antes disso a chamada é silenciosa e o texto
-  continua no balão.
+- **A voz** (`lib/vozDaMentis.js`) é **gravada**: um catálogo fixo de frases
+  (`lib/falasGravadas.json`) gravado UMA vez numa voz brasileira neural do
+  Gemini e publicado como MP3 estático (`public/voz/`). Tocar é baixar arquivo
+  do Cloudflare — **nenhuma API, nenhum custo por fala**. O balão continua
+  escrevendo o que é do aluno (nome, números, títulos); a voz diz a mesma
+  ideia em frases inteiras emendadas com 0,3 s de fôlego (`falaDaMentis` devolve
+  `voz`, a lista de ids). **Desligada por padrão** — frase falada sem aviso no
+  ônibus é constrangimento — com o alto-falante sempre no balão; quem liga fica
+  com ela ligada (por aparelho). Sem gesto do aluno o navegador não toca som:
+  a fala fica pendente e sai no primeiro toque. Sem Web Audio ou com arquivo
+  que não veio, a reserva é a síntese do aparelho (`speechSynthesis`) lendo o
+  balão.
+
+### Mudar ou acrescentar uma frase da voz
+
+Edite `falasGravadas.json` e rode `scripts/gravar_falas_da_mentis.py` com o
+Python do backend (ele lê a `GEMINI_API_KEY` de `aluno/backend/.env`).
+`vozDaMentis.test.js` **falha enquanto o áudio não acompanhar o texto** (o hash
+de voz+modelo+estilo+texto está no nome do arquivo). Três coisas que já
+custaram tempo:
+
+- **A cota grátis é de 10 pedidos por dia POR MODELO de voz** (medido em
+  2026-10-19, "limit: 10 requests per day on Free Tier"). Por isso o script
+  grava as falas de um mesmo tom num pedido só, separadas por `<long pause>`,
+  e corta o áudio alinhando as pausas ao tamanho de cada texto. Frase nova que
+  não coube na cota do dia declara `"reserva"` (uma frase vizinha já gravada)
+  e o app usa a reserva até ela ser gravada.
+- **Quem grava não consegue ouvir.** `--conferir` transcreve todos os MP3 num
+  modelo de texto e compara com o catálogo; frases muito curtas lado a lado
+  ("Bom dia!", "Boa tarde!") o transcritor junta — confira essas uma a uma.
+- **O modelo de voz fala, não lê:** troca "está" por "tá" e "para" por "pra".
+  É naturalidade, não erro de corte.
+
+### Por que não gerar a voz na hora, por API
+
+Foi construído e descartado em 2026-10-19. Gerar cada fala no servidor
+(`gemini-3.8-flash-tts`, streaming) dizia o nome e os números do aluno, mas:
+**(1)** a chave do projeto é Free Tier — 10 falas novas por dia para o produto
+INTEIRO, depois disso nada; **(2)** com faturamento, ~270 tokens de áudio por
+fala de 11 s ≈ US$ 0,0025 por fala (US$ 0,005 a partir de 2027, quando a tabela
+dobra), e um aluno ativo gera umas 6 falas novas por dia — ~R$ 2,50 por mês
+por aluno com a voz ligada, ~R$ 5 em 2027. O dono não quis pagar nem cobrar
+por isso ([[decisoes-do-dono]]).
 
 ## As superfícies pagas
 

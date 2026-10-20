@@ -15,8 +15,10 @@ import { EVENTO_VOZ, calar, definirVoz, falar, vozDisponivel, vozLigada } from "
  * estado "falando" enquanto ele entra ou enquanto a voz fala. Tocar no balão
  * mostra tudo de uma vez: ninguém espera animação para ler.
  *
- * A voz é opcional e do aparelho (`lib/vozDaMentis.js`). O botão liga e já
- * fala a frase atual — o toque É o gesto que o navegador exige para falar.
+ * A voz é opcional (`lib/vozDaMentis.js`): frases GRAVADAS uma vez, numa voz
+ * brasileira de gente, tocadas sem API nem custo — `frases` são os ids delas
+ * em `lib/falasGravadas.json`. O botão liga e já fala a frase atual — o toque
+ * É o gesto que o navegador exige para tocar som.
  */
 
 function movimentoReduzido() {
@@ -30,6 +32,7 @@ function movimentoReduzido() {
 export default function BalaoDaMentis({
   titulo,
   texto,
+  frases,
   children,
   comemorando = false,
   olhar = 0.5,
@@ -37,6 +40,8 @@ export default function BalaoDaMentis({
   testid = "balao-mentis",
 }) {
   const completo = `${titulo ? `${titulo} ` : ""}${texto || ""}`;
+  // A lista nasce nova a cada render; o efeito depende do CONTEÚDO dela.
+  const chaveDasFrases = (frases || []).filter(Boolean).join(" ");
   const [mostrado, setMostrado] = useState(() => (movimentoReduzido() ? (texto || "").length : 0));
   const [falandoVoz, setFalandoVoz] = useState(false);
   const [voz, setVoz] = useState(vozLigada);
@@ -68,10 +73,14 @@ export default function BalaoDaMentis({
   useEffect(() => {
     if (!vozLigada()) return undefined;
     const t = setTimeout(() => {
-      falar(completo, { aoComecar: () => setFalandoVoz(true), aoTerminar: () => setFalandoVoz(false) });
+      falar(completo, {
+        voz: chaveDasFrases ? chaveDasFrases.split(" ") : [],
+        aoComecar: () => setFalandoVoz(true),
+        aoTerminar: () => setFalandoVoz(false),
+      });
     }, 250);
     return () => clearTimeout(t);
-  }, [completo]);
+  }, [completo, chaveDasFrases]);
 
   // Sair da tela cala a Mentis: uma frase do Hoje continuando a ser falada
   // por cima da questão seguinte seria a guia atrapalhando.
@@ -89,7 +98,12 @@ export default function BalaoDaMentis({
     definirVoz(nova);
     setVoz(nova);
     if (nova) {
-      falar(completo, { forcar: true, aoComecar: () => setFalandoVoz(true), aoTerminar: () => setFalandoVoz(false) });
+      falar(completo, {
+        voz: chaveDasFrases ? chaveDasFrases.split(" ") : [],
+        forcar: true,
+        aoComecar: () => setFalandoVoz(true),
+        aoTerminar: () => setFalandoVoz(false),
+      });
     } else {
       setFalandoVoz(false);
     }

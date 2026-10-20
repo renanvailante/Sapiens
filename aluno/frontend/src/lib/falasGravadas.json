@@ -1,0 +1,34 @@
+{
+  "voz": "pt-br-podcaster-4",
+  "modelo": "gemini-3.8-flash-lite-tts",
+  "estilos": {
+    "neutro": "calm, warm and conversational, unhurried, like a mentor talking to one student up close; natural pauses; never salesy, never euphoric",
+    "feliz": "warm and genuinely pleased, a quiet smile in the voice, still calm and close; never euphoric"
+  },
+  "falas": {
+    "bom-dia": { "texto": "Bom dia!", "tom": "neutro" },
+    "boa-tarde": { "texto": "Boa tarde!", "tom": "neutro" },
+    "boa-noite": { "texto": "Boa noite!", "tom": "neutro" },
+    "mandou-bem": { "texto": "Mandou bem! Mais um passo feito.", "tom": "feliz" },
+    "ofensiva-espera": { "texto": "Sua ofensiva espera por hoje.", "tom": "neutro" },
+    "ofensiva-garantida": { "texto": "Ofensiva de hoje garantida.", "tom": "feliz" },
+    "dia-feito": { "texto": "Por hoje está tudo feito. Descanse, que amanhã a trilha recomeça.", "tom": "feliz" },
+    "resgatar": { "texto": "Você cumpriu essa missão. Toque no baú para pegar o seu prêmio.", "tom": "feliz" },
+    "revisao-uma": { "texto": "Uma questão que você errou voltou hoje. Revisar no dia certo é o que faz a memória durar. Começamos por ela?", "tom": "neutro" },
+    "revisao-varias": { "texto": "Algumas questões que você errou voltaram hoje. Revisar no dia certo é o que faz a memória durar. Começamos por elas?", "tom": "neutro" },
+    "revisao-em-dia": { "texto": "A sua fila de revisão está em dia. Quando uma questão voltar, ela aparece aqui.", "tom": "neutro" },
+    "revisao-feita": { "texto": "A sua revisão de hoje está feita. A memória agradece.", "tom": "feliz" },
+    "bloco": { "texto": "Esse horário foi você que marcou no seu cronograma. Cumprir o que você planejou vale mais do que qualquer sugestão minha.", "tom": "neutro" },
+    "pratica-dirigida": { "texto": "Separei questões novas sobre o ponto em que os seus erros mais se repetem.", "tom": "neutro", "reserva": "pratica" },
+    "pratica": { "texto": "Vamos de questões. Cada resposta me mostra onde você tropeça.", "tom": "neutro" },
+    "treino": { "texto": "Hora do mapa de treino: questões curtas, uma habilidade por vez.", "tom": "neutro" },
+    "comunidade": { "texto": "Um colega travou numa dúvida. Explicar para alguém é um dos jeitos mais fortes de fixar o conteúdo em você.", "tom": "neutro" },
+    "cronograma": { "texto": "Abra a sua semana e cumpra um bloco do cronograma. É o plano que você montou.", "tom": "neutro" },
+    "missao": { "texto": "Tem mais uma missão na sua trilha. É só tocar no botão.", "tom": "neutro" },
+    "extra": { "texto": "Você fechou o dia. Se ainda tiver energia, uma lição extra deixa o seu mapa mais nítido. Sem pressão.", "tom": "feliz" },
+    "passo": { "texto": "Separei o seu próximo passo. É só tocar no botão para começar.", "tom": "neutro" },
+    "onb-dificuldades": { "texto": "Onde você sente mais dificuldade?", "tom": "neutro" },
+    "onb-objetivo": { "texto": "Qual é o seu principal objetivo com o Sapiens?", "tom": "neutro" },
+    "onb-meta": { "texto": "Onde você quer chegar no ENEM 2026?", "tom": "neutro" }
+  }
+}

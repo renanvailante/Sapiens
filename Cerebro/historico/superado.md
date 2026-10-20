@@ -1,6 +1,6 @@
 ---
 tags: [historico, anti-regressao]
-atualizado: 2026-10-10
+atualizado: 2026-10-19
 ---
 
 # O que já foi assim e não é mais
@@ -165,6 +165,13 @@ valem como arqueologia. A identidade visual **não** mudou em nenhuma delas.
 - **Ponte automática aluno → professor** — decisão do dono.
 - **"site do Assad"** — referência visual pedida em 09/15 que nunca foi
   identificada com confiança. Ficou de fora, pendente do link.
+
+## A voz da Mentis
+
+| Era | É | Quando |
+|---|---|---|
+| Síntese do aparelho (`speechSynthesis`), robótica no Windows e em muito Android | Frases **gravadas** uma vez (`public/voz/`), voz brasileira neural; a síntese ficou só de reserva | 10-19 |
+| Voz gerada por fala no servidor (`/mentis/voz`, nunca publicada) | Descartada: Free Tier de 10 falas/dia e custo por fala — ver [[mentis]] | 10-19 |
 
 ## Um sintoma que já enganou
 

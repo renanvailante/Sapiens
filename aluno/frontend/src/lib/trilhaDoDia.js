@@ -104,6 +104,7 @@ function noDaRevisao(revisoes, missao) {
     fala: vencidas
       ? `${vencidas === 1 ? "Uma questão que você errou voltou" : `${vencidas} questões que você errou voltaram`} hoje. Revisar no dia certo é o que faz a memória durar — começamos por elas?`
       : "A sua fila de revisão está em dia. Quando uma questão voltar, ela aparece aqui.",
+    voz: vencidas ? (vencidas === 1 ? "revisao-uma" : "revisao-varias") : "revisao-em-dia",
   };
 }
 
@@ -126,6 +127,7 @@ function nosDosBlocos(cronograma, missao, hoje) {
     acao: { tipo: "rota", rota: b.rota || ROTAS.AGENDA },
     cta: "Começar",
     fala: `Você mesmo marcou ${b.inicio ? `${b.inicio} ` : ""}para «${b.titulo || "este bloco"}». Cumprir o que você planejou vale mais do que qualquer sugestão minha.`,
+    voz: "bloco",
   }));
 }
 
@@ -153,6 +155,7 @@ function noDaMissao(m, { passo, area }) {
       fala: dirigida
         ? `Separei questões novas sobre «${passo.titulo}», onde os seus erros mais se repetem.`
         : `Vamos de questões de ${area}: cada resposta me mostra onde você tropeça.`,
+      voz: dirigida ? "pratica-dirigida" : "pratica",
     };
   }
   if (m.id === "treino") {
@@ -163,6 +166,7 @@ function noDaMissao(m, { passo, area }) {
       acao: { tipo: "rota", rota: ROTAS.TREINO },
       cta: "Treinar",
       fala: `Hora do mapa de treino: questões curtas, uma habilidade por vez.${faltam ? ` Faltam ${faltam}.` : ""}`,
+      voz: "treino",
     };
   }
   if (m.id === "comunidade") {
@@ -173,6 +177,7 @@ function noDaMissao(m, { passo, area }) {
       acao: { tipo: "rota", rota: ROTAS.COMUNIDADE },
       cta: "Ajudar",
       fala: "Um colega travou numa dúvida. Explicar para alguém é um dos jeitos mais fortes de fixar o conteúdo em você.",
+      voz: "comunidade",
     };
   }
   if (m.id === "cronograma") {
@@ -183,6 +188,7 @@ function noDaMissao(m, { passo, area }) {
       acao: { tipo: "rota", rota: ROTAS.AGENDA },
       cta: "Ver a semana",
       fala: "Abra a sua semana e cumpra um bloco do cronograma — é o plano que você montou.",
+      voz: "cronograma",
     };
   }
   return {
@@ -192,6 +198,7 @@ function noDaMissao(m, { passo, area }) {
     acao: { tipo: "rota", rota: m.rota || ROTAS.ESTUDAR },
     cta: m.cta || "Começar",
     fala: `Próxima missão: ${m.titulo}.`,
+    voz: "missao",
   };
 }
 
@@ -211,6 +218,7 @@ function noExtra(passo, area) {
       : { tipo: "rota", rota: passo?.rota && passo.chave !== "praticar" && passo.chave !== "continuar" ? passo.rota : rotaDePratica(area) },
     cta: "Continuar",
     fala: "Você fechou o dia. Se ainda tiver energia, uma lição extra deixa o seu mapa mais nítido — sem pressão.",
+    voz: "extra",
   };
 }
 
@@ -259,6 +267,7 @@ export function montarTrilhaDoDia({ revisoes = null, cronograma = null, engajame
       acao: { tipo: "rota", rota: `${ROTAS.AGENDA}#revisoes` },
       cta: "Ver as revisões",
       fala: "A sua revisão de hoje está feita — a memória agradece.",
+      voz: "revisao-feita",
     });
   }
 
@@ -287,6 +296,7 @@ export function montarTrilhaDoDia({ revisoes = null, cronograma = null, engajame
       detalhe: passo.olho,
       cta: passo.cta || "Começar",
       fala: passo.porque,
+      voz: "passo",
       acao: passo.dirigida
         ? { tipo: "dirigida", processoId: passo.dirigida.processoId, escolha: passo.dirigida.escolha, rota: passo.rota }
         : { tipo: "rota", rota: passo.chave === "praticar" || passo.chave === "continuar" ? rotaDePratica(area) : passo.rota },
@@ -309,6 +319,7 @@ export function montarTrilhaDoDia({ revisoes = null, cronograma = null, engajame
     acao: null,
     cta: null,
     fala: null,
+    voz: null,
   });
   if (completo) nos.push(noExtra(passo, area));
 
@@ -325,6 +336,8 @@ export function montarTrilhaDoDia({ revisoes = null, cronograma = null, engajame
 // ---------------------------------------------------------------------------
 // O que a Mentis diz
 // ---------------------------------------------------------------------------
+
+const VOZ_DA_SAUDACAO = { "Bom dia": "bom-dia", "Boa tarde": "boa-tarde", "Boa noite": "boa-noite" };
 
 export function saudacao(hora = new Date().getHours()) {
   if (hora < 5) return "Boa noite";
@@ -343,26 +356,33 @@ export function falaDaMentis({ trilha, nome, ofensiva = null, voltouDe = null, h
   const oi = `${saudacao(hora)}${primeiro ? `, ${primeiro}` : ""}!`;
   const atual = trilha?.atual;
   const partes = [];
+  // O que ela DIZ em voz alta: as mesmas ideias, em frases gravadas uma vez
+  // (`falasGravadas.json`). O que muda de aluno para aluno — nome, número,
+  // título — fica no balão, escrito; a voz não custa nada por isso.
+  const voz = [voltouDe ? "mandou-bem" : VOZ_DA_SAUDACAO[saudacao(hora)]];
 
   if (voltouDe) partes.push(`Mais um passo feito: «${voltouDe}».`);
   if (ofensiva?.dias > 0 && !ofensiva.estudou_hoje) {
     partes.push(`Sua ofensiva de ${ofensiva.dias} ${ofensiva.dias === 1 ? "dia" : "dias"} espera por hoje.`);
+    voz.push("ofensiva-espera");
   } else if (ofensiva?.estudou_hoje && ofensiva?.dias > 0 && !voltouDe && !trilha?.completo) {
     partes.push(`Dia ${ofensiva.dias} da ofensiva garantido.`);
+    voz.push("ofensiva-garantida");
   }
 
   if (!atual) {
     partes.push("Por hoje está tudo feito. Descanse — amanhã a trilha recomeça.");
+    voz.push("dia-feito");
   } else if (atual.estado === "resgatar") {
     const p = atual.premio;
     partes.push(`Você cumpriu «${atual.titulo}». Toque no baú para pegar ${p?.sparks || 0} Sparks${p?.xp ? ` e ${p.xp} XP` : ""}.`);
-  } else if (trilha.completo) {
-    partes.push(atual.fala);
+    voz.push("resgatar");
   } else {
     partes.push(atual.fala);
+    if (atual.voz) voz.push(atual.voz);
   }
 
-  return { titulo: voltouDe ? "Mandou bem!" : oi, texto: partes.join(" ") };
+  return { titulo: voltouDe ? "Mandou bem!" : oi, texto: partes.join(" "), voz };
 }
 
 // ---------------------------------------------------------------------------

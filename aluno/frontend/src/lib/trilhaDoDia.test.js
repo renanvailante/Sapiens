@@ -186,6 +186,19 @@ test("a fala da Mentis: saudação pelo horário, ofensiva só com número real,
   expect(volta.texto).toContain("«Revisão do dia»");
 });
 
+test("a voz diz a mesma coisa em frases gravadas: saudação, ofensiva e o nó aceso", () => {
+  const t = montarTrilhaDoDia({
+    revisoes: { resumo: { questoes: 2 }, itens: [] },
+    engajamento: engajamento([missao("revisao")]),
+    hoje: HOJE,
+  });
+  expect(falaDaMentis({ trilha: t, nome: "Ana", ofensiva: { dias: 3, estudou_hoje: false }, hora: 9 }).voz)
+    .toEqual(["bom-dia", "ofensiva-espera", "revisao-varias"]);
+  expect(falaDaMentis({ trilha: t, nome: "Ana", voltouDe: "Bloco", hora: 15 }).voz)
+    .toEqual(["mandou-bem", "revisao-varias"]);
+  expect(falaDaMentis({ trilha: { atual: null }, hora: 20 }).voz).toEqual(["boa-noite", "dia-feito"]);
+});
+
 test("a fala nunca tem emoji — ela é mentora, não animadora", () => {
   const t = montarTrilhaDoDia({
     revisoes: { resumo: { questoes: 1 }, itens: [] },

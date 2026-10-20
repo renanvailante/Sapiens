@@ -748,6 +748,7 @@ export default function Hoje() {
             <BalaoDaMentis
               titulo={fala.titulo}
               texto={fala.texto}
+              frases={fala.voz}
               comemorando={Boolean(voltouDe) || trilha.completo}
               testid="dash-mentis"
             >

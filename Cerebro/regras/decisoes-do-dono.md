@@ -1,6 +1,6 @@
 ---
 tags: [regra, produto]
-atualizado: 2026-10-10
+atualizado: 2026-10-19
 ---
 
 # Decisões que são do dono, não minhas
@@ -90,6 +90,16 @@ mudar: a ordem dos nós (revisão → blocos → missões → troféu → liçã
 voz **desligada** por padrão, a dica de cada área aparecer uma vez por
 aparelho, e Matemática como área da prática quando não há gabarito. Mecânica
 em [[padroes-de-tela]] e [[mentis]].
+
+## A voz da Mentis é de graça e não chama API
+
+Pedido de 2026-10-19: *"idealmente, a voz seria de graça e sem usar nenhuma
+api (…) assim, não precisaríamos cobrar do cliente"*. A alternativa que ele
+considerou e deixou de lado foi cobrar 50 Sparks pelo acesso à voz gerada por
+API. **O que é meu e foi declarado como meu**, portanto o mais barato de
+mudar: a voz `pt-br-podcaster-4` (escolhida entre cinco ouvindo a mesma frase),
+o modelo `lite` da gravação (o principal estourou a cota do dia), a redação de
+cada frase falada, e a voz NÃO dizer o nome do aluno. Mecânica em [[mentis]].
 
 ## O pipeline está CONGELADO
 
