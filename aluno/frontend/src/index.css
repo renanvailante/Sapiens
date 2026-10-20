@@ -2591,72 +2591,385 @@ a.cartao-gordo:focus-visible, button.cartao-gordo:focus-visible {
 }
 
 /* =========================================================================
-   O BOTÃO DE CARTÃO — 2026-09-18
+   A LOJA DE SPARKS — 2026-10-19
    =========================================================================
+   Pedido do dono, com print da loja quebrada: "é aí que o pessoal vai
+   comprar, e eu quero que ela fique no topo da página". Os pacotes são a
+   primeira coisa depois do título; indicar, recarga e histórico vêm depois.
 
-   O cartão já existia na loja: o Payment Brick do Mercado Pago está montado
-   desde sempre. O que não existia era a PORTA. Ela era um link cinza
-   sublinhado de 12px dentro do painel do Pix — para pagar no cartão, o aluno
-   tinha de primeiro pedir um Pix, esperar o QR Code nascer e então descobrir,
-   em letra miúda, que havia outro caminho.
+   A GRADE SE DECIDE PELA LARGURA QUE ELA TEM, NÃO PELA JANELA (`@container`).
+   A mesma loja mora ao lado do trilho no desktop, sozinha no celular e
+   apertada num notebook pequeno. A régua antiga, por janela, punha quatro
+   colunas de 165px numa janela de ~1000px: o "1500" vazava do card e
+   "Cartão de crédito ou débito" quebrava uma palavra por linha.
 
-   Quem precisa desse caminho é justamente quem tem mais dificuldade de pagar
-   à vista. Esconder o parcelamento atrás de um link cinza é, na prática,
-   vender só para quem tem o valor inteiro hoje.
+       < 520px    uma coluna, e o card DEITA (número e preço na mesma linha)
+       520–779    duas colunas
+       ≥ 780px    quatro colunas, e o pacote em destaque sobe acima dos outros
 
-   POR QUE ELE NÃO É UM SEGUNDO BOTÃO CHEIO. O Pix continua sendo o primeiro:
-   é um clique, cai na hora e não tem taxa de parcelamento para o aluno. Dois
-   botões sólidos lado a lado não têm hierarquia — o olho não sabe qual é o
-   caminho da casa. Este é de CONTORNO: mesmo tamanho de alvo, mesma largura,
-   peso visual menor. Visível não é sinônimo de dominante.
+   O DESTAQUE é o pacote de maior `destaque_tamanho` do catálogo (hoje o de
+   1.500, decisão do produto — ver `sparks_store.py`): contorno e faixa em
+   ciano, números maiores e o ÚNICO botão cheio da grade. Uma ação acesa por
+   tela; os outros pagam pelo mesmo caminho, com o botão de contorno.
 
-   A NOTA "dá para parcelar" é a única coisa que ele promete, e é de
-   propósito que não há número de parcelas escrito aqui. Quantas vezes, com ou
-   sem juros, quem decide é o Mercado Pago em função do cartão, da bandeira e
-   da conta — escrever "em até 12x" nesta folha seria o produto prometendo uma
-   coisa que quem cobra pode não cumprir. Mesma regra do resto da loja: preço
-   e condição vêm do servidor, nunca do JavaScript.
+   O CARTÃO É O TERCEIRO DEGRAU, MAS LEGÍVEL. Até aqui era um botão de texto
+   violeta-escuro (#5B21B6) — cor da folha clara antiga, que no azul-tinta da
+   Clareza mal se lia. A nota "dá para parcelar" continua a única promessa
+   dele: quantas vezes e com que juros é o Mercado Pago quem decide, e
+   escrever "em até 12x" aqui seria prometer o que quem cobra pode não cumprir.
    ------------------------------------------------------------------------- */
 
-.botao-cartao {
+.loja-casca { container: loja / inline-size; }
+.loja-grade {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+}
+@container loja (min-width: 520px) {
+    .loja-grade { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@container loja (min-width: 780px) {
+    .loja-grade {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        padding-top: 14px;
+    }
+    .loja-pacote--destaque { margin-top: -14px; }
+}
+
+.loja-pacote {
+    container: pacote / inline-size;
+    position: relative;
     display: flex;
-    width: 100%;
-    align-items: center;
-    justify-content: center;
-    gap: 9px;
-    padding: 11px 16px;
-    border: 1.5px solid rgba(124, 58, 237, 0.4);
-    border-radius: 999px;
-    background: linear-gradient(180deg, rgba(139, 92, 246, 0.09), rgba(139, 92, 246, 0.04));
-    font-size: 0.875rem;
-    font-weight: 700;
-    line-height: 1.2;
-    color: #5B21B6;
-    cursor: pointer;
+    flex-direction: column;
+    min-width: 0;
+    background: var(--bio-superficie);
+    border: 2px solid var(--bio-linha);
+    border-radius: var(--r-g);
+    box-shadow: 0 4px 0 0 var(--bio-linha);
+    overflow: hidden;
     transition: border-color var(--mov-rapido) var(--mov-saida),
-                background-color var(--mov-rapido) var(--mov-saida),
-                transform var(--mov-rapido) var(--mov-saida);
+                background-color var(--mov-rapido) var(--mov-saida);
 }
 @media (hover: hover) and (pointer: fine) {
-    .botao-cartao:hover {
-        border-color: rgba(124, 58, 237, 0.75);
-        background: linear-gradient(180deg, rgba(139, 92, 246, 0.16), rgba(139, 92, 246, 0.08));
-    }
+    .loja-pacote:hover { border-color: var(--bio-linha-forte); }
 }
-.botao-cartao:active { transform: scale(0.985); }
-.botao-cartao:disabled { opacity: 0.4; cursor: not-allowed; }
+.loja-pacote--plus {
+    border-color: rgba(167, 139, 250, 0.55);
+    box-shadow: 0 4px 0 0 var(--btn-pe-violeta);
+}
+@media (hover: hover) and (pointer: fine) {
+    .loja-pacote--plus:hover { border-color: var(--bio-violeta); }
+}
+.loja-pacote--destaque {
+    background: #182C46;
+    background: color-mix(in srgb, var(--bio-ciano) 7%, var(--bio-superficie));
+    border-color: var(--bio-ciano);
+    box-shadow: 0 5px 0 0 var(--btn-pe);
+}
+@media (hover: hover) and (pointer: fine) {
+    .loja-pacote--destaque:hover { border-color: var(--bio-ciano); }
+}
+/* O pacote cujo pagamento está aberto logo abaixo da grade. */
+.loja-pacote[data-escolhido="true"] { border-color: var(--bio-ciano); }
 
-/* A promessa, na segunda linha e em caixa alta pequena: ela precisa ser lida
-   junto do rótulo, não no lugar dele. */
-.botao-cartao-nota {
-    display: block;
-    margin-top: 2px;
-    font-family: var(--fonte);
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.16em;
+/* A faixa do selo, por DENTRO do contorno: um selo pendurado por fora
+   precisava de um invólucro só para não ser cortado pelo `overflow`. */
+.loja-selo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 32px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 900;
+    line-height: 1.15;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: #7C3AED;
+    text-align: center;
+    background: var(--bio-superficie-alta);
+    color: var(--bio-suave);
+}
+.loja-pacote--destaque .loja-selo { background: var(--bio-ciano); color: #062033; }
+.loja-pacote--plus .loja-selo { background: rgba(167, 139, 250, 0.2); color: #E4DCFF; }
+/* O pacote sem selo guarda a altura da faixa quando divide a fileira com
+   quem tem — senão o número dele fica 32px acima do vizinho. Sozinho na
+   linha (uma coluna), a faixa vazia seria só espaço morto. */
+.loja-selo--vazio { display: none; }
+@container loja (min-width: 520px) {
+    .loja-selo--vazio { display: flex; visibility: hidden; }
+}
+
+.loja-corpo {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    padding: 18px 16px 16px;
+    text-align: center;
+}
+.loja-pilha { display: block; width: 76px; height: 54px; }
+.loja-qtd-bloco, .loja-preco-bloco {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 0;
+}
+.loja-qtd-bloco { margin-top: 10px; }
+.loja-qtd {
+    font-size: 32px;
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    color: var(--bio-texto);
+}
+.loja-unid {
+    margin-top: 5px;
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--bio-ambar);
+}
+.loja-preco-bloco { margin-top: 14px; margin-bottom: 14px; }
+.loja-preco {
+    font-size: 24px;
+    font-weight: 900;
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+    color: var(--bio-texto);
+    white-space: nowrap;
+}
+.loja-pacote--destaque .loja-qtd { font-size: 40px; }
+.loja-pacote--destaque .loja-preco { font-size: 28px; }
+.loja-unitario {
+    margin-top: 4px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--bio-fraco);
+    white-space: nowrap;
+}
+.loja-economia {
+    display: inline-flex;
+    align-items: center;
+    margin-top: 8px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    border: 1.5px solid rgba(61, 220, 151, 0.4);
+    background: rgba(61, 220, 151, 0.12);
+    font-size: 12px;
+    font-weight: 900;
+    color: var(--bio-verde);
+    white-space: nowrap;
+}
+
+.loja-beneficios {
+    display: grid;
+    gap: 7px;
+    width: 100%;
+    padding: 11px 12px;
+    border-radius: var(--r-p);
+    border: 1.5px solid rgba(167, 139, 250, 0.32);
+    background: rgba(167, 139, 250, 0.1);
+    text-align: left;
+}
+.loja-beneficios li {
+    display: flex;
+    align-items: flex-start;
+    gap: 7px;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.3;
+    color: #E4DCFF;
+}
+.loja-beneficios svg { flex-shrink: 0; margin-top: 2px; color: var(--bio-violeta); }
+
+/* "Dá para: 12 correções de redação ou 214 explicações de questão." É o que
+   transforma um número de Sparks em coisa que o aluno reconhece. */
+/* Desce para o pé, junto dos botões: o espaço que sobra num card mais
+   baixo que o vizinho fica entre o preço e o rodapé, e os quatro rodapés
+   alinham. */
+.loja-rende {
+    display: grid;
+    gap: 3px;
+    width: 100%;
+    margin-top: auto;
+    padding: 10px 12px;
+    border-radius: var(--r-p);
+    background: var(--bio-superficie-alta);
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.3;
+    color: var(--bio-suave);
+}
+.loja-rende-olho {
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--bio-fraco);
+}
+.loja-rende-item strong { font-weight: 900; color: var(--bio-texto); }
+.loja-rende-ou { color: var(--bio-fraco); }
+
+.loja-acoes {
+    display: grid;
+    gap: 8px;
+    width: 100%;
+    margin-top: auto;
+    padding-top: 16px;
+}
+.loja-rende + .loja-acoes { margin-top: 0; }
+.loja-pix {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 48px;
+    padding: 10px 14px;
+    font-size: 15px;
+    line-height: 1.15;
+    white-space: nowrap;
+}
+.loja-pix:disabled { opacity: 0.45; cursor: not-allowed; }
+.loja-cartao {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 4px 8px;
+    border: 0;
+    border-radius: var(--r-p);
+    background: transparent;
+    color: var(--bio-suave);
+    font-size: 14px;
+    font-weight: 800;
+    line-height: 1.2;
+    cursor: pointer;
+    transition: color var(--mov-rapido) var(--mov-saida),
+                background-color var(--mov-rapido) var(--mov-saida);
+}
+.loja-cartao-rotulo { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
+.loja-cartao-nota {
+    margin-top: 2px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--bio-fraco);
+}
+@media (hover: hover) and (pointer: fine) {
+    .loja-cartao:hover:not(:disabled) { color: #fff; background: var(--bio-superficie-alta); }
+}
+.loja-cartao:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* O CARD DEITADO: quando ele tem largura (celular de uma coluna, ou duas
+   colunas largas), o número e o preço dividem a linha e os dois botões
+   ficam lado a lado — o card de um pacote barato não precisa de 400px de
+   altura para dizer três coisas. */
+@container pacote (min-width: 300px) {
+    .loja-corpo {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        grid-template-areas:
+            "pilha qtd preco"
+            "ben   ben ben"
+            "rende rende rende"
+            "acoes acoes acoes";
+        align-items: center;
+        column-gap: 12px;
+        text-align: left;
+    }
+    .loja-pilha { grid-area: pilha; width: 60px; height: 44px; }
+    .loja-qtd-bloco { grid-area: qtd; align-items: flex-start; margin-top: 0; }
+    .loja-preco-bloco { grid-area: preco; align-items: flex-end; margin: 0; text-align: right; }
+    .loja-qtd { font-size: 28px; }
+    .loja-preco { font-size: 22px; }
+    .loja-pacote--destaque .loja-qtd { font-size: 34px; }
+    .loja-pacote--destaque .loja-preco { font-size: 24px; }
+    .loja-beneficios { grid-area: ben; margin-top: 14px; }
+    .loja-rende { grid-area: rende; margin-top: 14px; }
+    .loja-acoes { grid-area: acoes; grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+}
+
+/* A fileira de garantias, logo abaixo da grade: o que tira a dúvida de quem
+   está com o dedo no botão. Cada linha é verdade do caminho de pagamento. */
+.loja-garantias {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 10px 18px;
+    margin-top: 18px;
+    padding: 14px 16px;
+    border-radius: var(--r-m);
+    border: 2px solid var(--bio-linha);
+}
+.loja-garantia {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.3;
+    color: var(--bio-suave);
+}
+.loja-garantia svg { flex-shrink: 0; color: var(--bio-ciano); }
+
+/* O saldo no canto do título: um chip, não um cartão inteiro. É o número que
+   o aluno confere antes e depois de comprar — e não precisa da primeira
+   dobra inteira para isso. */
+.loja-saldo {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 6px 16px 6px 12px;
+    border-radius: 999px;
+    border: 2px solid rgba(255, 181, 71, 0.45);
+    background: rgba(255, 181, 71, 0.08);
+    white-space: nowrap;
+}
+.loja-saldo-n {
+    font-size: 22px;
+    font-weight: 900;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    color: var(--bio-texto);
+}
+.loja-saldo-rotulo {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--bio-fraco);
+}
+
+/* O botão do pacote que vende direitos: violeta, porque violeta é a cor do
+   Plus (cor é significado). Mesmo pé e mesmo afundar do `.btn-sapiens`. */
+.loja-btn-plus {
+    background: var(--bio-violeta);
+    color: #1B0F3D;
+    box-shadow: 0 4px 0 0 var(--btn-pe-violeta);
+}
+.loja-btn-plus:active:not(:disabled) { box-shadow: 0 0 0 0 var(--btn-pe-violeta); }
+
+/* A "pilha" de moedas que cresce com o pacote. Respira devagar só no
+   destaque — e nada disso existe com movimento reduzido. */
+@keyframes loja-brilho {
+    0%, 100% { opacity: 0.35; transform: scale(0.85); }
+    50% { opacity: 1; transform: scale(1); }
+}
+.loja-pacote--destaque .loja-faisca {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: loja-brilho 2.4s ease-in-out infinite;
+}
+.loja-pacote--destaque .loja-faisca + .loja-faisca { animation-delay: 1.2s; }
+@media (prefers-reduced-motion: reduce) {
+    .loja-pacote--destaque .loja-faisca { animation: none; }
 }
 
 /* ---------------- O CTA grudento das landings de anúncio ----------------

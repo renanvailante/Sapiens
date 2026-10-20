@@ -66,6 +66,31 @@ try:
     import cursos as _cursos_reais  # noqa: E402
 except Exception:  # pragma: no cover — o servidor sobe mesmo sem o catálogo
     _cursos_reais = None
+# Os pacotes da loja, também do backend: preço nunca é escrito à mão aqui.
+try:
+    import sparks_store as _loja_real  # noqa: E402
+except Exception:  # pragma: no cover
+    _loja_real = None
+
+
+def catalogo_da_loja():
+    """`GET /sparks/packages` no formato de `sparks_routes.list_packages`."""
+    if _loja_real is None:
+        return {"packages": [], "precos_avulsos": None}
+    pacotes = [{
+        "package_id": p.package_id, "label": p.label, "sparks_amount": p.sparks_amount,
+        "price_cents": p.price_cents, "currency": p.currency, "highlight": p.highlight,
+        "destaque_tamanho": p.destaque_tamanho, "oculto": p.oculto,
+        "beneficios": list(p.beneficios), "direitos": list(p.direitos),
+    } for p in _loja_real.list_packages()]
+    avulsos = None
+    if _cursos_reais is not None:
+        avulsos = {"live_sparks": _cursos_reais.LIVE_CUSTO_SPARKS,
+                   "curso_sparks": _cursos_reais.CURSO_CUSTO_SPARKS,
+                   "total_cursos": len(_cursos_reais.CURSOS)}
+    return {"packages": pacotes,
+            "auto_recharge_frequencies_days": list(_loja_real.AUTO_RECHARGE_FREQUENCIES_DAYS),
+            "default_baseline": _loja_real.DEFAULT_BASELINE, "precos_avulsos": avulsos}
 
 # Quais cursos têm estação publicada e onde o aluno de teste está em cada um.
 _PROGRESSO_TESTE = {
@@ -305,9 +330,20 @@ def rota_get(path, q):
     if path == "/api/cursos":
         return catalogo_de_cursos(c)
     if path == "/api/sparks/packages":
-        return {"packages": [], "precos_avulsos": None}
+        return catalogo_da_loja()
+    if path == "/api/sparks/config":
+        return {"public_key": "TEST-chave-falsa"}
+    if path == "/api/sparks/purchases/me":
+        return {"items": []}
+    if path == "/api/sparks/auto-recharge/me":
+        return {"active": False}
+    if path == "/api/indicacoes/me":
+        return {"codigo": "TESTE42", "amigos": [], "total_amigos": 0, "total_sparks": 0,
+                "aguardando_primeira_compra": 0}
     if path == "/api/mentis/precos":
         return {"explicacao": 7, "intervencao": 10}
+    if path == "/api/redacao/precos":
+        return {"custo_correcao": 120, "custo_feedback": 90, "custo_digitalizacao": 25, "min_caracteres": 500}
     if path == "/api/firestore/students/me/provas-progresso":
         if c == "novo":
             return {"provas": []}
