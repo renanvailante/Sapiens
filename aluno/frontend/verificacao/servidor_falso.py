@@ -235,6 +235,8 @@ def semana_cheia():
 
 def rota_get(path, q):
     c = ESTADO["cenario"]
+    if path.startswith("/api/sparks/purchases/") and path != "/api/sparks/purchases/me":
+        return {"purchase_id": path.rsplit("/", 1)[-1], "status": "pending", "credited": False}
     if path == "/api/auth/me":
         return {"user_id": "aluno-teste", "name": "Aluno Teste", "email": "aluno.teste@sapiens.test",
                 "whatsapp": "+5511900000000", "role": "student"}
@@ -417,6 +419,11 @@ def rota_get(path, q):
 
 
 def rota_post(path, corpo):
+    # Um Pix de mentira, só para a loja abrir o painel de pagamento.
+    if path == "/api/sparks/purchases" and corpo.get("payment_method_id") == "pix":
+        return {"purchase_id": "compra-teste", "status": "pending", "status_detail": "pending_waiting_transfer",
+                "pix": {"qr_code": "00020126PIX-FALSO-DE-VERIFICACAO", "qr_code_base64": None,
+                        "ticket_url": None, "expira_em": agora(-1)}}
     if path == "/api/firestore/students/me/answer":
         ESTADO["respostas"] += 1
         # As duas questões da revisão vencida: respondidas, a fila esvazia.

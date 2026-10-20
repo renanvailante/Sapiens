@@ -2868,23 +2868,27 @@ a.cartao-gordo:focus-visible, button.cartao-gordo:focus-visible {
 .loja-cartao:disabled { opacity: 0.45; cursor: not-allowed; }
 
 /* O CARD DEITADO: quando ele tem largura (celular de uma coluna, ou duas
-   colunas largas), o número e o preço dividem a linha e os dois botões
-   ficam lado a lado — o card de um pacote barato não precisa de 400px de
-   altura para dizer três coisas. */
-@container pacote (min-width: 300px) {
+   colunas largas), o número e o preço dividem a linha — o card de um pacote
+   barato não precisa de 450px de altura para dizer três coisas.
+
+     ≥ 260px   deitado, sem a pilha de moedas e com os botões empilhados
+               (é o celular de 320px: a pilha e os botões lado a lado não
+               cabem junto do "1.500" e do "R$ 54,90")
+     ≥ 300px   a pilha volta e os dois botões dividem a linha */
+@container pacote (min-width: 260px) {
     .loja-corpo {
         display: grid;
-        grid-template-columns: auto minmax(0, 1fr) auto;
+        grid-template-columns: minmax(0, 1fr) auto;
         grid-template-areas:
-            "pilha qtd preco"
-            "ben   ben ben"
-            "rende rende rende"
-            "acoes acoes acoes";
+            "qtd   preco"
+            "ben   ben"
+            "rende rende"
+            "acoes acoes";
         align-items: center;
         column-gap: 12px;
         text-align: left;
     }
-    .loja-pilha { grid-area: pilha; width: 60px; height: 44px; }
+    .loja-pilha { display: none; }
     .loja-qtd-bloco { grid-area: qtd; align-items: flex-start; margin-top: 0; }
     .loja-preco-bloco { grid-area: preco; align-items: flex-end; margin: 0; text-align: right; }
     .loja-qtd { font-size: 28px; }
@@ -2893,7 +2897,19 @@ a.cartao-gordo:focus-visible, button.cartao-gordo:focus-visible {
     .loja-pacote--destaque .loja-preco { font-size: 24px; }
     .loja-beneficios { grid-area: ben; margin-top: 14px; }
     .loja-rende { grid-area: rende; margin-top: 14px; }
-    .loja-acoes { grid-area: acoes; grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+    .loja-acoes { grid-area: acoes; }
+}
+@container pacote (min-width: 300px) {
+    .loja-corpo {
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        grid-template-areas:
+            "pilha qtd preco"
+            "ben   ben ben"
+            "rende rende rende"
+            "acoes acoes acoes";
+    }
+    .loja-pilha { display: block; grid-area: pilha; width: 60px; height: 44px; }
+    .loja-acoes { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
 }
 
 /* A fileira de garantias, logo abaixo da grade: o que tira a dúvida de quem

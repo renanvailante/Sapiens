@@ -1,6 +1,6 @@
 ---
 tags: [ux, padroes, componentes]
-atualizado: 2026-10-19
+atualizado: 2026-10-20
 ---
 
 # Padrões de tela
@@ -345,6 +345,39 @@ que se VÊ vem antes do que se lê; cada gráfico continua com a bolha da Mentis
 
 O balão "Para você" (`PainelDeSugestoes`) nasce **recolhido** abaixo de 1680px:
 com o trilho no desktop não sobra canto, e aberto ele cobria os gráficos.
+
+## A loja de Sparks (2026-10-19)
+
+Ordem: título curto + saldo (chip, só no desktop — no celular a barra do topo já
+mostra) → **a grade de pacotes** → painel de pagamento (abre logo abaixo) →
+garantias → oferta do pacote que vende direitos + "A conta" → indicar → recarga
+→ histórico. Decisão em [[decisoes-do-dono]].
+
+**A grade se decide pela largura que ELA tem, não pela janela** (`@container`
+em `.loja-casca` e em cada `.loja-pacote`, folha "A LOJA DE SPARKS" no
+`index.css`). A régua antiga por janela (`lg:grid-cols-4`) dava quatro colunas
+de 165px numa janela de ~1000px ao lado do trilho: o "1500" vazava do card e o
+botão do cartão quebrava uma palavra por linha. Hoje: uma coluna abaixo de
+520px, duas até 780px, quatro acima. O card **deita** (número e preço na mesma
+linha) a partir de 260px de largura própria, e a pilha de moedas e os botões lado
+a lado só voltam a partir de 300px — a 320px de tela os dois não cabem junto do
+"1.500" e do "R$ 54,90".
+
+- **O destaque é o de maior `destaque_tamanho`** do catálogo (hoje o de 1.500):
+  sobe 14px na grade de quatro colunas, contorno e faixa em ciano, e é o
+  **único Pix cheio** — os outros são `.btn-contorno`. O pacote com `beneficios`
+  ganha violeta (cor do Plus).
+- O selo é uma **faixa dentro do contorno**, não um selo pendurado por fora: o
+  `overflow: hidden` do card cortava o de fora. Card sem selo guarda a altura da
+  faixa (invisível) quando divide a fileira com quem tem.
+- "Dá para" desce para o pé do card, junto dos botões: o vão que sobra num card
+  mais baixo que o vizinho fica entre o preço e o rodapé, e os rodapés alinham.
+- `.botao-cartao` (violeta-escuro da folha clara antiga, ilegível no azul-tinta)
+  **não existe mais**; o cartão é `.loja-cartao`, inclusive dentro do painel do
+  Pix.
+
+Para ver a loja logada: o `servidor_falso.py` responde catálogo real
+(`sparks_store` do backend), indicação e um Pix falso — ver [[ambiente-local]].
 
 ## Gráficos
 

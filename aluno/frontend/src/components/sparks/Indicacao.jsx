@@ -13,8 +13,9 @@ import { Bloco } from "../Esqueleto";
  * que foi promovida a rota por engano.
  *
  * E a promessa pertence a este lugar: indicar é **como se ganha Spark sem
- * pagar**, e por isso fica antes da grade de pacotes — ver a nota em
- * `SparksStore.jsx`.
+ * pagar**. Até 2026-10-19 ficava antes da grade de pacotes; desde então a
+ * loja abre nos pacotes (pedido do dono) e indicar vem logo depois deles —
+ * ver a nota em `SparksStore.jsx`.
  *
  * `/indicar` continua respondendo: ele redireciona para `/sparks#indicar`, e a
  * âncora faz a página abrir aqui. O link que circulou continua chegando ao

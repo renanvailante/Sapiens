@@ -1,6 +1,6 @@
 ---
 tags: [indice, entrada]
-atualizado: 2026-10-19
+atualizado: 2026-10-20
 ---
 
 # Índice — o que ler antes de cada tarefa
@@ -18,6 +18,7 @@ Se nada aqui casar, vá direto ao código (`graft ask "<tarefa>"`) — o Cerebro
 | **publicar / fazer deploy** | [[deploy]] |
 | citar, mudar ou criar um **preço** | [[economia-de-sparks]] |
 | mexer em **pagamento, Pix, webhook, crédito** | [[pagamentos]] |
+| mexer na **loja de Sparks** (grade de pacotes, card, "Economize", "Dá para") | [[padroes-de-tela]] · [[economia-de-sparks]] · [[decisoes-do-dono]] |
 | mexer em **curso, e-book, estação, conteúdo** | [[cursos-conteudo]] · [[catalogo]] |
 | mexer na **aula ao vivo, mentoria, pacotes, direitos** | [[catalogo]] |
 | mexer em **texto de IA, chat, dossiê, prompt** | [[mentis]] |

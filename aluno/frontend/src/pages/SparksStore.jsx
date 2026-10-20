@@ -169,20 +169,20 @@ function PainelPix({ pkg, estado, pix, erro, onFechar, onCartao, onTentarDeNovo 
           cartão não deve ter que esperar um código Pix terminar de nascer
           para poder dizer isso. */}
       {onCartao && estado !== "erro" && (
-        <div className="mt-4">
+        <div className="mt-4 flex justify-center">
           {/* Era um link cinza sublinhado de 12px. Quem chegou até aqui e
               PRECISA parcelar não ia encontrá-lo — e essa pessoa é a que tem
               mais dificuldade de pagar à vista, não menos. */}
           <button
+            type="button"
             onClick={onCartao}
-            className="botao-cartao"
+            className="loja-cartao"
             data-testid="sparks-pix-prefiro-cartao"
           >
-            <CreditCard className="h-4 w-4 shrink-0" />
-            <span className="min-w-0">
-              Prefiro pagar com cartão
-              <span className="botao-cartao-nota">dá para parcelar</span>
+            <span className="loja-cartao-rotulo">
+              <CreditCard className="h-4 w-4 shrink-0" /> Prefiro pagar com cartão
             </span>
+            <span className="loja-cartao-nota">dá para parcelar</span>
           </button>
         </div>
       )}
@@ -918,7 +918,13 @@ export default function SparksStore() {
   const cabeca = {
     olho: "Loja de Sparks",
     titulo: "Escolha seu pacote",
-    subtitulo: "Cada Spark vira uma resposta da Mentis, uma correção de redação ou uma semana montada para você.",
+    // No celular o subtítulo some: três linhas empurravam o primeiro pacote
+    // para a metade da tela, e o "Dá para" de cada card já diz o mesmo.
+    subtitulo: (
+      <span className="hidden sm:inline">
+        Cada Spark vira uma resposta da Mentis, uma correção de redação ou uma semana montada para você.
+      </span>
+    ),
   };
 
   if (loading) {
@@ -940,16 +946,19 @@ export default function SparksStore() {
       /* A loja abre nos PACOTES (pedido do dono, 2026-10-19: "é aí que o
           pessoal vai comprar, e eu quero que fique no topo da página"). O
           título diz o que fazer aqui; o saldo é um chip no canto, não um
-          cartão de primeira dobra. */
+          cartão de primeira dobra — e só no desktop: abaixo de `lg` a barra
+          do topo já mostra o saldo, e repeti-lo empurrava os pacotes. */
       {...cabeca}
       largura="xl"
       voltar="/hoje"
       testid="sparks"
       acoes={
-        <div className="loja-saldo" title="Seu saldo de Sparks">
-          <Zap className="h-5 w-5 text-amber-400" fill="currentColor" />
-          <span className="loja-saldo-n" data-testid="sparks-store-balance">{sparks ?? "—"}</span>
-          <span className="loja-saldo-rotulo">no saldo</span>
+        <div className="hidden lg:block">
+          <div className="loja-saldo" title="Seu saldo de Sparks">
+            <Zap className="h-5 w-5 text-amber-400" fill="currentColor" />
+            <span className="loja-saldo-n" data-testid="sparks-store-balance">{sparks ?? "—"}</span>
+            <span className="loja-saldo-rotulo">no saldo</span>
+          </div>
         </div>
       }
     >

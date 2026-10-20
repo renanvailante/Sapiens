@@ -1,6 +1,6 @@
 ---
 tags: [operacao, dev, teste]
-atualizado: 2026-10-10
+atualizado: 2026-10-20
 ---
 
 # Ambiente local e testes
@@ -100,6 +100,16 @@ servidor **não sobe pelo `preview_start`**: o processo do painel não tem
 permissão de ler `~/Documents` (macOS) e morre em "Operation not permitted";
 rode-o por Bash em segundo plano. O cenário `dia_cheio` traz revisão vencida,
 bloco de hoje e as três missões — a trilha do dia com todo tipo de nó.
+
+A loja (`/sparks`) também abre lá: catálogo e preços avulsos lidos do próprio
+backend (`sparks_store`, `cursos`), indicação, e `POST /sparks/purchases` com
+Pix devolve um código falso — o painel de pagamento abre sem tocar o Mercado
+Pago. O cartão (Payment Brick) não abre: ele carrega o SDK do Mercado Pago com
+uma chave falsa.
+
+> A rolagem **suave** (`scrollIntoView({behavior: "smooth"})`) também não anda
+> no Browser pane, como as animações. A loja rola até o painel de pagamento
+> assim; teste com a instantânea antes de achar que o efeito quebrou.
 
 O cenário `semana` traz uma semana inteira de cronograma (plano, compromissos
 fixos e blocos em todos os dias, feitos até ontem) — é o que mostra a Agenda

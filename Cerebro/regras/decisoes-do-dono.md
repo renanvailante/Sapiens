@@ -1,6 +1,6 @@
 ---
 tags: [regra, produto]
-atualizado: 2026-10-19
+atualizado: 2026-10-20
 ---
 
 # Decisões que são do dono, não minhas
@@ -117,6 +117,22 @@ das áreas, a semana como quadro de colunas (em vez da grade de horas), a aula a
 vivo como item do dia, "Ajustar a semana" fechado por padrão, e o balão de
 sugestões do Progresso nascer recolhido. Mecânica em [[sistema-visual]],
 [[navegacao]] e [[padroes-de-tela]].
+
+## A loja de Sparks abre nos pacotes (2026-10-19)
+
+Pedido, com print da loja quebrada: *"melhore essa tela. Deixa ela bem atraente
+porque é aí que o pessoal vai comprar e eu quero que ela fica no topo da
+página"*. A ordem — **pacotes logo abaixo do título**, e só depois a oferta do
+pacote de cima, indicar, recarga e histórico — é dele. Isso desfaz a regra antiga
+de pôr "Indique um amigo" antes da grade.
+
+**O que é meu e foi declarado como meu**, portanto o mais barato de mudar: o
+selo "Economize X%" (quanto mais barato sai cada Spark contra o pacote de pior
+preço por Spark, arredondado para baixo, a partir de 5%), o "Dá para N
+correções de redação ou M explicações de questão" (divisão inteira pelos preços
+de `/redacao/precos` e `/mentis/precos`), a pilha de moedas por quantidade, o
+Pix cheio só no pacote em destaque e a fileira de garantias. Tudo é aritmética
+sobre números do servidor — nenhum preço no JS. Mecânica em [[padroes-de-tela]].
 
 ## O pipeline está CONGELADO
 
