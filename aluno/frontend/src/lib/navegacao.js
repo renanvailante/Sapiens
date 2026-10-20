@@ -1,5 +1,5 @@
 import {
-  LayoutGrid, GraduationCap, CalendarDays, Brain, Users,
+  House, GraduationCap, CalendarDays, ChartColumn, Users,
   Zap, MessageSquareWarning, Radio, UserRoundCheck, Download, HelpCircle,
   ShieldCheck, Megaphone, LogOut, MessageCircle,
 } from "lucide-react";
@@ -88,12 +88,27 @@ import { ROTAS } from "./rotas";
  * `lib/navegacao.test.js` trava a contagem. **Antes de acrescentar uma sexta
  * área, meça de novo** — a receita está em `Cerebro/ux/navegacao.md`, e a
  * intuição erra por dezenas de pixels.
+ *
+ * Desde 2026-10-19 (sistema CLAREZA) o desktop não tem mais barra de cima:
+ * as áreas moram no TRILHO, uma coluna à esquerda, e o orçamento de largura
+ * deixou de existir. A contagem continua travada pelo motivo que sobra — o
+ * polegar no celular, onde cinco ainda é o teto.
+ *
+ * ---------------------------------------------------------------------------
+ * A COR DE CADA ÁREA
+ * ---------------------------------------------------------------------------
+ *
+ * `cor` pinta o ícone no trilho e na barra do celular. É a única exceção à
+ * regra "cor é significado" do `index.css`: na navegação, a cor é
+ * ENDEREÇO — o olho acha a área pela cor antes de ler o nome, como nos
+ * ícones coloridos do Duolingo. Estudar é ciano porque é a ação.
  */
 export const AREAS = [
   {
     chave: "hoje",
     rota: ROTAS.HOJE,
-    icone: LayoutGrid,
+    icone: House,
+    cor: "#FFB547",
     nome: "Hoje",
     pergunta: "E agora?",
     testid: "nav-hoje",
@@ -103,6 +118,7 @@ export const AREAS = [
     chave: "agenda",
     rota: ROTAS.AGENDA,
     icone: CalendarDays,
+    cor: "#FF8FA3",
     nome: "Agenda",
     pergunta: "Quando?",
     testid: "nav-agenda",
@@ -112,6 +128,7 @@ export const AREAS = [
     chave: "estudar",
     rota: ROTAS.ESTUDAR,
     icone: GraduationCap,
+    cor: "#4FD9FF",
     nome: "Estudar",
     pergunta: "O que eu vou fazer?",
     testid: "nav-estudar",
@@ -123,7 +140,8 @@ export const AREAS = [
   {
     chave: "progresso",
     rota: ROTAS.PROGRESSO,
-    icone: Brain,
+    icone: ChartColumn,
+    cor: "#A78BFA",
     nome: "Progresso",
     pergunta: "Estou evoluindo?",
     testid: "nav-progresso",
@@ -133,6 +151,7 @@ export const AREAS = [
     chave: "comunidade",
     rota: ROTAS.COMUNIDADE,
     icone: Users,
+    cor: "#3DDC97",
     nome: "Comunidade",
     pergunta: "Quem me responde?",
     testid: "nav-comunidade",

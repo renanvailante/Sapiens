@@ -1,6 +1,6 @@
 ---
 tags: [indice, entrada]
-atualizado: 2026-10-10
+atualizado: 2026-10-19
 ---
 
 # Índice — o que ler antes de cada tarefa
@@ -25,10 +25,11 @@ Se nada aqui casar, vá direto ao código (`graft ask "<tarefa>"`) — o Cerebro
 | mexer na **correção de redação** | [[redacao]] · [[canon-pedagogico]] |
 | escrever **leitura nova do Firestore** | [[custo-de-leitura]] |
 | criar **coleção ou campo novo** | [[dados]] |
-| mexer em **CSS, cor, tema escuro** | [[sistema-visual]] |
-| **acrescentar área, item de menu ou ROTA** | [[navegacao]] |
+| mexer em **CSS, cor, fonte, tema escuro, botão** | [[sistema-visual]] |
+| **acrescentar área, item de menu ou ROTA**, mexer no **trilho** | [[navegacao]] |
 | criar **tela nova** | [[padroes-de-tela]] · [[sistema-visual]] |
 | mexer na **trilha do dia, Hoje, Próximo Passo, prática dirigida, fechamento de série, desfecho de missão** | [[padroes-de-tela]] · [[motor-cognitivo]] |
+| mexer na **Agenda (cronograma) ou na ordem do Progresso** | [[padroes-de-tela]] · [[decisoes-do-dono]] |
 | mexer na **Mentis como guia, animação da Mentis, voz, dicas por tela, botão flutuante** | [[mentis]] · [[padroes-de-tela]] |
 | mexer em algo que o **celular** toca | [[mobile]] |
 | mexer em **gamificação, liga, mural, venda, ofensiva, Sapiens Plus, comemoração/animação** | [[engajamento]] · [[decisoes-do-dono]] |
@@ -55,7 +56,9 @@ Se nada aqui casar, vá direto ao código (`graft ask "<tarefa>"`) — o Cerebro
 | Publiquei e produção não mudou | worktree → preview, ou stash de outra sessão | [[deploy]] · [[sessoes-concorrentes]] |
 | O site inteiro quebrou com `TypeError` depois de publicar | build sem `.env` → `undefined/api` | [[deploy]] |
 | Texto sumiu / invisível numa tela | camada de tradução, `.leitura-clara` na mesma tag, ou `hover:` | [[sistema-visual]] |
-| Página preta e lisa, sem brilho nos cantos | algo entre `html` e o conteúdo ganhou fundo opaco | [[sistema-visual]] |
+| `font-bold`/`rounded-full` da tela não pega | a folha própria vem depois dos utilitários | [[sistema-visual]] |
+| Conteúdo coberto pelo trilho à esquerda no desktop | tela `fixed inset-0` sem `.tela-cheia-com-trilho` | [[navegacao]] |
+| Print do navegador com tela esmaecida, vazia ou mapa sumido | painel em segundo plano congela as animações | [[ambiente-local]] |
 | CORS no console em desenvolvimento | o `craco.config.js` anula `.env.development.local` | [[ambiente-local]] |
 | Texto espremido a uma palavra por linha no celular | `flex-wrap` com filho `flex-1 min-w-0` | [[mobile]] |
 | Rótulo cortado na barra do celular, sem estouro nem quebra | `ellipsis` silencioso a 320px | [[mobile]] |

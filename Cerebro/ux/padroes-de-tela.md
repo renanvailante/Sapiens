@@ -309,6 +309,43 @@ com `estudar/CabecaDeSecao` (ícone com pé + título + uma frase).
 `/cursos` (página inteira) continua com os **cards completos** — é onde se
 lê a ementa. As duas apresentações são deliberadas.
 
+## A Agenda abre pelo cronograma (2026-10-19)
+
+Pedido do dono: *"principalmente a aba agenda (…) quero que o cronograma seja a
+primeira coisa que o aluno veja (…) tudo que é mais importante lá em cima e tudo
+que for menos importante embaixo"*. Antes a semana era a QUARTA seção, depois de
+um parágrafo, "O seu dia", a fila de revisões e os lembretes.
+
+De cima para baixo: cabeçalho (nome + semana) → **o cronograma**, com o
+progresso da semana no cabeçalho dele (anel + "N de M blocos" + barra) e o
+próximo bloco como a única ação acesa → **Revisões** → **Guardado para rever** →
+**Ajustar a semana** (`<details>` fechado: remontar, montar com a Mentis,
+prioridades, "por que a semana ficou assim", compromissos fixos).
+
+- **Quadro, não grade de horas.** No desktop, sete colunas com os itens em ordem
+  de horário; no celular/tablet, a tira dos sete dias (pontinho por bloco, verde
+  quando feito) e a lista do dia escolhido, que começa em hoje. A grade de horas
+  desenhava a duração, que ninguém consulta, e rolava de lado no celular.
+- **A aula ao vivo é um item do dia dela**, âmbar, vindo de `lib/live.js` (sem
+  requisição) — o cartão grande que ela tinha saiu.
+- Anotar compromisso é o "+" do dia (sem horário clicado, a sugestão é a próxima
+  meia hora cheia hoje, 14h nos outros dias).
+- "O seu dia" saiu: era o dia de hoje do cronograma repetido em cima dele.
+- Fila de revisão vazia vira UMA linha, não um cartão com botão.
+
+## O Progresso abre pelos números e gráficos (2026-10-19)
+
+Mesmo pedido: *"os gráficos bem evidentes lá em cima, e não lá embaixo"*. A aba
+abria com a leitura da Mentis e a seção de raciocínio (só texto); a primeira
+curva aparecia na terceira dobra. Agora: os cinco números (`ResumoDoPainel`) →
+**a curva de acerto em largura inteira** → os outros gráficos de evolução → "Onde
+a sua nota está sendo decidida" → a leitura da Mentis (`MentisGuia`) → o
+raciocínio (`Forcas`) → redação → hábitos → trajetória, conquistas, histórico. O
+que se VÊ vem antes do que se lê; cada gráfico continua com a bolha da Mentis.
+
+O balão "Para você" (`PainelDeSugestoes`) nasce **recolhido** abaixo de 1680px:
+com o trilho no desktop não sobra canto, e aberto ele cobria os gráficos.
+
 ## Gráficos
 
 `Grafico` tem uma caixa de **altura fixa** em volta do desenho. **Texto ou botão

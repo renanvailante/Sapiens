@@ -23,34 +23,25 @@ import { ROTAS, LEGADO, normalizar, destinoLegado, ehRotaAtual, ehLegado } from 
 // ---------------------------------------------------------------------------
 
 /**
- * A LARGURA DA BARRA, travada como número.
+ * O TETO DE CINCO ÁREAS.
  *
- * A barra de cima vive em 1072px úteis e nenhum monitor a aumenta. Com sete
- * primários a medição no navegador deu 1020px — 52px de folga, menos que um
- * rótulo, e foi assim que a passada anterior estourou.
- *
- * MEDIDO no navegador em 2026-09-18, com a tipografia real do bundle: 811px
- * de soma. A folga é 261px em 1280+ e **133px em 1024**, que é a faixa que
- * importa — lá o container é `px-4` e sobram 944px úteis, não 1072.
- *
- * É essa folga que paga o rótulo aparecer a partir de `lg` (1024px) em vez de
- * `xl` — entre 1024 e 1279 a barra era de ícones mudos.
- *
- * Este teste não mede pixel (jsdom não faz layout). Ele trava o que CAUSA o
- * estouro: a quantidade de itens nomeados. Uma sexta área derruba o teste e
- * manda medir de novo — que é exatamente a conversa que precisa acontecer.
+ * Até 2026-10-19 este teste travava a LARGURA da barra de cima do desktop
+ * (1072px úteis, 811px medidos com cinco abas). O trilho lateral aposentou
+ * essa conta — as áreas empilham na vertical. O teto continua, pelo motivo
+ * que sobrou: a barra do celular tem cinco alvos de polegar, com o do meio
+ * elevado, e uma sexta área não cabe nela sem encolher todos os rótulos.
+ * Ver `Cerebro/ux/navegacao.md`.
  */
-// A faixa apertada (1024px, `px-4`), não a larga: é lá que a barra estoura
-// primeiro, e é o caso que a medição de 17/09 tinha deixado de fora.
-const LARGURA_UTIL_EM_LG = 944;
-const MEDIDO_COM_CINCO = 811;
-
-test("cinco áreas, e a barra cabe com folga de um rótulo", () => {
+test("cinco áreas — o teto da barra do celular", () => {
   expect(AREAS).toHaveLength(5);
-  expect(MEDIDO_COM_CINCO).toBeLessThan(LARGURA_UTIL_EM_LG);
-  // A folga precisa pagar pelo menos um rótulo inteiro (~95px), senão a barra
-  // está no limite de novo e o próximo item entra sem ninguém medir.
-  expect(LARGURA_UTIL_EM_LG - MEDIDO_COM_CINCO).toBeGreaterThan(95);
+});
+
+test("toda área tem cor de endereço própria", () => {
+  // A cor pinta o ícone no trilho e na barra do celular: duas áreas com a
+  // mesma cor deixam de ser achadas pelo olho antes da leitura.
+  const cores = AREAS.map((a) => a.cor);
+  for (const cor of cores) expect(cor).toMatch(/^#[0-9A-F]{6}$/i);
+  expect(new Set(cores).size).toBe(cores.length);
 });
 
 test("toda área tem nome escrito, pergunta e rota canônica", () => {

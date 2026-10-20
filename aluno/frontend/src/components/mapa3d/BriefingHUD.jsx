@@ -18,7 +18,7 @@ export default function BriefingHUD({ hab, onFechar, onIniciar, ligadaAoPadrao =
       // exatamente sobre o "Iniciar missão" — o botão que faz a tela existir.
       // A partir de `sm` o painel sai do rodapé e vai para a coluna da
       // direita, e a folga volta a ser a de sempre.
-      className="fixed z-30 inset-x-0 bottom-0 sm:inset-x-auto sm:right-0 sm:top-16 sm:bottom-0 w-full sm:w-[400px] flex items-end sm:items-stretch px-3 pb-24 sm:p-4 pointer-events-none"
+      className="fixed z-30 inset-x-0 bottom-0 sm:inset-x-auto sm:right-0 sm:top-16 sm:bottom-0 lg:top-0 w-full sm:w-[400px] flex items-end sm:items-stretch px-3 pb-24 sm:p-4 pointer-events-none"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}

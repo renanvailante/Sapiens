@@ -2,8 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
-  CalendarDays, ChevronLeft, ChevronRight, Sparkles, Loader2, Check,
-  TrendingUp, Info, X, RotateCw, BookmarkPlus, Radio, Sun,
+  CalendarDays, ChevronLeft, ChevronRight, ChevronDown, Sparkles, Loader2, Check,
+  Info, X, RotateCw, BookmarkPlus, Radio, Plus, ArrowRight, SlidersHorizontal,
 } from "lucide-react";
 import { api, errMsg } from "../lib/api";
 import { avisarSparksMudou } from "../components/Navegacao";
@@ -12,12 +12,11 @@ import CronogramaCompromissos from "../components/CronogramaCompromissos";
 import EstadoDeErro from "../components/EstadoDeErro";
 import FilaDeRevisao from "../components/FilaDeRevisao";
 import ListaDeLembretes from "../components/ListaDeLembretes";
-import MentorUSP from "../components/MentorUSP";
+import AnelDeProgresso from "../components/AnelDeProgresso";
 import SecaoDaAba, { useAncora } from "../components/SecaoDaAba";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { useDeclararContextoMentis } from "../lib/mentisContexto";
 import { criarPortao } from "../lib/idempotencia";
-import { useCortesDaRolagem } from "../components/TiraRolavel";
 import { ROTAS, ANCORAS } from "../lib/rotas";
 import { proximaQuinta, temAcessoLocal } from "../lib/live";
 
@@ -27,71 +26,91 @@ import { proximaQuinta, temAcessoLocal } from "../lib/live";
  * Pergunta mental: **quando?**
  *
  * ---------------------------------------------------------------------------
- * A FILA DE REVISÕES MORA AQUI (2026-09-18)
+ * A ORDEM É A IMPORTÂNCIA (2026-10-19)
  * ---------------------------------------------------------------------------
  *
- * `/revisoes` era uma tela própria que empilhava três coisas de naturezas
- * diferentes: a fila de hoje (ação, com prazo), o que o aluno marcou pelo app
- * (ação, curada por ele) e a trajetória por habilidade (análise longitudinal).
- * As duas primeiras respondem "quando", que é a pergunta desta aba; a terceira
- * responde "eu melhorei?", que é a de Progresso — e foi para lá.
+ * Pedido do dono, com prints do Duolingo: "o site está muito poluído e pouco
+ * intuitivo, principalmente a aba agenda. Nessa aba eu quero que o cronograma
+ * seja a primeira coisa que o aluno veja (…) tudo que é mais importante
+ * precisa estar lá em cima e tudo que for menos importante embaixo". E o
+ * progresso evidente no topo, não embaixo.
  *
- * O sintoma de que a tela estava no lugar errado estava no próprio código: o
- * cronograma gerava blocos de `tipo: revisao` apontando para `/revisoes`, e
- * `/revisoes` desenhava a fila que o cronograma já tinha agendado. Uma tela
- * apontando para a outra e de volta, com o aluno no meio.
+ * Antes a aba abria com um parágrafo, depois "O seu dia", a fila de
+ * revisões, os lembretes, e só na QUARTA seção a semana — numa grade de
+ * horas de 760px que no celular rolava de lado, com texto de 10px. Abaixo
+ * dela, mais três seções de meta-informação.
  *
- * Agora o bloco de revisão da grade rola até a seção `#revisoes` desta mesma
- * página — é um deslocamento, não uma navegação, e o laço deixou de existir.
+ * Agora, de cima para baixo:
+ *
+ *   1. O CRONOGRAMA, com o progresso da semana no cabeçalho dele (anel +
+ *      "N de M blocos") e o próximo bloco a um toque. A aula ao vivo entra
+ *      como um item do dia dela — é um compromisso com hora, e é na agenda
+ *      que compromisso com hora mora.
+ *   2. As REVISÕES que venceram — ação com prazo.
+ *   3. O que o aluno GUARDOU para rever.
+ *   4. AJUSTAR A SEMANA, fechado: remontar, montar com a Mentis, a ordem de
+ *      prioridade, o porquê da distribuição e a importação de compromissos.
+ *      É o que se mexe uma vez por semana, não todo dia.
+ *
+ * O "O seu dia" que abria a aba saiu: era o dia de hoje do cronograma
+ * repetido em cima do próprio cronograma.
  *
  * ---------------------------------------------------------------------------
- * AS DUAS FILAS PRECISAM PARECER DIFERENTES
+ * A SEMANA COMO QUADRO, NÃO COMO GRADE DE HORAS
  * ---------------------------------------------------------------------------
  *
- * `FilaDeRevisao` é INFERIDA: cada linha nasceu de um erro que o motor
- * cognitivo conseguiu explicar, e a data de voltar a cobrar sai daí.
- * `ListaDeLembretes` é DECLARADA: cada linha nasceu do aluno lendo algo e
- * dizendo "isto eu ainda não domino". Postas na mesma seção, a segunda lê como
- * uma versão pior da primeira — por isso são duas seções, com título próprio.
+ * No desktop (lg+): sete colunas, uma por dia, e em cada uma os itens em
+ * ordem de horário — compromisso do aluno em linha apagada, bloco de estudo
+ * em cartão com o "feito" ao lado. A grade de horas desenhava a DURAÇÃO de
+ * cada coisa, que ninguém consulta; o que o aluno consulta é "o que vem e
+ * quando", e isso é uma lista.
+ *
+ * No celular e no tablet: a tira dos sete dias (com o progresso de cada um)
+ * e, embaixo, a lista do dia escolhido em cartões grandes. Começa em hoje.
+ *
+ * Nenhum bloco morre em si mesmo: todo bloco leva à tela onde aquilo é
+ * feito. Um cronograma que só informa é uma lista de tarefas; um que abre a
+ * tarefa é uma rotina.
  *
  * ---------------------------------------------------------------------------
- * O RESTO, QUE JÁ ERA DAQUI
+ * O QUE NÃO MUDOU
  * ---------------------------------------------------------------------------
  *
- * A grade mostra as duas metades da semana e as distingue no olho: o que o
- * aluno JÁ TEM (aula, trabalho, prova) em chip sólido, e o que o Sapiens
- * propõe em card clicável. Um cronograma que só mostrasse estudo seria mais um
- * plano bonito que ignora a vida de quem vai cumpri-lo.
+ * A fila de revisão é INFERIDA (nasceu de um erro que o motor explicou) e os
+ * lembretes são DECLARADOS (o aluno marcou) — continuam em seções separadas,
+ * porque juntas a segunda lê como uma versão pior da primeira.
  *
- * Nenhum bloco morre em si mesmo: todo bloco leva à tela onde aquilo é feito.
- * Um cronograma que só informa é uma lista de tarefas; um que abre a tarefa é
- * uma rotina.
+ * A ordem das áreas vem de `/api/prioridades` (peso da frente no ENEM x
+ * lacuna medida). A faixa que a explica continua existindo, em "Ajustar a
+ * semana", para o aluno poder discordar dela.
  *
- * A ordem das áreas não é escolha da tela nem do modelo: vem de
- * `/api/prioridades` (peso da frente na nota do ENEM x lacuna medida). A tela
- * só a explica — a faixa "o que mais rende pontos" existe para o aluno poder
- * discordar da ordem, e não só obedecê-la.
+ * Os preços (montar com a Mentis, remontar) saem do SERVIDOR, em
+ * `GET /cronograma`. A tela nunca escreve um número de Sparks.
  */
 
-const DIAS_CURTOS = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
+const DIAS = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
+const DIAS_CURTOS = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
 
-const CORES_TIPO = {
-  aula: "border-sky-400/30 bg-sky-400/10 text-sky-100",
-  trabalho: "border-violet-400/30 bg-violet-400/10 text-violet-100",
-  prova: "border-rose-400/35 bg-rose-400/12 text-rose-100",
-  pessoal: "border-white/15 bg-white/8 text-white/75",
-};
-
-const CORES_BLOCO = {
-  revisao: "border-amber-400/35 hover:border-amber-400/60",
-  treino: "border-[#8B7BFF]/35 hover:border-[#8B7BFF]/60",
-  redacao: "border-emerald-400/35 hover:border-emerald-400/60",
-  questoes: "border-white/12 hover:border-[#4FD9FF]/50",
+/** A cor de cada tipo de bloco de estudo: o pontinho antes do horário. A
+ *  cor diz o TIPO de trabalho, e o texto diz a matéria. */
+const COR_DO_TIPO = {
+  revisao: "#FFB547",
+  treino: "#A78BFA",
+  redacao: "#3DDC97",
+  questoes: "#4FD9FF",
+  estudo: "#4FD9FF",
 };
 
 const ROTULO_TIPO = {
   revisao: "Revisão", treino: "Treino", redacao: "Redação", questoes: "Questões", estudo: "Estudo",
 };
+
+const TIPOS_COMPROMISSO = [
+  { id: "aula", rotulo: "Aula" },
+  { id: "trabalho", rotulo: "Trabalho" },
+  { id: "prova", rotulo: "Prova" },
+  { id: "pessoal", rotulo: "Pessoal" },
+];
 
 function diaLocalISO(data = new Date()) {
   const d = new Date(data.getTime() - data.getTimezoneOffset() * 60000);
@@ -109,11 +128,303 @@ function rotuloDaSemana(semanaISO) {
     const inicio = new Date(`${semanaISO}T12:00:00`);
     const fim = new Date(inicio);
     fim.setDate(fim.getDate() + 6);
-    const f = (d) => d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+    const f = (d) => d.toLocaleDateString("pt-BR", { day: "numeric", month: "short" }).replace(".", "");
     return `${f(inicio)} – ${f(fim)}`;
   } catch {
     return semanaISO;
   }
+}
+
+function hhmmDoMin(min) {
+  const h = Math.floor(min / 60), m = min % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+function hhmmDaData(d) {
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
+/**
+ * Os itens de um dia, numa lista só e em ordem de horário: compromissos do
+ * aluno, blocos de estudo e — se for o dia dela — a aula ao vivo. O dia
+ * inteiro vem primeiro.
+ */
+function itensDoDia(dia, live) {
+  const itens = [
+    ...dia.compromissos.map((c) => ({ tipo: "compromisso", chave: `c-${c.id}`, inicio: c.dia_inteiro ? "" : c.inicio, dado: c })),
+    ...dia.blocos.map((b) => ({ tipo: "bloco", chave: `b-${b.id}`, inicio: b.inicio, dado: b })),
+  ];
+  if (live && live.edicao === dia.data) {
+    itens.push({ tipo: "live", chave: "live", inicio: hhmmDaData(live.inicio), dado: live });
+  }
+  return itens.sort((a, b) => a.inicio.localeCompare(b.inicio));
+}
+
+/** O bloco de estudo. O cartão inteiro abre a tarefa; o círculo à esquerda
+ *  marca feito sem sair da tela (um toque, otimista). */
+function CartaoDoBloco({ bloco, onConcluir, salvando, compacto = false }) {
+  const nav = useNavigate();
+  const cor = COR_DO_TIPO[bloco.tipo] || COR_DO_TIPO.questoes;
+  return (
+    <div
+      role="link"
+      tabIndex={0}
+      onClick={() => nav(bloco.rota || ROTAS.ESTUDAR)}
+      onKeyDown={(e) => { if (e.key === "Enter") nav(bloco.rota || ROTAS.ESTUDAR); }}
+      className={`superficie lift group flex cursor-pointer items-start gap-2.5 overflow-hidden rounded-2xl ${
+        compacto ? "p-2.5" : "p-4"
+      } ${bloco.concluido ? "opacity-60" : ""}`}
+      data-testid={`agenda-bloco-${bloco.id}`}
+    >
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); onConcluir(bloco); }}
+        disabled={salvando}
+        aria-label={bloco.concluido ? "Desmarcar como feito" : "Marcar como feito"}
+        aria-pressed={bloco.concluido}
+        className={`relative flex shrink-0 items-center justify-center rounded-full border-2 transition before:absolute before:-inset-2 before:content-[''] ${
+          compacto ? "ml-1 h-5 w-5" : "ml-1 h-7 w-7"
+        } ${bloco.concluido ? "border-[#3DDC97] bg-[#3DDC97] text-[#06281A]" : "border-[#4A6596] text-transparent hover:border-[#3DDC97]"}`}
+        data-testid={`agenda-bloco-feito-${bloco.id}`}
+      >
+        <Check className={compacto ? "h-3 w-3" : "h-4 w-4"} strokeWidth={3.5} />
+      </button>
+      <div className="min-w-0 flex-1">
+        <div className={`flex items-center gap-1.5 font-mono-alt text-white/60 ${compacto ? "text-[11px]" : "text-xs"}`}>
+          <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: cor }} aria-hidden="true" />
+          {bloco.inicio}
+          {!compacto && `–${bloco.fim}`}
+          {!compacto && <span style={{ color: cor }}>· {ROTULO_TIPO[bloco.tipo] || bloco.tipo}</span>}
+        </div>
+        <p
+          className={`font-extrabold leading-snug text-white ${compacto ? "line-clamp-3 text-[13px]" : "text-base"} ${
+            bloco.concluido ? "line-through decoration-2" : ""
+          }`}
+        >
+          {bloco.frente_nome || bloco.titulo}
+        </p>
+        {!compacto && bloco.frente_nome && bloco.titulo !== bloco.frente_nome && (
+          <p className="mt-0.5 truncate text-sm text-white/60">{bloco.titulo}</p>
+        )}
+      </div>
+      {!compacto && !bloco.concluido && (
+        <ArrowRight className="mt-1 h-5 w-5 shrink-0 text-white/40 transition group-hover:text-white" />
+      )}
+    </div>
+  );
+}
+
+/** Compromisso do aluno: aula, trabalho, prova. Ele já existe na vida dele —
+ *  então aparece apagado, sem caixa de feito. O X o apaga ali mesmo. */
+function LinhaDoCompromisso({ compromisso: c, onApagar, compacto = false }) {
+  return (
+    <div
+      className={`group relative flex items-start gap-2 rounded-xl border-2 border-dashed border-[#2B3F60] ${
+        compacto ? "px-2.5 py-2" : "px-4 py-3"
+      }`}
+      data-testid={`agenda-compromisso-${c.id}`}
+    >
+      <div className="min-w-0 flex-1">
+        <div className={`font-mono-alt text-white/50 ${compacto ? "text-[11px]" : "text-xs"}`}>
+          {c.dia_inteiro ? "Dia todo" : compacto ? c.inicio : `${c.inicio}–${c.fim}`}
+        </div>
+        <p className={`font-bold leading-snug text-white/75 ${compacto ? "line-clamp-2 text-[13px]" : "text-[15px]"}`}>
+          {c.titulo}
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={() => onApagar(c.id)}
+        aria-label={`Apagar ${c.titulo}`}
+        className="-m-1.5 shrink-0 rounded-full p-1.5 text-white/40 opacity-100 transition hover:bg-white/10 hover:text-white lg:opacity-0 lg:group-hover:opacity-100"
+      >
+        <X className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  );
+}
+
+/** A aula de quinta como item do dia dela: o único compromisso com hora que
+ *  o aluno não agendou. Âmbar, porque é um evento que não se repõe. */
+function ItemDaLive({ live, compacto = false }) {
+  return (
+    <Link
+      to={ROTAS.AULA_AO_VIVO}
+      className={`block rounded-xl border-2 border-[#FFB547]/60 bg-[#FFB547]/10 transition hover:bg-[#FFB547]/15 ${
+        compacto ? "px-2.5 py-2" : "px-4 py-3"
+      }`}
+      data-testid="agenda-live"
+    >
+      <div className={`flex items-center gap-1.5 font-mono-alt text-[#FFB547] ${compacto ? "text-[11px]" : "text-xs"}`}>
+        {live.aoVivoAgora ? (
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#FF6B81] opacity-80" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-[#FF6B81]" />
+          </span>
+        ) : (
+          <Radio className="h-3 w-3" />
+        )}
+        {live.aoVivoAgora ? "Agora" : hhmmDaData(live.inicio)}
+      </div>
+      <p className={`font-extrabold leading-snug text-[#FFE2B0] ${compacto ? "text-[13px]" : "text-[15px]"}`}>
+        Aula ao vivo{compacto ? "" : " com Vitor Lara"}
+      </p>
+      {!compacto && temAcessoLocal(live.edicao) && (
+        <p className="text-xs text-white/60">Você já tem esta edição.</p>
+      )}
+    </Link>
+  );
+}
+
+function Item({ item, onConcluirBloco, salvandoBloco, onApagarCompromisso, compacto }) {
+  if (item.tipo === "bloco") {
+    return <CartaoDoBloco bloco={item.dado} onConcluir={onConcluirBloco} salvando={salvandoBloco} compacto={compacto} />;
+  }
+  if (item.tipo === "live") return <ItemDaLive live={item.dado} compacto={compacto} />;
+  return <LinhaDoCompromisso compromisso={item.dado} onApagar={onApagarCompromisso} compacto={compacto} />;
+}
+
+/** Os pontinhos de um dia: um por bloco, cheio quando feito. Desenham o
+ *  progresso do dia sem número nenhum para ler. */
+function PontosDoDia({ blocos }) {
+  if (!blocos.length) return <span className="h-1.5" />;
+  return (
+    <span className="flex items-center justify-center gap-1">
+      {blocos.slice(0, 4).map((b) => (
+        <span
+          key={b.id}
+          className={`h-1.5 w-1.5 rounded-full ${b.concluido ? "bg-[#3DDC97]" : "bg-[#4A6596]"}`}
+        />
+      ))}
+    </span>
+  );
+}
+
+/**
+ * O QUADRO DA SEMANA (lg+): sete colunas, uma por dia. Hoje com o número
+ * aceso, como numa folhinha. O "+" no pé de cada coluna anota um compromisso
+ * naquele dia.
+ */
+function QuadroDaSemana({ dias, hojeISO, live, onConcluirBloco, salvandoBloco, onApagarCompromisso, onNovo }) {
+  return (
+    <div className="hidden grid-cols-7 gap-2 lg:grid" data-testid="agenda-quadro">
+      {dias.map((dia) => {
+        const eHoje = dia.data === hojeISO;
+        const itens = itensDoDia(dia, live);
+        return (
+          <div
+            key={dia.data}
+            className={`flex min-w-0 flex-col gap-2 rounded-2xl p-1.5 ${eHoje ? "bg-[#4FD9FF]/[0.06] ring-2 ring-[#4FD9FF]/40" : ""}`}
+            data-testid={`agenda-dia-${dia.indice}`}
+          >
+            <div className="flex flex-col items-center gap-1 pb-1 pt-1.5">
+              <span className={`text-xs font-extrabold uppercase tracking-wider ${eHoje ? "text-[#4FD9FF]" : "text-white/55"}`}>
+                {DIAS_CURTOS[dia.indice]}
+              </span>
+              <span
+                className={`flex h-8 w-8 items-center justify-center rounded-full text-base font-black ${
+                  eHoje ? "bg-[#4FD9FF] text-[#062033]" : "text-white"
+                }`}
+              >
+                {Number(dia.data.slice(8, 10))}
+              </span>
+              <PontosDoDia blocos={dia.blocos} />
+            </div>
+            {itens.map((item) => (
+              <Item
+                key={item.chave}
+                item={item}
+                onConcluirBloco={onConcluirBloco}
+                salvandoBloco={salvandoBloco}
+                onApagarCompromisso={onApagarCompromisso}
+                compacto
+              />
+            ))}
+            <button
+              type="button"
+              onClick={() => onNovo(dia)}
+              className="mt-auto flex h-9 items-center justify-center rounded-xl text-white/35 transition hover:bg-white/5 hover:text-white"
+              aria-label={`Anotar compromisso em ${DIAS[dia.indice]}`}
+              data-testid={`agenda-novo-${dia.indice}`}
+            >
+              <Plus className="h-4 w-4" strokeWidth={3} />
+            </button>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
+ * A SEMANA NO CELULAR (< lg): a tira dos sete dias e a lista do dia
+ * escolhido, em cartões grandes. Começa em hoje (ou na segunda, se a semana
+ * mostrada não é a atual).
+ */
+function DiaNoCelular({ dias, hojeISO, live, diaEscolhido, onEscolher, onConcluirBloco, salvandoBloco, onApagarCompromisso, onNovo }) {
+  const dia = dias.find((d) => d.data === diaEscolhido) || dias[0];
+  const itens = dia ? itensDoDia(dia, live) : [];
+  return (
+    <div className="lg:hidden">
+      <div className="grid grid-cols-7 gap-1" role="tablist" aria-label="Dias da semana">
+        {dias.map((d) => {
+          const eHoje = d.data === hojeISO;
+          const escolhido = d.data === dia?.data;
+          return (
+            <button
+              key={d.data}
+              type="button"
+              role="tab"
+              aria-selected={escolhido}
+              onClick={() => onEscolher(d.data)}
+              className={`flex flex-col items-center gap-1 rounded-2xl border-2 py-2 transition ${
+                escolhido ? "border-[#4FD9FF] bg-[#4FD9FF]/10" : "border-transparent"
+              }`}
+              data-testid={`agenda-tira-${d.indice}`}
+            >
+              <span className={`text-[11px] font-extrabold uppercase ${eHoje ? "text-[#4FD9FF]" : "text-white/55"}`}>
+                {DIAS_CURTOS[d.indice]}
+              </span>
+              <span
+                className={`flex h-7 w-7 items-center justify-center rounded-full text-sm font-black ${
+                  eHoje ? "bg-[#4FD9FF] text-[#062033]" : "text-white"
+                }`}
+              >
+                {Number(d.data.slice(8, 10))}
+              </span>
+              <PontosDoDia blocos={d.blocos} />
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="mt-4 space-y-2.5" data-testid="agenda-lista-do-dia">
+        {itens.length === 0 ? (
+          <p className="rounded-2xl border-2 border-dashed border-[#2B3F60] px-4 py-6 text-center text-sm text-white/55">
+            Nada marcado {dia?.data === hojeISO ? "para hoje" : `na ${DIAS[dia?.indice ?? 0].toLowerCase()}`}.
+          </p>
+        ) : (
+          itens.map((item) => (
+            <Item
+              key={item.chave}
+              item={item}
+              onConcluirBloco={onConcluirBloco}
+              salvandoBloco={salvandoBloco}
+              onApagarCompromisso={onApagarCompromisso}
+            />
+          ))
+        )}
+        <button
+          type="button"
+          onClick={() => dia && onNovo(dia)}
+          className="pill btn-vidro flex w-full items-center justify-center gap-2 px-4 py-3 text-sm"
+          data-testid="agenda-novo-celular"
+        >
+          <Plus className="h-4 w-4" strokeWidth={3} /> Anotar compromisso
+        </button>
+      </div>
+    </div>
+  );
 }
 
 /** A faixa que explica a ordem. Sem ela, o cronograma é uma ordem sem motivo. */
@@ -121,23 +432,25 @@ function FaixaDePrioridade({ prioridades }) {
   const topo = (prioridades || []).slice(0, 4);
   if (!topo.length) return null;
   return (
-    <section className="card-sapiens rounded-3xl p-6 md:p-7" data-testid="agenda-prioridades">
-      <p className="text-sm text-zinc-500">
-        É esta ordem que decide quantos blocos cada área ganha na sua semana.
+    <div data-testid="agenda-prioridades">
+      <h3 className="secao-olho">O que mais rende ponto</h3>
+      <p className="mt-1 text-sm text-white/60">
+        Peso de cada frente no ENEM cruzado com o que já foi medido em você. É esta ordem que
+        decide quantos blocos cada área ganha.
       </p>
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">
         {topo.map((p, i) => (
           <Link
             key={p.chave}
             to={p.rota}
-            className="lift rounded-2xl border border-white/10 bg-white/5 p-4"
+            className="superficie lift rounded-2xl p-4"
             data-testid={`agenda-prioridade-${p.chave}`}
           >
             <div className="flex items-baseline justify-between gap-2">
-              <span className="font-display text-base font-bold tracking-tight text-zinc-950">
+              <span className="font-display text-base font-extrabold text-white">
                 {i + 1}. {p.nome}
               </span>
-              <span className="font-mono-alt text-[10px] uppercase tracking-[0.22em] text-zinc-400">
+              <span className="font-mono-alt text-xs text-white/55">
                 {p.estado === "sem_medida"
                   ? "sem medida"
                   : p.chave === "redacao"
@@ -145,171 +458,10 @@ function FaixaDePrioridade({ prioridades }) {
                     : `${p.taxa_acerto}%`}
               </span>
             </div>
-            <p className="mt-1.5 text-xs leading-relaxed text-zinc-500">{p.porque}</p>
+            <p className="mt-1 text-xs leading-relaxed text-white/60">{p.porque}</p>
           </Link>
         ))}
       </div>
-    </section>
-  );
-}
-
-const TIPOS_COMPROMISSO = [
-  { id: "aula", rotulo: "Aula" },
-  { id: "trabalho", rotulo: "Trabalho" },
-  { id: "prova", rotulo: "Prova" },
-  { id: "pessoal", rotulo: "Pessoal" },
-];
-
-const HORA_PX = 52;
-const HORA_INICIO = 6;
-const HORA_FIM = 23;
-
-function minDoDia(hhmm) {
-  const [h, m] = hhmm.split(":").map(Number);
-  return h * 60 + m;
-}
-function hhmmDoMin(min) {
-  const h = Math.floor(min / 60), m = min % 60;
-  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
-}
-
-/**
- * A semana como uma linha do tempo contínua (uma coluna por dia, o relógio
- * correndo por trás), não sete listas soltas — para o olho comparar horários
- * entre dias tão fácil quanto numa agenda de verdade. Tocar num horário livre
- * abre a anotação rápida; o X no próprio compromisso o apaga ali mesmo — sem
- * abas, sem formulário para tirar o que já está certo.
- */
-function GradeSemana({ dias, hojeISO, onConcluirBloco, salvandoBloco, onApagarCompromisso, onClicarVazio }) {
-  const nav = useNavigate();
-  // A grade tem 760px de largura mínima e a tela do aluno tem 375: no celular
-  // ela SEMPRE rola, e terminava exatamente na borda — a mesma imagem de uma
-  // semana que acabasse na quinta. A máscara mostra o próximo dia cortado.
-  const { ref: refGrade, atributos: cortes } = useCortesDaRolagem(dias);
-  const alturaTotal = (HORA_FIM - HORA_INICIO) * HORA_PX;
-  const horas = Array.from({ length: HORA_FIM - HORA_INICIO }, (_, i) => HORA_INICIO + i);
-
-  return (
-    <div
-      ref={refGrade}
-      {...cortes}
-      className="card-sapiens corta-rolagem mt-6 overflow-x-auto rounded-3xl p-3"
-      data-testid="agenda-grade"
-    >
-      <div className="flex min-w-[760px]">
-        <div className="w-10 shrink-0">
-          <div className="h-9" />
-          {horas.map((h) => (
-            <div key={h} style={{ height: HORA_PX }} className="relative">
-              <span className="absolute -top-2 right-1 font-mono-alt text-[9px] text-zinc-400">
-                {String(h).padStart(2, "0")}h
-              </span>
-            </div>
-          ))}
-        </div>
-        {dias.map((dia) => {
-          const eHoje = dia.data === hojeISO;
-          const diaInteiro = dia.compromissos.filter((c) => c.dia_inteiro);
-          const comHorario = dia.compromissos.filter((c) => !c.dia_inteiro);
-          return (
-            <div key={dia.data} className="min-w-0 flex-1 border-l border-white/[0.06]">
-              <div className={`flex h-9 flex-col items-center justify-center ${eHoje ? "text-[#7FD8FF]" : "text-zinc-400"}`}>
-                <span className="font-display text-xs font-bold tracking-tight">{DIAS_CURTOS[dia.indice].slice(0, 3)}</span>
-                <span className="font-mono-alt text-[9px]">{dia.data.slice(8, 10)}</span>
-              </div>
-              {diaInteiro.map((c) => (
-                <div
-                  key={c.id}
-                  className={`group relative mx-1 mb-1 rounded-lg border px-2 py-1 text-[10px] ${CORES_TIPO[c.tipo] || CORES_TIPO.pessoal}`}
-                >
-                  {c.titulo}
-                  <span
-                    role="button"
-                    onClick={() => onApagarCompromisso(c.id)}
-                    aria-label={`Apagar ${c.titulo}`}
-                    className="absolute right-1 top-1 rounded-full p-1 opacity-0 transition hover:bg-black/20 group-hover:opacity-70"
-                  >
-                    <X className="h-2.5 w-2.5" />
-                  </span>
-                </div>
-              ))}
-              <div
-                className={`relative cursor-copy ${eHoje ? "bg-[#4FD9FF]/[0.03]" : ""}`}
-                style={{ height: alturaTotal }}
-                onClick={(e) => {
-                  const y = e.clientY - e.currentTarget.getBoundingClientRect().top;
-                  onClicarVazio(dia, HORA_INICIO * 60 + Math.round((y / HORA_PX) * 60));
-                }}
-                data-testid={`agenda-dia-${dia.indice}`}
-              >
-                {horas.map((h) => (
-                  <div key={h} className="absolute inset-x-0 border-t border-white/[0.05]" style={{ top: (h - HORA_INICIO) * HORA_PX }} />
-                ))}
-
-                {comHorario.map((c) => {
-                  const ini = Math.max(0, minDoDia(c.inicio) - HORA_INICIO * 60);
-                  const fim = Math.min(alturaTotal, minDoDia(c.fim) - HORA_INICIO * 60);
-                  if (fim <= ini) return null;
-                  return (
-                    <div
-                      key={c.id}
-                      onClick={(e) => e.stopPropagation()}
-                      style={{ top: (ini / 60) * HORA_PX, height: Math.max((fim - ini) / 60 * HORA_PX, 26) }}
-                      className={`group absolute inset-x-1 overflow-hidden rounded-lg border px-1.5 py-1 text-left text-[10px] leading-tight ${CORES_TIPO[c.tipo] || CORES_TIPO.pessoal}`}
-                      data-testid={`agenda-compromisso-${c.id}`}
-                    >
-                      <span className="block font-mono-alt text-[8px] opacity-70">{c.inicio}–{c.fim}</span>
-                      <p className="truncate">{c.titulo}</p>
-                      <span
-                        role="button"
-                        onClick={(e) => { e.stopPropagation(); onApagarCompromisso(c.id); }}
-                        aria-label={`Apagar ${c.titulo}`}
-                        className="absolute right-1 top-1 rounded-full p-1 opacity-0 transition hover:bg-black/20 group-hover:opacity-70"
-                      >
-                        <X className="h-2.5 w-2.5" />
-                      </span>
-                    </div>
-                  );
-                })}
-
-                {dia.blocos.map((b) => {
-                  const ini = Math.max(0, minDoDia(b.inicio) - HORA_INICIO * 60);
-                  const fim = Math.min(alturaTotal, minDoDia(b.fim) - HORA_INICIO * 60);
-                  if (fim <= ini) return null;
-                  return (
-                    <div
-                      key={b.id}
-                      onClick={(e) => { e.stopPropagation(); nav(b.rota); }}
-                      style={{ top: (ini / 60) * HORA_PX, height: Math.max((fim - ini) / 60 * HORA_PX, 26) }}
-                      className={`absolute inset-x-1 cursor-pointer overflow-hidden rounded-lg border bg-white/5 px-1.5 py-1 text-left text-[10px] leading-tight transition ${CORES_BLOCO[b.tipo] || CORES_BLOCO.questoes} ${b.concluido ? "opacity-50" : ""}`}
-                      data-testid={`agenda-bloco-${b.id}`}
-                    >
-                      <div className="flex items-center justify-between gap-1">
-                        <span className="font-mono-alt text-[8px] uppercase tracking-[0.15em] text-zinc-400">
-                          {ROTULO_TIPO[b.tipo] || b.tipo}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); onConcluirBloco(b); }}
-                          disabled={salvandoBloco}
-                          aria-label={b.concluido ? "Desmarcar como feito" : "Marcar como feito"}
-                          className={`relative flex h-3 w-3 shrink-0 items-center justify-center rounded border before:absolute before:-inset-2 before:content-[''] ${
-                            b.concluido ? "border-emerald-400/60 bg-emerald-400/25 text-emerald-200" : "border-white/25 text-transparent hover:border-white/50"
-                          }`}
-                        >
-                          <Check className="h-2 w-2" />
-                        </button>
-                      </div>
-                      <p className={`truncate ${b.concluido ? "line-through" : ""}`}>{b.titulo}</p>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      <p className="mt-2 text-center text-[10px] text-zinc-400">Toque num horário livre para anotar um compromisso.</p>
     </div>
   );
 }
@@ -330,21 +482,22 @@ export default function Agenda() {
   const [confirmando, setConfirmando] = useState(null);
   const [salvandoBloco, setSalvandoBloco] = useState(false);
   const [, setSaldo] = useState(null);
-  // O clique num horário livre da grade abre isto: {dia, data, inicio, fim}.
+  // O "+" de um dia abre isto: {dia, data, inicio, fim}.
   const [novoCompromisso, setNovoCompromisso] = useState(null);
   const [tituloNovo, setTituloNovo] = useState("");
   const [tipoNovo, setTipoNovo] = useState("aula");
   const [salvandoNovo, setSalvandoNovo] = useState(false);
+  // O dia aberto na lista do celular. Começa em hoje.
+  const [diaEscolhido, setDiaEscolhido] = useState(() => diaLocalISO());
 
-  useDeclararContextoMentis("Na Agenda, vendo o que tem hora marcada e o que precisa revisar.");
+  useDeclararContextoMentis("Na Agenda, vendo o cronograma da semana e o que precisa revisar.");
 
   const carregar = useCallback(async (semana) => {
     setCarregando(true);
     setErro(null);
     try {
-      // As três numa chamada paralela só. A fila entrou aqui quando `/revisoes`
-      // deixou de ser tela: ela é a primeira coisa que a Agenda responde, e
-      // buscá-la depois faria a seção "Hoje" nascer vazia e pular de altura.
+      // As três numa chamada paralela só: a fila e as prioridades são
+      // contexto, e buscá-las depois faria as seções nascerem vazias e pular.
       const [semanaResp, prioridadesResp, filaResp] = await Promise.allSettled([
         api.get("/cronograma", { params: { semana } }),
         api.get("/prioridades"),
@@ -358,9 +511,8 @@ export default function Agenda() {
       if (prioridadesResp.status === "fulfilled") {
         setPrioridades(prioridadesResp.value.data.prioridades || []);
       }
-      // Mesma regra para a fila: `null` faz a seção dizer que não conseguiu
-      // ler, e não "você não tem nada para revisar" — que seria mentira num
-      // dia de rede ruim, e a mentira mais cara que esta tela pode contar.
+      // `null` faz a seção dizer que não conseguiu ler, e não "você não tem
+      // nada para revisar" — que seria mentira num dia de rede ruim.
       setFila(filaResp.status === "fulfilled" ? filaResp.value.data : null);
     } catch (e) {
       setErro(errMsg(e, "Não consegui abrir o seu cronograma agora."));
@@ -371,12 +523,10 @@ export default function Agenda() {
 
   useEffect(() => { carregar(undefined); }, [carregar]);
 
-  // A trava do duplo toque. Duas partes, e as duas são necessárias: a `ref`
-  // barra a segunda chamada no mesmo instante (o `setGerando` que desabilita o
-  // botão só vale depois da re-renderização, e dois toques em 50ms acontecem
-  // antes dela), e a CHAVE só é trocada quando a montagem termina — uma nova
-  // tentativa depois de um erro de rede é o mesmo pedido, e o servidor precisa
-  // reconhecê-la como tal (ver `cronograma_routes._reivindicar_montagem`).
+  // A trava do duplo toque. A `ref` barra a segunda chamada no mesmo instante
+  // (o `setGerando` só vale depois da re-renderização), e a CHAVE só é trocada
+  // quando a montagem termina — uma nova tentativa depois de um erro de rede é
+  // o mesmo pedido (ver `cronograma_routes._reivindicar_montagem`).
   const portao = useRef(criarPortao("cron"));
 
   const gerar = async (comMentis) => {
@@ -413,6 +563,7 @@ export default function Agenda() {
     // de errar é um check que volta sozinho — nada é perdido.
     setDados((d) => ({
       ...d,
+      total_concluidos: (d.total_concluidos || 0) + (bloco.concluido ? -1 : 1),
       dias: d.dias.map((dia) => ({
         ...dia,
         blocos: dia.blocos.map((b) => (b.id === bloco.id ? { ...b, concluido: !b.concluido } : b)),
@@ -430,8 +581,13 @@ export default function Agenda() {
     }
   };
 
-  const abrirNovo = (dia, minutosClicados) => {
-    const base = Math.round(minutosClicados / 30) * 30;
+  const abrirNovo = (dia) => {
+    // Sem horário clicado (não há grade de horas): a sugestão é a próxima
+    // meia hora cheia se o dia é hoje, e 14h nos outros dias.
+    const agora = new Date();
+    const base = dia.data === diaLocalISO()
+      ? Math.min(22 * 60, Math.ceil((agora.getHours() * 60 + agora.getMinutes()) / 30) * 30)
+      : 14 * 60;
     setNovoCompromisso({ dia: dia.indice, data: dia.data, inicio: hhmmDoMin(base), fim: hhmmDoMin(base + 60) });
     setTituloNovo("");
     setTipoNovo("aula");
@@ -468,6 +624,11 @@ export default function Agenda() {
   const irPara = (dias) => {
     const alvo = deslocarSemana(semanaISO, dias);
     setSemanaISO(alvo);
+    // A lista do celular abre a semana nova pela segunda-feira dela, ou por
+    // hoje se a semana nova é a atual.
+    const hoje = diaLocalISO();
+    const segunda = deslocarSemana(alvo, 0);
+    setDiaEscolhido(hoje >= segunda && hoje <= deslocarSemana(segunda, 6) ? hoje : segunda);
     carregar(alvo);
   };
 
@@ -478,390 +639,313 @@ export default function Agenda() {
   const hojeISO = diaLocalISO();
   const plano = dados?.plano;
   const temPlano = Boolean(plano?.desta_semana && dados?.total_blocos > 0);
+  const total = dados?.total_blocos || 0;
+  const feitos = dados?.total_concluidos || 0;
+  const pct = total ? Math.round((feitos / total) * 100) : 0;
 
-  /**
-   * A GRADE, definida aqui porque a ORDEM dela na página depende do estado.
-   *
-   * A aba se chama "Semana" e o cronograma semanal é o que o aluno vem ver:
-   * ele precisa ser a primeira coisa, não a quarta. Estava atrás do resumo da
-   * Mentis, dos dois botões de montar e da faixa de prioridades — três blocos
-   * de meta-informação sobre um plano que o aluno ainda não tinha olhado.
-   *
-   * Com uma exceção, e ela não é um detalhe: quando NÃO HÁ plano, a grade
-   * está vazia, e abrir a tela com sete colunas em branco é pior do que
-   * abri-la com o botão que as preenche. Sem plano, o conteúdo mais importante
-   * é a AÇÃO de montar. A régua é a mesma nos dois casos — o que estiver no
-   * topo tem de ser o que importa agora —, e é o estado que decide qual é.
-   */
-  const grade = dados ? (
-    <GradeSemana
-      dias={dados.dias}
-      hojeISO={hojeISO}
-      onConcluirBloco={concluir}
-      salvandoBloco={salvandoBloco}
-      onApagarCompromisso={apagarCompromisso}
-      onClicarVazio={abrirNovo}
-    />
-  ) : null;
-  // Remontar só custa quando há o que remontar. Espelha a mesma condição do
-  // servidor (`gerar_cronograma`): semana com plano E com bloco.
+  // Remontar só custa quando há o que remontar — espelha o servidor
+  // (`gerar_cronograma`): semana com plano E com bloco.
   const custoRemontar = temPlano ? (dados?.custo_remontagem ?? 0) : 0;
   const custoDaConfirmacao = confirmando === "mentis" ? (dados?.custo_mentis ?? 0) : custoRemontar;
 
-  // Os blocos de HOJE, que abrem a aba. `dias` vem da semana inteira; o aluno
-  // que abre a Agenda às sete da noite quer ver a noite dele, não a segunda.
-  const hoje = (dados?.dias || []).find((d) => d.data === hojeISO);
-  const blocosDeHoje = (hoje?.blocos || []).filter((b) => !b.concluido);
-  const compromissosDeHoje = hoje?.compromissos || [];
-  const vencidas = fila?.resumo?.questoes ?? 0;
+  // O PRÓXIMO BLOCO: o primeiro não feito de hoje em diante, nesta semana. É
+  // a única ação acesa do topo da aba.
+  const proximo = useMemo(() => {
+    for (const dia of dados?.dias || []) {
+      if (dia.data < hojeISO) continue;
+      const b = dia.blocos.find((x) => !x.concluido);
+      if (b) return { bloco: b, dia };
+    }
+    return null;
+  }, [dados, hojeISO]);
 
-  // A aula ao vivo: o único compromisso do produto com HORA MARCADA que o
-  // aluno não agendou. Ela é calculada no navegador (`lib/live.js`), de graça
-  // — o Painel recusou uma leitura de `/cursos` só para anunciá-la, e a
-  // Agenda recusa pelo mesmo motivo.
+  const vencidas = fila?.resumo?.questoes ?? 0;
+  const filaVazia = fila && !fila.indisponivel && !(fila.itens || []).length;
+
+  // A aula ao vivo: calculada no navegador (`lib/live.js`), de graça — a
+  // Agenda recusa uma leitura de `/cursos` só para anunciá-la.
   const live = proximaQuinta();
-  const liveDias = Math.max(0, Math.ceil((live.inicio - Date.now()) / 86400000));
 
   useAncora(carregando);
 
+  const montar = () => (custoRemontar ? setConfirmando("gratis") : gerar(false));
+
   return (
     <div className="min-h-screen">
-      <div className="max-w-6xl mx-auto px-5 py-7 md:px-10 md:py-10">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="secao-olho">Agenda</p>
-            <h1 className="titulo-tela">Tudo o que tem hora.</h1>
-            <p className="mt-2 max-w-2xl text-sm text-white/55">
-              O que vence hoje, o que você marcou para rever, a sua semana montada nos
-              seus horários — e a aula de quinta, que não se repõe.
-            </p>
-          </div>
-          <div className="flex items-center gap-1.5">
+      <div className="mx-auto max-w-6xl px-4 py-6 md:px-8 md:py-9">
+        {/* ─── CABEÇALHO: o nome da aba e a semana. Nada mais. ─────────── */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="titulo-tela">Agenda</h1>
+          <div className="flex items-center gap-1">
             <button
               type="button" onClick={() => irPara(-7)}
-              className="pill flex h-9 w-9 items-center justify-center rounded-full border border-white/12 bg-white/5 text-white/70 hover:text-white"
+              className="chip !h-10 !w-10 justify-center !p-0"
               aria-label="Semana anterior" data-testid="agenda-semana-anterior"
             >
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="h-5 w-5" strokeWidth={2.6} />
             </button>
-            <span className="min-w-[9.5rem] text-center text-xs text-white/70" data-testid="agenda-rotulo-semana">
+            <span className="min-w-[8.5rem] text-center text-sm font-extrabold text-white" data-testid="agenda-rotulo-semana">
               {rotuloDaSemana(semanaISO)}
             </span>
             <button
               type="button" onClick={() => irPara(7)}
-              className="pill flex h-9 w-9 items-center justify-center rounded-full border border-white/12 bg-white/5 text-white/70 hover:text-white"
+              className="chip !h-10 !w-10 justify-center !p-0"
               aria-label="Próxima semana" data-testid="agenda-semana-proxima"
             >
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-5 w-5" strokeWidth={2.6} />
             </button>
           </div>
         </div>
 
         {erro && (
-          <div className="mt-8">
+          <div className="mt-6">
             <EstadoDeErro mensagem={erro} aoTentarNovamente={() => carregar(semanaISO)} />
           </div>
         )}
 
         {carregando && !dados ? (
-          <div className="mt-10 flex items-center gap-2 text-sm text-white/50">
+          <div className="mt-8 flex items-center gap-2 text-sm text-white/60">
             <Loader2 className="h-4 w-4 animate-spin" /> Abrindo a sua agenda…
           </div>
-        ) : (
-          <div className="mt-10 space-y-14">
-            {/* ─── HOJE ─────────────────────────────────────────────────── */}
-            <SecaoDaAba
-              id={ANCORAS.AGENDA_HOJE}
-              icone={Sun}
-              olho="Agora"
-              titulo="O seu dia"
-              descricao="O que está marcado para hoje, e o que a memória vai perder se você não voltar."
+        ) : dados ? (
+          <div className="mt-6 space-y-12">
+            {/* ─── 1. O CRONOGRAMA, com o progresso no topo dele ──────────── */}
+            <section
+              id={ANCORAS.AGENDA_SEMANA}
+              className="card-sapiens scroll-mt-24 rounded-3xl p-4 md:p-6"
+              data-testid="agenda-cronograma"
+              aria-label="Cronograma da semana"
             >
-              {blocosDeHoje.length === 0 && compromissosDeHoje.length === 0 && vencidas === 0 ? (
-                <p className="superficie rounded-2xl p-5 text-sm leading-relaxed text-white/55">
-                  Hoje não há nada marcado nem nada vencendo.{" "}
-                  <Link to={ROTAS.ESTUDAR} className="font-semibold text-[#7FD8FF] hover:underline">
-                    Escolher o que estudar
-                  </Link>{" "}
-                  ou montar a semana aqui embaixo.
-                </p>
-              ) : (
-                <div className="grid gap-2.5 sm:grid-cols-2">
-                  {vencidas > 0 && (
-                    <a
-                      href={`#${ANCORAS.AGENDA_REVISOES}`}
-                      className="superficie lift flex items-start gap-3 rounded-2xl border-amber-400/30 p-4"
-                      data-testid="agenda-hoje-revisoes"
-                    >
-                      <RotateCw className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
-                      <span className="min-w-0">
-                        <span className="block text-sm font-semibold text-white">
-                          {vencidas === 1 ? "1 questão voltou para revisão" : `${vencidas} questões voltaram para revisão`}
-                        </span>
-                        <span className="block text-xs text-white/50">
-                          Revisar no dia em que vence é o que faz a memória durar.
-                        </span>
-                      </span>
-                    </a>
-                  )}
-                  {compromissosDeHoje.map((c) => (
-                    <div
-                      key={c.id}
-                      className={`rounded-2xl border px-4 py-3 ${CORES_TIPO[c.tipo] || CORES_TIPO.pessoal}`}
-                      data-testid={`agenda-hoje-compromisso-${c.id}`}
-                    >
-                      <span className="secao-olho">{c.dia_inteiro ? "dia todo" : `${c.inicio}–${c.fim}`}</span>
-                      <span className="mt-0.5 block text-sm font-semibold">{c.titulo}</span>
+              {temPlano ? (
+                <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex min-w-0 items-center gap-4">
+                    <AnelDeProgresso valor={pct} tamanho={64} espessura={7} cor="#3DDC97" testid="agenda-anel">
+                      <span className="font-mono-alt text-sm text-white">{pct}%</span>
+                    </AnelDeProgresso>
+                    <div className="min-w-0">
+                      <p className="secao-olho">Sua semana</p>
+                      <p className="text-xl font-black leading-tight text-white" data-testid="agenda-progresso">
+                        {feitos} de {total} blocos feitos
+                      </p>
+                      <div className="barra mt-2 w-48 max-w-full" data-cor="verde" data-cheia={pct >= 100}>
+                        <i style={{ width: `${pct}%` }} />
+                      </div>
                     </div>
-                  ))}
-                  {blocosDeHoje.map((b) => (
+                  </div>
+                  {proximo && (
                     <Link
-                      key={b.id}
-                      to={b.rota || ROTAS.ESTUDAR}
-                      className={`superficie lift rounded-2xl border p-4 ${CORES_BLOCO[b.tipo] || CORES_BLOCO.questoes}`}
-                      data-testid={`agenda-hoje-bloco-${b.id}`}
+                      to={proximo.bloco.rota || ROTAS.ESTUDAR}
+                      className="pill btn-sapiens btn-grande inline-flex w-full items-center justify-center gap-3 sm:w-auto"
+                      data-testid="agenda-proximo"
                     >
-                      <span className="secao-olho">
-                        {b.inicio}–{b.fim} · {b.frente_nome || ROTULO_TIPO[b.tipo] || b.tipo}
+                      <span className="min-w-0 text-left">
+                        <span className="block">Começar</span>
+                        <span className="block truncate text-xs font-bold normal-case tracking-normal opacity-80">
+                          {proximo.bloco.frente_nome || ROTULO_TIPO[proximo.bloco.tipo] || "Estudar"}
+                          {" · "}
+                          {proximo.dia.data === hojeISO ? proximo.bloco.inicio : `${DIAS[proximo.dia.indice].toLowerCase()}, ${proximo.bloco.inicio}`}
+                        </span>
                       </span>
-                      <span className="mt-0.5 block text-sm font-semibold text-white">{b.titulo}</span>
+                      <ArrowRight className="h-5 w-5 shrink-0" strokeWidth={3} />
                     </Link>
-                  ))}
+                  )}
+                </div>
+              ) : (
+                /* Sem plano, a coisa mais importante é a AÇÃO de montar — a
+                   semana vazia vem logo embaixo, com os compromissos que já
+                   existem. Montar a primeira é de graça e o botão diz. */
+                <div className="mb-5 flex flex-col gap-4 rounded-2xl bg-white/[0.03] p-4 sm:flex-row sm:items-center sm:justify-between" data-testid="agenda-montar">
+                  <div className="flex min-w-0 items-start gap-3">
+                    <Mentis className="h-11 w-11 shrink-0" estado={gerando ? "analise" : "neutra"} />
+                    <div className="min-w-0">
+                      <p className="text-lg font-black leading-snug text-white" data-testid="agenda-resumo">
+                        {plano && !plano.desta_semana ? "Monte o cronograma desta semana" : "Sua semana ainda não tem cronograma"}
+                      </p>
+                      <p className="mt-0.5 text-sm text-white/60">
+                        {plano && !plano.desta_semana
+                          ? "O último é de outra semana — as suas revisões e os seus pontos fracos mudaram desde lá."
+                          : "Eu monto nos seus horários livres, com Matemática e Redação na frente."}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={montar}
+                    disabled={Boolean(gerando)}
+                    className="pill btn-sapiens inline-flex w-full shrink-0 items-center justify-center gap-2 px-5 py-3 text-[15px] disabled:opacity-60 sm:w-auto"
+                    data-testid="agenda-gerar"
+                  >
+                    {gerando === "gratis" ? <Loader2 className="h-4 w-4 animate-spin" /> : <CalendarDays className="h-4 w-4" strokeWidth={2.6} />}
+                    Montar minha semana
+                    {custoRemontar ? ` · ${custoRemontar} Sparks` : " · grátis"}
+                  </button>
                 </div>
               )}
-            </SecaoDaAba>
 
-            {/* ─── REVISÕES ─────────────────────────────────────────────── */}
+              <QuadroDaSemana
+                dias={dados.dias}
+                hojeISO={hojeISO}
+                live={live}
+                onConcluirBloco={concluir}
+                salvandoBloco={salvandoBloco}
+                onApagarCompromisso={apagarCompromisso}
+                onNovo={abrirNovo}
+              />
+              <DiaNoCelular
+                dias={dados.dias}
+                hojeISO={hojeISO}
+                live={live}
+                diaEscolhido={diaEscolhido}
+                onEscolher={setDiaEscolhido}
+                onConcluirBloco={concluir}
+                salvandoBloco={salvandoBloco}
+                onApagarCompromisso={apagarCompromisso}
+                onNovo={abrirNovo}
+              />
+            </section>
+
+            {/* ─── 2. REVISÕES ──────────────────────────────────────────── */}
             {/* Era a tela `/revisoes`. A fila é INFERIDA: cada linha nasceu de
-                um erro que o motor conseguiu explicar, e a data de voltar a
-                cobrar sai daí — não é uma lista de matérias. */}
+                um erro que o motor conseguiu explicar. Vazia, ela vira uma
+                linha — um cartão grande para dizer "nada" era ruído. */}
             <SecaoDaAba
               id={ANCORAS.AGENDA_REVISOES}
               icone={RotateCw}
-              olho="Revisão espaçada"
-              titulo="O que voltar a estudar"
-              descricao="Cada linha veio de um erro seu que o Sapiens conseguiu explicar — e a data de voltar a cobrar sai daí."
+              titulo="Revisões"
+              descricao={vencidas > 0 ? `${vencidas === 1 ? "1 questão voltou" : `${vencidas} questões voltaram`} para revisão. Revisar no dia em que vence é o que faz a memória durar.` : null}
             >
-              {fila ? (
-                <FilaDeRevisao fila={fila} />
-              ) : (
-                <p className="superficie rounded-2xl p-5 text-sm text-white/55">
+              {fila == null ? (
+                <p className="text-sm text-white/60">
                   Não consegui ler a sua fila de revisões agora.{" "}
                   <button
                     type="button"
                     onClick={() => carregar(semanaISO)}
-                    className="font-semibold text-[#7FD8FF] hover:underline"
+                    className="font-extrabold text-[#4FD9FF] hover:underline"
                   >
                     Tentar de novo
                   </button>
                 </p>
+              ) : filaVazia ? (
+                <p className="rounded-2xl border-2 border-dashed border-[#2B3F60] px-4 py-4 text-sm text-white/60" data-testid="fila-vazia">
+                  Nada para revisar hoje. A fila se monta sozinha a partir dos seus erros.
+                </p>
+              ) : (
+                <FilaDeRevisao fila={fila} />
               )}
             </SecaoDaAba>
 
-            {/* ─── LEMBRETES ────────────────────────────────────────────── */}
+            {/* ─── 3. LEMBRETES ─────────────────────────────────────────── */}
             {/* A outra fila, e ela precisa PARECER diferente: esta é declarada
-                pelo aluno ("isto eu ainda não domino"), aquela é inferida do
-                erro. Juntas na mesma seção, esta lê como uma versão pior. */}
+                pelo aluno ("isto eu ainda não domino"), aquela é inferida. */}
             <SecaoDaAba
               id={ANCORAS.AGENDA_LEMBRETES}
               icone={BookmarkPlus}
-              olho="Você marcou"
               titulo="Guardado para rever"
-              descricao={'Os trechos que você separou pelo app com "Lembrar-me com a Mentis" — o que a fila de cima não tem como adivinhar.'}
+              descricao={'O que você separou com "Lembrar-me com a Mentis".'}
             >
               <ListaDeLembretes />
             </SecaoDaAba>
 
-            {dados && (
-              <>
-                {/* ─── SEMANA ───────────────────────────────────────────── */}
-                <SecaoDaAba
-                  id={ANCORAS.AGENDA_SEMANA}
-                  icone={CalendarDays}
-                  olho="Segunda a domingo"
-                  titulo="A sua semana"
-                  descricao="Os seus compromissos, e o estudo montado no que sobra — priorizado pelo que mais rende ponto na sua prova."
-                >
-                  {/* A grade primeiro quando há plano: é o que o aluno vem
-                      ver. Sem plano ela está vazia, e sete colunas em branco
-                      são piores que o botão que as preenche — aí a AÇÃO sobe. */}
-                  {temPlano && grade}
+            {/* ─── 4. AJUSTAR A SEMANA — fechado ────────────────────────── */}
+            {/* O que se mexe uma vez por semana: remontar, montar com a Mentis,
+                a ordem de prioridade, o porquê da distribuição e a importação
+                de compromissos. Fechado por padrão para não disputar a tela
+                com o que se usa todo dia. */}
+            <details
+              id={ANCORAS.AGENDA_PRIORIDADES}
+              className="group superficie scroll-mt-24 rounded-3xl"
+              data-testid="agenda-ajustes"
+            >
+              <summary className="flex cursor-pointer list-none items-center gap-3 p-5 [&::-webkit-details-marker]:hidden">
+                <SlidersHorizontal className="h-5 w-5 shrink-0 text-white/60" strokeWidth={2.4} />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-lg font-black text-white">Ajustar a semana</span>
+                  <span className="block text-sm text-white/60">Remontar, montar com a Mentis, prioridades e compromissos fixos.</span>
+                </span>
+                <ChevronDown className="h-5 w-5 shrink-0 text-white/50 transition group-open:rotate-180" strokeWidth={2.6} />
+              </summary>
 
-                  <section
-                    className={`card-sapiens rounded-3xl p-6 md:p-8 ${temPlano ? "mt-6" : ""}`}
-                    data-testid="agenda-montar"
-                  >
-                    <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
-                      <div className="flex items-start gap-3">
-                        <Mentis className="mt-0.5 h-9 w-9 shrink-0" estado={gerando ? "analise" : "neutra"} />
-                        <div>
-                          <p className="text-sm leading-relaxed text-zinc-950" data-testid="agenda-resumo">
-                            {temPlano
-                              ? plano.resumo
-                              : "Esta semana ainda não tem cronograma. Eu monto em cima dos seus compromissos, " +
-                                "priorizando onde você ganha mais ponto — Matemática e Redação primeiro, e o " +
-                                "que os seus erros mostrarem depois."}
-                          </p>
-                          {temPlano && plano.recado && (
-                            <p className="mt-2 text-xs leading-relaxed text-zinc-500">{plano.recado}</p>
-                          )}
-                          {temPlano && (
-                            <p className="mt-2 font-mono-alt text-[10px] uppercase tracking-[0.22em] text-zinc-400">
-                              {dados.total_concluidos}/{dados.total_blocos} blocos feitos
-                              {plano.com_mentis ? " · comentada pela Mentis" : ""}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                      {/* Os dois preços saem do SERVIDOR (`custo_remontagem` e
-                          `custo_mentis` em `GET /cronograma`): a tela nunca
-                          escreve um número de Sparks, e quem cobra é quem
-                          monta. Remontar só custa quando a semana já tem
-                          plano — a primeira montagem é de graça e o botão diz. */}
-                      <div className="flex shrink-0 flex-col gap-2 sm:flex-row md:flex-col lg:flex-row">
-                        <button
-                          type="button"
-                          onClick={() => (custoRemontar ? setConfirmando("gratis") : gerar(false))}
-                          disabled={Boolean(gerando)}
-                          className="pill btn-sapiens inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full px-5 py-2.5 text-sm font-medium disabled:opacity-50"
-                          data-testid="agenda-gerar"
-                        >
-                          {gerando === "gratis" ? <Loader2 className="h-4 w-4 animate-spin" /> : <CalendarDays className="h-4 w-4" />}
-                          {temPlano ? "Remontar" : "Montar minha semana"} ·{" "}
-                          {custoRemontar ? `${custoRemontar} Sparks` : "grátis"}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setConfirmando("mentis")}
-                          disabled={Boolean(gerando)}
-                          className="pill btn-vidro inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full px-5 py-2.5 text-sm font-medium disabled:opacity-50"
-                          data-testid="agenda-gerar-mentis"
-                        >
-                          {gerando === "mentis" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                          Com a Mentis · {dados.custo_mentis} Sparks
-                        </button>
-                      </div>
+              <div className="space-y-8 border-t-2 border-[#24365A] p-5">
+                {temPlano && plano.resumo && (
+                  <div className="flex items-start gap-3">
+                    <Mentis className="h-9 w-9 shrink-0" estado={gerando ? "analise" : "neutra"} />
+                    <div>
+                      <p className="text-sm leading-relaxed text-white">{plano.resumo}</p>
+                      {plano.recado && <p className="mt-1.5 text-xs leading-relaxed text-white/60">{plano.recado}</p>}
                     </div>
-                    {plano && !plano.desta_semana && (
-                      <p className="mt-4 flex items-start gap-2 rounded-2xl border border-amber-400/25 bg-amber-400/8 px-3.5 py-2.5 text-xs text-amber-100">
-                        <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                        O seu último cronograma é de outra semana. Monte de novo para esta — as revisões
-                        marcadas e os seus pontos fracos mudaram desde lá.
-                      </p>
-                    )}
-                  </section>
-
-                  {!temPlano && <div className="mt-6">{grade}</div>}
-                </SecaoDaAba>
-
-                {/* ─── PRIORIDADES ──────────────────────────────────────── */}
-                <SecaoDaAba
-                  id={ANCORAS.AGENDA_PRIORIDADES}
-                  icone={TrendingUp}
-                  olho="Peso na prova × sua lacuna"
-                  titulo="O que mais rende ponto"
-                  descricao="A ordem não é escolha da tela nem da Mentis: sai do peso de cada frente na nota do ENEM cruzado com o que já foi medido em você. Ela está aqui para você poder discordar dela."
-                >
-                  <FaixaDePrioridade prioridades={prioridades} />
-
-                  {temPlano && plano.distribuicao?.length > 0 && (
-                    <section className="card-sapiens mt-6 rounded-3xl p-6" data-testid="agenda-distribuicao">
-                      <h3 className="font-display text-lg font-bold tracking-tight text-zinc-950">
-                        Por que a semana ficou assim
-                      </h3>
-                      <div className="mt-3 space-y-2.5">
-                        {plano.distribuicao.map((d) => (
-                          <div key={d.chave} className="flex items-start gap-3">
-                            <span className="mt-0.5 shrink-0 rounded-full border border-white/12 bg-white/5 px-2.5 py-1 font-mono-alt text-[10px] text-white/70">
-                              {d.blocos}×
-                            </span>
-                            <p className="text-xs leading-relaxed text-zinc-500">
-                              <span className="font-medium text-zinc-950">{d.nome}</span> — {d.porque}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </section>
-                  )}
-                </SecaoDaAba>
-
-                {/* ─── EVENTOS E COMPROMISSOS ───────────────────────────── */}
-                <SecaoDaAba
-                  id={ANCORAS.AGENDA_EVENTOS}
-                  icone={Radio}
-                  olho="Hora marcada"
-                  titulo="Aulas e compromissos"
-                  descricao="A aula ao vivo acontece uma vez por semana e não tem reposição. O resto desta lista é o que você mesmo anotou."
-                >
-                  {/* A aula de quinta como EVENTO DATADO. Ela era uma aba
-                      permanente em âmbar na barra — um botão quente para algo
-                      que acontece 60 minutos por semana, chamando atenção nos
-                      outros seis dias sem ter o que dizer. Aqui ela tem o que
-                      lhe faltava: uma data. */}
-                  <Link
-                    to={ROTAS.AULA_AO_VIVO}
-                    className="superficie lift flex flex-col items-stretch gap-4 rounded-2xl border-amber-400/25 p-5 sm:flex-row sm:items-center"
-                    data-testid="agenda-live"
-                  >
-                    <div className="flex min-w-0 flex-1 items-start gap-4 sm:items-center">
-                      <MentorUSP tamanho="m" testid="agenda-live-mentor" />
-                      <div className="min-w-0">
-                        <div className="secao-olho flex items-center gap-1.5 text-amber-200/90">
-                          {live.aoVivoAgora ? (
-                            <>
-                              <span className="relative flex h-2 w-2">
-                                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-500 opacity-80" />
-                                <span className="relative inline-flex h-2 w-2 rounded-full bg-rose-500" />
-                              </span>
-                              Acontecendo agora
-                            </>
-                          ) : (
-                            <>
-                              <Radio className="h-3 w-3" />
-                              {liveDias === 0 ? "Hoje" : liveDias === 1 ? "Amanhã" : `Em ${liveDias} dias`}
-                            </>
-                          )}
-                        </div>
-                        <div className="mt-0.5 font-display text-base font-bold tracking-tight text-white">
-                          Aula ao vivo com Vitor Lara
-                        </div>
-                        <div className="text-xs text-white/50">
-                          {live.inicio.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}
-                          {" · "}
-                          {live.inicio.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
-                          {temAcessoLocal(live.edicao) ? " · você já tem esta edição" : ""}
-                        </div>
-                      </div>
-                    </div>
-                    <span className="pill btn-vidro inline-flex w-full items-center justify-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold sm:w-auto">
-                      {live.aoVivoAgora ? "Entrar" : "Ver a aula"}
-                    </span>
-                  </Link>
-
-                  <div className="mt-6">
-                    <CronogramaCompromissos
-                      semana={semanaISO}
-                      compromissos={compromissos}
-                      preferencias={dados.preferencias}
-                      custoTexto={dados.custo_texto}
-                      onSemana={(nova) => { setDados(nova); setSemanaISO(nova.semana); }}
-                      onSaldo={setSaldo}
-                    />
                   </div>
-                </SecaoDaAba>
-              </>
-            )}
+                )}
+
+                {/* Os dois preços saem do SERVIDOR (`custo_remontagem` e
+                    `custo_mentis` em `GET /cronograma`). */}
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  {temPlano && (
+                    <button
+                      type="button"
+                      onClick={montar}
+                      disabled={Boolean(gerando)}
+                      className="pill btn-vidro inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm disabled:opacity-60"
+                      data-testid="agenda-remontar"
+                    >
+                      {gerando === "gratis" ? <Loader2 className="h-4 w-4 animate-spin" /> : <CalendarDays className="h-4 w-4" />}
+                      Remontar · {custoRemontar ? `${custoRemontar} Sparks` : "grátis"}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setConfirmando("mentis")}
+                    disabled={Boolean(gerando)}
+                    className="pill btn-contorno inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm disabled:opacity-60"
+                    data-testid="agenda-gerar-mentis"
+                  >
+                    {gerando === "mentis" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                    Montar com a Mentis · {dados.custo_mentis} Sparks
+                  </button>
+                </div>
+
+                <FaixaDePrioridade prioridades={prioridades} />
+
+                {temPlano && plano.distribuicao?.length > 0 && (
+                  <div data-testid="agenda-distribuicao">
+                    <h3 className="secao-olho">Por que a semana ficou assim</h3>
+                    <div className="mt-3 space-y-2.5">
+                      {plano.distribuicao.map((d) => (
+                        <div key={d.chave} className="flex items-start gap-3">
+                          <span className="chip shrink-0 !px-2.5 !py-1 font-mono-alt text-xs">{d.blocos}×</span>
+                          <p className="text-sm leading-relaxed text-white/60">
+                            <span className="font-extrabold text-white">{d.nome}</span> — {d.porque}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div id={ANCORAS.AGENDA_EVENTOS}>
+                  <h3 className="secao-olho mb-3 flex items-center gap-1.5">
+                    <Info className="h-3.5 w-3.5" /> Compromissos fixos
+                  </h3>
+                  <CronogramaCompromissos
+                    semana={semanaISO}
+                    compromissos={compromissos}
+                    preferencias={dados.preferencias}
+                    custoTexto={dados.custo_texto}
+                    onSemana={(nova) => { setDados(nova); setSemanaISO(nova.semana); }}
+                    onSaldo={setSaldo}
+                  />
+                </div>
+              </div>
+            </details>
           </div>
-        )}
+        ) : null}
       </div>
 
       {/* A cobrança, dita ANTES de acontecer — mesma regra da redação e da
-          loja. O diálogo só abre quando a ação custa alguma coisa: montar a
-          primeira semana continua sendo um clique só. */}
+          loja. O diálogo só abre quando a ação custa alguma coisa. */}
       <Dialog open={Boolean(confirmando)} onOpenChange={(v) => !v && setConfirmando(null)}>
         <DialogContent className="rounded-2xl" data-testid="agenda-confirmar">
           <DialogHeader>
-            <DialogTitle className="font-display text-2xl tracking-tight">
+            <DialogTitle className="font-display text-2xl font-black">
               {confirmando === "mentis" ? "Montar com a Mentis?" : "Remontar a semana?"}
             </DialogTitle>
           </DialogHeader>
@@ -879,17 +963,17 @@ export default function Agenda() {
               </>
             )}
           </p>
-          <DialogFooter>
+          <DialogFooter className="gap-2">
             <button
               onClick={() => setConfirmando(null)}
-              className="pill inline-flex items-center justify-center rounded-full border border-zinc-200 px-5 py-2.5 text-sm font-medium text-zinc-700 hover:border-zinc-300"
+              className="pill btn-vidro inline-flex items-center justify-center px-5 py-2.5 text-sm"
               data-testid="agenda-cancelar"
             >
               Cancelar
             </button>
             <button
               onClick={() => gerar(confirmando === "mentis")}
-              className="pill btn-sapiens inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium"
+              className="pill btn-sapiens inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm"
               data-testid="agenda-confirmar-btn"
             >
               <Sparkles className="h-4 w-4" /> Continuar por {custoDaConfirmacao} Sparks
@@ -898,58 +982,61 @@ export default function Agenda() {
         </DialogContent>
       </Dialog>
 
-      {/* A anotação rápida nascida do clique na grade — mesmo endpoint do
-          formulário da aba "Adicionar à mão", só que sem trocar de aba. */}
+      {/* A anotação rápida: o "+" de um dia. */}
       <Dialog open={Boolean(novoCompromisso)} onOpenChange={(v) => !v && setNovoCompromisso(null)}>
         <DialogContent className="rounded-2xl" data-testid="agenda-novo-compromisso">
           <DialogHeader>
-            <DialogTitle className="font-display text-2xl tracking-tight">Novo compromisso</DialogTitle>
+            <DialogTitle className="font-display text-2xl font-black">Novo compromisso</DialogTitle>
           </DialogHeader>
           {novoCompromisso && (
             <div className="grid gap-3">
+              <p className="text-sm font-extrabold text-zinc-500">
+                {DIAS[novoCompromisso.dia]}, {novoCompromisso.data.slice(8, 10)}/{novoCompromisso.data.slice(5, 7)}
+              </p>
               <input
                 autoFocus
                 value={tituloNovo}
                 onChange={(e) => setTituloNovo(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") salvarNovo(); }}
                 placeholder="O que é? Ex.: Aula de matemática"
-                className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none"
+                className="w-full rounded-xl border-2 border-zinc-200 px-3 py-2.5 text-sm outline-none"
                 data-testid="agenda-novo-titulo"
               />
               <div className="grid grid-cols-3 gap-2">
                 <select
                   value={tipoNovo}
                   onChange={(e) => setTipoNovo(e.target.value)}
-                  className="rounded-xl border border-zinc-200 px-2 py-2 text-sm outline-none"
+                  className="rounded-xl border-2 border-zinc-200 px-2 py-2.5 text-sm outline-none"
+                  aria-label="Tipo"
                 >
                   {TIPOS_COMPROMISSO.map((t) => <option key={t.id} value={t.id}>{t.rotulo}</option>)}
                 </select>
                 <input
                   type="time" value={novoCompromisso.inicio}
                   onChange={(e) => setNovoCompromisso({ ...novoCompromisso, inicio: e.target.value })}
-                  className="rounded-xl border border-zinc-200 px-2 py-2 text-sm outline-none"
+                  className="rounded-xl border-2 border-zinc-200 px-2 py-2.5 text-sm outline-none"
+                  aria-label="Começa"
                 />
                 <input
                   type="time" value={novoCompromisso.fim}
                   onChange={(e) => setNovoCompromisso({ ...novoCompromisso, fim: e.target.value })}
-                  className="rounded-xl border border-zinc-200 px-2 py-2 text-sm outline-none"
+                  className="rounded-xl border-2 border-zinc-200 px-2 py-2.5 text-sm outline-none"
+                  aria-label="Termina"
                 />
               </div>
-              <p className="text-xs text-zinc-500">
-                {DIAS_CURTOS[novoCompromisso.dia]}, {novoCompromisso.data.slice(8, 10)}/{novoCompromisso.data.slice(5, 7)}
-              </p>
             </div>
           )}
-          <DialogFooter>
+          <DialogFooter className="gap-2">
             <button
               onClick={() => setNovoCompromisso(null)}
-              className="pill inline-flex items-center justify-center rounded-full border border-zinc-200 px-5 py-2.5 text-sm font-medium text-zinc-700 hover:border-zinc-300"
+              className="pill btn-vidro inline-flex items-center justify-center px-5 py-2.5 text-sm"
             >
               Cancelar
             </button>
             <button
               onClick={salvarNovo}
               disabled={!tituloNovo.trim() || salvandoNovo}
-              className="pill btn-sapiens inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium disabled:opacity-50"
+              className="pill btn-sapiens inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm disabled:opacity-60"
               data-testid="agenda-novo-salvar"
             >
               {salvandoNovo ? <Loader2 className="h-4 w-4 animate-spin" /> : "Anotar"}

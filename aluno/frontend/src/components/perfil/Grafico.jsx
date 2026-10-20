@@ -105,11 +105,11 @@ export default function Grafico({
       <header className="mb-3 flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
         <div className="min-w-0">
           {olho && <div className="secao-olho flex items-center gap-1.5">{olho}</div>}
-          <h3 className="mt-1.5 font-display text-base font-bold leading-snug tracking-tight text-zinc-950 md:text-lg">
+          <h3 className="mt-1 font-display text-lg font-extrabold leading-snug text-zinc-950 md:text-xl">
             {titulo}
           </h3>
           {explicacao && (
-            <p className="mt-1 max-w-prose text-xs leading-relaxed text-zinc-500">{explicacao}</p>
+            <p className="mt-1 max-w-prose text-sm leading-relaxed text-zinc-500">{explicacao}</p>
           )}
         </div>
         {acaoTopo}

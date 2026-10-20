@@ -1,6 +1,6 @@
 ---
 tags: [ux, navegacao, layout]
-atualizado: 2026-09-18
+atualizado: 2026-10-19
 ---
 
 # Navegação — cinco áreas, uma lista
@@ -25,6 +25,31 @@ aluno, não um módulo do produto:
 
 Tudo mora em `aluno/frontend/src/lib/navegacao.js` (`AREAS`, `NOMES`, `MENU`) e
 é desenhado por `components/Navegacao.jsx`, montado **uma vez** no `App.js`.
+
+## O trilho do desktop (2026-10-19)
+
+No desktop (`lg+`) a navegação é uma **coluna fixa à esquerda** — o trilho —, como
+nos prints do Duolingo que o dono mandou: marca no topo, as cinco áreas com ícone
+grande colorido e nome em maiúsculas, e no pé o saldo de Sparks e "Mais" (o
+Menu). Substituiu a barra de cima. A composição e a ordem das áreas **não
+mudaram** — só o desenho.
+
+- 1024–1279px: 88px, só ícones (o nome vem no balão `nav-tip`, à direita).
+  1280px+: 248px, ícone + nome. Um token só: `--trilho-w`.
+- O conteúdo anda para a direita por `html[data-trilho] .App { padding-left }`;
+  quem liga o atributo é o próprio `Trilho`, enquanto montado. Rota sem
+  navegação (`temNavegacao`) não monta o trilho, então não ganha o recuo.
+- **Tela cheia `fixed inset-0` não anda com o padding** (é medida contra a
+  janela). O mapa 3D do Treino leva `.tela-cheia-com-trilho`, que começa depois
+  do trilho; sem ela o trilho cobria a borda do mapa e o painel de missões.
+  Tela cheia nova com navegação precisa da mesma classe.
+- Peças que se alinhavam à barra de cima (`top-16`) ficaram com `lg:top-*`
+  próprio — no desktop não existe mais barra de 64px no topo.
+
+**Cada área tem cor** (`AREAS[].cor`): é a única exceção à regra "cor é
+significado" — na navegação a cor é ENDEREÇO, o olho acha a área antes de ler.
+Estudar é ciano porque é a ação. `navegacao.test.js` trava que as cinco cores
+sejam distintas.
 
 ### O que isso substituiu
 
@@ -86,40 +111,21 @@ Antes disso, `/exams` tinha quatro nomes ao mesmo tempo ("Praticar" na porta,
 aluno precisa ficar bom no Sapiens, não bom em decorar que quatro palavras
 apontam para a mesma tela.
 
-## O orçamento: 1072px que nenhum monitor aumenta
+## O orçamento de largura (aposentado em 2026-10-19)
 
-O container interno é `max-w-6xl`. **Meça, nunca estime** — a intuição erra por
-dezenas de px, e `scrollWidth - clientWidth` dá 0 sempre que cabe (o
-`justify-between` come a sobra). O número que importa é a **soma das larguras
-dos filhos**.
-
-Medição de 18/09 (DOM real, tipografia do bundle, sem login):
-
-| viewport | útil | soma | folga |
-|---|---|---|---|
-| 1024px | 944px | 811px | **133px** |
-| 1280px | 1072px | 811px | 261px |
-| 1536px | 1072px | 811px | 261px |
-
-Abas: Hoje 72 · Agenda 92 · Estudar 93 · Progresso 109 · Comunidade 126.
-
-> **A folga de 1024 é a que importa**, e não a de 1536: lá o container é `px-4`
-> e sobram 944px, não 1072. As economias `2xl:` não ajudam nessa faixa. A
-> medição anterior media só o caso largo.
-
-Com sete primários a soma era 1020px — 52px de folga, menos que um rótulo. O
-que comprou espaço: duas áreas a menos e o "sair" descendo para o rodapé do
-Menu. Os 133px pagam o rótulo aparecer a partir de `lg` e não de `xl` — entre
-1024 e 1279 a barra era de ícones mudos.
-
-Como medir sem login: ver [[ambiente-local]]. `lib/navegacao.test.js` trava a
-contagem de áreas; uma sexta derruba o teste e manda medir de novo.
+A barra de cima vivia em 1072px úteis e estourou duas vezes (sete primários deram
+52px de folga; com cinco, 133px a 1024). O trilho empilha as áreas na vertical e
+a conta deixou de existir. **O teto de cinco áreas continua**, agora pelo motivo
+que sobrou: a barra do celular tem cinco alvos de polegar com o do meio elevado —
+uma sexta não cabe sem encolher todos os rótulos. `lib/navegacao.test.js` trava
+a contagem.
 
 ## A barra inferior do celular
 
 Cinco alvos, e agora os cinco são **áreas** (antes eram quatro áreas + a
 gaveta). O do meio é elevado e é o único objeto aceso — a navegação do telefone
-responde "o que eu faço agora", não só "para onde eu vou".
+responde "o que eu faço agora", não só "para onde eu vou". Os ícones levam a cor
+de endereço de cada área, igual ao trilho.
 
 Some em `/estudar/folhear`, `/bem-vindo`, `/completar-cadastro` e
 `/estudar/provas/:id` — esta última porque é a única tela do produto com
@@ -155,9 +161,10 @@ pediu a questão que errou — falha silenciosa.
 
 ## Tooltip da barra
 
-`.nav-tip` + `data-tip="X"` no `index.css` — CSS puro, sem JS. Desde 18/09 o
-`data-tip` carrega a **pergunta** da área ("E agora?"), não o nome, que já está
-escrito ao lado do ícone.
+`.nav-tip` + `data-tip="X"` no `index.css` — CSS puro, sem JS. O `data-tip`
+carrega a **pergunta** da área ("E agora?"). No trilho o balão nasce à direita
+do ícone — é o que dá nome às áreas na faixa de 1024–1279px, em que o trilho só
+mostra ícones.
 
 > **Armadilha ao verificar no Browser pane:** `computer{action:"hover"}` espera
 > coordenadas no frame do **último screenshot**, não em pixel CSS do viewport.

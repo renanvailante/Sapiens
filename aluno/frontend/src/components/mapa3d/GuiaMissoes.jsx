@@ -187,7 +187,7 @@ export default function GuiaMissoes({ biomas, arestas, focoAtual, onFocar, onLim
   );
 
   return (
-    <div className="absolute left-0 top-16 bottom-0 z-30 flex items-stretch pointer-events-none">
+    <div className="absolute left-0 top-16 bottom-0 z-30 flex items-stretch pointer-events-none lg:top-4">
       <AnimatePresence initial={false}>
         {aberto && (
           <motion.aside

@@ -61,7 +61,7 @@ export default function Logo({
       <BrandMark className={`${t.marca} shrink-0`} halo={t.halo} />
       {comPalavra && (
         <span
-          className={`font-display font-extrabold leading-none tracking-[-0.045em] text-white ${t.palavra} ${classePalavra}`}
+          className={`font-display font-black leading-none tracking-[-0.02em] text-white ${t.palavra} ${classePalavra}`}
         >
           Sapiens
         </span>

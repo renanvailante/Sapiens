@@ -32,10 +32,12 @@ import { montarSugestoes } from "../../lib/sugestoes";
  * armazenamento falhar (aba anônima, cookies bloqueados), o pior que acontece
  * é ele nascer aberto, que é o padrão de qualquer forma.
  *
- * NO CELULAR ELE NASCE RECOLHIDO. Um painel de 340px sobre uma tela de 375px
- * é uma tela nova, não um balão: ali ele precisa ser convidado. No notebook
- * nasce aberto, porque há canto sobrando e porque é onde a leitura demorada
- * dos gráficos acontece.
+ * ELE NASCE RECOLHIDO, salvo em tela muito larga. Um painel de 340px sobre
+ * uma tela de 375px é uma tela nova, não um balão. E desde 2026-10-19 o
+ * desktop tem o trilho de navegação à esquerda: num notebook comum o
+ * conteúdo já ocupa a largura toda, e o balão aberto cobria os gráficos que
+ * o dono pediu "bem evidentes lá em cima". Só a partir de 1680px sobra canto
+ * de verdade para ele nascer aberto.
  */
 
 const CHAVE = "sapiens_sugestoes_aberto";
@@ -58,8 +60,8 @@ function leituraInicial() {
   } catch {
     // Aba anônima, cookies bloqueados, storage cheio: cai no padrão abaixo.
   }
-  // Sem preferência guardada: aberto no notebook, recolhido no telefone.
-  return typeof window !== "undefined" ? window.innerWidth >= 1024 : true;
+  // Sem preferência guardada: aberto só onde sobra canto (ver acima).
+  return typeof window !== "undefined" ? window.innerWidth >= 1680 : false;
 }
 
 export default function PainelDeSugestoes({ painel }) {

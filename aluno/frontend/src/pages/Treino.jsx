@@ -633,7 +633,7 @@ export default function Treino() {
 
   if (modoMapa) {
     return (
-      <div className="fixed inset-0 overflow-hidden" style={{ background: "#04070f" }}>
+      <div className="tela-cheia-com-trilho fixed inset-0 overflow-hidden" style={{ background: "#04070f" }}>
         <MapaMundo3D
           biomas={biomasVisiveis}
           nodeIndex={nodeIndex}

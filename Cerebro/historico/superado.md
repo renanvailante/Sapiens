@@ -166,6 +166,42 @@ valem como arqueologia. A identidade visual **não** mudou em nenhuma delas.
 - **"site do Assad"** — referência visual pedida em 09/15 que nunca foi
   identificada com confiança. Ficou de fora, pendente do link.
 
+## A identidade visual — bioluminescência → Clareza (2026-10-19)
+
+De 2026-09-03 a 2026-10-19 o produto foi "bioluminescência tecnológica":
+abismo quase preto, auroras animadas e uma malha de 1px atrás de tudo
+(`body::before` / `body::after`), painéis de vidro com `backdrop-filter`, luz
+ciano→azul→violeta em degradê nos botões, halos nos nós e nas bordas, Manrope no
+texto e IBM Plex Mono nos rótulos. O dono a chamou de **poluída** e pediu a
+simplicidade do Duolingo — ver [[sistema-visual]] e [[decisoes-do-dono]].
+
+Não restaure por engano: vidro, aurora, halo, degradê de fundo em cartão,
+`backdrop-blur` e a segunda família tipográfica. A regra "luz é informação"
+sobreviveu como "uma ação acesa por tela".
+
+Arqueologia que ainda explica código: as auroras **nunca apareceram** até
+2026-09-16 porque o `background-color` do `body`/`#root` era pintado depois de um
+filho com `z-index` negativo (CSS 2.1, apêndice E). Daí a regra, ainda válida, de
+a cor da página morar só no `html`.
+
+## A barra de cima do desktop → o trilho (2026-10-19)
+
+A navegação do desktop era uma barra horizontal no topo (`BarraDeCima`), presa a
+1072px úteis e a uma conta de largura medida a cada área nova. Virou o TRILHO, uma
+coluna à esquerda (ver [[navegacao]]). As cinco áreas, a ordem e o Menu não
+mudaram. **Não volte a barra de cima** sem refazer a conta de largura que ela
+exigia — e sem rever as telas cheias que hoje começam depois do trilho.
+
+## A Agenda em grade de horas → quadro da semana (2026-10-19)
+
+A semana era uma grade de horas (06h–23h, 52px por hora, 760px de largura
+mínima) na QUARTA seção da aba, que rolava de lado no celular, com clique no
+horário vazio para anotar. Virou um quadro de sete colunas (desktop) e tira de
+dias + lista (celular), no TOPO da aba — ver [[padroes-de-tela]]. Saíram junto:
+a seção "O seu dia" (duplicava o hoje do cronograma), o cartão grande da aula ao
+vivo (virou item do dia dela) e a faixa de prioridades aberta (foi para "Ajustar
+a semana", fechado).
+
 ## A voz da Mentis
 
 | Era | É | Quando |

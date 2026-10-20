@@ -19,7 +19,7 @@ import {
 } from "../components/perfil/GraficosRitmo";
 import { useDeclararContextoMentis } from "../lib/mentisContexto";
 import { avisarSparksMudou } from "../components/Navegacao";
-import { Brain, ThumbsUp, Target, ArrowRight, LineChart, Trophy, History as HistoryIcon, Loader2 } from "lucide-react";
+import { ThumbsUp, Target, ArrowRight, LineChart, Trophy, History as HistoryIcon, Loader2 } from "lucide-react";
 import PainelDeSugestoes from "../components/perfil/PainelDeSugestoes";
 import Trajetoria from "../components/Trajetoria";
 import ConquistasELiga from "../components/progresso/ConquistasELiga";
@@ -58,6 +58,9 @@ import { ROTAS, ANCORAS } from "../lib/rotas";
  * Retrato (agora) → Evolução (semanas) → Trajetória (por habilidade, ao longo
  * de tudo) → Conquistas (o acumulado) → Histórico (o arquivo). Quem abre a aba
  * quer saber como está; quem rola quer saber como chegou aqui.
+ *
+ * Dentro do retrato, desde 2026-10-19: números → gráficos → a leitura da
+ * Mentis → o raciocínio. O que se VÊ vem antes do que se lê.
  *
  * ---------------------------------------------------------------------------
  * O QUE NÃO MUDOU, E NÃO PODE MUDAR
@@ -220,9 +223,8 @@ export default function Progresso() {
   return (
     <Tela
       largura="xxl"
-      olho={<><Brain className="h-3.5 w-3.5" /> Progresso</>}
-      titulo="Tudo o que a sua prática já contou sobre você."
-      subtitulo="Cada número aqui é feito das suas próprias respostas — nada é estimado, nada é inventado. Onde a amostra for pequena, está escrito."
+      titulo="Progresso"
+      subtitulo="Feito só das suas respostas — nada estimado. Onde a amostra é pequena, está escrito."
       testid="progresso"
     >
       {/* O QUE FAZER COM ISTO. O painel descreve; o balão prescreve. Ele só
@@ -267,33 +269,25 @@ export default function Progresso() {
         <ContextoDaMentis.Provider
           value={{ porAncora, ativa: ancora, aoFocar: (i) => trocar(() => i) }}
         >
-        <div className="space-y-6">
-          {leituras.length > 0 && (
-            <MentisGuia
-              leituras={leituras}
-              indice={Math.min(indice, leituras.length - 1)}
-              aoTrocar={trocar}
-              aoSaldo={avisarSparksMudou}
-            />
-          )}
-
+        <div className="space-y-10">
+          {/* OS NÚMEROS E OS GRÁFICOS PRIMEIRO (2026-10-19). Pedido do dono:
+              "os gráficos bem evidentes lá em cima, e não lá embaixo". Antes
+              a aba abria com a leitura da Mentis e com a seção de raciocínio
+              (só texto) — a primeira curva aparecia na terceira dobra. Agora:
+              os cinco números, e logo abaixo a curva de acerto em largura
+              inteira, que é a resposta direta a "estou evoluindo?". A leitura
+              da Mentis e o raciocínio vêm depois dos gráficos que eles
+              comentam — e cada gráfico continua com a bolha dela. */}
           <ResumoDoPainel resumo={dados.resumo} />
-
-          {/* O RACIOCÍNIO sobe para logo depois dos números, e antes dos 17
-              gráficos. Era a última seção da página: quem abria o Progresso
-              para saber "no que eu sou bom e no que eu travo" tinha de rolar
-              por evolução, matérias, redação e hábitos — a pergunta de dez
-              segundos respondida depois de dez telas. Os gráficos continuam
-              todos, logo abaixo, para quem quer a prova de cada frase. */}
-          <Forcas forcas={dados.forcas} destacado={aceso("forcas")} />
 
           <Secao
             olho="A mudança"
             titulo="Como você está evoluindo"
-            descricao="A pergunta que um retrato não responde: você está melhor do que estava?"
           >
             <div className="grid gap-3 lg:grid-cols-2">
-              <CurvaDeAcerto diaria={dados.evolucao.diaria} destacado={aceso("evolucao")} />
+              <div className="lg:col-span-2">
+                <CurvaDeAcerto diaria={dados.evolucao.diaria} destacado={aceso("evolucao")} />
+              </div>
               <ComecoEAgora comparativo={dados.evolucao.comparativo} destacado={aceso("comparativo")} />
               <VolumePorSemana semanal={dados.evolucao.semanal} destacado={aceso("volume")} />
               <TendenciaPorFrente
@@ -308,7 +302,7 @@ export default function Progresso() {
           <Secao
             olho="A prova"
             titulo="Onde a sua nota está sendo decidida"
-            descricao="Matéria por matéria, com o peso que cada uma tem no ENEM — a mesma conta que monta o seu cronograma."
+            descricao="Matéria por matéria, com o peso de cada uma no ENEM."
           >
             <div className="grid gap-3 lg:grid-cols-2">
               <AcertoPorFrente linhas={dados.frentes.linhas} destacado={aceso("frentes")} />
@@ -318,10 +312,23 @@ export default function Progresso() {
             </div>
           </Secao>
 
+          {leituras.length > 0 && (
+            <MentisGuia
+              leituras={leituras}
+              indice={Math.min(indice, leituras.length - 1)}
+              aoTrocar={trocar}
+              aoSaldo={avisarSparksMudou}
+            />
+          )}
+
+          {/* O RACIOCÍNIO — a única seção sem número, de propósito (ver
+              `Forcas`). Vem depois dos gráficos: é a leitura deles. */}
+          <Forcas forcas={dados.forcas} destacado={aceso("forcas")} />
+
           <Secao
             olho="Mil pontos"
             titulo="A sua redação"
-            descricao="O único componente da prova que não depende de acertar questão nenhuma — e o que mais sobe com treino."
+            descricao="O único componente da prova que não depende de acertar questão — e o que mais sobe com treino."
           >
             <div className="grid gap-3 lg:grid-cols-2">
               <EvolucaoDaRedacao redacao={dados.redacao} destacado={aceso("redacao")} />

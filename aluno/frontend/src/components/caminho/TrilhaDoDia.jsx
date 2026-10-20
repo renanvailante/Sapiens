@@ -38,6 +38,9 @@ const ICONES = {
 // nos 280px úteis de um celular de 320px.
 const SERPENTE = [0, 44, 64, 44, 0, -44, -64, -44];
 const PASSO = 124;
+// Espaço a mais antes do nó aceso: a etiqueta "COMEÇAR" salta em cima dele e,
+// com o passo normal, pisava no nome do nó de cima.
+const FOLGA_DA_CHAMADA = 40;
 const TOPO = 58;
 const RAIO = 38;
 
@@ -146,12 +149,16 @@ export default function TrilhaDoDia({ trilha, aoExecutar, ocupado = null, novos 
     return () => document.removeEventListener("pointerdown", fora);
   }, [aberto]);
 
-  const pontos = useMemo(
-    () => nos.map((_, i) => ({ x: SERPENTE[i % SERPENTE.length], y: TOPO + i * PASSO })),
-    [nos],
-  );
-  const altura = TOPO + Math.max(0, nos.length - 1) * PASSO + 92;
   const indiceAtual = nos.findIndex((n) => n.atual);
+  const folga = indiceAtual > 0 ? FOLGA_DA_CHAMADA : 0;
+  const pontos = useMemo(
+    () => nos.map((_, i) => ({
+      x: SERPENTE[i % SERPENTE.length],
+      y: TOPO + i * PASSO + (indiceAtual > 0 && i >= indiceAtual ? FOLGA_DA_CHAMADA : 0),
+    })),
+    [nos, indiceAtual],
+  );
+  const altura = TOPO + Math.max(0, nos.length - 1) * PASSO + folga + 92;
 
   // O caminho em coordenadas de um SVG de 240px de largura centrado.
   const meio = 120;
@@ -159,7 +166,8 @@ export default function TrilhaDoDia({ trilha, aoExecutar, ocupado = null, novos 
     .map((p, i) => {
       if (i === 0) return `M ${meio + p.x} ${p.y}`;
       const a = pontos[i - 1];
-      return `C ${meio + a.x} ${a.y + PASSO / 2} ${meio + p.x} ${p.y - PASSO / 2} ${meio + p.x} ${p.y}`;
+      const meioDoVao = (p.y - a.y) / 2;
+      return `C ${meio + a.x} ${a.y + meioDoVao} ${meio + p.x} ${p.y - meioDoVao} ${meio + p.x} ${p.y}`;
     })
     .join(" ");
   // O trecho já andado vai até o nó aceso (ou até o fim, com o dia completo).
@@ -169,7 +177,8 @@ export default function TrilhaDoDia({ trilha, aoExecutar, ocupado = null, novos 
     .map((p, i, arr) => {
       if (i === 0) return `M ${meio + p.x} ${p.y}`;
       const a = arr[i - 1];
-      return `C ${meio + a.x} ${a.y + PASSO / 2} ${meio + p.x} ${p.y - PASSO / 2} ${meio + p.x} ${p.y}`;
+      const meioDoVao = (p.y - a.y) / 2;
+      return `C ${meio + a.x} ${a.y + meioDoVao} ${meio + p.x} ${p.y - meioDoVao} ${meio + p.x} ${p.y}`;
     })
     .join(" ");
 
@@ -184,17 +193,12 @@ export default function TrilhaDoDia({ trilha, aoExecutar, ocupado = null, novos 
           height={altura}
           aria-hidden="true"
         >
-          <defs>
-            <linearGradient id="trilha-dia-luz" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#4FD9FF" />
-              <stop offset="100%" stopColor="#8B7BFF" />
-            </linearGradient>
-          </defs>
-          <path d={caminho} fill="none" stroke="rgba(150,200,255,0.12)" strokeWidth="18" strokeLinecap="round" />
+          {/* Clareza: o caminho é um trilho chapado, e o trecho já andado é
+              ciano sólido — sem degradê e sem pontilhado de luz. */}
+          <path d={caminho} fill="none" stroke="#1B2B46" strokeWidth="14" strokeLinecap="round" />
           {andado && ateAqui > 0 && (
-            <path d={andado} fill="none" stroke="url(#trilha-dia-luz)" strokeOpacity="0.55" strokeWidth="6" strokeLinecap="round" className="trilha-dia-andado" />
+            <path d={andado} fill="none" stroke="#4FD9FF" strokeOpacity="0.5" strokeWidth="14" strokeLinecap="round" className="trilha-dia-andado" />
           )}
-          <path d={caminho} fill="none" stroke="rgba(79,217,255,0.32)" strokeWidth="2" strokeLinecap="round" strokeDasharray="1 10" />
         </svg>
 
         {nos.map((no, i) => {

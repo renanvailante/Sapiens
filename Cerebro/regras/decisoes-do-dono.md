@@ -101,6 +101,23 @@ mudar: a voz `pt-br-podcaster-4` (escolhida entre cinco ouvindo a mesma frase),
 o modelo `lite` da gravação (o principal estourou a cota do dia), a redação de
 cada frase falada, e a voz NÃO dizer o nome do aluno. Mecânica em [[mentis]].
 
+## Simples como o Duolingo, e o importante em cima (2026-10-19)
+
+Pedido, com cinco prints do Duolingo: *"o site atual do sapiens está muito poluído
+e pouco intuitivo, principalmente a aba agenda (…) quero que o cronograma seja a
+primeira coisa que o aluno veja (…) tudo que é mais importante precisa estar lá
+em cima e tudo que for menos importante embaixo"*, e *"os gráficos bem evidentes
+lá em cima"* no Progresso — inspirado no Duolingo **sem copiar a identidade**. A
+régua (simplicidade, poucos botões, hierarquia de cima para baixo, cronograma
+primeiro na Agenda, gráficos primeiro no Progresso) é dele.
+
+**O que é meu e foi declarado como meu**, portanto o mais barato de mudar: a
+Nunito, os valores da paleta, o trilho lateral no desktop, as cores de endereço
+das áreas, a semana como quadro de colunas (em vez da grade de horas), a aula ao
+vivo como item do dia, "Ajustar a semana" fechado por padrão, e o balão de
+sugestões do Progresso nascer recolhido. Mecânica em [[sistema-visual]],
+[[navegacao]] e [[padroes-de-tela]].
+
 ## O pipeline está CONGELADO
 
 Aprovado em 2026-08-22 como baseline de custo. Instrução explícita: nenhuma

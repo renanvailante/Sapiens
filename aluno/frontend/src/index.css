@@ -1,118 +1,122 @@
-/* Fontes carregadas via <link> em public/index.html (Manrope + IBM Plex Mono) */
+/* Fonte carregada via <link> em public/index.html: Nunito, uma família só. */
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* =========================================================================
-   BIOLUMINESCÊNCIA TECNOLÓGICA — sistema visual do Sapiens
+   CLAREZA — sistema visual do Sapiens (desde 2026-10-19)
    =========================================================================
 
-   Uma direção só, aplicada no produto inteiro: fundo abissal, painéis de
-   vidro que deixam o ambiente atravessar, e luz fria (ciano -> azul ->
-   violeta) usada como SINAL, nunca como enfeite.
+   Pedido do dono, com prints do Duolingo: "o site está muito poluído e pouco
+   intuitivo (…) uma identidade extremamente simples e intuitiva — o Duolingo
+   tem poucos botões e é tudo muito fácil de mexer". Esta direção SUBSTITUI a
+   "bioluminescência tecnológica" (vidro, auroras, brilho ciano→violeta), que
+   continua descrita em `Cerebro/historico/superado.md`.
 
-   As três regras que impedem isto de virar "dark mode com neon":
+   Do Duolingo vieram PRINCÍPIOS, medidos no CSS público dele — não a marca:
+   nem a fonte (Feather e DIN Rounded são proprietárias), nem o verde, nem a
+   coruja. O que o Sapiens tem de seu continua: o azul-tinta da noite de
+   estudo, o ciano da marca, o cérebro, a Mentis.
 
-   1. LUZ É INFORMAÇÃO. Brilho marca o que está ativo, selecionado, vivo ou
-      pedindo ação. Superfície parada não brilha — ela só existe. Um painel
-      inteiro em glow destrói a hierarquia e é o que faz UI escura parecer
-      amadora.
-   2. UMA FAMÍLIA DE MATIZ. Ciano, azul e violeta são a mesma luz em três
-      profundidades. Verde/vermelho/âmbar aparecem só com significado
-      (acerto, erro, aviso) e sempre dessaturados para o ambiente escuro —
-      pastel de tema claro sobre fundo escuro é o que mais denuncia retrofit.
-   3. BORDA FINA, SOMBRA LONGA. A profundidade vem de sombra difusa e de uma
-      linha de 1px com luz por cima, não de contorno grosso nem de degradê
-      chapado.
+   As quatro regras:
 
-   A ÚNICA exceção deliberada à superfície escura é `.leitura-clara`: o bloco
-   de enunciado de questão. Numa prova de 45 questões, texto longo em fundo
-   escuro cansa — e conforto de leitura ganha de coerência visual quando os
-   dois brigam. Ver a seção "Superfície de leitura longa".
+   1. CHAPADO. Superfície é cor sólida com contorno de 2px. Sem vidro, sem
+      desfoque, sem degradê de fundo, sem halo. Profundidade vem de UM degrau
+      de cor entre a página e o cartão, e do "pé" sólido dos botões.
+   2. UMA AÇÃO ACESA POR TELA. O ciano cheio é reservado ao botão que o aluno
+      precisa achar sem procurar. Todo o resto é contorno.
+   3. COR É SIGNIFICADO. Verde = feito/acerto, coral = erro, âmbar = Sparks e
+      ofensiva, violeta = Sapiens Plus, ciano = ação. Cor de matéria nos
+      gráficos continua vindo de `components/perfil/paleta.js`.
+   4. TIPOGRAFIA GORDA E CURTA. Nunito, uma família só: títulos em 800,
+      rótulos em MAIÚSCULAS 800 com pouco espaçamento, corpo em 600. O que
+      é importante fica grande e no topo; o resto fica menor e embaixo.
+
+   A ÚNICA exceção deliberada à superfície escura continua sendo
+   `.leitura-clara`: o bloco de enunciado de questão. Numa prova de 45
+   questões, texto longo em fundo escuro cansa (escolha do dono).
    ========================================================================= */
 
 :root {
-    /* ---- Ambiente ---- */
-    --bio-abismo: #03060d;      /* o fundo mais profundo, atrás de tudo */
-    --bio-profundo: #060c18;
-    --bio-meio: #0a1526;
+    /* ---- Fonte ----
+       Nunito: terminais arredondados (o "amigável" que o Duolingo tem),
+       pesos até 900 para título gordo, e acentos de português que não colam
+       na letra. Uma família só: duas famílias era a primeira poluição da
+       tela antiga (Manrope no texto + IBM Plex Mono nos rótulos). */
+    --fonte: 'Nunito', ui-rounded, system-ui, sans-serif;
 
-    /* ---- Luz (a família de matiz única) ---- */
-    --bio-ciano: #4FD9FF;
-    --bio-azul: #4A85E3;        /* azul da marca — a âncora da paleta */
-    --bio-violeta: #8B7BFF;
+    /* ---- O ambiente ----
+       Os nomes `--bio-*` ficaram por compatibilidade (as telas leem
+       `var(--bio-texto)` direto); os VALORES são da Clareza.
+       Azul-tinta e não o cinza-azulado do Duolingo: é a noite de estudo, e é
+       o que mantém a família de matiz da marca. */
+    --bio-abismo: #0F1A2C;      /* a página — chapada, sem aurora */
+    --bio-profundo: #0F1A2C;
+    --bio-meio: #15233A;
+    --bio-superficie: #15233A;  /* o cartão: um degrau acima da página */
+    --bio-superficie-alta: #1B2B46; /* chip, campo, cartão dentro de cartão */
+
+    /* ---- Cor com significado ---- */
+    --bio-ciano: #4FD9FF;       /* AÇÃO — e a luz da marca */
+    --bio-azul: #4A85E3;
+    --bio-violeta: #A78BFA;     /* Sapiens Plus */
+    --bio-verde: #3DDC97;       /* feito, acerto */
+    --bio-coral: #FF6B81;       /* erro */
+    --bio-ambar: #FFB547;       /* Sparks, ofensiva */
     --bio-azul-fundo: #1F4F95;
 
     /* ---- Tinta ----
-       Três degraus, e a distância entre eles é o que faz hierarquia sem
-       precisar de tamanho nem de peso. `--bio-fraco` subiu de #7389A8 para
-       #8CA2C0 em 2026-09-16: no degrau antigo uma legenda sobre o abismo
-       ficava em 3.9:1, abaixo do mínimo de texto pequeno, e a tela inteira
-       parecia estar com o brilho baixo. */
-    --bio-texto: #E8F2FF;
-    --bio-suave: #AFC4E0;       /* texto secundário */
-    --bio-fraco: #8CA2C0;       /* legendas, metadados */
-    --bio-apagado: #6D82A2;     /* o que existe mas não é para ser lido agora */
+       Medido contra a página (#0F1A2C) e contra o cartão (#15233A):
+           texto    16.1 / 14.6 : 1
+           suave    11.1 / 10.0
+           fraco     7.4 /  6.7
+           apagado   5.3 /  4.8   (o mínimo de texto pequeno é 4.5)
+       Nenhum degrau aqui fica abaixo de 4.5:1 em nenhuma das duas. */
+    --bio-texto: #F2F6FF;
+    --bio-suave: #C2CFE6;
+    --bio-fraco: #97A9C8;
+    --bio-apagado: #7A8FB2;
 
-    /* ---- Vidro ----
-       Medido em 2026-09-17 contra `--bio-abismo`, que é o fundo real de
-       quase toda a tela. O texto sempre passou com folga (17.9 / 11.4 / 7.8 /
-       5.2 : 1); quem nunca passou foi a BORDA, e é a borda que diz onde um
-       balão começa e o fundo acaba:
-
-           --bio-linha        .14 -> 1.25:1
-           --bio-linha-forte  .26 -> 1.70:1
-           fundo do .chip     .05 -> 1.08:1
-
-       O mínimo da WCAG para limite de componente (1.4.11) é 3:1, e 1.25 não
-       é "sutil", é ausente: num celular no sol os cards desapareciam no
-       fundo e a tela virava texto solto flutuando. Os valores abaixo são os
-       menores que cruzam 3:1 — .46 dá 3.09 e .62 dá 4.82.
-
-       O preenchimento continua sendo vidro escuro de propósito (um fundo com
-       3:1 contra a página viraria cinza e mataria a profundidade); quem
-       carrega o limite é a borda, que é exatamente o que a norma pede. O
-       vidro subiu só o suficiente para o balão ler como superfície, não como
-       recorte. */
-    --bio-vidro: rgba(21, 35, 60, 0.80);
-    --bio-vidro-alto: rgba(29, 47, 80, 0.88);
-    --bio-linha: rgba(150, 200, 255, 0.46);
-    --bio-linha-forte: rgba(150, 200, 255, 0.62);
+    /* ---- Contorno ----
+       2px a ~2:1 contra a página. A régua antiga pedia 3:1 porque a linha
+       tinha 1px sobre vidro translúcido; com 2px sobre cartão sólido (que já
+       se separa da página pela cor) o limite é visível no sol sem pesar —
+       é a mesma relação que o Duolingo usa (1.7:1). */
+    --bio-vidro: #15233A;
+    --bio-vidro-alto: #1B2B46;
+    --bio-linha: #34496F;
+    --bio-linha-forte: #4A6596;
     --bio-brilho: rgba(79, 217, 255, 0.35);
 
-    /* ---- Tokens shadcn/ui: agora TODOS escuros ----
-       Antes card/popover eram brancos de propósito ("é onde o conteúdo é
-       lido"). Com a direção bioluminescente a superfície de leitura passou a
-       ser exceção nomeada (`.leitura-clara`), não o padrão. */
-    --background: 219 55% 4%;
-    --foreground: 212 90% 95%;
-    --card: 217 45% 10%;
-    --card-foreground: 212 90% 95%;
-    --popover: 218 48% 8%;
-    --popover-foreground: 212 90% 95%;
-    --primary: 199 100% 65%;
-    --primary-foreground: 219 60% 6%;
-    --secondary: 217 38% 16%;
-    --secondary-foreground: 212 80% 92%;
-    --muted: 217 34% 15%;
-    --muted-foreground: 213 25% 68%;
-    --accent: 217 44% 20%;
-    --accent-foreground: 199 100% 78%;
-    --destructive: 349 72% 58%;
+    /* ---- Tokens shadcn/ui ---- */
+    --background: 218 49% 12%;
+    --foreground: 222 100% 97%;
+    --card: 217 47% 16%;
+    --card-foreground: 222 100% 97%;
+    --popover: 217 47% 16%;
+    --popover-foreground: 222 100% 97%;
+    --primary: 194 100% 65%;
+    --primary-foreground: 207 79% 11%;
+    --secondary: 217 44% 19%;
+    --secondary-foreground: 219 42% 83%;
+    --muted: 217 44% 19%;
+    --muted-foreground: 218 31% 69%;
+    --accent: 217 44% 19%;
+    --accent-foreground: 194 100% 78%;
+    --destructive: 351 100% 71%;
     --destructive-foreground: 0 0% 98%;
-    --border: 213 45% 24%;
-    --input: 213 40% 20%;
-    --ring: 195 100% 62%;
-    --chart-1: 160 70% 52%;
-    --chart-2: 349 80% 66%;
-    --chart-3: 38 90% 60%;
-    --chart-4: 199 100% 65%;
-    --chart-5: 258 90% 72%;
-    --radius: 0.75rem;
+    --border: 219 36% 32%;
+    --input: 219 36% 32%;
+    --ring: 194 100% 65%;
+    --chart-1: 155 69% 55%;
+    --chart-2: 351 100% 71%;
+    --chart-3: 36 100% 64%;
+    --chart-4: 194 100% 65%;
+    --chart-5: 255 92% 76%;
+    --radius: 1rem;
 
-    /* Identidade Sapiens — nomes antigos preservados: várias telas usam
-       `var(--brand-*)` direto, e renomear tudo seria churn sem ganho. */
+    /* Identidade Sapiens — nomes antigos preservados. */
     --brand-navy: #132D5C;
     --brand-navy-deep: #0C1C3A;
     --brand-accent: #4FD9FF;
@@ -122,83 +126,59 @@
     --env-bg-2: var(--bio-meio);
 
     /* ---- O "pé" dos botões ----
-       A borda inferior sólida que dá volume ao botão primário (ver `.btn-sapiens`).
-       É o mesmo azul do degradê, escurecido — nunca um cinza neutro, que leria
-       como sombra de outro material. */
-    --btn-pe: #1F4F95;
-    --btn-pe-calor: #A8641A;
+       A borda inferior sólida que dá volume ao botão (ver `.btn-sapiens`).
+       É a cor do próprio botão escurecida — nunca um cinza neutro, que leria
+       como sombra de outro material. 4px no cheio, 2px no contorno: a medida
+       que o Duolingo usa e que o dedo lê como "isto afunda". */
+    --btn-pe: #1A93C7;
+    --btn-pe-calor: #C27B12;
+    --btn-pe-verde: #1E9E68;
+    --btn-pe-violeta: #6D4FD8;
 
-    /* ---- Ritmo e elevação (2026-09-16) ----
-       Antes cada tela escolhia o próprio raio e a própria sombra na hora de
-       escrever a classe, e o produto tinha sete raios diferentes em pé. Uma
-       escala nomeada faz duas coisas: a superfície nova nasce igual às
-       outras, e mudar a régua inteira passa a ser mudar quatro linhas. */
-    --r-p: 14px;
-    --r-m: 18px;
-    --r-g: 24px;
-    --r-gg: 30px;
+    /* ---- Ritmo e elevação ----
+       Raios maiores e mais redondos: objeto, não retângulo de documento. */
+    --r-p: 12px;
+    --r-m: 16px;
+    --r-g: 20px;
+    --r-gg: 24px;
 
-    --elev-1: 0 2px 10px -4px rgba(0, 0, 0, 0.7);
-    --elev-2: 0 18px 44px -26px rgba(0, 0, 0, 0.9);
-    --elev-3: 0 30px 70px -32px rgba(0, 0, 0, 0.95);
+    /* Sombra quase não existe na Clareza: a profundidade é o degrau de cor.
+       Os nomes ficam porque telas leem `var(--elev-*)`. */
+    --elev-1: 0 0 0 0 transparent;
+    --elev-2: 0 8px 24px -16px rgba(0, 0, 0, 0.6);
+    --elev-3: 0 16px 40px -24px rgba(0, 0, 0, 0.7);
 
-    /* ---- Movimento ----
-       Uma curva só para tudo o que é interface reagindo ao dedo
-       (`--mov-saida`), e uma com um respiro no fim para o que ENTRA na tela
-       (`--mov-entrada`). Misturar easings é o que faz uma interface parecer
-       montada por três pessoas diferentes. */
+    /* ---- Movimento ---- */
     --mov-saida: cubic-bezier(0.22, 1, 0.36, 1);
     --mov-entrada: cubic-bezier(0.16, 1, 0.3, 1);
     --mov-rapido: 140ms;
     --mov-medio: 260ms;
     --mov-lento: 480ms;
 
-    /* Altura da barra inferior do celular. Vive num token porque três coisas
-       precisam do mesmo número: a própria barra, a faixa morta do corpo e o
-       ícone flutuante da Mentis, que não pode pousar em cima dela. */
+    /* Altura da barra inferior do celular. Três coisas precisam do mesmo
+       número: a própria barra, a faixa morta do corpo e o ícone flutuante da
+       Mentis, que não pode pousar em cima dela. */
     --barra-inferior-h: 4.25rem;
-}
 
+    /* Largura do TRILHO — a navegação lateral do desktop (desde 2026-10-19).
+       Só ícones entre 1024 e 1279px; ícone + nome a partir de 1280px. */
+    --trilho-w: 88px;
+}
+@media (min-width: 1280px) {
+    :root { --trilho-w: 248px; }
+}
 * {
     border-color: hsl(var(--border));
 }
 
-/* ---------------- Ambiente: abismo + auroras + malha ----------------
-   Três camadas empilhadas, da mais distante para a mais próxima:
-   auroras frias em movimento muito lento, uma malha de 1px quase invisível
-   (o "tech" de organic tech), e a vinheta que fecha as bordas para o centro
-   ficar sendo o lugar onde se olha. */
-/* ---------------------------------------------------------------------------
-   O ABISMO MORA NO `html`, E SÓ NELE — 2026-09-16
-   ---------------------------------------------------------------------------
+/* ---------------- A página ----------------
+   Cor chapada no `html`, e só nele. Até 2026-10-19 havia auroras animadas e
+   uma malha de 1px por trás de tudo (`body::before` / `body::after`); a
+   Clareza tirou as duas — eram exatamente o "ruído de fundo" que fazia a tela
+   parecer poluída antes de qualquer conteúdo aparecer.
 
-   As duas camadas de ambiente logo abaixo (`body::before`, as auroras;
-   `body::after`, a malha e a vinheta) existiam desde 03/09 e NUNCA apareceram
-   na tela. O produto inteiro rodava sobre um preto chapado, e o sistema visual
-   descrevia um ambiente que nenhum aluno viu.
-
-   O motivo é a ordem de pintura do contexto de empilhamento raiz (CSS 2.1,
-   apêndice E), que é contraintuitiva exatamente neste ponto:
-
-     1. fundo do elemento raiz (`html`)
-     2. descendentes com `z-index` NEGATIVO  <- as auroras estão aqui
-     3. fundo dos descendentes em fluxo normal  <- `body` e `#root` estão aqui
-     4. conteúdo
-
-   Ou seja: o fundo do `body` é pintado DEPOIS de um filho com `z-index: -2`,
-   não antes. Enquanto `body` (e `#root`) tiveram `background-color`, eles
-   cobriram as próprias auroras — um fundo opaco no passo 3 apaga tudo o que
-   foi desenhado no passo 2.
-
-   A correção é pôr a cor só no `html`, que é pintado no passo 1. Não há
-   lampejo branco entre a primeira pintura e a montagem do React: a cor do
-   elemento raiz é a cor da tela desde o primeiro quadro.
-
-   REGRA, para quem mexer aqui depois: nada entre `html` e o conteúdo pode
-   ganhar `background-color` opaco. Se uma tela precisar de fundo próprio, ela
-   pinta a PRÓPRIA superfície (um `.card-sapiens`, uma `.superficie`), nunca o
-   `body` nem o `#root`.
-   --------------------------------------------------------------------------- */
+   A cor mora no `html` porque o elemento raiz é pintado desde o primeiro
+   quadro: não há lampejo branco antes de o React montar. */
 html {
     background-color: var(--bio-abismo);
     min-height: 100%;
@@ -210,9 +190,12 @@ html {
     text-size-adjust: 100%;
 }
 
+/* Corpo em 600: a Nunito em 400 sobre fundo escuro fica fina demais para
+   ler rápido, e o Duolingo inteiro é escrito num peso médio. */
 body, #root {
     color: var(--bio-texto);
-    font-family: 'Manrope', system-ui, sans-serif;
+    font-family: var(--fonte);
+    font-weight: 600;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     min-height: 100%;
@@ -223,14 +206,11 @@ body, #root {
    parecer uma página:
 
    · O RETÂNGULO CINZA. O Android pinta um bloco translúcido por cima de todo
-     alvo tocado, com o formato da CAIXA — um card de cantos de 26px pisca
-     como um retângulo reto, meio quadro depois do dedo. O produto já tem
-     resposta de toque própria (`.pill:active`, `.superficie:active`, o pé que
-     afunda nos nós da trilha), e ela é mais rápida e tem o formato certo.
-   · O ATRASO DE 300ms. Onde o navegador ainda espera para saber se vem um
-     segundo toque (zoom), `touch-action: manipulation` diz que não vem — o
-     clique sai na hora. É a diferença entre uma interface que responde e uma
-     que parece pensar antes de responder.
+     alvo tocado, com o formato da CAIXA. O produto já tem resposta de toque
+     própria (`.pill:active`, o pé que afunda), mais rápida e com o formato
+     certo.
+   · O ATRASO DE 300ms. `touch-action: manipulation` diz que não vem um
+     segundo toque (zoom) — o clique sai na hora.
 
    Vale em toda largura de propósito: quem tem tela sensível ao toque num
    notebook merece o mesmo. */
@@ -239,279 +219,197 @@ a, button, summary, label, select, [role="button"], [role="tab"], [role="option"
     touch-action: manipulation;
 }
 
-body::before {
-    content: "";
-    position: fixed;
-    inset: -20%;
-    z-index: -2;
-    pointer-events: none;
-    background:
-        radial-gradient(52% 42% at 12% 4%, rgba(79, 217, 255, 0.20), transparent 68%),
-        radial-gradient(46% 40% at 88% 8%, rgba(139, 123, 255, 0.18), transparent 66%),
-        radial-gradient(58% 44% at 70% 62%, rgba(79, 217, 255, 0.09), transparent 70%),
-        radial-gradient(60% 50% at 50% 108%, rgba(74, 133, 227, 0.17), transparent 70%),
-        linear-gradient(180deg, var(--bio-meio) 0%, var(--bio-profundo) 42%, var(--bio-abismo) 100%);
-    animation: aurora-deriva 34s ease-in-out infinite alternate;
-}
-
-/* Malha + vinheta. A malha some quase inteira no olho — é textura, não
-   grade de layout; se ela ficar legível, subiu demais. */
+/* Sem ambiente. Os dois pseudo-elementos continuam declarados como `none`
+   para que nenhuma regra antiga que ainda os mencione volte a pintar. */
+body::before,
 body::after {
-    content: "";
-    position: fixed;
-    inset: 0;
-    z-index: -1;
-    pointer-events: none;
-    background-image:
-        linear-gradient(rgba(120, 190, 255, 0.030) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(120, 190, 255, 0.030) 1px, transparent 1px),
-        radial-gradient(circle at 1px 1px, rgba(190, 225, 255, 0.05) 1px, transparent 0);
-    background-size: 64px 64px, 64px 64px, 5px 5px;
-    mask-image: radial-gradient(140% 120% at 50% 0%, #000 30%, transparent 88%);
-    -webkit-mask-image: radial-gradient(140% 120% at 50% 0%, #000 30%, transparent 88%);
+    content: none;
 }
 
-@keyframes aurora-deriva {
-    0%   { transform: translate3d(0, 0, 0) scale(1); }
-    50%  { transform: translate3d(1.5%, -1.8%, 0) scale(1.04); }
-    100% { transform: translate3d(-1.2%, 1.4%, 0) scale(1.02); }
-}
-
+/* Sem peso aqui de propósito: esta folha vem DEPOIS dos utilitários, e um
+   `font-weight` nesta classe venceria o `font-bold`/`font-black` que a tela
+   escreveu ao lado. O peso é da tela; a família e o aperto são daqui. */
 .font-display {
-    font-family: 'Manrope', system-ui, sans-serif;
-    letter-spacing: -0.02em;
+    font-family: var(--fonte);
+    letter-spacing: -0.01em;
 }
 
+/* Era IBM Plex Mono. O que o produto pedia dela eram duas coisas: rótulo em
+   maiúsculas e número que não dança. As duas a Nunito faz — em 800 o rótulo
+   lê como o "SECTION 1, UNIT 6" do Duolingo, e `tabular-nums` mantém a
+   largura dos dígitos. O espaçamento largo (`tracking-[0.22em]`) que as telas
+   escrevem junto é aparado no fim do arquivo (camada CLAREZA). */
 .font-mono-alt {
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: var(--fonte);
+    font-weight: 800;
     font-variant-numeric: tabular-nums;
 }
 
-/* `.grain` continua existindo porque telas antigas ainda pedem a classe; a
-   textura agora vem do ambiente, então aqui ela é inerte de propósito. */
+/* `.grain` continua existindo porque telas antigas ainda pedem a classe. */
 .grain::before { content: none; }
 
 /* ---------------- Superfícies ---------------- */
 
-/* Painel de vidro — a superfície padrão de TODO o produto.
-   `::before` é a linha de luz que corre no topo: é ela que dá a leitura
-   "holográfica" sem precisar de degradê colorido no fundo do painel. */
+/* O cartão — a superfície padrão de TODO o produto. Cor sólida, contorno de
+   2px, nada de vidro. O nome ficou (`card-sapiens` está em ~300 lugares). */
 .card-sapiens {
     position: relative;
-    background:
-        linear-gradient(180deg, rgba(28, 48, 82, 0.42) 0%, rgba(10, 19, 35, 0.55) 100%),
-        var(--bio-vidro);
-    backdrop-filter: blur(18px) saturate(135%);
-    -webkit-backdrop-filter: blur(18px) saturate(135%);
-    border: 1px solid var(--bio-linha);
-    box-shadow:
-        inset 0 1px 0 rgba(190, 230, 255, 0.10),
-        0 24px 60px -30px rgba(0, 0, 0, 0.9),
-        0 0 0 1px rgba(4, 8, 16, 0.55);
+    background: var(--bio-superficie);
+    border: 2px solid var(--bio-linha);
+    box-shadow: none;
     color: var(--bio-texto);
     overflow: hidden;
 }
 
-.card-sapiens::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 12%;
-    right: 12%;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--bio-brilho), transparent);
-    opacity: 0.75;
-    pointer-events: none;
-}
+/* A linha de luz que corria no topo do vidro. Fora. */
+.card-sapiens::before { content: none; }
 
-/* Elevação no hover: a luz da borda superior acende, o painel não pula.
-
-   `@media (hover: hover)` não é enfeite aqui. Em tela de toque o navegador
-   deixa o `:hover` GRUDADO no último elemento tocado até o dedo cair em outro
-   lugar: o card que o aluno tocou e voltou continuava levantado e aceso, como
-   se estivesse selecionado. No celular a resposta ao toque é o `:active` logo
-   abaixo, que dura o tempo do dedo. */
-.lift { transition: transform .22s ease-out, box-shadow .22s ease-out, border-color .22s ease-out; }
+/* No hover o contorno acende e a cor sobe um degrau — o cartão não pula.
+   `@media (hover: hover)`: em tela de toque o `:hover` grudava no último card
+   tocado. No celular a resposta ao toque é o `:active`. */
+.lift { transition: transform .18s ease-out, background-color .18s ease-out, border-color .18s ease-out; }
 @media (hover: hover) and (pointer: fine) {
     .lift:hover {
-        transform: translateY(-2px);
         border-color: var(--bio-linha-forte);
-        box-shadow:
-            inset 0 1px 0 rgba(190, 230, 255, 0.16),
-            0 30px 70px -34px rgba(0, 0, 0, 0.95),
-            0 0 34px -14px var(--bio-brilho);
+        background-color: var(--bio-superficie-alta);
     }
 }
 
-/* Barra de navegação — o mesmo vidro, mais denso, porque fica sobre conteúdo
-   em rolagem e precisa manter o texto legível o tempo todo.
-
-   `padding-top: env(safe-area-inset-top)` é o par do `viewport-fit=cover` e do
-   `apple-mobile-web-app-status-bar-style: black-translucent` que o
-   `index.html` declara desde 2026-09-17: no app INSTALADO num iPhone com
-   entalhe, o conteúdo começa no topo absoluto da tela, e sem este respiro a
-   marca do Sapiens ficava por baixo do relógio do sistema. No navegador e no
-   desktop o `env()` vale 0px e nada muda. */
+/* Barra de cima (celular) e cabeçalhos colados: página chapada com a linha
+   de baixo. `padding-top: env(safe-area-inset-top)` é o par do
+   `viewport-fit=cover` do `index.html`: no app instalado num iPhone com
+   entalhe, sem ele a marca ficava por baixo do relógio. */
 .glass {
     padding-top: env(safe-area-inset-top, 0px);
-    background: linear-gradient(180deg, rgba(8, 16, 30, 0.86) 0%, rgba(6, 12, 24, 0.72) 100%);
-    backdrop-filter: saturate(150%) blur(18px);
-    -webkit-backdrop-filter: saturate(150%) blur(18px);
-    border-bottom: 1px solid var(--bio-linha);
-    box-shadow: 0 1px 0 rgba(120, 190, 255, 0.06), 0 18px 40px -30px rgba(0, 0, 0, 0.9);
+    background: var(--bio-abismo);
+    border-bottom: 2px solid var(--bio-linha);
+    box-shadow: none;
 }
 
-/* Telas sem `Nav` (a landing, o login, `/bem-vindo`) precisam do mesmo
+/* Telas sem navegação (a landing, o login, `/bem-vindo`) precisam do mesmo
    respiro, senão o topo delas encosta no relógio do iPhone instalado. */
 .exam-shell,
 .topo-seguro {
     padding-top: env(safe-area-inset-top, 0px);
 }
 
-/* Ambiente de marca (login, prova) — mesma família, mais saturada. */
 .exam-shell {
-    background:
-        radial-gradient(58% 46% at 10% -6%, rgba(79, 217, 255, 0.20), transparent 64%),
-        radial-gradient(52% 46% at 100% 6%, rgba(139, 123, 255, 0.20), transparent 60%),
-        linear-gradient(180deg, #0a1730 0%, var(--bio-abismo) 100%);
-    background-attachment: fixed;
+    background: var(--bio-abismo);
 }
 
 /* ---------------- Superfície de leitura longa ----------------
    Exceção nomeada e única: o bloco onde o aluno lê enunciado e alternativas.
-   Papel frio, levemente azulado, com a mesma borda luminosa do resto — não é
-   um retângulo branco esquecido do tema antigo, é uma folha iluminada dentro
-   do ambiente escuro. Dentro dela, os utilitários claros do Tailwind voltam a
-   valer (ver o final do arquivo). */
+   Papel branco-azulado, contorno de 2px — a mesma gramática do cartão
+   escuro, só que clara. Dentro dela, os utilitários claros do Tailwind voltam
+   a valer (ver a reversão mais abaixo). */
 .leitura-clara {
     position: relative;
-    background: linear-gradient(180deg, #F4F9FF 0%, #E7F1FB 100%);
-    border: 1px solid rgba(120, 180, 240, 0.35);
-    box-shadow:
-        0 0 0 1px rgba(6, 14, 28, 0.6),
-        0 30px 70px -30px rgba(0, 0, 0, 0.85),
-        0 0 44px -20px var(--bio-brilho);
+    background: #F7FAFF;
+    border: 2px solid #D6E2F2;
+    box-shadow: none;
     color: #0B1B33;
 }
 
 .leitura-clara::before { content: none; }
 
 /* ---------------- Ação ----------------
-   O botão primário é o objeto mais brilhante da tela, e é o único que tem
-   direito a isso: ele é a única coisa que o aluno precisa achar sem procurar. */
+   O botão primário é cor chapada com um pé sólido de 4px. Pressionar come o
+   pé inteiro: o botão desce 4px e o pé some, e o dedo "afunda" um objeto em
+   vez de escurecer um retângulo. Medido no CSS do Duolingo (50px de altura,
+   pé de 4px, raio de 12–16px) — o princípio é dele, a cor é nossa.
+
+   O raio é de retângulo arredondado, não de pílula: `rounded-full` escrito
+   nas telas é vencido aqui (0,2,0) de propósito. Um botão gordo com canto
+   de 14px é um OBJETO; uma pílula fina é um link. */
 .btn-sapiens {
     position: relative;
-    background: linear-gradient(135deg, #5FDCFF 0%, #3E86E8 52%, #6A6BF0 100%);
-    color: #041020;
-    font-weight: 700;
-    border: 1px solid rgba(190, 240, 255, 0.45);
-    box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.45),
-        0 4px 0 0 var(--btn-pe),
-        0 10px 30px -12px rgba(79, 217, 255, 0.55),
-        0 0 0 1px rgba(4, 10, 22, 0.4);
-    transition: transform .12s ease-out, box-shadow .12s ease-out, filter .18s ease-out;
+    background: var(--bio-ciano);
+    color: #062033;
+    font-weight: 800;
+    border: 0;
+    box-shadow: 0 4px 0 0 var(--btn-pe);
+    transition: transform .1s ease-out, box-shadow .1s ease-out, filter .15s ease-out;
+}
+:root .btn-sapiens, :root .btn-vidro, :root .btn-contorno, :root .btn-calor {
+    border-radius: 14px;
 }
 .btn-sapiens:hover:not(:disabled) {
-    filter: brightness(1.07);
-    transform: translateY(-1px);
-    box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.55),
-        0 4px 0 0 var(--btn-pe),
-        0 16px 40px -12px rgba(79, 217, 255, 0.75),
-        0 0 0 1px rgba(4, 10, 22, 0.4);
+    filter: brightness(1.06);
 }
-/* O PÉ do botão. Empréstimo declarado do Duolingo (e do jeito Animal Crossing
-   de desenhar objeto): o botão primário tem uma borda inferior sólida que
-   some quando ele é pressionado, então o dedo "afunda" um objeto de verdade
-   em vez de escurecer um retângulo. É a diferença entre uma interface que
-   responde e uma que só muda de cor — e custa duas linhas de CSS.
-
-   `transform: translateY(2px)` no `:active` come exatamente metade do pé, que
-   é o que o olho lê como afundar. Não usamos `scale`: encolher o botão inteiro
-   parece recuo, não pressão. */
 .btn-sapiens:active:not(:disabled) {
-    transform: translateY(2px);
-    filter: brightness(0.97);
-    box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.35),
-        0 1px 0 0 var(--btn-pe),
-        0 6px 18px -10px rgba(79, 217, 255, 0.5);
+    transform: translateY(4px);
+    box-shadow: 0 0 0 0 var(--btn-pe);
 }
-.btn-sapiens:disabled { filter: grayscale(0.5) brightness(0.7); box-shadow: none; }
+.btn-sapiens:disabled {
+    background: var(--bio-superficie-alta);
+    color: var(--bio-apagado);
+    box-shadow: 0 4px 0 0 var(--bio-linha);
+    filter: none;
+}
 
-/* Botão secundário/fantasma — vidro com borda que acende no hover. */
+/* Botão secundário: contorno de 2px com um pé de 2px da mesma cor. Ele perde
+   para o primário (é o que mantém UMA ação por tela) e ganha do fundo. */
 .btn-vidro {
-    background: rgba(255, 255, 255, 0.045);
-    border: 1px solid var(--bio-linha);
+    background: transparent;
+    border: 2px solid var(--bio-linha);
     color: var(--bio-texto);
-    transition: border-color .18s ease-out, background-color .18s ease-out, box-shadow .18s ease-out;
+    font-weight: 800;
+    box-shadow: 0 2px 0 0 var(--bio-linha);
+    transition: transform .1s ease-out, box-shadow .1s ease-out, background-color .15s ease-out;
 }
 .btn-vidro:hover:not(:disabled) {
-    border-color: var(--bio-linha-forte);
-    background: rgba(255, 255, 255, 0.08);
-    box-shadow: 0 0 24px -10px var(--bio-brilho);
+    background: var(--bio-superficie);
+}
+.btn-vidro:active:not(:disabled) {
+    transform: translateY(2px);
+    box-shadow: 0 0 0 0 var(--bio-linha);
 }
 
-/* Botão secundário DE VERDADE — o degrau que faltava entre o fantasma
-   (`btn-vidro`) e o principal (`btn-sapiens`).
-
-   Existiam só dois níveis, e a distância entre eles era grande demais: ao
-   lado de um botão aceso, o vidro a 4,5% de branco simplesmente não era
-   visto. Foi assim que a porta do mapa de treino ficou escondida no Painel —
-   estava lá, com nome e ícone, e ninguém achava.
-
-   Este degrau tem borda ciano legível e preenchimento próprio: perde para o
-   principal (é o que mantém uma ação por tela), mas ganha do fundo, que é o
-   que um secundário precisa fazer para existir. */
+/* O secundário com cor: contorno e texto em ciano. Para quando o
+   secundário é a segunda coisa mais importante da tela e não pode sumir. */
 .btn-contorno {
-    background: rgba(79, 217, 255, 0.14);
-    border: 1px solid rgba(127, 216, 255, 0.55);
-    color: #CFEEFF;
-    transition: border-color .18s ease-out, background-color .18s ease-out,
-                box-shadow .18s ease-out, color .18s ease-out;
+    background: transparent;
+    border: 2px solid var(--bio-linha);
+    color: var(--bio-ciano);
+    font-weight: 800;
+    box-shadow: 0 2px 0 0 var(--bio-linha);
+    transition: transform .1s ease-out, box-shadow .1s ease-out, background-color .15s ease-out;
 }
 .btn-contorno:hover:not(:disabled) {
-    border-color: rgba(127, 216, 255, 0.9);
-    background: rgba(79, 217, 255, 0.22);
-    color: #EAF8FF;
-    box-shadow: 0 0 28px -10px var(--bio-brilho);
+    background: var(--bio-superficie);
+}
+.btn-contorno:active:not(:disabled) {
+    transform: translateY(2px);
+    box-shadow: 0 0 0 0 var(--bio-linha);
 }
 
-/* CTA quente (aulas particulares). Único âmbar do produto: contraponto
-   humano no meio da luz fria. Vira vidro âmbar, não placa amarela chapada. */
+/* Superfície quente (aula ao vivo, mentoria): contorno âmbar sobre o cartão,
+   sem halo. */
 .cta-calor {
     position: relative;
-    background:
-        linear-gradient(180deg, rgba(255, 196, 92, 0.16) 0%, rgba(120, 76, 12, 0.20) 100%),
-        var(--bio-vidro);
-    backdrop-filter: blur(18px) saturate(140%);
-    -webkit-backdrop-filter: blur(18px) saturate(140%);
-    border: 1px solid rgba(255, 198, 110, 0.30);
-    box-shadow:
-        inset 0 1px 0 rgba(255, 222, 170, 0.20),
-        0 24px 60px -32px rgba(0, 0, 0, 0.9),
-        0 0 40px -22px rgba(255, 186, 84, 0.55);
+    background: var(--bio-superficie);
+    border: 2px solid rgba(255, 181, 71, 0.45);
+    box-shadow: none;
 }
 .btn-calor {
-    background: linear-gradient(135deg, #FFD98A 0%, #F2A93B 100%);
+    background: var(--bio-ambar);
     color: #2A1704;
-    font-weight: 700;
-    border: 1px solid rgba(255, 226, 176, 0.5);
-    box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.5),
-        0 4px 0 0 var(--btn-pe-calor),
-        0 10px 28px -14px rgba(242, 169, 59, 0.8);
-    transition: transform .12s ease-out, box-shadow .12s ease-out, filter .18s ease-out;
+    font-weight: 800;
+    border: 0;
+    box-shadow: 0 4px 0 0 var(--btn-pe-calor);
+    transition: transform .1s ease-out, box-shadow .1s ease-out, filter .15s ease-out;
 }
-.btn-calor:hover:not(:disabled) { filter: brightness(1.06); transform: translateY(-1px); }
+.btn-calor:hover:not(:disabled) { filter: brightness(1.05); }
 .btn-calor:active:not(:disabled) {
-    transform: translateY(2px);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 1px 0 0 var(--btn-pe-calor);
+    transform: translateY(4px);
+    box-shadow: 0 0 0 0 var(--btn-pe-calor);
 }
 
-.pill { transition: transform .18s ease-out, background-color .18s ease-out, box-shadow .18s ease-out, border-color .18s ease-out; }
-.pill:active { transform: scale(0.97); }
+.pill { transition: transform .12s ease-out, background-color .15s ease-out, box-shadow .12s ease-out, border-color .15s ease-out; }
+/* O pé já é a resposta ao toque dos botões; encolher por cima dele fazia o
+   botão afundar E recuar. Só o que não tem pé encolhe. */
+.pill:not(.btn-sapiens):not(.btn-vidro):not(.btn-contorno):not(.btn-calor):active { transform: scale(0.97); }
+
 
 /* ---------------- A Mentis ----------------
    A entidade cognitiva respira: pulso lento e contido. A regra de arte é
@@ -667,7 +565,7 @@ body::after {
 
 /* A linha que liga os nós. `--andado` é a fração já vencida do caminho: a
    parte percorrida acende, o resto fica em névoa. */
-.caminho-traco { stroke: rgba(120, 170, 235, 0.18); }
+.caminho-traco { stroke: var(--bio-superficie-alta); }
 .caminho-andado { stroke: url(#caminho-gradiente); }
 
 /* A folha que sobe do rodapé no celular — o cartão da estação tocada.
@@ -697,10 +595,8 @@ body::after {
         max-height: calc(100dvh - var(--barra-inferior-h) - 5rem);
         overflow-y: auto;
         overscroll-behavior: contain;
-        background: rgba(9, 16, 29, 0.97);
-        -webkit-backdrop-filter: blur(14px);
-        backdrop-filter: blur(14px);
-        box-shadow: 0 -20px 44px -22px rgba(0, 0, 0, 0.95), var(--elev-1);
+        background: var(--bio-superficie);
+        box-shadow: 0 -20px 44px -22px rgba(0, 0, 0, 0.95);
     }
 }
 
@@ -749,50 +645,51 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .no-trilha:active { transform: translateY(3px); }
 
 .no-dominado {
-    background: linear-gradient(160deg, #5FDCFF 0%, #3E86E8 100%);
-    color: #04121f;
-    border: 1px solid rgba(190, 240, 255, 0.5);
-    box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.4), 0 5px 0 0 var(--btn-pe);
+    background: var(--bio-ciano);
+    color: #062033;
+    border: 0;
+    box-shadow: 0 6px 0 0 var(--btn-pe);
 }
-.no-dominado:active { box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.3), 0 2px 0 0 var(--btn-pe); }
+.no-dominado:active { box-shadow: 0 2px 0 0 var(--btn-pe); }
 
+/* O atual: a mesma cor dos feitos, com um ANEL contornando — é o anel (e a
+   etiqueta "COMEÇAR" em cima) que diz "é aqui", não um halo. */
 .no-atual {
-    background: linear-gradient(160deg, #BFF0FF 0%, #4FD9FF 55%, #2E7FD6 100%);
-    color: #04121f;
-    border: 1px solid rgba(220, 248, 255, 0.75);
+    background: var(--bio-ciano);
+    color: #062033;
+    border: 0;
     box-shadow:
-        inset 0 2px 0 rgba(255, 255, 255, 0.55),
-        0 5px 0 0 var(--btn-pe),
-        0 0 0 6px rgba(79, 217, 255, 0.16),
-        0 0 30px -6px rgba(79, 217, 255, 0.8);
+        0 6px 0 0 var(--btn-pe),
+        0 0 0 6px var(--bio-abismo),
+        0 0 0 10px rgba(79, 217, 255, 0.45);
     animation: no-atual-pulso 2.4s ease-in-out infinite;
 }
 .no-atual:active {
-    box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.4), 0 2px 0 0 var(--btn-pe), 0 0 0 6px rgba(79, 217, 255, 0.16);
+    box-shadow: 0 2px 0 0 var(--btn-pe), 0 0 0 6px var(--bio-abismo), 0 0 0 10px rgba(79, 217, 255, 0.45);
 }
 @keyframes no-atual-pulso {
-    0%, 100% { box-shadow: inset 0 2px 0 rgba(255,255,255,.55), 0 5px 0 0 var(--btn-pe), 0 0 0 5px rgba(79,217,255,.14), 0 0 26px -8px rgba(79,217,255,.7); }
-    50%      { box-shadow: inset 0 2px 0 rgba(255,255,255,.55), 0 5px 0 0 var(--btn-pe), 0 0 0 10px rgba(79,217,255,.08), 0 0 34px -6px rgba(79,217,255,.9); }
+    0%, 100% { box-shadow: 0 6px 0 0 var(--btn-pe), 0 0 0 6px var(--bio-abismo), 0 0 0 10px rgba(79,217,255,.45); }
+    50%      { box-shadow: 0 6px 0 0 var(--btn-pe), 0 0 0 6px var(--bio-abismo), 0 0 0 10px rgba(79,217,255,.75); }
 }
 
 .no-comecado {
-    background: linear-gradient(160deg, rgba(139, 123, 255, 0.55) 0%, rgba(46, 76, 160, 0.65) 100%);
-    color: #EAF4FF;
-    border: 1px solid rgba(170, 200, 255, 0.32);
-    box-shadow: inset 0 2px 0 rgba(200, 220, 255, 0.22), 0 5px 0 0 rgba(20, 34, 66, 0.9);
+    background: var(--bio-violeta);
+    color: #170B3D;
+    border: 0;
+    box-shadow: 0 6px 0 0 var(--btn-pe-violeta);
 }
-.no-comecado:active { box-shadow: inset 0 2px 0 rgba(200,220,255,.18), 0 2px 0 0 rgba(20,34,66,.9); }
+.no-comecado:active { box-shadow: 0 2px 0 0 var(--btn-pe-violeta); }
 
 /* Travado não é proibido — é só ainda-não-revelado. Por isso continua
    clicável: no Sapiens não existe território bloqueado, existe névoa. */
 .no-novo {
-    background: rgba(255, 255, 255, 0.05);
-    color: rgba(232, 242, 255, 0.45);
-    border: 1px solid var(--bio-linha);
-    box-shadow: 0 5px 0 0 rgba(12, 22, 42, 0.8);
+    background: var(--bio-superficie-alta);
+    color: var(--bio-apagado);
+    border: 0;
+    box-shadow: 0 6px 0 0 #0A1220;
 }
-.no-novo:hover { background: rgba(255, 255, 255, 0.09); color: rgba(232, 242, 255, 0.7); }
-.no-novo:active { box-shadow: 0 2px 0 0 rgba(12, 22, 42, 0.8); }
+.no-novo:hover { color: var(--bio-fraco); }
+.no-novo:active { box-shadow: 0 2px 0 0 #0A1220; }
 
 /* ---------------- Azulejo macio ----------------
    O raio grande e a borda espessa-e-clara vêm da mesma régua dos nós: peça
@@ -967,53 +864,43 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
    `.leitura-clara` reverte tudo isto dentro dela (fim do arquivo).
    ========================================================================= */
 
-/* ---- Superfícies neutras ---- */
+/* ---- Superfícies neutras ----
+       Na Clareza não há vidro: `bg-white` vira o cartão sólido, e os brancos
+       translúcidos viram os degraus da mesma escala. */
 :root .bg-white {
-    background-color: rgba(16, 29, 51, 0.55);
-    backdrop-filter: blur(14px) saturate(130%);
-    -webkit-backdrop-filter: blur(14px) saturate(130%);
+    background-color: var(--bio-superficie);
     border-color: var(--bio-linha);
     color: var(--bio-texto);
 }
-:root .bg-white\/80 { background-color: rgba(16, 29, 51, 0.5); color: var(--bio-texto); }
-:root .bg-white\/70 {
-    background-color: rgba(16, 29, 51, 0.5);
-    backdrop-filter: blur(14px) saturate(130%);
-    -webkit-backdrop-filter: blur(14px) saturate(130%);
-    color: var(--bio-texto);
-}
-:root .bg-white\/60 {
-    background-color: rgba(16, 29, 51, 0.45);
-    backdrop-filter: blur(14px) saturate(130%);
-    -webkit-backdrop-filter: blur(14px) saturate(130%);
-    color: var(--bio-texto);
-}
-:root .bg-white\/40 { background-color: rgba(255, 255, 255, 0.10); }
-:root .bg-zinc-50   { background-color: rgba(255, 255, 255, 0.035); }
-:root .bg-zinc-100  { background-color: rgba(255, 255, 255, 0.06); }
-:root .bg-zinc-200  { background-color: rgba(255, 255, 255, 0.10); }
-:root .bg-zinc-300  { background-color: rgba(255, 255, 255, 0.14); }
-:root .bg-slate-50  { background-color: rgba(255, 255, 255, 0.035); }
-:root .bg-slate-100 { background-color: rgba(255, 255, 255, 0.06); }
+:root .bg-white\/80 { background-color: var(--bio-superficie); color: var(--bio-texto); }
+:root .bg-white\/70 { background-color: var(--bio-superficie); color: var(--bio-texto); }
+:root .bg-white\/60 { background-color: var(--bio-superficie); color: var(--bio-texto); }
+:root .bg-white\/40 { background-color: var(--bio-superficie-alta); }
+:root .bg-zinc-50   { background-color: var(--bio-superficie); }
+:root .bg-zinc-100  { background-color: var(--bio-superficie-alta); }
+:root .bg-zinc-200  { background-color: #22355A; }
+:root .bg-zinc-300  { background-color: #2B406A; }
+:root .bg-slate-50  { background-color: var(--bio-superficie); }
+:root .bg-slate-100 { background-color: var(--bio-superficie-alta); }
 
 /* ---- Tinta neutra ---- */
 :root .text-zinc-950, :root .text-zinc-900, :root .text-slate-900 { color: var(--bio-texto); }
-:root .text-zinc-800, :root .text-slate-800 { color: #D5E4F7; }
+:root .text-zinc-800, :root .text-slate-800 { color: #DCE5F5; }
 :root .text-zinc-700, :root .text-slate-700 { color: var(--bio-suave); }
-:root .text-zinc-600, :root .text-slate-600 { color: #9AB0CE; }
+:root .text-zinc-600, :root .text-slate-600 { color: #A9B9D4; }
 :root .text-zinc-500, :root .text-slate-500 { color: var(--bio-fraco); }
-:root .text-zinc-400 { color: #63789A; }
+:root .text-zinc-400 { color: var(--bio-apagado); }
 :root .text-zinc-300 { color: #8DA3C2; }
 :root .text-zinc-200 { color: #B9CCE5; }
 
 /* ---- Linhas ---- */
-:root .border-zinc-100, :root .border-slate-200 { border-color: rgba(150, 200, 255, 0.09); }
+:root .border-zinc-100, :root .border-slate-200 { border-color: #24365A; }
 :root .border-zinc-200 { border-color: var(--bio-linha); }
 :root .border-zinc-300 { border-color: var(--bio-linha-forte); }
 /* `border-zinc-900` marca estado escolhido em fundo claro; no escuro o que
    marca escolha é luz, não escuridão. */
-:root .border-zinc-900 { border-color: rgba(79, 217, 255, 0.7); box-shadow: 0 0 22px -8px var(--bio-brilho); }
-:root .divide-zinc-100 > * + * { border-color: rgba(150, 200, 255, 0.09); }
+:root .border-zinc-900 { border-color: var(--bio-ciano); }
+:root .divide-zinc-100 > * + * { border-color: #24365A; }
 
 /* ---- Semânticos: pastel de tema claro -> tinta translúcida do mesmo matiz.
        Acerto, erro e aviso continuam sendo verde, vermelho e âmbar; o que
@@ -1065,14 +952,14 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 :root input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
 :root textarea,
 :root select {
-    background-color: rgba(255, 255, 255, 0.04);
+    background-color: var(--bio-superficie-alta);
     border-color: var(--bio-linha);
     color: var(--bio-texto);
 }
-:root input::placeholder, :root textarea::placeholder { color: #5F7593; }
+:root input::placeholder, :root textarea::placeholder { color: var(--bio-apagado); }
 :root input:focus, :root textarea:focus, :root select:focus {
-    border-color: rgba(79, 217, 255, 0.55);
-    box-shadow: 0 0 0 3px rgba(79, 217, 255, 0.12);
+    border-color: var(--bio-ciano);
+    box-shadow: 0 0 0 3px rgba(79, 217, 255, 0.18);
 }
 
 /* ---- Reversão dentro da superfície de leitura longa ----
@@ -1368,7 +1255,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .esqueleto {
     position: relative;
     overflow: hidden;
-    background: rgba(255, 255, 255, 0.045);
+    background: var(--bio-superficie);
     border-radius: var(--r-p);
 }
 .esqueleto::after {
@@ -1385,19 +1272,16 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 }
 
 /* ---------------- A barra inferior do celular ----------------
-   O buraco mais caro que o produto tinha: abaixo de 1024px NÃO HAVIA
-   navegação. Tudo — painel, treino, redação, mural, Mentis — vivia atrás de
-   um botão de menu que abre um painel modal. Uma ferramenta atrás de um modal
-   não existe para quem não sabe que ela existe, e a maioria dos alunos entra
-   pelo celular.
-
    Cinco alvos permanentes, sempre na mesma ordem e sempre no alcance do
-   polegar. O do meio é ELEVADO e é a ação — praticar — porque a barra também
+   polegar. O do meio é ELEVADO e é a ação — Estudar — porque a barra também
    responde "o que eu faço agora", e não só "para onde eu vou".
 
+   Clareza: chapada, com a linha de 2px em cima. Cada ícone tem a cor da
+   própria área (`--cor`, posta pelo componente), como o trilho do desktop —
+   o olho acha a área pela cor antes de ler o nome.
+
    `env(safe-area-inset-bottom)` não é detalhe: sem ele, no iPhone a barra
-   fica por baixo do risco de gesto do sistema e o último 20px de alvo é
-   comido pelo aparelho. */
+   fica por baixo do risco de gesto do sistema. */
 .barra-inferior {
     position: fixed;
     left: 0;
@@ -1410,11 +1294,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
     gap: 2px;
     height: calc(var(--barra-inferior-h) + env(safe-area-inset-bottom, 0px));
     padding: 6px 6px env(safe-area-inset-bottom, 0px);
-    background: linear-gradient(180deg, rgba(8, 16, 30, 0.90) 0%, rgba(4, 9, 18, 0.97) 100%);
-    backdrop-filter: saturate(150%) blur(20px);
-    -webkit-backdrop-filter: saturate(150%) blur(20px);
-    border-top: 1px solid var(--bio-linha);
-    box-shadow: 0 -1px 0 rgba(120, 190, 255, 0.07), 0 -20px 50px -30px rgba(0, 0, 0, 1);
+    background: var(--bio-abismo);
+    border-top: 2px solid var(--bio-linha);
 }
 
 .aba-inferior {
@@ -1426,21 +1307,23 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
     align-items: center;
     justify-content: center;
     gap: 3px;
-    /* 52px de altura e largura inteira do quinto: o invariante de celular do
-       produto é alvo de toque >= 32px, e aqui sobra de propósito — é a barra
-       que o polegar mais usa e errar o alvo dela custa uma navegação. */
+    /* 52px de altura: alvo de toque >= 32px com folga — é a barra que o
+       polegar mais usa e errar o alvo dela custa uma navegação. */
     min-height: 52px;
     padding: 6px 2px;
     border-radius: var(--r-p);
+    border: 2px solid transparent;
     color: var(--bio-apagado);
     font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.01em;
+    font-weight: 800;
+    letter-spacing: 0.02em;
     line-height: 1;
     transition: color var(--mov-rapido) var(--mov-saida),
-                background-color var(--mov-rapido) var(--mov-saida);
+                background-color var(--mov-rapido) var(--mov-saida),
+                border-color var(--mov-rapido) var(--mov-saida);
 }
-.aba-inferior:active { background-color: rgba(255, 255, 255, 0.06); }
+.aba-inferior svg { color: var(--cor, var(--bio-fraco)); }
+.aba-inferior:active { background-color: var(--bio-superficie); }
 .aba-inferior span {
     max-width: 100%;
     overflow: hidden;
@@ -1448,29 +1331,15 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
     white-space: nowrap;
 }
 
-/* O ativo. Três sinais somados, porque um só falha para alguém: a cor sobe,
-   o rótulo engrossa e nasce um traço aceso EM CIMA da aba. O traço é o que
-   sobrevive a daltonismo e a tela no sol. */
+/* O ativo: caixa contornada na cor da área e rótulo aceso. Dois sinais, e o
+   contorno é o que sobrevive a daltonismo e a tela no sol. */
 .aba-inferior[data-ativa="true"] {
     color: var(--bio-texto);
-    background-color: rgba(79, 217, 255, 0.10);
+    background-color: var(--bio-superficie);
+    border-color: var(--bio-linha);
 }
-.aba-inferior[data-ativa="true"]::before {
-    content: "";
-    position: absolute;
-    top: -6px;
-    left: 50%;
-    width: 26px;
-    height: 3px;
-    transform: translateX(-50%);
-    border-radius: 0 0 4px 4px;
-    background: linear-gradient(90deg, var(--bio-ciano), var(--bio-violeta));
-    box-shadow: 0 0 14px -2px var(--bio-ciano);
-}
-.aba-inferior[data-ativa="true"] svg { filter: drop-shadow(0 0 8px rgba(79, 217, 255, 0.55)); }
 
-/* A ação do meio. Sobe acima da barra e é o único objeto aceso ali —
-   regra 1 do sistema aplicada à navegação: brilho marca o que pede ação. */
+/* A ação do meio: o botão chapado com pé, igual ao primário. */
 .aba-acao {
     display: flex;
     align-items: center;
@@ -1478,51 +1347,116 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
     width: 54px;
     height: 54px;
     margin-top: -22px;
-    border-radius: 999px;
-    color: #041020;
-    background: linear-gradient(140deg, #8DE8FF 0%, #3E86E8 55%, #6A6BF0 100%);
-    border: 1px solid rgba(190, 240, 255, 0.5);
-    box-shadow:
-        inset 0 2px 0 rgba(255, 255, 255, 0.45),
-        0 4px 0 0 var(--btn-pe),
-        0 10px 26px -8px rgba(79, 217, 255, 0.7);
+    border-radius: 18px;
+    color: #062033;
+    background: var(--bio-ciano);
+    border: 0;
+    box-shadow: 0 4px 0 0 var(--btn-pe);
     transition: transform var(--mov-rapido) var(--mov-saida),
                 box-shadow var(--mov-rapido) var(--mov-saida);
 }
 .aba-acao:active {
-    transform: translateY(2px);
-    box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.35), 0 2px 0 0 var(--btn-pe);
+    transform: translateY(4px);
+    box-shadow: 0 0 0 0 var(--btn-pe);
 }
 .aba-acao-rotulo {
     display: block;
-    margin-top: 4px;
+    margin-top: 6px;
     font-size: 10px;
-    font-weight: 700;
+    font-weight: 800;
     line-height: 1;
     color: var(--bio-suave);
 }
 
-/* ---------------- Onde eu estou, no desktop ----------------
-   A barra de cima nunca marcou a rota atual: seis links iguais, e o aluno
-   descobria onde estava lendo o título da página. O ativo aqui ganha vidro
-   por baixo e um sublinhado aceso — o mesmo par de sinais da barra do
-   celular, para os dois lerem como o mesmo sistema. */
-.nav-elo {
-    position: relative;
-    color: var(--bio-fraco);
-    transition: color var(--mov-rapido) var(--mov-saida),
-                background-color var(--mov-rapido) var(--mov-saida);
-}
-.nav-elo:hover { color: var(--bio-texto); background-color: rgba(255, 255, 255, 0.06); }
+/* ---------------- O trilho: a navegação do desktop (2026-10-19) ----------------
+   Era uma barra horizontal no topo, presa a um orçamento de 1072px que
+   estourou duas vezes. Agora é uma coluna fixa à esquerda, como nos prints
+   do Duolingo que o dono mandou: ícone grande e colorido + nome em
+   maiúsculas, um embaixo do outro. A largura deixa de ser um problema — uma
+   área nova custa 60px de ALTURA, não de largura.
 
-/* A TIRA DE ATALHOS DO CELULAR rola na horizontal e não desenha barra de
-   rolagem: no Android a barra cinza nasce POR CIMA dos chips e cobre a
-   metade de baixo dos rótulos; no iOS ela não aparece, então o mesmo
-   componente ficava com dois recortes diferentes. `overflow-x: auto`
-   continua valendo — some o desenho, não a rolagem — e o embalo do iOS é
-   explícito porque sem ele a tira para seco no fim do arrasto.
-   `overscroll-behavior-x: contain` impede que o arrasto horizontal na tira
-   dispare o "voltar" por gesto de borda do Safari. */
+   1024–1279px: só os ícones (88px), com o nome no balão ao passar o mouse.
+   1280px+: ícone + nome (248px). O conteúdo anda para a direita pela mesma
+   medida (`--trilho-w`), em `html[data-trilho]` — ver `Navegacao.jsx`. */
+.trilho {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 40;
+    width: var(--trilho-w);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 22px 12px 16px;
+    background: var(--bio-abismo);
+    border-right: 2px solid var(--bio-linha);
+}
+.trilho-marca {
+    display: flex;
+    align-items: center;
+    height: 48px;
+    margin-bottom: 18px;
+    padding: 0 10px;
+}
+@media (max-width: 1279px) {
+    .trilho-marca { justify-content: center; padding: 0; }
+}
+
+.trilho-elo {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    height: 54px;
+    padding: 0 14px;
+    border-radius: 14px;
+    border: 2px solid transparent;
+    color: var(--bio-fraco);
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    transition: background-color var(--mov-rapido) var(--mov-saida),
+                border-color var(--mov-rapido) var(--mov-saida),
+                color var(--mov-rapido) var(--mov-saida);
+}
+.trilho-elo svg {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    color: var(--cor, var(--bio-fraco));
+}
+.trilho-elo:hover { background-color: var(--bio-superficie); color: var(--bio-texto); }
+.trilho-elo[data-ativa="true"] {
+    color: var(--bio-ciano);
+    background-color: rgba(79, 217, 255, 0.10);
+    border-color: rgba(79, 217, 255, 0.55);
+}
+.trilho-rotulo { overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 1279px) {
+    .trilho-elo { justify-content: center; padding: 0; }
+    .trilho-rotulo { display: none; }
+}
+.trilho-pe { margin-top: auto; display: flex; flex-direction: column; gap: 6px; }
+
+/* O conteúdo anda para a direita da largura do trilho. Padding no `.App`, e
+   não `margin` no `#root`: o trilho é `fixed`, então quem precisa de espaço
+   é o fluxo do documento, e nada aqui ganha fundo (a página continua sendo
+   pintada só pelo `html`). */
+@media (min-width: 1024px) {
+    html[data-trilho] .App { padding-left: var(--trilho-w); }
+    /* Tela cheia (`fixed inset-0`, o mapa 3D do Treino) não anda com o
+       padding — ela é medida contra a janela. Ela começa depois do trilho,
+       senão o trilho cobre a borda esquerda do mapa e o painel de missões. */
+    html[data-trilho] .tela-cheia-com-trilho { left: var(--trilho-w); }
+}
+
+/* A TIRA ROLÁVEL não desenha barra de rolagem: no Android a barra cinza nasce
+   POR CIMA dos chips. `overflow-x: auto` continua valendo — some o desenho,
+   não a rolagem. `overscroll-behavior-x: contain` impede que o arrasto
+   horizontal dispare o "voltar" por gesto de borda do Safari. */
 .rolagem-invisivel {
     scrollbar-width: none;
     -ms-overflow-style: none;
@@ -1530,73 +1464,14 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
     overscroll-behavior-x: contain;
 }
 .rolagem-invisivel::-webkit-scrollbar { display: none; }
-.nav-elo[data-ativa="true"] {
-    color: var(--bio-texto);
-    background-color: rgba(79, 217, 255, 0.12);
-}
-.nav-elo[data-ativa="true"]::after {
-    content: "";
-    position: absolute;
-    left: 28%;
-    right: 28%;
-    bottom: -1px;
-    height: 2px;
-    border-radius: 2px;
-    background: linear-gradient(90deg, var(--bio-ciano), var(--bio-violeta));
-    box-shadow: 0 0 12px -1px var(--bio-ciano);
-}
-
-/* ---------------- A ABA QUENTE ----------------
-   Âmbar, e SÓ na aula ao vivo. A barra inteira é fria — ciano sobre azul
-   profundo — e é exatamente por isso que um ponto quente nela funciona: o
-   olho vai nele antes de ler qualquer rótulo. Duas abas em âmbar e nenhuma
-   das duas chamaria atenção; esta cor é um recurso de uso único.
-
-   A razão de produto: a aula ao vivo é o único destino do Sapiens com HORA
-   MARCADA. As outras telas estarão iguais amanhã; esta acontece na quinta e
-   quem perde não repõe. Um destino com prazo não pode ter o peso visual de um
-   destino sem prazo.
-
-   Vale para a aba do desktop e para a pílula da tira do celular — mesma cor,
-   mesmo significado, dois tamanhos. */
-.nav-elo[data-aceso="ambar"] {
-    color: #FFD9A0;
-    background-color: rgba(251, 191, 36, 0.10);
-    box-shadow: inset 0 0 0 1px rgba(251, 191, 36, 0.28);
-}
-.nav-elo[data-aceso="ambar"]:hover {
-    color: #FFE9C6;
-    background-color: rgba(251, 191, 36, 0.17);
-    box-shadow: inset 0 0 0 1px rgba(251, 191, 36, 0.45),
-                0 0 22px -10px rgba(251, 191, 36, 0.75);
-}
-/* Ativa, ela troca o sublinhado ciano do resto da barra pelo próprio âmbar —
-   senão a aba acesa teria duas cores brigando na mesma pílula. */
-.nav-elo[data-aceso="ambar"][data-ativa="true"] {
-    color: #FFF1DA;
-    background-color: rgba(251, 191, 36, 0.20);
-    box-shadow: inset 0 0 0 1px rgba(251, 191, 36, 0.5);
-}
-.nav-elo[data-aceso="ambar"][data-ativa="true"]::after {
-    background: linear-gradient(90deg, #FBBF24, #FB923C);
-    box-shadow: 0 0 12px -1px rgba(251, 191, 36, 0.9);
-}
 
 /* ---------------- O nome do símbolo, ao passar o mouse ----------------
-   Cada ícone da barra de cima cresce um pouco e mostra o próprio nome
-   embaixo dele ao passar o mouse — ou ao chegar por Tab, para quem navega
-   pelo teclado. `data-tip` carrega o texto (o mesmo que já ia no `title`
-   nativo, que este substitui: os dois juntos duplicavam a legenda). O
-   rótulo nasce com `pointer-events: none` de propósito — ele aparece ONDE
-   o dedo do mouse já está, e não pode roubar o clique de quem mirou no
-   ícone, não na legenda que acabou de surgir por cima dele. */
+   `data-tip` carrega o texto. No trilho o balão nasce à DIREITA do ícone (é
+   o único lado livre); fora dele, embaixo. `pointer-events: none` de
+   propósito: o balão aparece onde o mouse já está e não pode roubar o
+   clique de quem mirou no ícone. */
 .nav-tip {
     position: relative;
-    transition: transform var(--mov-rapido) var(--mov-saida);
-}
-.nav-tip:hover,
-.nav-tip:focus-visible {
-    transform: scale(1.08);
 }
 .nav-tip::after {
     content: attr(data-tip);
@@ -1604,15 +1479,15 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
     top: calc(100% + 9px);
     left: 50%;
     transform: translateX(-50%) translateY(-4px);
-    padding: 4px 9px;
-    border-radius: 999px;
-    background: rgba(8, 14, 26, 0.95);
-    border: 1px solid var(--bio-linha);
-    box-shadow: 0 8px 20px -8px rgba(0, 0, 0, 0.7);
+    padding: 6px 10px;
+    border-radius: 10px;
+    background: var(--bio-superficie-alta);
+    border: 2px solid var(--bio-linha);
     color: var(--bio-texto);
-    font-size: 11px;
-    font-weight: 700;
+    font-size: 12px;
+    font-weight: 800;
     letter-spacing: 0.01em;
+    text-transform: none;
     white-space: nowrap;
     opacity: 0;
     visibility: hidden;
@@ -1628,72 +1503,63 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
     visibility: visible;
     transform: translateX(-50%) translateY(0);
 }
+.trilho .nav-tip::after {
+    top: 50%;
+    left: calc(100% + 12px);
+    transform: translate(-4px, -50%);
+}
+.trilho .nav-tip:hover::after,
+.trilho .nav-tip:focus-visible::after {
+    transform: translate(0, -50%);
+}
 
 /* ---------------- Superfície padrão de conteúdo ----------------
-   `.card-sapiens` continua sendo o painel de vidro caro (blur de 18px,
-   três sombras). Ele é pesado para o que o produto mais tem: dezenas de
-   blocos pequenos numa mesma rolagem. `.superficie` é a versão barata —
-   sem backdrop-filter, que é o que custa no celular quando há vinte deles em
-   pé — e é a que telas novas devem usar por padrão. */
+   Mesma gramática do cartão: cor sólida, contorno de 2px. `.superficie` é a
+   que telas novas devem usar por padrão. */
 .superficie {
     position: relative;
-    background: rgba(255, 255, 255, 0.035);
-    border: 1px solid var(--bio-linha);
+    background: var(--bio-superficie);
+    border: 2px solid var(--bio-linha);
     border-radius: var(--r-g);
-    box-shadow: var(--elev-1);
-    transition: transform var(--mov-medio) var(--mov-saida),
-                border-color var(--mov-medio) var(--mov-saida),
-                background-color var(--mov-medio) var(--mov-saida),
-                box-shadow var(--mov-medio) var(--mov-saida);
+    box-shadow: none;
+    transition: background-color var(--mov-rapido) var(--mov-saida),
+                border-color var(--mov-rapido) var(--mov-saida),
+                transform var(--mov-rapido) var(--mov-saida);
 }
 @media (hover: hover) and (pointer: fine) {
     a.superficie:hover, button.superficie:hover, .superficie.lift:hover {
-        transform: translateY(-2px);
-        background: rgba(255, 255, 255, 0.06);
+        background: var(--bio-superficie-alta);
         border-color: var(--bio-linha-forte);
-        box-shadow: var(--elev-2), 0 0 30px -18px var(--bio-brilho);
     }
 }
-/* No mouse, pressionar POUSA o card que o hover tinha levantado. */
-a.superficie:active, button.superficie:active { transform: translateY(0); }
 
-/* No toque não há de onde pousar: o card nunca levantou. Aqui pressionar
-   AFUNDA — 1,5% de escala e um clarão na superfície, em 110ms, que é o tempo
-   em que o dedo ainda está no vidro. Sem isto o aluno toca um card e a tela
-   fica imóvel até a rota trocar; numa rede ruim são dois segundos em que a
-   única leitura possível é "não funcionou", e ele toca de novo. */
+/* No toque não há hover: pressionar AFUNDA um pouco, em 110ms, que é o tempo
+   em que o dedo ainda está na tela. Sem isto o aluno toca um card e a tela
+   fica imóvel até a rota trocar — e ele toca de novo. */
 @media (hover: none) {
     a.superficie:active, button.superficie:active,
     a.lift:active, button.lift:active {
         transform: scale(0.985);
-        background-color: rgba(255, 255, 255, 0.07);
+        background-color: var(--bio-superficie-alta);
         transition-duration: 110ms;
     }
 }
 
-/* A variante que PEDE ação: aro aceso e um halo contido. Existe para um
-   bloco por tela, no máximo — dois já destroem a hierarquia que ela cria. */
+/* A variante que PEDE ação: contorno ciano. Um bloco por tela, no máximo. */
 .superficie-viva {
-    background:
-        linear-gradient(165deg, rgba(79, 217, 255, 0.11) 0%, rgba(139, 123, 255, 0.07) 55%, transparent 100%),
-        rgba(255, 255, 255, 0.035);
-    border-color: rgba(79, 217, 255, 0.34);
-    box-shadow: var(--elev-2), 0 0 44px -26px var(--bio-ciano);
+    background: var(--bio-superficie);
+    border-color: rgba(79, 217, 255, 0.55);
+    box-shadow: none;
 }
 a.superficie-viva:hover, button.superficie-viva:hover {
-    border-color: rgba(79, 217, 255, 0.6);
-    box-shadow: var(--elev-3), 0 0 54px -20px var(--bio-ciano);
+    border-color: var(--bio-ciano);
 }
 
-/* ---------------- Cabeçalho de seção ----------------
-   Toda seção do produto repetia a mesma construção à mão (título display +
-   link à direita + margem de 12px), com três variações de tamanho pelo
-   caminho. Aqui ela é uma peça só, e a régua fica igual em tudo. */
+/* ---------------- Cabeçalho de seção ---------------- */
 .secao-cabeca {
     display: flex;
     /* `wrap` é a rede de segurança do celular: sem ela, um título um pouco mais
-       longo e o link da direita se espremem até quebrar PALAVRA A PALAVRA em
-       duas colunas de 60px. Com ela, o link simplesmente desce uma linha. */
+       longo e o link da direita se espremem até quebrar PALAVRA A PALAVRA. */
     flex-wrap: wrap;
     align-items: baseline;
     justify-content: space-between;
@@ -1704,68 +1570,63 @@ a.superficie-viva:hover, button.superficie-viva:hover {
     display: flex;
     align-items: center;
     gap: 8px;
-    font-family: 'Manrope', system-ui, sans-serif;
-    font-size: 1.0625rem;
+    font-family: var(--fonte);
+    font-size: 1.25rem;
     font-weight: 800;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.01em;
     color: var(--bio-texto);
 }
+/* O "olho": rótulo em maiúsculas acima do título — o "SECTION 1, UNIT 6" do
+   Duolingo. 800, 12px, espaçamento curto: largo demais ele vira textura e
+   deixa de ser lido. */
 .secao-olho {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 10px;
-    font-weight: 600;
+    font-family: var(--fonte);
+    font-size: 12px;
+    font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.28em;
-    color: rgba(127, 216, 255, 0.75);
+    letter-spacing: 0.08em;
+    color: var(--bio-fraco);
 }
 
-/* O respiro entre o olho e o título que ele apresenta. Era um `mb-3` escrito
-   à mão em cada tela — e por isso valia 12px em umas e nada em outras. Aqui
-   é uma regra só, e ela só dispara quando o olho REALMENTE antecede um
-   título: dentro de um azulejo de medida, ou numa linha com chips ao lado, o
-   olho continua sem margem, que é o que aquele uso pede. */
+/* O respiro entre o olho e o título que ele apresenta. */
 .secao-olho + .titulo-tela,
 .secao-olho + .titulo-heroi,
 .secao-olho + h1,
 .secao-olho + h2 {
-    margin-top: 8px;
+    margin-top: 6px;
 }
 
 /* ---------------- Medidas ----------------
    Número grande com rótulo pequeno embaixo. Tabular de propósito: um
    contador que troca de largura a cada dígito faz a linha inteira dançar. */
 .medida-n {
-    font-family: 'Manrope', system-ui, sans-serif;
+    font-family: var(--fonte);
     font-variant-numeric: tabular-nums;
-    font-weight: 800;
-    letter-spacing: -0.03em;
+    font-weight: 900;
+    letter-spacing: -0.02em;
     line-height: 1;
     color: var(--bio-texto);
 }
 .medida-rotulo {
     margin-top: 5px;
-    font-size: 10px;
-    font-weight: 600;
+    font-size: 11px;
+    font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--bio-apagado);
+    letter-spacing: 0.06em;
+    color: var(--bio-fraco);
 }
 
-/* Chip de metadado. Um só desenho para tudo o que é "um dado pequeno ao lado
-   de um título": saldo, meta, prazo, custo. */
+/* Chip de metadado: saldo, meta, prazo, custo. */
 .chip {
     display: inline-flex;
     align-items: center;
     gap: 6px;
     padding: 6px 12px;
     border-radius: 999px;
-    border: 1px solid var(--bio-linha);
-    /* .05 dava 1.08:1 contra a página — o chip só existia por causa do texto
-       dentro dele. A borda agora cruza 3:1 sozinha; este fundo é o que faz a
-       pílula ler como pílula antes de alguém ler a palavra. */
-    background: rgba(255, 255, 255, 0.10);
-    font-size: 12px;
-    font-weight: 600;
+    border: 2px solid var(--bio-linha);
+    background: var(--bio-superficie);
+    font-size: 13px;
+    font-weight: 800;
     color: var(--bio-suave);
     white-space: nowrap;
     transition: border-color var(--mov-rapido) var(--mov-saida),
@@ -1774,7 +1635,7 @@ a.superficie-viva:hover, button.superficie-viva:hover {
 }
 a.chip:hover, button.chip:hover {
     border-color: var(--bio-linha-forte);
-    background: rgba(255, 255, 255, 0.16);
+    background: var(--bio-superficie-alta);
     color: var(--bio-texto);
 }
 
@@ -1835,24 +1696,36 @@ a.chip:hover, button.chip:hover {
 }
 
 /* ---------------- Barra de progresso ----------------
-   Uma só, com a luz da família. `--valor` em vez de `width` inline em três
-   telas diferentes, cada uma com um degradê próprio. */
+   Trilho chapado, enchimento ciano sólido com um fio claro por cima — a
+   leitura de "tubo cheio" do Duolingo sem o amarelo dele. `--valor` em vez de
+   `width` inline em três telas diferentes, cada uma com um degradê próprio. */
 .barra {
     position: relative;
-    height: 8px;
+    height: 12px;
     overflow: hidden;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.08);
-    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
+    background: var(--bio-superficie-alta);
 }
 .barra > i {
+    position: relative;
     display: block;
     height: 100%;
     border-radius: 999px;
-    background: linear-gradient(90deg, var(--bio-ciano), var(--bio-violeta));
-    box-shadow: 0 0 14px -4px var(--bio-ciano);
+    background: var(--bio-ciano);
     transition: width 700ms var(--mov-entrada);
 }
+.barra > i::before {
+    content: "";
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    top: 3px;
+    height: 3px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.35);
+}
+.barra[data-cor="verde"] > i { background: var(--bio-verde); }
+.barra[data-cor="ambar"] > i { background: var(--bio-ambar); }
 /* Cheia: a luz corre dentro dela uma vez por ciclo. Só quando está em 100% —
    barra pela metade brilhando o tempo todo é enfeite. */
 .barra[data-cheia="true"] > i::after {
@@ -1864,23 +1737,23 @@ a.chip:hover, button.chip:hover {
 }
 
 /* ---------------- Tipografia de tela ----------------
-   O título de página cresce com a janela sem quebrar em 320px: `clamp` em
-   vez de três degraus de `md:`/`lg:` que erram justamente nas larguras
-   intermediárias (os notebooks de 13", de novo). */
+   Título gordo e curto. Menor que na direção anterior (2.6rem → 2.25rem no
+   máximo): o Duolingo mede ~32px de título de página, e o que dá peso é a
+   espessura, não o tamanho. `clamp` em vez de três degraus de `md:`/`lg:`. */
 .titulo-tela {
-    font-family: 'Manrope', system-ui, sans-serif;
-    font-size: clamp(1.75rem, 1.1rem + 2.6vw, 2.6rem);
-    font-weight: 800;
-    letter-spacing: -0.035em;
-    line-height: 1.02;
+    font-family: var(--fonte);
+    font-size: clamp(1.625rem, 1.2rem + 1.4vw, 2.25rem);
+    font-weight: 900;
+    letter-spacing: -0.015em;
+    line-height: 1.1;
     color: var(--bio-texto);
 }
 .titulo-heroi {
-    font-family: 'Manrope', system-ui, sans-serif;
-    font-size: clamp(1.9rem, 1.1rem + 3.4vw, 3.1rem);
-    font-weight: 800;
-    letter-spacing: -0.04em;
-    line-height: 1.03;
+    font-family: var(--fonte);
+    font-size: clamp(1.9rem, 1.2rem + 2.6vw, 2.9rem);
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
     color: var(--bio-texto);
 }
 
@@ -1899,7 +1772,7 @@ a.chip:hover, button.chip:hover {
 
    A cura não é trocar a fonte nem a codificação (a origem está toda em UTF-8
    e em NFC, conferido): é devolver a altura. 1.15 é o mínimo que acomoda til
-   e cedilha em Manrope em todos os pesos; os títulos ficam em 1.1 porque
+   e cedilha em todos os pesos (medido em Manrope e mantido na Nunito); os títulos ficam em 1.1 porque
    `clamp` já os deixa grandes e o espaço extra aparece muito na composição.
 
    Ao acrescentar título novo neste arquivo: `line-height` abaixo de 1.1 em
@@ -2329,28 +2202,27 @@ a.chip:hover, button.chip:hover {
     min-width: 0;
     text-align: left;
     border-radius: var(--r-g);
-    border: 2px solid rgba(150, 200, 255, 0.16);
-    border: 2px solid color-mix(in srgb, var(--de) 30%, rgba(150, 200, 255, 0.10));
-    background: linear-gradient(180deg, rgba(22, 36, 62, 0.92) 0%, rgba(12, 21, 40, 0.94) 100%);
-    background: linear-gradient(180deg,
-        color-mix(in srgb, var(--de) 13%, rgba(16, 28, 50, 0.95)) 0%,
-        rgba(12, 21, 40, 0.94) 100%);
-    box-shadow: 0 5px 0 0 var(--pe), var(--elev-1);
+    /* Clareza: cartão sólido, contorno de 2px com um toque da cor da
+       matéria, e o pé — a cor fica no ícone e na barra, não no fundo. */
+    border: 2px solid var(--bio-linha);
+    border: 2px solid color-mix(in srgb, var(--de) 35%, var(--bio-linha));
+    background: var(--bio-superficie);
+    box-shadow: 0 5px 0 0 var(--bio-linha);
+    box-shadow: 0 5px 0 0 color-mix(in srgb, var(--de) 35%, var(--bio-linha));
     color: var(--bio-texto);
     transition: transform .14s ease-out, box-shadow .14s ease-out, border-color .18s ease-out;
 }
 a.cartao-gordo, button.cartao-gordo { cursor: pointer; }
 @media (hover: hover) and (pointer: fine) {
     a.cartao-gordo:hover, button.cartao-gordo:hover {
-        transform: translateY(-2px);
-        border-color: color-mix(in srgb, var(--de) 62%, transparent);
-        box-shadow: 0 7px 0 0 var(--pe), 0 22px 44px -26px var(--de);
+        background: var(--bio-superficie-alta);
+        border-color: color-mix(in srgb, var(--de) 70%, var(--bio-linha));
     }
 }
 /* O pé afunda: 4 dos 5px somem e o cartão desce o mesmo tanto. */
 a.cartao-gordo:active, button.cartao-gordo:active {
     transform: translateY(4px);
-    box-shadow: 0 1px 0 0 var(--pe), var(--elev-1);
+    box-shadow: 0 1px 0 0 color-mix(in srgb, var(--de) 35%, var(--bio-linha));
     transition-duration: 70ms;
 }
 a.cartao-gordo:focus-visible, button.cartao-gordo:focus-visible {
@@ -2368,17 +2240,16 @@ a.cartao-gordo:focus-visible, button.cartao-gordo:focus-visible {
     height: 52px;
     border-radius: 17px;
     color: #fff;
-    background: linear-gradient(140deg, var(--de) 0%, var(--para) 100%);
-    box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.38), 0 3px 0 0 var(--pe);
+    background: var(--de);
+    box-shadow: 0 4px 0 0 var(--pe);
 }
 .cartao-gordo-icone > svg {
     width: 26px;
     height: 26px;
-    filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.25));
 }
 
 .cartao-gordo-titulo {
-    font-family: 'Manrope', system-ui, sans-serif;
+    font-family: var(--fonte);
     font-size: 1.0625rem;
     font-weight: 800;
     line-height: 1.2;
@@ -2418,15 +2289,14 @@ a.cartao-gordo:focus-visible, button.cartao-gordo:focus-visible {
     height: 10px;
     overflow: hidden;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.10);
-    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45);
+    background: var(--bio-superficie-alta);
 }
 .cartao-gordo-barra > i {
     display: block;
     height: 100%;
     border-radius: 999px;
-    background: linear-gradient(90deg, var(--de), var(--para));
-    box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.35);
+    background: var(--de);
+    box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.28);
     transition: width 700ms var(--mov-entrada);
 }
 
@@ -2458,8 +2328,8 @@ a.cartao-gordo:focus-visible, button.cartao-gordo:focus-visible {
 }
 .cartao-gordo-selo--feito {
     color: #2A1704;
-    background: linear-gradient(135deg, #FFE08A, #F2A93B);
-    border-color: rgba(255, 236, 190, 0.7);
+    background: var(--bio-ambar);
+    border-color: var(--bio-ambar);
 }
 
 /* A capa do curso dentro do cartão: degradê do servidor e o glifo GRANDE e
@@ -2571,7 +2441,7 @@ a.cartao-gordo:focus-visible, button.cartao-gordo:focus-visible {
 /* O número de sugestões na aba recolhida. É a única coisa que o balão
    fechado diz, e é a única que justifica reabri-lo. */
 .balao-aba-contagem {
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: var(--fonte);
     font-size: 11px;
     font-weight: 700;
     color: #7FD8FF;
@@ -2600,7 +2470,7 @@ a.cartao-gordo:focus-visible, button.cartao-gordo:focus-visible {
     border-bottom: 1px solid rgba(150, 200, 255, 0.14);
 }
 .balao-titulo {
-    font-family: 'Manrope', system-ui, sans-serif;
+    font-family: var(--fonte);
     font-size: 0.9375rem;
     font-weight: 800;
     letter-spacing: -0.02em;
@@ -2670,7 +2540,7 @@ a.cartao-gordo:focus-visible, button.cartao-gordo:focus-visible {
 
 .balao-item-olho {
     display: block;
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: var(--fonte);
     font-size: 9px;
     font-weight: 600;
     letter-spacing: 0.22em;
@@ -2680,7 +2550,7 @@ a.cartao-gordo:focus-visible, button.cartao-gordo:focus-visible {
 .balao-item-titulo {
     display: block;
     margin-top: 3px;
-    font-family: 'Manrope', system-ui, sans-serif;
+    font-family: var(--fonte);
     font-size: 0.8125rem;
     font-weight: 800;
     line-height: 1.3;
@@ -2781,7 +2651,7 @@ a.cartao-gordo:focus-visible, button.cartao-gordo:focus-visible {
 .botao-cartao-nota {
     display: block;
     margin-top: 2px;
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: var(--fonte);
     font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.16em;
@@ -3569,7 +3439,7 @@ a.cartao-gordo:focus-visible, button.cartao-gordo:focus-visible {
     justify-content: center;
     gap: 6px;
     padding: 12px 8px 14px;
-    font-family: 'Manrope', system-ui, sans-serif;
+    font-family: var(--fonte);
     font-size: 22px;
     font-weight: 900;
     color: var(--placar-cor);
@@ -3687,7 +3557,6 @@ a.cartao-gordo:focus-visible, button.cartao-gordo:focus-visible {
     gap: 14px;
 }
 .balao-guia-mentis {
-    filter: drop-shadow(0 10px 22px rgba(79, 217, 255, 0.28));
     margin-top: 4px;
 }
 .balao-guia-fala {
@@ -3695,9 +3564,9 @@ a.cartao-gordo:focus-visible, button.cartao-gordo:focus-visible {
     padding: 16px 48px 16px 18px;
     border-radius: 22px;
     border-top-left-radius: 8px;
-    background: linear-gradient(160deg, rgba(36, 58, 98, 0.92) 0%, rgba(18, 30, 54, 0.94) 100%);
-    border: 1px solid rgba(150, 210, 255, 0.36);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 18px 40px -22px rgba(0, 0, 0, 0.9), 0 0 36px -20px rgba(79, 217, 255, 0.55);
+    background: var(--bio-superficie);
+    border: 2px solid var(--bio-linha);
+    box-shadow: none;
     cursor: default;
     animation: balao-surge 380ms var(--mov-entrada) both;
 }
@@ -3709,9 +3578,9 @@ a.cartao-gordo:focus-visible, button.cartao-gordo:focus-visible {
     top: 18px;
     width: 18px;
     height: 18px;
-    background: rgba(32, 52, 90, 0.95);
-    border-left: 1px solid rgba(150, 210, 255, 0.36);
-    border-bottom: 1px solid rgba(150, 210, 255, 0.36);
+    background: var(--bio-superficie);
+    border-left: 2px solid var(--bio-linha);
+    border-bottom: 2px solid var(--bio-linha);
     transform: rotate(45deg);
     border-bottom-left-radius: 4px;
 }
@@ -3730,12 +3599,12 @@ a.cartao-gordo:focus-visible, button.cartao-gordo:focus-visible {
     width: 32px;
     height: 32px;
     border-radius: 999px;
-    color: rgba(232, 242, 255, 0.7);
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(150, 200, 255, 0.25);
+    color: var(--bio-fraco);
+    background: transparent;
+    border: 2px solid var(--bio-linha);
     transition: background .15s ease-out, color .15s ease-out;
 }
-.balao-guia-voz:hover { background: rgba(255, 255, 255, 0.12); color: #fff; }
+.balao-guia-voz:hover { background: var(--bio-superficie-alta); color: #fff; }
 .balao-guia-voz[aria-pressed="true"] { color: #04121f; background: #9FE9FF; border-color: #CFF6FF; }
 
 /* O botão grande do Duolingo: alto, largo, em caixa alta, com o pé sólido
@@ -3760,30 +3629,30 @@ a.cartao-gordo:focus-visible, button.cartao-gordo:focus-visible {
     min-height: 36px;
     padding: 6px 12px;
     border-radius: 999px;
-    border: 1px solid rgba(150, 200, 255, 0.28);
-    background: rgba(255, 255, 255, 0.05);
-    color: #E8F2FF;
-    font-family: 'Manrope', system-ui, sans-serif;
-    font-size: 14px;
+    border: 2px solid var(--bio-linha);
+    background: transparent;
+    color: var(--bio-texto);
+    font-family: var(--fonte);
+    font-size: 15px;
     font-weight: 800;
     transition: background .15s ease-out, transform .12s ease-out;
 }
 .hud-chip:active { transform: translateY(1px); }
 @media (hover: hover) and (pointer: fine) {
-    .hud-chip:hover { background: rgba(255, 255, 255, 0.10); }
+    .hud-chip:hover { background: var(--bio-superficie); }
 }
 .hud-chip { white-space: nowrap; flex-shrink: 0; }
-.hud-chip-chama { color: #FFE2A8; border-color: rgba(255, 190, 92, 0.45); background: rgba(255, 159, 28, 0.12); }
+.hud-chip-chama { color: var(--bio-ambar); }
 .hud-xp {
     position: relative;
     display: inline-block;
     width: 34px;
     height: 6px;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.12);
+    background: var(--bio-superficie-alta);
     overflow: hidden;
 }
-.hud-xp > i { position: absolute; inset: 0 auto 0 0; border-radius: 999px; background: linear-gradient(90deg, #4FD9FF, #8B7BFF); }
+.hud-xp > i { position: absolute; inset: 0 auto 0 0; border-radius: 999px; background: var(--bio-ciano); }
 /* Abaixo de 380px: sem a barrinha de XP no placar e com a fala mais justa.
    Depois das definições de propósito — mesma especificidade, quem vem depois
    vence (a armadilha do bloco de celular em `Cerebro/ux/mobile.md`). */
@@ -3809,22 +3678,22 @@ a.cartao-gordo:focus-visible, button.cartao-gordo:focus-visible {
 .no-dia.no-atual { width: 80px; height: 80px; margin: -2px; }
 
 .no-dia-proximo {
-    background: linear-gradient(160deg, rgba(139, 123, 255, 0.40) 0%, rgba(46, 76, 160, 0.50) 100%);
-    color: rgba(234, 244, 255, 0.85);
-    border: 1px solid rgba(170, 200, 255, 0.28);
-    box-shadow: inset 0 2px 0 rgba(200, 220, 255, 0.18), 0 6px 0 0 rgba(20, 34, 66, 0.9);
+    background: var(--bio-superficie-alta);
+    color: var(--bio-ciano);
+    border: 0;
+    box-shadow: 0 6px 0 0 #0A1220;
 }
-.no-dia-proximo:active { box-shadow: inset 0 2px 0 rgba(200,220,255,.14), 0 2px 0 0 rgba(20,34,66,.9); }
+.no-dia-proximo:active { box-shadow: 0 2px 0 0 #0A1220; }
 
 /* O prêmio pronto: baú dourado que treme até ser aberto. */
 .no-dia-bau {
-    background: linear-gradient(160deg, #FFE79A 0%, #F0B23C 100%);
+    background: var(--bio-ambar);
     color: #3A2302;
-    border: 1px solid rgba(255, 240, 200, 0.75);
-    box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.55), 0 6px 0 0 #9A6A12, 0 0 0 6px rgba(255, 200, 92, 0.16), 0 0 34px -6px rgba(255, 190, 70, 0.9);
+    border: 0;
+    box-shadow: 0 6px 0 0 var(--btn-pe-calor), 0 0 0 6px var(--bio-abismo), 0 0 0 10px rgba(255, 181, 71, 0.5);
     animation: no-dia-bau 1.6s ease-in-out infinite;
 }
-.no-dia-bau:active { box-shadow: inset 0 2px 0 rgba(255,255,255,.45), 0 2px 0 0 #9A6A12; }
+.no-dia-bau:active { box-shadow: 0 2px 0 0 var(--btn-pe-calor); }
 @keyframes no-dia-bau {
     0%, 70%, 100% { transform: rotate(0deg); }
     75% { transform: rotate(-9deg) scale(1.04); }
@@ -3834,10 +3703,10 @@ a.cartao-gordo:focus-visible, button.cartao-gordo:focus-visible {
 }
 
 .no-dia-trofeu {
-    background: linear-gradient(160deg, #FFE79A 0%, #F0B23C 100%);
+    background: var(--bio-ambar);
     color: #3A2302;
-    border: 1px solid rgba(255, 240, 200, 0.75);
-    box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.5), 0 6px 0 0 #9A6A12, 0 0 30px -6px rgba(240, 178, 60, 0.9);
+    border: 0;
+    box-shadow: 0 6px 0 0 var(--btn-pe-calor);
 }
 
 /* O nó que acabou de ser cumprido salta ao voltar para a trilha. */
@@ -3857,17 +3726,20 @@ a.cartao-gordo:focus-visible, button.cartao-gordo:focus-visible {
     z-index: 2;
     padding: 7px 14px;
     border-radius: 12px;
-    background: #E8F8FF;
-    color: #0B4A80;
-    border: 2px solid #9FE9FF;
-    font-family: 'Manrope', system-ui, sans-serif;
-    font-size: 13px;
+    background: var(--bio-superficie);
+    color: var(--bio-ciano);
+    border: 2px solid var(--bio-linha);
+    font-family: var(--fonte);
+    font-size: 14px;
     font-weight: 900;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
     white-space: nowrap;
-    box-shadow: 0 4px 0 0 rgba(10, 60, 110, 0.55), 0 10px 24px -10px rgba(79, 217, 255, 0.8);
+    box-shadow: none;
     pointer-events: none;
+    /* O centro mora na regra, e não só no keyframe: com movimento reduzido a
+       animação é desligada e a etiqueta caía meia largura para a direita. */
+    transform: translateX(-50%);
     animation: no-dia-chamada 1.2s ease-in-out infinite;
 }
 .no-dia-chamada::after {
@@ -3879,13 +3751,12 @@ a.cartao-gordo:focus-visible, button.cartao-gordo:focus-visible {
     height: 12px;
     margin-left: -6px;
     margin-top: -5px;
-    background: #E8F8FF;
-    border-right: 2px solid #9FE9FF;
-    border-bottom: 2px solid #9FE9FF;
+    background: var(--bio-superficie);
+    border-right: 2px solid var(--bio-linha);
+    border-bottom: 2px solid var(--bio-linha);
     transform: rotate(45deg);
 }
-.no-dia-chamada-bau { background: #FFF4D6; color: #7A4A00; border-color: #FFD27A; }
-.no-dia-chamada-bau::after { background: #FFF4D6; border-color: #FFD27A; }
+.no-dia-chamada-bau { color: var(--bio-ambar); }
 @keyframes no-dia-chamada {
     0%, 100% { transform: translate(-50%, 0); }
     50%      { transform: translate(-50%, -6px); }
@@ -3899,9 +3770,9 @@ a.cartao-gordo:focus-visible, button.cartao-gordo:focus-visible {
     width: min(320px, calc(100vw - 40px));
     padding: 18px;
     border-radius: 22px;
-    background: rgba(12, 22, 40, 0.98);
-    border: 1px solid rgba(150, 210, 255, 0.40);
-    box-shadow: 0 24px 50px -18px rgba(0, 0, 0, 0.95), 0 0 40px -18px rgba(79, 217, 255, 0.5);
+    background: var(--bio-superficie);
+    border: 2px solid var(--bio-linha);
+    box-shadow: 0 24px 50px -24px rgba(0, 0, 0, 0.8);
     text-align: left;
     animation: balao-surge 220ms var(--mov-entrada) both;
 }
@@ -3913,9 +3784,9 @@ a.cartao-gordo:focus-visible, button.cartao-gordo:focus-visible {
     width: 16px;
     height: 16px;
     margin-left: -8px;
-    background: rgba(12, 22, 40, 0.98);
-    border-left: 1px solid rgba(150, 210, 255, 0.40);
-    border-top: 1px solid rgba(150, 210, 255, 0.40);
+    background: var(--bio-superficie);
+    border-left: 2px solid var(--bio-linha);
+    border-top: 2px solid var(--bio-linha);
     transform: rotate(45deg);
 }
 .no-dia-cartao-fechar {
@@ -3962,9 +3833,9 @@ a.cartao-gordo:focus-visible, button.cartao-gordo:focus-visible {
     padding: 12px 14px;
     border-radius: 18px;
     border-bottom-right-radius: 6px;
-    background: rgba(14, 26, 48, 0.97);
-    border: 1px solid rgba(150, 210, 255, 0.40);
-    box-shadow: 0 18px 40px -16px rgba(0, 0, 0, 0.9), 0 0 30px -16px rgba(79, 217, 255, 0.6);
+    background: var(--bio-superficie);
+    border: 2px solid var(--bio-linha);
+    box-shadow: 0 18px 40px -20px rgba(0, 0, 0, 0.8);
     animation: dica-surge 360ms var(--mov-entrada) both;
 }
 .dica-mentis::after {
@@ -3974,9 +3845,9 @@ a.cartao-gordo:focus-visible, button.cartao-gordo:focus-visible {
     bottom: -7px;
     width: 14px;
     height: 14px;
-    background: rgba(14, 26, 48, 0.97);
-    border-right: 1px solid rgba(150, 210, 255, 0.40);
-    border-bottom: 1px solid rgba(150, 210, 255, 0.40);
+    background: var(--bio-superficie);
+    border-right: 2px solid var(--bio-linha);
+    border-bottom: 2px solid var(--bio-linha);
     transform: rotate(45deg);
 }
 @keyframes dica-surge {
@@ -4006,4 +3877,30 @@ a.cartao-gordo:focus-visible, button.cartao-gordo:focus-visible {
     .balao-guia-fala, .no-dia-bau, .no-dia-novo, .no-dia-chamada, .no-dia-cartao {
         animation: none !important;
     }
+}
+
+/* =========================================================================
+   CLAREZA — a camada de acabamento (2026-10-19)
+   -------------------------------------------------------------------------
+   O que as telas escrevem em Tailwind e que a direção nova precisa domar em
+   UM lugar, pela mesma técnica da camada de tradução (`:root .x`, 0,2,0+,
+   vence o utilitário sem `!important`):
+
+   · rótulos em maiúsculas com espaçamento largo (`tracking-[0.22em]`) eram
+     a assinatura da IBM Plex Mono; na Nunito 800 eles viram textura. O
+     espaçamento cai para 0.06em e o corpo de 10px sobe para 11px.
+   · `backdrop-blur-*` não existe mais: a Clareza é chapada, e o desfoque
+     era o filtro mais caro do produto no celular.
+   ========================================================================= */
+:root .font-mono-alt[class*="tracking-["],
+:root .secao-olho[class*="tracking-["] {
+    letter-spacing: 0.06em;
+}
+:root .uppercase.text-\[10px\],
+:root .uppercase.text-\[9px\] {
+    font-size: 11px;
+}
+:root [class*="backdrop-blur"] {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
 }

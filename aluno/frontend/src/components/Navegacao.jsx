@@ -40,8 +40,9 @@ export function avisarSparksMudou() {
  * esta também está: **o que vale para todas as telas não pode ser montado
  * tela a tela.**
  *
- * Agora: `Navegacao` é montada uma vez em `App.js`, desenha a barra de cima em
- * `lg+` e a de baixo abaixo disso, e as duas leem a MESMA lista (`AREAS`).
+ * Agora: `Navegacao` é montada uma vez em `App.js`, desenha o TRILHO lateral
+ * em `lg+` (desde 2026-10-19; antes era uma barra de cima) e a barra de baixo
+ * abaixo disso, e os dois leem a MESMA lista (`AREAS`).
  * Página nova não faz nada — e não tem como criar um sistema paralelo, porque
  * não há o que montar.
  *
@@ -60,31 +61,12 @@ export function avisarSparksMudou() {
  * alvo do polegar virou uma área de verdade. Ver a regra em `lib/navegacao.js`.
  *
  * ---------------------------------------------------------------------------
- * A CONTA DE LARGURA
+ * A CONTA DE LARGURA (aposentada)
  * ---------------------------------------------------------------------------
  *
- * 1072px úteis em `max-w-6xl px-10`, e nenhum monitor aumenta isso. Com sete
- * primários dava 1020px — 52px de folga, menos que um rótulo.
- *
- * MEDIDO no navegador em 2026-09-18, com a tipografia real do bundle:
- *
- *     viewport   útil     soma    folga
- *     1024px     944px    811px   133px      ← a faixa mais apertada
- *     1280px    1072px    811px   261px
- *     1536px    1072px    811px   261px
- *
- * As cinco abas medem 72 / 92 / 93 / 109 / 126px (Hoje…Comunidade).
- *
- * **A folga de 1024 é a que importa**, e não a de 1536: abaixo de `lg` a barra
- * de cima nem desenha as áreas, e o `px-4` dali dá 944px úteis contra os 1072
- * de `md:px-10`. As economias `2xl:` não ajudam nessa faixa.
- *
- * Os 133px pagam o rótulo aparecer a partir de `lg` e não de `xl` — que é o
- * que tirava o nome das abas justamente no notebook de 13". Um ícone que o
- * aluno precisa decifrar não é navegação, é charada.
- *
- * `lib/navegacao.test.js` trava a contagem: uma sexta área derruba o teste e
- * manda medir de novo, que é a conversa que precisa acontecer.
+ * A barra de cima vivia em 1072px úteis e estourou duas vezes. O trilho
+ * empilha as áreas na vertical, e a conta deixou de existir — ver o fim do
+ * arquivo.
  */
 
 // ---------------------------------------------------------------------------
@@ -100,7 +82,7 @@ export function avisarSparksMudou() {
  *  a confirmação na tela, e a barra continuava exibindo o saldo antigo. Um
  *  número de dinheiro que mente logo depois da compra é o pior lugar possível
  *  para um número mentir. */
-function ChipDeSparks({ className = "" }) {
+function ChipDeSparks({ className = "", variante = "chip" }) {
   const [sparks, setSparks] = useState(null);
   const [ganho, setGanho] = useState(null);
   // `useRef` seria uma segunda importação para guardar um número que ninguém
@@ -140,112 +122,124 @@ function ChipDeSparks({ className = "" }) {
   }, []);
 
   if (sparks == null) return null;
+
+  // No trilho o saldo é uma linha como as áreas — ícone âmbar e o número no
+  // lugar do nome —, para o pé da coluna ler como parte dela.
+  if (variante === "trilho") {
+    return (
+      <Link
+        to={ROTAS.SPARKS}
+        className={`trilho-elo nav-tip ${ganho ? "recompensa" : ""} ${className}`}
+        style={{ "--cor": "#FFB547" }}
+        data-testid="nav-sparks"
+        data-tour="nav-sparks"
+        data-tip={`${sparks} Sparks`}
+        aria-label={`${sparks} Sparks`}
+        data-anterior={anterior ?? undefined}
+      >
+        <Zap strokeWidth={2.4} fill="currentColor" />
+        <span className="trilho-rotulo font-mono-alt text-[#FFB547]">{sparks}</span>
+        {ganho && <span className="ganho text-sm">+{ganho}</span>}
+      </Link>
+    );
+  }
+
   return (
     <Link
       to={ROTAS.SPARKS}
-      className={`chip nav-tip relative shrink-0 border-amber-300/25 bg-amber-400/10 text-amber-100 hover:border-amber-300/50 hover:bg-amber-400/20 ${ganho ? "recompensa" : ""} ${className}`}
+      className={`chip nav-tip relative shrink-0 ${ganho ? "recompensa" : ""} ${className}`}
       data-testid="nav-sparks"
       data-tour="nav-sparks"
       data-tip="Sparks"
       aria-label={`${sparks} Sparks`}
       data-anterior={anterior ?? undefined}
     >
-      <Zap className="h-3.5 w-3.5 text-amber-300" />
-      <span className="font-mono-alt">{sparks}</span>
+      <Zap className="h-4 w-4 text-[#FFB547]" fill="currentColor" />
+      <span className="font-mono-alt text-[#FFB547]">{sparks}</span>
       {ganho && <span className="ganho text-sm">+{ganho}</span>}
     </Link>
   );
 }
 
 // ---------------------------------------------------------------------------
-// A barra de cima (lg+)
+// O trilho (lg+) — a navegação do desktop desde 2026-10-19
 // ---------------------------------------------------------------------------
 
-function BarraDeCima({ pathname, aoAbrirMenu, menuAberto }) {
-  // A barra endurece ao rolar: em repouso é quase só vidro sobre o ambiente, e
-  // a partir de 8px o fundo fecha e a linha de baixo acende. É o que separa
-  // "barra flutuando sobre a página" de "barra colada por cima do conteúdo" —
-  // sem isso, texto claro passando por baixo de vidro claro é a falha clássica
-  // de barra translúcida.
-  const [rolou, setRolou] = useState(false);
-
+/** Uma coluna fixa à esquerda, como nos prints do Duolingo que o dono mandou:
+ *  a marca no topo, as cinco áreas com ícone grande e colorido, e no pé o
+ *  saldo e o Menu. Substituiu a barra de cima, que vivia presa a 1072px de
+ *  largura útil e já tinha estourado duas vezes; aqui uma área a mais custa
+ *  altura, que sobra.
+ *
+ *  Entre 1024 e 1279px o trilho tem 88px e mostra só os ícones (o nome vem no
+ *  balão ao passar o mouse); de 1280px para cima, ícone + nome. Quem empurra
+ *  o conteúdo é o CSS, por `html[data-trilho]`, que o componente liga
+ *  enquanto está montado. */
+function Trilho({ pathname, aoAbrirMenu, menuAberto }) {
   useEffect(() => {
-    const aoRolar = () => setRolou(window.scrollY > 8);
-    aoRolar();
-    window.addEventListener("scroll", aoRolar, { passive: true });
-    return () => window.removeEventListener("scroll", aoRolar);
+    document.documentElement.dataset.trilho = "sim";
+    return () => { delete document.documentElement.dataset.trilho; };
   }, []);
 
   return (
-    <div
-      className="glass sticky top-0 z-40 transition-shadow duration-300"
-      style={rolou ? undefined : { boxShadow: "none", borderBottomColor: "transparent" }}
-      data-rolou={rolou}
-      data-testid="barra-superior"
-    >
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 md:px-10">
-        {/* A MARCA, no canto superior esquerdo, em TODA largura de tela — e,
-            logado, ela É a porta do Menu. O gatilho mais óbvio do produto para
-            abrir o menu é a própria marca. */}
+    <nav className="trilho" aria-label="Navegação principal" data-testid="barra-superior">
+      {/* A MARCA é a porta do Menu, como sempre foi. */}
+      <div className="trilho-marca">
         <Logo
           onClick={aoAbrirMenu}
           tamanho="m"
-          className="shrink-0"
-          classePalavra="text-xl sm:text-2xl"
+          classePalavra="hidden xl:inline"
           testid="nav-brand"
         />
-
-        <div className="flex items-center gap-1 lg:gap-2">
-          {/* Envelope próprio (e não os links soltos) porque o guia de primeira
-              sessão aponta para a BARRA inteira num passo só. */}
-          <div className="hidden items-center gap-1.5 lg:flex" data-tour="nav-areas">
-            {AREAS.map((area) => {
-              const ativa = ehRotaAtual(pathname, area.rota);
-              return (
-                <Link
-                  key={area.chave}
-                  to={area.rota}
-                  className="nav-elo nav-tip flex items-center gap-1.5 rounded-full px-2.5 py-2 text-sm font-medium"
-                  data-ativa={ativa}
-                  data-testid={area.testid}
-                  data-tour={area.tour}
-                  data-tip={area.pergunta}
-                  aria-label={`${area.nome} — ${area.pergunta}`}
-                  aria-current={ativa ? "page" : undefined}
-                >
-                  <area.icone className="h-4 w-4 shrink-0" strokeWidth={ativa ? 2.3 : 1.9} />
-                  {/* O nome, SEMPRE, a partir de `lg`. Era `hidden xl:inline`, e
-                      a faixa de 1024–1279px (notebook de 13") ficava só com
-                      ícones. Com cinco áreas a folga paga o rótulo. */}
-                  <span>{area.nome}</span>
-                </Link>
-              );
-            })}
-          </div>
-
-          <ChipDeSparks />
-
-          {/* O Menu: a mesma gaveta que a marca abre. Ela existe também como
-              botão porque um alvo nomeado é mais descobrível que um logotipo
-              clicável — mas os dois abrem a MESMA coisa, e é por isso que o
-              ícone é o mesmo `Grip` nos dois lugares. */}
-          <button
-            onClick={aoAbrirMenu}
-            className="btn-vidro pill nav-tip hidden h-9 shrink-0 items-center gap-2 rounded-full px-3 text-xs font-semibold lg:inline-flex xl:px-4"
-            data-ativa={menuAberto}
-            data-testid="nav-menu"
-            data-tour="nav-menu"
-            data-tip="Menu"
-            aria-label="Minha conta e mais"
-            aria-haspopup="dialog"
-            aria-expanded={menuAberto}
-          >
-            <Grip className="h-4 w-4" />
-            <span className="hidden xl:inline">Menu</span>
-          </button>
-        </div>
       </div>
-    </div>
+
+      {/* Envelope próprio porque o guia de primeira sessão aponta para o
+          conjunto das áreas num passo só. */}
+      <div className="flex flex-col gap-1.5" data-tour="nav-areas">
+        {AREAS.map((area) => {
+          const ativa = ehRotaAtual(pathname, area.rota);
+          return (
+            <Link
+              key={area.chave}
+              to={area.rota}
+              className="trilho-elo nav-tip"
+              style={{ "--cor": area.cor }}
+              data-ativa={ativa}
+              data-testid={area.testid}
+              data-tour={area.tour}
+              data-tip={area.pergunta}
+              aria-label={`${area.nome} — ${area.pergunta}`}
+              aria-current={ativa ? "page" : undefined}
+            >
+              <area.icone strokeWidth={2.4} />
+              <span className="trilho-rotulo">{area.nome}</span>
+            </Link>
+          );
+        })}
+      </div>
+
+      <div className="trilho-pe">
+        <ChipDeSparks variante="trilho" />
+        {/* O Menu: a mesma gaveta que a marca abre. Como linha nomeada porque
+            um alvo com nome é mais descobrível que um logotipo clicável. */}
+        <button
+          type="button"
+          onClick={aoAbrirMenu}
+          className="trilho-elo nav-tip"
+          style={{ "--cor": "#C2CFE6" }}
+          data-ativa={menuAberto}
+          data-testid="nav-menu"
+          data-tour="nav-menu"
+          data-tip="Conta, Sparks e mais"
+          aria-label="Minha conta e mais"
+          aria-haspopup="dialog"
+          aria-expanded={menuAberto}
+        >
+          <Grip strokeWidth={2.4} />
+          <span className="trilho-rotulo">Mais</span>
+        </button>
+      </div>
+    </nav>
   );
 }
 
@@ -282,7 +276,7 @@ function BarraDeBaixo({ pathname }) {
               aria-current={ativa ? "page" : undefined}
             >
               <span className="aba-acao">
-                <area.icone className="h-6 w-6" strokeWidth={2.1} />
+                <area.icone className="h-7 w-7" strokeWidth={2.4} />
               </span>
               <span className="aba-acao-rotulo">{area.nome}</span>
             </Link>
@@ -294,12 +288,13 @@ function BarraDeBaixo({ pathname }) {
             key={area.chave}
             to={area.rota}
             className="aba-inferior"
+            style={{ "--cor": area.cor }}
             data-ativa={ativa}
             data-testid={`barra-${area.chave}`}
             aria-label={`${area.nome} — ${area.pergunta}`}
             aria-current={ativa ? "page" : undefined}
           >
-            <area.icone className="h-[22px] w-[22px]" strokeWidth={ativa ? 2.2 : 1.8} />
+            <area.icone className="h-6 w-6" strokeWidth={2.3} />
             <span>{area.nome}</span>
           </Link>
         );
@@ -322,7 +317,7 @@ function MarcaDoCelular({ aoAbrirMenu }) {
           <button
             type="button"
             onClick={aoAbrirMenu}
-            className="btn-vidro pill flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
+            className="chip flex h-9 w-9 shrink-0 items-center justify-center !p-0"
             data-testid="nav-menu-celular"
             data-tour="nav-menu-celular"
             aria-label="Minha conta e mais"
@@ -360,10 +355,10 @@ export default function Navegacao() {
 
   return (
     <>
-      {/* Desktop: a barra completa. Celular: só marca + saldo + porta do Menu;
-          as áreas ficam na barra de baixo, onde o polegar chega. */}
+      {/* Desktop: o trilho à esquerda. Celular: só marca + saldo + porta do
+          Menu em cima; as áreas ficam na barra de baixo, onde o polegar chega. */}
       <div className="hidden lg:block">
-        <BarraDeCima pathname={pathname} aoAbrirMenu={abrirMenu} menuAberto={menu} />
+        <Trilho pathname={pathname} aoAbrirMenu={abrirMenu} menuAberto={menu} />
       </div>
       <MarcaDoCelular aoAbrirMenu={abrirMenu} />
 
@@ -380,34 +375,11 @@ export default function Navegacao() {
 }
 
 // ---------------------------------------------------------------------------
-// MEDIÇÃO DA BARRA — refeita em 2026-09-18, com cinco áreas
+// A MEDIÇÃO DE LARGURA QUE MORAVA AQUI
 // ---------------------------------------------------------------------------
 //
-// A barra vive num `max-w-6xl` com `px-10`: 1072px de conteúdo útil a partir
-// de 1152px de viewport, e NENHUM monitor mais largo aumenta isso. Toda vez
-// que um item entra aqui, a soma dos filhos tem de ser MEDIDA — não estimada.
-//
-// MEDIDO em 2026-09-18 (DOM real, `getBoundingClientRect`, sem sessão — ver a
-// receita de medir sem login em `Cerebro/operacao/ambiente-local.md`):
-//
-//     viewport   útil     soma    folga
-//     1024px     944px    811px   133px     ← a faixa mais apertada
-//     1280px    1072px    811px   261px
-//     1536px    1072px    811px   261px
-//
-// Abas: Hoje 72 · Agenda 92 · Estudar 93 · Progresso 109 · Comunidade 126.
-//
-// Para a passada anterior, com sete primários, a soma era 1020px — 52px de
-// folga. Foram duas coisas que compraram o espaço: as duas áreas a menos
-// (Redação e Aulas desceram para dentro de Estudar e do Menu) e o "sair", que
-// saiu da barra para o rodapé do Menu, onde já morava no celular.
-//
-// Como medir (a intuição erra por dezenas de px, e `scrollWidth - clientWidth`
-// dá 0 sempre que cabe, porque `justify-between` come a sobra):
-//
-//     const n = document.querySelector('[data-testid="barra-superior"] > div');
-//     const cs = getComputedStyle(n);
-//     const soma = [...n.children].reduce((t,c) => t + c.getBoundingClientRect().width, 0);
-//     n.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - soma
-//
-// Rode em 1024, 1280 e 1536. Ver `Cerebro/ux/navegacao.md`.
+// Até 2026-10-19 este arquivo terminava com a conta de largura da barra de
+// cima (1072px úteis, 811px de soma, 133px de folga a 1024px). O trilho
+// lateral aposentou a conta: as áreas empilham na vertical. O que continua
+// valendo é o teto de cinco áreas, por causa da barra do celular — ver
+// `lib/navegacao.test.js` e `Cerebro/ux/navegacao.md`.

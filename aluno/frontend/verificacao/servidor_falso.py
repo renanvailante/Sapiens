@@ -159,6 +159,55 @@ def questao(item_id, n):
     }
 
 
+def semana_cheia():
+    """`GET /cronograma` no formato de `cronograma_routes._montar_semana_cru`,
+    com plano desta semana, compromissos fixos e blocos de estudo em todos os
+    dias — o cenário `semana`, para ver a Agenda como um aluno que já montou."""
+    hoje = datetime.now()
+    segunda = hoje - timedelta(days=hoje.weekday())
+    nomes = ("segunda", "terça", "quarta", "quinta", "sexta", "sábado", "domingo")
+    frentes = [("Matemática", "questoes"), ("Redação", "redacao"), ("Biologia", "questoes"),
+               ("Revisão", "revisao"), ("Química", "questoes"), ("Física", "treino"), ("Matemática", "questoes")]
+    dias, total, feitos = [], 0, 0
+    for i in range(7):
+        data = (segunda + timedelta(days=i)).strftime("%Y-%m-%d")
+        compromissos = []
+        if i < 5:
+            compromissos.append({"id": f"c-escola-{i}", "titulo": "Escola", "dia": i, "inicio": "07:00",
+                                 "fim": "12:30", "tipo": "aula", "data": None, "dia_inteiro": False,
+                                 "origem": "manual", "fixo": True})
+        if i == 2:
+            compromissos.append({"id": "c-ingles", "titulo": "Inglês", "dia": i, "inicio": "15:00",
+                                 "fim": "16:30", "tipo": "pessoal", "data": None, "dia_inteiro": False,
+                                 "origem": "manual", "fixo": True})
+        blocos = []
+        for k, (ini, fim) in enumerate((("14:00", "14:50"), ("19:00", "19:50"))):
+            if i >= 5 and k == 1:
+                continue
+            frente, tipo = frentes[(i + k) % len(frentes)]
+            concluido = i < hoje.weekday() or (i == hoje.weekday() and k == 0)
+            total += 1
+            feitos += int(concluido)
+            blocos.append({"id": f"b-{i}-{k}", "dia": i, "inicio": ini, "fim": fim, "tipo": tipo,
+                           "titulo": f"{frente} · {'revisão do que voltou' if tipo == 'revisao' else 'questões do ENEM'}",
+                           "frente_nome": frente, "rota": "/estudar/provas?area=Matem%C3%A1tica",
+                           "concluido": concluido, "fixo": False, "origem": "sapiens"})
+        dias.append({"indice": i, "nome": nomes[i], "data": data, "compromissos": compromissos, "blocos": blocos})
+    return {
+        "semana": segunda.strftime("%Y-%m-%d"), "dias": dias,
+        "preferencias": {"inicio_dia": "08:00", "fim_dia": "22:00", "bloco_minutos": 50},
+        "timezone": "America/Sao_Paulo", "conflitos": [],
+        "plano": {"gerado_em": agora(2), "semana": segunda.strftime("%Y-%m-%d"),
+                  "resumo": "Montei 12 blocos nos seus horários livres, com Matemática e Redação na frente.",
+                  "recado": None,
+                  "distribuicao": [{"chave": "matematica", "nome": "Matemática", "blocos": 4, "porque": "pesa mais na nota e é onde você mais erra."},
+                                   {"chave": "redacao", "nome": "Redação", "blocos": 2, "porque": "mil pontos que só dependem de treino."}],
+                  "com_mentis": False, "desta_semana": True},
+        "total_blocos": total, "total_concluidos": feitos,
+        "custo_texto": 10, "custo_mentis": 40, "custo_remontagem": 10,
+    }
+
+
 def rota_get(path, q):
     c = ESTADO["cenario"]
     if path == "/api/auth/me":
@@ -190,7 +239,20 @@ def rota_get(path, q):
                                "praticar": [{"item_id": ITENS[0]}, {"item_id": ITENS[1]}]}],
                     "resumo": {"questoes": 2}}
         return {"itens": [], "resumo": {"questoes": 0}}
+    if path == "/api/comunidade":
+        # Formato de `comunidade.listar_duvidas`.
+        def duvida(i, titulo, area, respostas, resolvida=False):
+            return {"duvida_id": f"d{i}", "titulo": titulo, "corpo": "Alguém consegue explicar o passo a passo?",
+                    "area": area, "autor_nome": f"Colega {i}", "respostas": respostas, "votos": i,
+                    "resolvida": resolvida, "status": "publicada", "created_at": agora(i), "destacada_ate": None}
+        return {"items": [duvida(1, "Como achar a razão numa PA quando só tenho dois termos?", "Matemática", 2, True),
+                          duvida(2, "Qual a diferença entre mitose e meiose na prática?", "Ciências da Natureza", 0),
+                          duvida(3, "Como começar a proposta de intervenção da redação?", "Redação", 1)],
+                "total": 3, "areas": ["Matemática", "Ciências da Natureza", "Ciências Humanas", "Linguagens", "Redação"],
+                "sala": (q.get("sala") or ["geral"])[0]}
     if path == "/api/cronograma":
+        if c == "semana":
+            return semana_cheia()
         if c == "dia_cheio":
             return {"dias": [{"data": hoje_local(), "blocos": [
                 {"id": "b1", "titulo": "Matemática · razão e proporção", "inicio": "19:00", "fim": "19:40",

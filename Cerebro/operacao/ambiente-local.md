@@ -101,6 +101,19 @@ permissão de ler `~/Documents` (macOS) e morre em "Operation not permitted";
 rode-o por Bash em segundo plano. O cenário `dia_cheio` traz revisão vencida,
 bloco de hoje e as três missões — a trilha do dia com todo tipo de nó.
 
+O cenário `semana` traz uma semana inteira de cronograma (plano, compromissos
+fixos e blocos em todos os dias, feitos até ontem) — é o que mostra a Agenda
+de verdade. `/api/comunidade` também tem mock (sem ele o mural quebrava em
+`dados.items.length`).
+
+> [!warning] Print do Browser pane com a tela "esmaecida" ou peça fora do lugar
+> Com o painel em segundo plano, as animações CSS **não avançam**: o conteúdo
+> fica preso no primeiro quadro do `pagina-entra`/`.reveal` (opaco pela
+> metade), e o `transform` da entrada prende os `fixed` ao envelope — o mapa 3D
+> some, a landing parece vazia. O DOM está certo (`getComputedStyle` diz
+> opacidade 1). Para fotografar, injete por `javascript_tool` um `<style>` com
+> `*,*::before,*::after{animation-duration:0s!important;animation-delay:0s!important}`.
+
 > **Tela que quebra só ali é, primeiro, dado falso incompleto** (`ANCORA_BIOMA_SRC`
 > exige id de bioma real; a liga lê `tabela`). O script loga `SEM MOCK GET …`
 > para cada rota sem resposta própria — olhe ali antes de suspeitar do código.
