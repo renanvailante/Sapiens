@@ -25,9 +25,13 @@ import logging
 from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
+from pymongo.errors import DuplicateKeyError
+
+import cronograma as cg
 import engajamento as eng
 import firestore_service as fs
 import product_analytics
+import revisao_espacada as rev
 
 logger = logging.getLogger("sapiens.engajamento")
 
@@ -182,7 +186,6 @@ async def estado(uid: str, *, nome: str | None = None) -> dict[str, Any]:
 
     perfil = (await _db.engajamento_perfil.find_one({"_id": uid})) or {}
     doc_dia = (await _db.engajamento_dia.find_one({"_id": f"{uid}:{dia}"})) or {}
-    contadores = doc_dia.get("contadores") or {}
 
     ofensiva = eng.calcular_ofensiva(
         dias_ativos,
@@ -235,12 +238,88 @@ async def estado(uid: str, *, nome: str | None = None) -> dict[str, Any]:
             agora=_now_iso(),
         ),
         "nivel": nivel,
-        "missoes": eng.missoes_do_dia(uid, dia, contadores, doc_dia.get("resgatadas") or []),
+        "missoes": await _missoes_de_hoje(uid, dia, doc_dia),
         "liga": liga,
         "enem": eng.dias_para_o_enem(dia),
         "hoje": dia,
         "total_respostas": total_respostas,
     }
+
+
+async def _missoes_de_hoje(uid: str, dia: str, doc_dia: dict[str, Any]) -> list[dict[str, Any]]:
+    """As três missões do dia, decididas UMA vez e guardadas no documento do dia.
+
+    Na primeira leitura do dia, mede o que o aluno tem como cumprir
+    (`_sem_como_cumprir`), sorteia sem as impossíveis e grava os ids em
+    `engajamento_dia.missoes_ids`. Daí em diante a tela, o resgate e o push
+    leem a mesma lista — um sinal que muda à tarde (o aluno monta a semana,
+    alguém posta uma dúvida) não troca a missão de ninguém no meio do dia.
+
+    Custo: só na primeira leitura do dia, 1 leitura do Firestore (o mesmo
+    `students/{uid}` do agregado) e 2 `find_one` no Mongo. Medida que falhou
+    não fixa nada: a próxima leitura mede de novo.
+    """
+    contadores = doc_dia.get("contadores") or {}
+    resgatadas = doc_dia.get("resgatadas") or []
+    fixadas = doc_dia.get("missoes_ids")
+    if fixadas:
+        return eng.missoes_do_dia(uid, dia, contadores, resgatadas, fixadas=fixadas)
+
+    fora, medido = await _sem_como_cumprir(uid, dia)
+    missoes = eng.missoes_do_dia(uid, dia, contadores, resgatadas, indisponiveis=fora)
+    if medido:
+        try:
+            await _db.engajamento_dia.update_one(
+                {"_id": f"{uid}:{dia}", "missoes_ids": {"$exists": False}},
+                {
+                    "$set": {"uid": uid, "dia": dia, "missoes_ids": [m["id"] for m in missoes]},
+                    # O mesmo TTL de `registrar_acao`: o documento pode nascer
+                    # aqui, antes de qualquer XP do dia.
+                    "$setOnInsert": {"expurgo_em_dt": datetime.now(timezone.utc) + timedelta(days=120)},
+                },
+                upsert=True,
+            )
+        except DuplicateKeyError:
+            pass  # outra leitura simultânea fixou primeiro; a próxima lê a dela
+        except Exception:  # noqa: BLE001
+            logger.exception("não foi possível fixar as missões de %s", uid)
+    return missoes
+
+
+async def _sem_como_cumprir(uid: str, dia: str) -> tuple[set[str], bool]:
+    """As missões que este aluno não tem como cumprir hoje, e se deu para medir.
+
+    - **revisão**: nenhum ponto da fila vencido hoje (`rev.vencidos`);
+    - **comunidade**: nenhuma dúvida publicada de OUTRO aluno na sala aberta;
+    - **cronograma**: nenhuma semana montada com bloco para a semana de hoje.
+
+    Qualquer leitura que falhe devolve `medido=False`, e o sinal dela não entra
+    — na dúvida a missão fica, como era antes.
+    """
+    fora: set[str] = set()
+    medido = True
+    try:
+        estado_fs = await asyncio.to_thread(fs.ler_estado_do_aluno, uid)
+        if not rev.vencidos(estado_fs.get("revisao") or {}, dia):
+            fora.add("revisao")
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("engajamento: fila de revisão indisponível para %s: %s", uid, type(exc).__name__)
+        medido = False
+    try:
+        # `$ne` e nunca `== "geral"`: dúvida antiga não tem o campo `sala`.
+        aberta = await _db.comunidade_duvidas.find_one(
+            {"status": "publicada", "sala": {"$ne": "vip"}, "student_id": {"$ne": uid}}, {"_id": 1}
+        )
+        if aberta is None:
+            fora.add("comunidade")
+        semana = await _db.cronogramas.find_one({"_id": uid}, {"plano": 1})
+        plano = (semana or {}).get("plano") or {}
+        if plano.get("semana") != cg.segunda_da_semana(date.fromisoformat(dia)) or not plano.get("blocos"):
+            fora.add("cronograma")
+    except Exception:  # noqa: BLE001
+        logger.exception("engajamento: sinais de missão indisponíveis para %s", uid)
+        medido = False
+    return fora, medido
 
 
 async def _ler_agregado(uid: str) -> dict[str, Any]:
@@ -420,7 +499,7 @@ async def resgatar_missao(uid: str, missao_id: str) -> dict[str, Any]:
     """
     dia = _hoje()
     doc_dia = (await _db.engajamento_dia.find_one({"_id": f"{uid}:{dia}"})) or {}
-    missoes = eng.missoes_do_dia(uid, dia, doc_dia.get("contadores") or {}, doc_dia.get("resgatadas") or [])
+    missoes = await _missoes_de_hoje(uid, dia, doc_dia)
     missao = next((m for m in missoes if m["id"] == missao_id), None)
 
     if missao is None:

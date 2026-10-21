@@ -4,6 +4,7 @@ import { Sheet, SheetContent, SheetTitle, SheetDescription } from "./ui/sheet";
 import Logo from "./Logo";
 import Mentis from "./Mentis";
 import BotaoInstalar from "./InstalarApp";
+import { InterruptorDeNotificacao } from "./PedidoDeNotificacao";
 import { MENU, MENU_ACOES, MENU_EQUIPE } from "../lib/navegacao";
 import { ROTAS, com, ANCORAS, ehRotaAtual } from "../lib/rotas";
 
@@ -206,6 +207,11 @@ export default function Menu({ aberto, aoFechar, user, aoSair }) {
                 </span>
                 <span className="min-w-0 flex-1 truncate">{MENU_ACOES.instalar.nome}</span>
               </BotaoInstalar>
+
+              {/* Ligar e desligar o aviso no celular a qualquer hora — quem
+                  disse "agora não" no fim da série muda de ideia por aqui.
+                  Some sozinho onde o navegador não tem push. */}
+              <InterruptorDeNotificacao className={LINHA_CRUA} />
 
               {MENU_EQUIPE.map((item) =>
                 user?.[`is_${item.chave}`] ? (

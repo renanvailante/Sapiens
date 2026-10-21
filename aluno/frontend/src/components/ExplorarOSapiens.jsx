@@ -18,14 +18,17 @@ import { ChevronDown, Compass } from "lucide-react";
  *    inteira que diz quantas portas existem e quantas o aluno ainda não
  *    abriu. Um acordeão que não conta o que tem dentro é uma gaveta; um que
  *    conta é um convite.
- * 2. **Aberta por padrão para quem ainda não tem trajetória.** Quem nunca
- *    respondeu nada não tem revisão vencendo nem bloco marcado: para ele o
- *    Próximo Passo é fraco e a vitrine é a peça forte. `abertoInicial` é o
- *    Painel dizendo isso — ver `Dashboard.jsx`.
+ * 2. **Fechada também para a conta nova (desde 2026-10-20).** Até então ela
+ *    abria sozinha para quem nunca tinha respondido nada, com a ideia de que
+ *    a vitrine era a peça forte de quem não tinha trajetória. Desde que o Hoje
+ *    virou trilha, a conta nova TEM um passo forte (o botão da Mentis), e as
+ *    dez portas "NOVO" abertas embaixo dele eram o que deixava o primeiro dia
+ *    com 31 alvos — 28 de 43 alunos saíram sem responder uma questão. O Hoje
+ *    não passa mais `abertoInicial`; o prop fica para quem precisar.
  * 3. **A escolha do aluno vence a nossa.** Abriu ou fechou, fica como ele
  *    deixou, no `localStorage` — conveniência de quem está olhando, nunca
  *    estado de produto. Se o navegador bloquear, a seção continua correta:
- *    volta a abrir pela regra do item 2.
+ *    volta ao padrão da regra do item 2.
  *
  * O conteúdo entra por `children` de propósito. Esta peça é sobre HIERARQUIA,
  * não sobre portas; em P3 o Lançador de Ferramentas passa por aqui também.

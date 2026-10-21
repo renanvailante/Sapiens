@@ -537,3 +537,24 @@ class TestNaoObjetivos:
         rotulos = set(revisao_service._ROTULO_ESTADO.values()) | set(revisao_service._MARCO_TEXTO.values())
         for texto in rotulos:
             assert not any(p in texto for p in ("ERR-", "PROC-", "MEC-", "INT-")), texto
+
+
+# ============================================ a missão de revisão
+class TestRespostaContaRevisao:
+    """A questão que voltou hoje conta para "Faça 1 revisão da fila". Até
+    2026-10-20 só concluir uma intervenção contava — revisar de fato não."""
+
+    def test_so_a_resposta_ao_ponto_vencido_conta(self, ambiente, monkeypatch):
+        import engajamento_service
+
+        contados = []
+
+        async def registrar(uid, acoes, contadores=None, **kw):
+            contados.append(dict(contadores or {}))
+            return {"xp": 0}
+
+        monkeypatch.setattr(engajamento_service, "registrar_acao", registrar)
+        _responder("B")  # dia 1: erro de raiz, agenda o reteste para o dia 2
+        _responder("A")  # dia 2: o ponto venceu — isto é a revisão
+        assert contados[0]["revisoes"] == 0
+        assert contados[1]["revisoes"] == 1

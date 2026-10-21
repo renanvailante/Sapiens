@@ -157,6 +157,49 @@ class TestMissoes:
         assert all(m.sparks > 0 for m in eng.CATALOGO_MISSOES)
 
 
+class TestMissaoCumprivel:
+    """A conta nova tirava uma missão impossível em 2 de cada 3 dias — revisão
+    sem fila, dúvida sem mural, bloco sem semana — e o "Dia completo" não
+    fechava justamente no primeiro dia."""
+
+    IMPOSSIVEIS = {"revisao", "comunidade", "cronograma"}
+
+    def test_missao_impossivel_nunca_e_sorteada(self):
+        for uid in ("aluno1", "aluno2", "aluno3", "x", "y", "zzz", "novo"):
+            for dia in ("2026-10-20", "2026-10-21", "2026-10-22"):
+                ids = [m["id"] for m in eng.missoes_do_dia(uid, dia, indisponiveis=self.IMPOSSIVEIS)]
+                assert len(set(ids)) == 3, ids
+                assert not set(ids) & self.IMPOSSIVEIS, ids
+
+    def test_sobrando_so_o_cronograma_ele_e_a_terceira(self):
+        ids = [m["id"] for m in eng.missoes_do_dia("aluno1", "2026-09-15", indisponiveis={"revisao", "comunidade"})]
+        assert ids[2] == "cronograma"
+
+    def test_trilho_inteiro_impossivel_vai_para_a_reserva(self):
+        # aluno1/2026-09-15 já tem o treino na segunda vaga: a reserva pula para a próxima.
+        ids = [m["id"] for m in eng.missoes_do_dia("aluno1", "2026-09-15", indisponiveis=self.IMPOSSIVEIS)]
+        assert ids == ["acertar8", "treino", "responder15"]
+
+    def test_missao_com_progresso_nao_some(self):
+        """Revisar esvazia a fila: o sinal diz "sem revisão" justamente depois
+        que o aluno a fez. A missão em curso fica."""
+        uid = next(
+            u for u in (f"a{n}" for n in range(500))
+            if eng.missoes_do_dia(u, "2026-10-20")[2]["id"] == "revisao"
+        )
+        ids = [m["id"] for m in eng.missoes_do_dia(uid, "2026-10-20", {"revisoes": 1}, indisponiveis={"revisao"})]
+        assert "revisao" in ids
+
+    def test_lista_fixada_vence_o_sorteio(self):
+        fixas = ["responder5", "acertar8", "treino"]
+        ids = [m["id"] for m in eng.missoes_do_dia("aluno1", "2026-09-15", fixadas=fixas, indisponiveis={"treino"})]
+        assert ids == fixas
+
+    def test_fixacao_com_id_desconhecido_volta_ao_sorteio(self):
+        ids = [m["id"] for m in eng.missoes_do_dia("aluno1", "2026-09-15", fixadas=["sumiu", "acertar8", "treino"])]
+        assert ids == ["acertar8", "treino", "cronograma"]
+
+
 # ---------------------------------------------------------------------------
 # Ligas
 # ---------------------------------------------------------------------------
@@ -278,6 +321,66 @@ class TestEstado:
         assert [l["nome"] for l in e["liga"]["tabela"]] == ["Bia", "Caio", "Ana"]
         assert e["liga"]["minha_posicao"] == 3
         assert next(l for l in e["liga"]["tabela"] if l["voce"])["nome"] == "Ana"
+
+
+class TestMissoesDoDia:
+    """As três missões são decididas na primeira leitura do dia e guardadas."""
+
+    @pytest.fixture
+    def conta_nova(self, servico_com_db, monkeypatch):
+        monkeypatch.setattr(servico.fs, "ler_agregado", lambda uid: {"dias_ativos": [], "total_respostas": 0})
+        monkeypatch.setattr(servico.fs, "ler_estado_do_aluno", lambda uid: {"agregado": {}, "revisao": {}})
+        return servico_com_db
+
+    def test_conta_nova_so_recebe_missao_cumprivel(self, conta_nova):
+        ids = [m["id"] for m in roda(servico.estado("u1"))["missoes"]]
+        assert not set(ids) & {"revisao", "comunidade", "cronograma"}, ids
+        doc = roda(conta_nova.engajamento_dia.find_one({"_id": "u1:2026-09-15"}))
+        assert doc["missoes_ids"] == ids
+        assert doc["expurgo_em_dt"] is not None  # nasceu aqui: precisa do mesmo TTL
+
+    def test_duvida_de_colega_e_semana_montada_liberam_as_missoes(self, conta_nova):
+        roda(conta_nova.comunidade_duvidas.insert_one({"id": "d1", "status": "publicada", "student_id": "outro"}))
+        roda(conta_nova.cronogramas.insert_one(
+            {"_id": "u1", "plano": {"semana": "2026-09-14", "blocos": [{"id": "b1"}]}}
+        ))
+        fora, medido = roda(servico._sem_como_cumprir("u1", "2026-09-15"))
+        assert medido is True
+        assert fora == {"revisao"}
+
+    def test_a_propria_duvida_nao_conta(self, conta_nova):
+        roda(conta_nova.comunidade_duvidas.insert_one({"id": "d1", "status": "publicada", "student_id": "u1"}))
+        fora, _ = roda(servico._sem_como_cumprir("u1", "2026-09-15"))
+        assert "comunidade" in fora
+
+    def test_lista_nao_muda_quando_um_sinal_muda_no_meio_do_dia(self, conta_nova):
+        antes = [m["id"] for m in roda(servico.estado("u1"))["missoes"]]
+        roda(conta_nova.comunidade_duvidas.insert_one({"id": "d1", "status": "publicada", "student_id": "outro"}))
+        roda(conta_nova.cronogramas.insert_one(
+            {"_id": "u1", "plano": {"semana": "2026-09-14", "blocos": [{"id": "b1"}]}}
+        ))
+        depois = [m["id"] for m in roda(servico.estado("u1"))["missoes"]]
+        assert antes == depois
+
+    def test_medida_que_falhou_nao_fixa_nada(self, servico_com_db, monkeypatch):
+        monkeypatch.setattr(servico.fs, "ler_agregado", lambda uid: {"dias_ativos": [], "total_respostas": 0})
+
+        def explode(uid):
+            raise RuntimeError("cota estourada")
+
+        monkeypatch.setattr(servico.fs, "ler_estado_do_aluno", explode)
+        assert len(roda(servico.estado("u1"))["missoes"]) == 3
+        assert roda(servico_com_db.engajamento_dia.find_one({"_id": "u1:2026-09-15"})) is None
+
+    def test_resgate_le_a_lista_fixada(self, servico_com_db, monkeypatch):
+        monkeypatch.setattr(servico.fs, "grant_sparks_evento",
+                             lambda uid, **kw: {"ja_concedido": False, "sparks_ganhos": kw.get("amount", 0)})
+        monkeypatch.setattr(servico.fs, "read_sparks_balance", lambda uid: 100)
+        roda(servico_com_db.engajamento_dia.insert_one(
+            {"_id": "u1:2026-09-15", "uid": "u1", "dia": "2026-09-15",
+             "missoes_ids": ["responder5", "acertar8", "responder15"], "contadores": {"questoes": 15}}
+        ))
+        assert roda(servico.resgatar_missao("u1", "responder15"))["ok"] is True
 
 
 class TestResgatarMissao:

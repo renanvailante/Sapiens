@@ -268,10 +268,17 @@ async def register_answer(payload: AnswerPayload, user: User = Depends(require_u
     # propósito: assim é impossível somar XP sem que exista uma resposta real
     # por trás. `registrar_acao` engole as próprias falhas (ver o docstring
     # dele) — perder XP é aborrecimento, perder a resposta é perder o estudo.
+    # `revisoes` conta a questão que voltou hoje (um ponto vencido na fila).
+    # Sem isto a missão "Faça 1 revisão da fila" só fechava concluindo uma
+    # intervenção — revisar de fato não contava.
     await engajamento_service.registrar_acao(
         user.user_id,
         ["questao_respondida"] + (["questao_correta"] if acertou else []),
-        contadores={"questoes": 1, "acertos": 1 if acertou else 0},
+        contadores={
+            "questoes": 1,
+            "acertos": 1 if acertou else 0,
+            "revisoes": 1 if (revisao or {}).get("revisou") else 0,
+        },
         nome=user.name,
     )
 

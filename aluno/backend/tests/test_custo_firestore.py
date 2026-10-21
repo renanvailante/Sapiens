@@ -641,5 +641,6 @@ class TestCustoDaRevisao:
 
         monkeypatch.setattr(fs, "_student_doc_ref", lambda uid: _Quebrado())
         assert revisao_service.registrar_resposta("U1", item=self._item(), evento=self._evento()) == {
-            "gatilho": None
+            "gatilho": None,
+            "revisou": False,
         }

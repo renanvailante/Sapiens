@@ -34,7 +34,9 @@ test("fechada por padrão — o conteúdo nem monta", () => {
   expect(html).not.toContain("as dez portas");
 });
 
-test("aberta para quem ainda não tem trajetória", () => {
+// O Hoje não pede mais aberta para a conta nova (ver o item 2 do cabeçalho de
+// `ExplorarOSapiens.jsx`); o prop continua funcionando para quem o passar.
+test("abertoInicial abre a seção quando quem monta pede", () => {
   expect(render({ abertoInicial: true })).toContain("as dez portas");
 });
 

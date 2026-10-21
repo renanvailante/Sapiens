@@ -200,7 +200,8 @@ def registrar_resposta(
 ) -> dict[str, Any]:
     """Atualiza o estado de revisão e avalia o gatilho da Fase 2.
 
-    Devolve `{"gatilho": ... | None}`. O gatilho sai da MESMA leitura que a
+    Devolve `{"gatilho": ... | None, "revisou": bool}` — `revisou` diz se a
+    questão tocava um ponto que vencera hoje. O gatilho sai da MESMA leitura que a
     atualização já pagou: avaliar se há evidência para interromper o aluno não
     custa nenhuma leitura adicional.
     """
@@ -217,6 +218,10 @@ def registrar_resposta(
         raiz = None
 
     bloco = _ler(uid)
+    # Medido ANTES de registrar: a resposta reagenda o processo, e depois dela
+    # ele já não estaria vencido. É o que faz a resposta a uma questão que
+    # voltou contar para a missão de revisão (`firestore_routes`).
+    revisou = bool(rev.vencidos(bloco, dia) & set(_processos_do_item(item)))
     novo = rev.registrar(
         bloco,
         processos=_processos_do_item(item),
@@ -241,7 +246,7 @@ def registrar_resposta(
 
     _guardar(uid, novo)
     fs.escrever_revisao(uid, novo)
-    return {"gatilho": gatilho}
+    return {"gatilho": gatilho, "revisou": revisou}
 
 
 def _vestir_gatilho(gatilho: dict[str, Any]) -> dict[str, Any]:

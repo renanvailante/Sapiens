@@ -544,6 +544,15 @@ def fila(bloco: dict[str, Any] | None, hoje: str, *, limite: int = FILA_TAMANHO)
     return linhas[:limite]
 
 
+def vencidos(bloco: dict[str, Any] | None, hoje: str) -> set[str]:
+    """Os processos da fila cujo reteste já venceu hoje — a mesma régua do
+    `vencido` da fila, sem o teto de tamanho dela. É o que a missão "Faça 1
+    revisão da fila" precisa saber: se há o que revisar hoje, e se a questão
+    que o aluno acabou de responder era uma dessas."""
+    total = len((bloco or {}).get("processos") or {})
+    return {l["processo_id"] for l in fila(bloco, hoje, limite=total) if l["vencido"]} if total else set()
+
+
 def trajetoria(bloco: dict[str, Any] | None, processo_id: str) -> list[dict[str, Any]]:
     """Os marcos de um processo, do mais antigo para o mais novo."""
     e = _entrada(_clonar(bloco), processo_id)

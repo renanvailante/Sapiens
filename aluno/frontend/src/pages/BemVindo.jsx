@@ -60,10 +60,13 @@ const TEMPOS = [
   { minutos: 480, rotulo: "8 h" },
 ];
 
-const METAS = [
-  { nivel: "basico", rotulo: "Básico", faixa: "120–140 acertos" },
-  { nivel: "medio", rotulo: "Médio", faixa: "140–160 acertos" },
-  { nivel: "avancado", rotulo: "Avançado", faixa: "160–180 acertos" },
+// A tabela é do servidor (`onboarding_routes.METAS`, servida em
+// `opcoes.metas`); esta cópia é só a reserva até a resposta chegar, no mesmo
+// espírito dos `*_PADRAO` de preço. Mudou lá, muda aqui.
+const METAS_RESERVA = [
+  { nivel: "basico", rotulo: "Básico", acertos_min: 70, acertos_max: 100 },
+  { nivel: "medio", rotulo: "Médio", acertos_min: 100, acertos_max: 130 },
+  { nivel: "avancado", rotulo: "Avançado", acertos_min: 130, acertos_max: 160 },
 ];
 
 const OBJETIVOS_SUGERIDOS = [
@@ -116,6 +119,7 @@ export default function BemVindo() {
   const [objetivo, setObjetivo] = useState("");
   const [minutos, setMinutos] = useState(null);
   const [meta, setMeta] = useState(null);
+  const [metas, setMetas] = useState(METAS_RESERVA);
   const [salvando, setSalvando] = useState(false);
   // Os números do desafio vêm do servidor (`engajamento.PLUS_META_DIAS`), não
   // daqui: a promessa e quem a cumpre leem a mesma constante.
@@ -130,7 +134,11 @@ export default function BemVindo() {
   // simplesmente volta para o Painel.
   useEffect(() => {
     api.get("/onboarding")
-      .then(({ data }) => { if (data?.concluido) nav("/hoje", { replace: true }); })
+      .then(({ data }) => {
+        if (data?.concluido) nav("/hoje", { replace: true });
+        const doServidor = data?.opcoes?.metas;
+        if (Array.isArray(doServidor) && doServidor.length) setMetas(doServidor);
+      })
       .catch(() => {});
   }, [nav]);
 
@@ -348,7 +356,7 @@ export default function BemVindo() {
                 voz="onb-meta"
               />
               <div className="mt-7 space-y-3">
-                {METAS.map((m) => {
+                {metas.map((m) => {
                   const ativo = meta === m.nivel;
                   return (
                     <button
@@ -373,7 +381,9 @@ export default function BemVindo() {
                         <span className="block font-display text-lg font-bold tracking-tight text-white">
                           {m.rotulo}
                         </span>
-                        <span className="block text-sm text-white/50">{m.faixa}</span>
+                        <span className="block text-sm text-white/50">
+                          {m.acertos_min}–{m.acertos_max} acertos
+                        </span>
                       </span>
                     </button>
                   );

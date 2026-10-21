@@ -848,21 +848,28 @@ export default function Hoje() {
           {/* -------------------------------------------------------------
               6. COM O MENTOR — mentoria (um a um) e aula ao vivo (toda
               quinta), juntas: o mesmo mentor em graus de proximidade.
+              Só depois da primeira resposta: no primeiro dia o Hoje pede
+              uma coisa (começar), não vende duas. Em 2026-10-20, 28 dos 43
+              alunos nunca tinham respondido uma questão, e o Hoje deles
+              tinha 31 alvos e 4 telas de rolagem.
               ------------------------------------------------------------- */}
-          <div className="space-y-3">
-            <ChamadaDaMentoria />
-            <ChamadaDaLive
-              inclusa={Boolean(direitos.lives_inclusas)}
-              argumento={argumentoDaAula}
-              custoLive={custoLive}
-            />
-          </div>
+          {totalRespondidas > 0 && (
+            <div className="space-y-3">
+              <ChamadaDaMentoria />
+              <ChamadaDaLive
+                inclusa={Boolean(direitos.lives_inclusas)}
+                argumento={argumentoDaAula}
+                custoLive={custoLive}
+              />
+            </div>
+          )}
 
           {/* -------------------------------------------------------------
-              7. EXPLORAR — a descoberta, atrás de um clique, aberta só para
-              quem ainda não respondeu nada (`ExplorarOSapiens`).
+              7. EXPLORAR — a descoberta, atrás de um clique, fechada para
+              todo mundo. Abrir sozinha para a conta nova punha dez portas
+              "NOVO" embaixo do único botão que importava no dia 1.
               ------------------------------------------------------------- */}
-          <ExplorarOSapiens abertoInicial={totalRespondidas === 0} testid="dash-explorar">
+          <ExplorarOSapiens testid="dash-explorar">
             <PortaisDaJornada
               habilidades={habilidades}
               revisoes={revisoes}

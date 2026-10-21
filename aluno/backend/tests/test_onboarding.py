@@ -75,8 +75,8 @@ def test_tempo_fora_do_catalogo_e_recusado(db):
 
 def test_meta_vem_expandida_em_acertos(db):
     saida = _run(ob.salvar_onboarding(ob.OnboardingPayload(meta="avancado"), user=_user()))
-    assert saida["meta"]["acertos_min"] == 160
-    assert saida["meta"]["acertos_max"] == 180
+    assert saida["meta"]["acertos_min"] == 130
+    assert saida["meta"]["acertos_max"] == 160
     assert saida["meta"]["rotulo"] == "Avançado"
 
 
@@ -167,7 +167,7 @@ def test_resumo_para_modelo_so_existe_depois_de_concluir(db):
     resumo = _run(ob.resumo_para_modelo("aluno-1"))
     assert "Passar em Medicina" in resumo
     assert "60 min/dia" in resumo
-    assert "140-160 acertos" in resumo
+    assert "100-130 acertos" in resumo
     # Rotulado como opinião: o dossiê inteiro é medida, e esta linha não é.
     assert "opinião dele, não medida" in resumo
 
@@ -176,3 +176,14 @@ def test_sem_mongo_nada_explode():
     ob.set_db(None)
     assert _run(ob.dificuldade_por_frente("aluno-1")) == {}
     assert _run(ob.resumo_para_modelo("aluno-1")) is None
+
+
+def test_faixas_da_meta_comecam_perto_do_meio_da_prova():
+    """O degrau mais baixo era 120-140 (dois terços da prova) e dizia ao aluno
+    comum que ele estava abaixo do mínimo. As faixas sobem sem buraco nem
+    sobreposição, e nenhuma passa das 180 questões."""
+    faixas = [(m["acertos_min"], m["acertos_max"]) for m in ob.METAS.values()]
+    assert faixas[0][0] <= 90
+    assert all(a < b for a, b in faixas)
+    assert all(faixas[i][1] == faixas[i + 1][0] for i in range(len(faixas) - 1))
+    assert faixas[-1][1] <= 180

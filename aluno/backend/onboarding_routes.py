@@ -6,8 +6,8 @@ Três perguntas, feitas uma vez, pela Mentis:
   1. **Dificuldade declarada** por área (0 a 10), nas cinco frentes que o
      aluno reconhece: Matemática, Natureza, Linguagens, Humanas e Redação.
   2. **Objetivo** em uma frase e **quanto tempo por dia** ele quer estudar.
-  3. **Meta no ENEM 2026**: básico (120-140 acertos), médio (140-160) ou
-     avançado (160-180).
+  3. **Meta no ENEM 2026**: básico, médio ou avançado, em faixas de acertos
+     (`METAS`).
 
 **Por que isto não é mais um formulário morto.** Cada resposta tem um
 consumidor real, e nenhuma delas inventa medida:
@@ -97,11 +97,18 @@ _JANELA_POR_TEMPO: dict[int, dict[str, int]] = {
 
 # A meta do aluno no ENEM 2026, em ACERTOS (as 180 questões objetivas). Faixas
 # fechadas de propósito: um campo livre aqui produziria "quero 179" e uma
-# interface que finge acreditar. Os rótulos são os que a tela mostra.
+# interface que finge acreditar. Os rótulos são os que a tela mostra, e a tela
+# lê esta tabela (`opcoes.metas` de `GET /onboarding`).
+#
+# Até 2026-10-20 o degrau mais baixo era 120-140 — dois terços da prova, bem
+# acima do que a maior parte dos candidatos acerta. A primeira coisa que o
+# produto dizia ao aluno comum era que ele estava abaixo do mínimo. As faixas
+# de agora (decisão minha, declarada como tal) vão de perto do meio da prova
+# até o patamar dos cursos mais concorridos; mudar é editar esta tabela.
 METAS: dict[str, dict[str, Any]] = {
-    "basico": {"nivel": "basico", "rotulo": "Básico", "acertos_min": 120, "acertos_max": 140},
-    "medio": {"nivel": "medio", "rotulo": "Médio", "acertos_min": 140, "acertos_max": 160},
-    "avancado": {"nivel": "avancado", "rotulo": "Avançado", "acertos_min": 160, "acertos_max": 180},
+    "basico": {"nivel": "basico", "rotulo": "Básico", "acertos_min": 70, "acertos_max": 100},
+    "medio": {"nivel": "medio", "rotulo": "Médio", "acertos_min": 100, "acertos_max": 130},
+    "avancado": {"nivel": "avancado", "rotulo": "Avançado", "acertos_min": 130, "acertos_max": 160},
 }
 
 _OBJETIVO_MAX = 180

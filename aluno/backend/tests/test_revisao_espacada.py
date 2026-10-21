@@ -373,3 +373,23 @@ class TestPureza:
         fonte = (BACKEND / "revisao_espacada.py").read_text(encoding="utf-8")
         for proibido in ("ai_service", "firestore", "google.cloud", "requests"):
             assert proibido not in fonte, f"revisao_espacada importou {proibido}"
+
+
+# ============================================ vencidos (a missão de revisão)
+class TestVencidos:
+    """A missão "Faça 1 revisão da fila" pergunta duas coisas a `vencidos`: se
+    há o que revisar hoje, e se a questão respondida era uma dessas."""
+
+    def test_raiz_de_ontem_vence_hoje(self):
+        b = _responder(None, dia="2026-09-01", raiz=_raiz())
+        assert rev.vencidos(b, "2026-09-01") == set()
+        assert rev.vencidos(b, "2026-09-02") == {PROC}
+
+    def test_sem_bloco_nao_ha_nada_vencido(self):
+        assert rev.vencidos(None, "2026-09-02") == set()
+        assert rev.vencidos({}, "2026-09-02") == set()
+
+    def test_responder_o_ponto_vencido_tira_ele_da_lista(self):
+        b = _responder(None, dia="2026-09-01", raiz=_raiz())
+        b = _responder(b, dia="2026-09-02", acertou=True)
+        assert PROC not in rev.vencidos(b, "2026-09-02")

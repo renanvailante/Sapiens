@@ -255,7 +255,13 @@ async def sinais_do_aluno(uid: str, hoje: str) -> dict[str, Any] | None:
             break
 
     doc_dia = (await _db.engajamento_dia.find_one({"_id": f"{uid}:{hoje}"})) or {}
-    missoes = eng.missoes_do_dia(uid, hoje, doc_dia.get("contadores") or {}, doc_dia.get("resgatadas") or [])
+    # A lista que o dia já fixou (`engajamento_service._missoes_de_hoje`); sem
+    # ela, o sorteio de sempre — o aviso só cita a primeira pendente, que é de
+    # prática e não depende de sinal nenhum.
+    missoes = eng.missoes_do_dia(
+        uid, hoje, doc_dia.get("contadores") or {}, doc_dia.get("resgatadas") or [],
+        fixadas=doc_dia.get("missoes_ids"),
+    )
     missao = next((m for m in missoes if not m["concluida"]), None)
 
     return {

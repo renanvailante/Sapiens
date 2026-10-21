@@ -15,6 +15,7 @@ import ProfessorInvisivel from "../components/ProfessorInvisivel";
 import Microdiagnostico from "../components/Microdiagnostico";
 import Alternativas from "../components/questao/Alternativas";
 import Comemoracoes from "../components/celebracao/Comemoracoes";
+import { PedidoDeNotificacao } from "../components/PedidoDeNotificacao";
 import { elogio, reagirAResposta } from "../lib/reacao";
 import { tocar, somLigado, definirSom } from "../lib/som";
 import { chuvaDeConfete } from "../lib/confete";
@@ -349,6 +350,10 @@ function FechamentoDaSerie({ respostas, filtro, onExit, abrindo, aoPraticar, xpI
       {resumo.total > 0 && <PlacarDaSerie xp={xpGanho} percentual={resumo.percentual} segundos={tempo} />}
 
       {resumo.total > 0 && <RecompensaDaSerie estado={estado} xpInicial={xpInicial} melhorSequencia={melhorSequencia} />}
+
+      {/* O pedido de aviso no celular: aqui, e não no primeiro acesso, porque
+          a pergunta fala do que o aluno acabou de fazer (`lib/push.js`). */}
+      <PedidoDeNotificacao respondeuNaSerie={resumo.total > 0} />
 
       {repetido && (
         <p className="mt-3 max-w-lg text-sm leading-relaxed text-zinc-600" data-testid="serie-fechamento-repetido">

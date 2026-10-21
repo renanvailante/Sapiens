@@ -368,12 +368,21 @@ _TRILHOS: tuple[tuple[str, ...], ...] = (
     ("revisao", "cronograma", "comunidade"),
 )
 
+# Quando um trilho inteiro não tem missão possível hoje, a vaga vai para a
+# primeira destas que sobrou — o Treino primeiro, porque ele cumpre o papel do
+# terceiro trilho (puxar para uma tela que o aluno talvez não conheça) e é
+# cumprível por qualquer conta, inclusive a criada há um minuto.
+_RESERVA: tuple[str, ...] = ("treino", "responder15", "acertar8", "responder5")
+
 
 def missoes_do_dia(
     uid: str,
     dia: str,
     contadores: dict[str, int] | None = None,
     resgatadas: Iterable[str] = (),
+    *,
+    indisponiveis: Iterable[str] = (),
+    fixadas: Iterable[str] | None = None,
 ) -> list[dict[str, Any]]:
     """As três missões de hoje, já com progresso.
 
@@ -382,28 +391,52 @@ def missoes_do_dia(
     seriam diferentes entre duas instâncias — o aluno veria uma missão sumir com
     progresso pela metade, sem nada no produto explicando por quê. O sorteio
     precisa ser estável no tempo e entre máquinas, e só `hashlib` garante isso.
+
+    **`indisponiveis`: missão que o aluno não tem COMO cumprir hoje** — revisão
+    sem nada vencido, dúvida de colega com o mural sem dúvida de outro aluno,
+    bloco do cronograma sem semana montada. Até 2026-10-20 o terceiro trilho era
+    só dessas três, e a conta nova tirava uma impossível em 2 de cada 3 dias: o
+    "Dia completo" não fechava justamente no primeiro dia. Missão com progresso
+    ou já resgatada nunca é tratada como indisponível — o sinal pode mudar
+    depois que o aluno a cumpriu (revisar esvazia a fila).
+
+    **`fixadas`: a lista que o dia já decidiu** (`engajamento_dia.missoes_ids`,
+    gravada na primeira leitura do dia). Com ela, a tela, o resgate e o push
+    veem as mesmas três o dia inteiro, mesmo que um sinal mude no meio do dia.
+    Id que o catálogo não conhece mais desfaz a fixação e o sorteio volta.
     """
     contadores = contadores or {}
     ja_resgatadas = set(resgatadas)
     semente = int(hashlib.sha256(f"{uid}:{dia}".encode("utf-8")).hexdigest()[:8], 16)
     por_id = {m.id: m for m in CATALOGO_MISSOES}
 
-    # Os trilhos compartilham missões de propósito (o mesmo "acertar8" cabe no
-    # trilho de prática e no de precisão), então o sorteio precisa DESCARTAR
-    # repetição: ver "Acerte 8 questões" duas vezes na mesma lista faz o dia
-    # parecer quebrado e some com um terço das missões.
-    escolhidas: list[Missao] = []
-    for i, trilho in enumerate(_TRILHOS):
-        inicio = (semente >> (i * 5)) % len(trilho)
-        for passo in range(len(trilho)):
-            candidata = por_id[trilho[(inicio + passo) % len(trilho)]]
-            if candidata not in escolhidas:
-                escolhidas.append(candidata)
-                break
-        else:
-            # Trilho inteiro já usado: pega a primeira do catálogo que sobrou,
-            # para o aluno nunca ver menos de três missões.
-            escolhidas.append(next(m for m in CATALOGO_MISSOES if m not in escolhidas))
+    fixas = [por_id.get(i) for i in (fixadas or ())]
+    if fixas and len(fixas) == len(_TRILHOS) and all(fixas) and len(set(fixas)) == len(fixas):
+        escolhidas: list[Missao] = list(fixas)
+    else:
+        em_curso = {m.id for m in CATALOGO_MISSOES if contadores.get(m.contador) or m.id in ja_resgatadas}
+        fora = set(indisponiveis) - em_curso
+
+        # Os trilhos compartilham missões de propósito (o mesmo "acertar8" cabe
+        # no trilho de prática e no de precisão), então o sorteio precisa
+        # DESCARTAR repetição: ver "Acerte 8 questões" duas vezes na mesma
+        # lista faz o dia parecer quebrado e some com um terço das missões.
+        escolhidas = []
+        for i, trilho in enumerate(_TRILHOS):
+            inicio = (semente >> (i * 5)) % len(trilho)
+            for passo in range(len(trilho)):
+                candidata = por_id[trilho[(inicio + passo) % len(trilho)]]
+                if candidata not in escolhidas and candidata.id not in fora:
+                    escolhidas.append(candidata)
+                    break
+            else:
+                # Trilho inteiro já usado ou impossível hoje: a reserva, para o
+                # aluno nunca ver menos de três missões nem uma que não dá para
+                # cumprir.
+                escolhidas.append(next(
+                    m for m in [*(por_id[r] for r in _RESERVA), *CATALOGO_MISSOES]
+                    if m not in escolhidas and m.id not in fora
+                ))
 
     saida = []
     for m in escolhidas:
