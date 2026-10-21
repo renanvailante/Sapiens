@@ -1,6 +1,6 @@
 ---
 tags: [produto, analytics, growth]
-atualizado: 2026-09-21
+atualizado: 2026-10-20
 ---
 
 # Analytics de produto — activation, TTFV, cohort
@@ -55,6 +55,29 @@ deveria conceder XP/Sparks (arriscando violar `TestLinhaEtica` — "XP não se
 compra" — se o gatilho puder ser manipulado) ou ser só visual (reaproveitar
 `OQueMudou.jsx`, sem tocar a economia). **Pendente de decisão do dono antes
 de implementar.**
+
+## Medir o funil de verdade, sem tela nova
+
+O painel de ativação só conhece `product_events`, e na prática só
+`primeiro_proximo_passo` é gravado. Para responder "quantos voltam", a fonte
+que existe é outra:
+
+- **`engajamento_dia`** (Mongo, `_id = "{uid}:{dia}"`) — um documento por dia em
+  que o aluno ganhou XP, e responder questão dá XP. É o melhor proxy de "dia
+  ativo" barato. Limites: só existe desde ~2026-09-15 e tem TTL de 120 dias.
+- **`firestore_service.resumo_dos_alunos()`** — `questoes_respondidas`,
+  `dias_ativos`, `ultima_atividade` por aluno, 1 leitura por aluno (a mesma
+  varredura de `/admin/users`). Nunca reconstrói agregado, então não fere
+  [[custo-de-leitura]].
+- **Contas de equipe e de teste não têm marca.** O `is_admin` separa um admin só;
+  as contas de 22/08 e os pagamentos `spark_test_15` são da equipe e inflam
+  "voltou" e "pagou". Separe à mão antes de concluir qualquer coisa.
+
+Como rodar: script só de leitura (`find`/`count`, sem nome/e-mail/telefone na
+saída) enviado por `flyctl ssh console -a sapiens-aluno -C "sh -c 'echo <base64> |
+base64 -d > /tmp/m.py && cd /app && python3 /tmp/m.py'"` — o `MONGO_URL` de
+produção já está no ambiente da máquina, e `cd /app` deixa importar
+`firestore_service`.
 
 Relacionado: [[afiliados]] · [[aquisicao]] · [[custo-de-leitura]] ·
 [[engajamento]]

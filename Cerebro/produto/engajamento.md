@@ -1,6 +1,6 @@
 ---
 tags: [produto, gamificacao, comunidade]
-atualizado: 2026-10-10
+atualizado: 2026-10-20
 ---
 
 # Engajamento, comunidade e conversão
@@ -164,6 +164,21 @@ abre a ficha; `/admin/transacoes` mostra toda cobrança. Uso de cupons em
 `saldo_apos` e `users.promo_code` só existem a partir de 2026-09-15. A tela mostra
 "—", nunca "0". O contador global `promo_codes.usos` diz *quantos* e nunca *quem*,
 daí o campo `usos_sem_vinculo`.
+
+## Dois buracos no laço de volta (vistos em 2026-10-20)
+
+- **O push tem servidor e não tem porta.** `push_service.laco` está ligado no
+  `fly.toml` desde 08/10, mas o lado do aluno (`components/PedidoDeNotificacao.jsx`,
+  `lib/push.js` e o `push` do `public/sw.js`) ficou **sem commit desde 06/10** — o
+  `sw.js` do ar não tem handler de `push`. Resultado: `push_inscricoes` vazio, e
+  o laço roda sobre ninguém. Quem pegar isso: leia esses três arquivos antes de
+  reescrever, a metade do aluno já existe.
+- **A terceira missão do dia é impossível para o aluno novo em 2 de 3 sorteios.**
+  O trilho `("revisao", "cronograma", "comunidade")` de `engajamento._TRILHOS`
+  sorteia "Faça 1 revisão da fila" (vazia no dia 1 — revisão nasce de erro de
+  dias antes) e "Responda a dúvida de um colega" (o mural tinha 1 dúvida no
+  total). Só "Conclua 1 bloco" é cumprível. Com isso o troféu "Dia completo" da
+  trilha do Hoje não fecha justamente para quem mais precisa fechar o primeiro dia.
 
 ---
 Relacionado: [[inviolaveis]] · [[catalogo]] · [[custo-de-leitura]] · [[pagamentos]]

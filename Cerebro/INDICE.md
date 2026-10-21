@@ -68,6 +68,8 @@ Se nada aqui casar, vá direto ao código (`graft ask "<tarefa>"`) — o Cerebro
 | Pagamento entrou e Sparks não | ver o laço de reconciliação e `/admin/sparks/pendentes` | [[pagamentos]] |
 | Correção só no Mongo "não pega" | o Firestore é a fonte da verdade e reconstrói tudo | [[dados]] |
 | Tela branca no login com Google | handler cross-origin do Firebase | [[contas-e-acesso]] |
+| "Continuar com Google" dá Erro 400 `redirect_uri_mismatch` | URI do handler faltando no OAuth Client (console do dono) | [[contas-e-acesso]] |
+| Ninguém volta no dia seguinte / "quantos estão ativos?" | push sem porta no app; medir por `engajamento_dia` | [[engajamento]] · [[analytics-de-produto]] |
 | Erro genérico na tela e o log do servidor diz outra coisa | 500 sai sem CORS, o navegador bloqueia e o `errMsg` cai no texto padrão | [[incidentes]] |
 | Mudei a definição de um índice e o banco não mudou | `create_index` não redefine índice existente | [[incidentes]] |
 | Cadastro/escrita falha por duplicata num campo que está vazio | `sparse` indexa o campo presente valendo `null` | [[incidentes]] |

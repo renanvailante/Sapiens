@@ -1,6 +1,6 @@
 ---
 tags: [produto, auth, cadastro]
-atualizado: 2026-10-06
+atualizado: 2026-10-20
 ---
 
 # Contas, cadastro e acesso
@@ -142,6 +142,15 @@ antes de sair mexendo em console. O último comando calando é o sinal de curado
 
 **Isto não é corrigível pelo repositório.** O código e o `.env` já estão certos; a
 pendência mora no Google Cloud Console e exige a conta do dono.
+
+> [!danger] Em 2026-10-20 continuava quebrado — e o preço já é medido
+> O diagnóstico acima ainda devolvia `redirect_uri_mismatch` para o
+> `authDomain` do bundle no ar (o controle com `sapiens-dataset.firebaseapp.com`
+> passava). No Mongo, o último cadastro `provider: "google"` é de 2026-09-21:
+> **antes da troca, 17 de 30 cadastros vinham pelo Google; depois, zero.** O
+> botão continua sendo o primeiro da tela de cadastro e leva a um Erro 400 do
+> Google. Enquanto o URI não for somado no OAuth Client, a cada dia este é o
+> defeito mais caro do funil.
 
 ## Menor de idade
 
