@@ -88,6 +88,8 @@ seções 2–5).
 
 ### P0-4 — Zero canal de reengajamento fora do app [growth]
 
+**Status (2026-10-20)**: 🟡 em parte — Web Push ligado de ponta a ponta (ver [[engajamento]]); WhatsApp e e-mail continuam sem envio automático.
+
 - **Evidência**: busca em todo `aluno/backend` por mecanismo de envio ativo (`sendgrid`, `smtplib`, `firebase_admin.messaging`, `pywebpush`, `onesignal`, `APScheduler`, `celery`) — nenhum resultado. `aluno/frontend/public/sw.js` não tem handler de `push`. `aluno/backend/whatsapp.py:68-77` (`link_conversa`) só monta um link `wa.me/...` para o **admin clicar manualmente** — não existe disparo automático ao aluno. O `agendamento` de `lembretes_revisao` (`lembretes_routes.py:203-214`) já foi projetado para isso ("nasce preparado e inerte") mas nunca foi ativado.
 - **Impacto**: etapas 5 e 8. A ofensiva que quebra de verdade, a fila de lembretes e as missões diárias — todas as mecânicas de retorno genuinamente boas e éticas do produto — só aparecem depois que o aluno já abriu o app. Quem não abre não recebe nada.
 - **Solução concreta**: job diário (cron no Fly.io) que lê `agregado.dias_ativos`/`engajamento_dia` e dispara **uma** mensagem de WhatsApp para quem está `em_risco=True` e ainda não estudou até certa hora, usando `whatsapp_e164` real e frase com número verdadeiro atrás (mesma disciplina de `venda.js`/`engajamento.py` — nunca inventar urgência). Depois, evoluir para push via PWA.
@@ -139,11 +141,15 @@ Impacto: etapa 3. Solução: remover o botão duplicado quando coincidir com `pa
 Arquivos: `aluno/frontend/src/components/ProximoPasso.jsx`. Agente: frontend/ux. Dependências: nenhuma.
 
 ### P1-5 — `ExplorarOSapiens` (10 portas) abre por padrão para quem tem 0 respostas [ux]
+
+**Status (2026-10-20)**: ✅ implementado — fechado para todos; ver [[padroes-de-tela]].
 Evidência: `Hoje.jsx:695` passa `abertoInicial={totalRespondidas === 0}` para `ExplorarOSapiens.jsx:53-61`, que renderiza 10 destinos (`PortaisDaJornada.jsx:120-207`). Somado ao resto da rolagem (`ProximoPasso` + `PainelDeProgresso` + chamadas de mentoria/live), um aluno de dia 1 vê **~19 destinos clicáveis simultâneos**. O comentário de `Hoje.jsx:30-35` já registra que essa disputa foi corrigida uma vez — a exceção a reintroduziu no público mais sensível.
 Impacto: etapas 2-3. Solução: inverter a regra — abrir por padrão para quem já tem trajetória, fechado para quem não respondeu nada.
 Arquivos: `Hoje.jsx:695`, possivelmente `ExplorarOSapiens.test.js`. Agente: ux/growth. Dependências: ler `Cerebro/ux/padroes-de-tela.md` antes — essa dobra já foi revertida 3 vezes sem registro de intenção.
 
 ### P1-6 — Cards de venda (mentoria + aula ao vivo) incondicionais no dia 1 [ux]
+
+**Status (2026-10-20)**: ✅ implementado — a seção do mentor só aparece depois da primeira resposta.
 Evidência: `Hoje.jsx:678-684` monta `<ChamadaDaMentoria />` e `<ChamadaDaLive />` sem condição sobre `totalRespondidas` ou tempo de conta.
 Impacto: etapas 5→6 — o produto pede confiança antes de tê-la construído (não fere a regra ética, a argumentação é honesta; fere a ordem do funil).
 Solução: esconder/reduzir os dois cards enquanto `totalRespondidas === 0`, mesmo padrão condicional que `abertoInicial` já usa.

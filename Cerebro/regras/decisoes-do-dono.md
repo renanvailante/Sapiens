@@ -134,6 +134,20 @@ de `/redacao/precos` e `/mentis/precos`), a pilha de moedas por quantidade, o
 Pix cheio só no pacote em destaque e a fileira de garantias. Tudo é aritmética
 sobre números do servidor — nenhum preço no JS. Mecânica em [[padroes-de-tela]].
 
+## O primeiro dia enxuto e as metas do cadastro (2026-10-20)
+
+Pedido, depois da análise de engajamento (28 de 43 alunos nunca tinham
+respondido uma questão): *"enxugar o primeiro dia, deixar a 3ª missão possível
+de cumprir e ajustar as metas do cadastro"*. O pedido é dele.
+
+**O que é meu e foi declarado como meu**, portanto o mais barato de mudar: o que
+saiu do dia 1 (a seção do mentor até a primeira resposta, e o Explorar fechado
+para todos), o Treino como reserva da 3ª missão, e as faixas de meta — 70–100,
+100–130 e 130–160 acertos, uma tabela só em `onboarding_routes.METAS`. O tour de
+5 balões depois do `/bem-vindo` **ficou**, porque "o guia abre só no primeiro
+acesso" é decisão dele (acima); é o próximo candidato a sair do dia 1, se ele
+quiser.
+
 ## O pipeline está CONGELADO
 
 Aprovado em 2026-08-22 como baseline de custo. Instrução explícita: nenhuma

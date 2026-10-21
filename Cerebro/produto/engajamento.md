@@ -165,20 +165,46 @@ abre a ficha; `/admin/transacoes` mostra toda cobrança. Uso de cupons em
 "—", nunca "0". O contador global `promo_codes.usos` diz *quantos* e nunca *quem*,
 daí o campo `usos_sem_vinculo`.
 
-## Dois buracos no laço de volta (vistos em 2026-10-20)
+## O aviso no celular (ligado em 2026-10-20)
 
-- **O push tem servidor e não tem porta.** `push_service.laco` está ligado no
-  `fly.toml` desde 08/10, mas o lado do aluno (`components/PedidoDeNotificacao.jsx`,
-  `lib/push.js` e o `push` do `public/sw.js`) ficou **sem commit desde 06/10** — o
-  `sw.js` do ar não tem handler de `push`. Resultado: `push_inscricoes` vazio, e
-  o laço roda sobre ninguém. Quem pegar isso: leia esses três arquivos antes de
-  reescrever, a metade do aluno já existe.
-- **A terceira missão do dia é impossível para o aluno novo em 2 de 3 sorteios.**
-  O trilho `("revisao", "cronograma", "comunidade")` de `engajamento._TRILHOS`
-  sorteia "Faça 1 revisão da fila" (vazia no dia 1 — revisão nasce de erro de
-  dias antes) e "Responda a dúvida de um colega" (o mural tinha 1 dúvida no
-  total). Só "Conclua 1 bloco" é cumprível. Com isso o troféu "Dia completo" da
-  trilha do Hoje não fecha justamente para quem mais precisa fechar o primeiro dia.
+O servidor (`push_service.laco`, desde 08/10) e o lado do aluno
+(`components/PedidoDeNotificacao.jsx`, `lib/push.js`, o `push` do `public/sw.js`)
+existiam separados: o lado do aluno ficou duas semanas sem commit e o secret
+`VAPID_PRIVATE_KEY` nunca foi criado — `GET /push/chave` dizia `disponivel:
+false` e `push_inscricoes` estava vazio. Hoje o pedido aparece **no fim da
+primeira série** (nunca no primeiro acesso, uma vez só) e o interruptor mora no
+grupo Sistema do Menu. A chave privada vive só no secret do Fly; a pública é
+derivada dela em memória.
+
+> **Não gere outra chave VAPID "para testar".** Trocar o par invalida todas as
+> inscrições existentes em silêncio: o navegador continua inscrito com a chave
+> velha e o envio passa a falhar com 403.
+
+O painel do Claude responde `Notification.permission = "denied"` por padrão, e
+nesse estado o pedido some de propósito. Para vê-lo ali, sobrescreva
+`Notification.permission` por `javascript_tool` e navegue sem recarregar.
+
+## As três missões são decididas uma vez por dia
+
+Até 2026-10-20 o terceiro trilho (`revisao`, `cronograma`, `comunidade`) dava ao
+aluno novo uma missão impossível em 2 de cada 3 dias — e "Faça 1 revisão da
+fila" nem fechava para quem revisava, porque o contador `revisoes` só subia
+ao concluir uma intervenção.
+
+- **Sem missão impossível.** `engajamento_service._sem_como_cumprir` mede três
+  sinais (ponto vencido na fila, dúvida publicada de OUTRO aluno na sala
+  aberta, semana montada com bloco) e `eng.missoes_do_dia(indisponiveis=...)`
+  pula o que não dá; trilho inteiro impossível cai na `_RESERVA` (Treino
+  primeiro). Missão com progresso nunca é tratada como indisponível.
+- **Fixadas no dia.** A primeira leitura grava `engajamento_dia.missoes_ids`;
+  a tela, o resgate e o push leem dali. Sem isso, montar a semana à tarde
+  trocaria a missão de alguém no meio do dia. Medida que falhou não fixa.
+- **Revisar conta.** `revisao_service.registrar_resposta` devolve `revisou`
+  (a questão tocava um ponto vencido HOJE, medido antes do reagendamento) e a
+  resposta soma `revisoes: 1`.
+
+> Consequência para quem mede: `engajamento_dia` agora pode existir num dia
+> **sem XP** (nasce na fixação). "Dia ativo" é documento com `xp > 0`.
 
 ---
 Relacionado: [[inviolaveis]] · [[catalogo]] · [[custo-de-leitura]] · [[pagamentos]]

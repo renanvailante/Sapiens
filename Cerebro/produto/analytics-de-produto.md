@@ -62,8 +62,9 @@ O painel de ativação só conhece `product_events`, e na prática só
 `primeiro_proximo_passo` é gravado. Para responder "quantos voltam", a fonte
 que existe é outra:
 
-- **`engajamento_dia`** (Mongo, `_id = "{uid}:{dia}"`) — um documento por dia em
-  que o aluno ganhou XP, e responder questão dá XP. É o melhor proxy de "dia
+- **`engajamento_dia`** (Mongo, `_id = "{uid}:{dia}"`) — conte só os documentos
+  com `xp > 0`: desde 2026-10-20 o documento também nasce quando as missões do
+  dia são fixadas, antes de qualquer XP. Responder questão dá XP. É o melhor proxy de "dia
   ativo" barato. Limites: só existe desde ~2026-09-15 e tem TTL de 120 dias.
 - **`firestore_service.resumo_dos_alunos()`** — `questoes_respondidas`,
   `dias_ativos`, `ultima_atividade` por aluno, 1 leitura por aluno (a mesma

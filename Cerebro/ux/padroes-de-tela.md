@@ -155,8 +155,12 @@ O catálogo de conquistas chama o nome de `label`; ler `nome || titulo` saiu
 "Você desbloqueou "undefined"" em produção até 2026-09-30.
 
 As 10 Portas (`PortaisDaJornada.jsx`) moram na seção **Explorar**
-(`ExplorarOSapiens.jsx`), **fechada por padrão** e aberta só para quem nunca
-respondeu nada. A preferência do aluno vence e mora em `localStorage`.
+(`ExplorarOSapiens.jsx`), **fechada para todo mundo** desde 2026-10-20 — antes
+abria sozinha para quem nunca tinha respondido nada e punha dez portas "NOVO"
+embaixo do único botão que importava no dia 1. A seção do mentor (mentoria e
+aula ao vivo) só aparece depois da primeira resposta. Medido no Hoje da conta
+nova: 31 → 20 alvos, 4,4 → 2,5 telas de celular. A preferência do aluno vence e
+mora em `localStorage`.
 
 ### A escada do Próximo Passo (ainda viva, agora como destino)
 
