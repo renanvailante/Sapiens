@@ -31,6 +31,18 @@ critério, JSON = autoridade de estrutura).
 
 O `_superseded/` guarda versões antigas — **não leia de lá** achando que é atual.
 
+## O White Paper 1.0 não está no repo
+
+O WP 2.0.1 §21.1 declara que **todo o aparato de referências** dele é o do White
+Paper 1.0 (blocos de Referências dos Capítulos 1, 2 e 4, ~150 entradas), e o
+`traceability/08 Registro de Extracao do WP 1.0.md` o cita como fonte. Mas o
+arquivo **não existe em `pipeline/docs/`**. Ele vive só no cofre Obsidian do dono,
+no iCloud: `medicina/00 - Sapiens/White Paper/00 - Criticas ao White Paper 1.0/0 -
+White Paper 1.0.md` (cópia idêntica em `…/Pipeline/Schemas/…/DOCS OFICIAIS/00 WHITE
+PAPER 1.0 (ANTIGO).md`). Na mesma pasta está a crítica integral ao WP 1.0, capítulo
+por capítulo. Quem precisar da bibliografia ou da fundamentação teórica (Cap. 1 é a
+revisão das teorias de aprendizagem) vai lá, não ao repo.
+
 ## `apoio_externo` não é ontologia
 
 `pipeline/docs/enem-redacao/` é um canon documental extraído da cartilha oficial do
