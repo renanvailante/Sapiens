@@ -1,18 +1,35 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, ArrowLeft, SkipForward, Check, Loader2, Target } from "lucide-react";
-import { api } from "../lib/api";
+import { toast } from "sonner";
+import { ArrowRight, ArrowLeft, Check, Loader2, Target } from "lucide-react";
+import { api, errMsg } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import BalaoDaMentis from "../components/caminho/BalaoDaMentis";
 import Logo from "../components/Logo";
-import VideoDoMentor from "../components/VideoDoMentor";
-import { MENTOR } from "../lib/mentor";
+import { ROTA_DO_DIAGNOSTICO, TOTAL_DO_DIAGNOSTICO, etapasDoPlano } from "../lib/diagnostico";
 import { CaminhoDoPlus, Chama } from "../components/celebracao/TelaDaOfensiva";
 import { BENEFICIOS_DO_PLUS } from "../lib/celebracao";
 import { tocar } from "../lib/som";
 
 /**
- * O primeiro acesso: um vídeo curto e três perguntas, conduzidas pela Mentis.
+ * O plano do primeiro acesso: três perguntas, conduzidas pela Mentis, DEPOIS
+ * das dez questões do diagnóstico.
+ *
+ * **A ordem mudou em 2026-10-22.** Esta tela era a primeira coisa depois do
+ * cadastro — vídeo do mentor, cinco controles, objetivo, meta, desafio — e o
+ * tour de cinco balões vinha logo depois dela; 28 de 43 contas nunca chegaram
+ * à primeira questão. Agora o cadastro abre direto no diagnóstico
+ * (`lib/diagnostico.js`), e o fim dele traz o aluno para cá: a ordem da
+ * landing ("1. Responda 10 questões · 2. Receba o seu plano"). O vídeo saiu
+ * daqui (continua na landing, na aula ao vivo e na mentoria), e esta tela não
+ * abre mais o tour ao terminar.
+ *
+ * Duas etapas só existem para quem precisa delas:
+ *
+ * - **diagnostico** — quem chega sem nenhuma resposta (fechou a aba antes da
+ *   primeira questão e voltou pelo Hoje) é convidado às dez antes do plano;
+ * - **whatsapp** — quem não tem número na conta. Saiu do cadastro na mesma
+ *   data e é pedido aqui, com o motivo à vista, sem ser obrigatório.
  *
  * Três decisões que valem mais que o layout:
  *
@@ -27,21 +44,16 @@ import { tocar } from "../lib/som";
  *    Ver `onboarding_routes.py`. Um formulário de boas-vindas que não muda
  *    nada depois é só um pedágio.
  *
- * No fim, o guia da Mentis abre por cima do Painel (`/dashboard?guia=1`).
- *
- * **O vídeo da primeira etapa (2026-09-17)** é o mesmo de apresentação do
- * mentor que a landing já usa (`VideoDoMentor` + `lib/mentor.js`) — não um
- * vídeo de boas-vindas à parte. Antes disso a etapa desenhava só o LUGAR de
- * um vídeo que nunca chegou a existir: quem via a landing via {MENTOR.nome}
- * contando quem é antes de criar conta, e quem criava conta via um retângulo
- * vazio com um ícone de play morto — a primeira interação de quem já era
- * aluno era pior que a de quem ainda nem tinha entrado.
+ * No fim, o Hoje — a trilha do dia, sem tour por cima.
  */
 
 // "desafio" (2026-10-08): o dono pediu que o aluno saiba DESDE O INÍCIO que
 // 5 dias de ofensiva valem 2 dias de Sapiens Plus. É a última coisa que ele
 // ouve antes de entrar — e a primeira que vê no Hoje (`DesafioPlus`).
-const ETAPAS = ["video", "dificuldades", "objetivo", "meta", "desafio"];
+//
+// A lista é montada uma vez por visita (`etapasDoPlano`, em
+// `lib/diagnostico.js`): mudar de tamanho no meio do caminho moveria o aluno
+// de etapa sem ele tocar em nada.
 
 const AREAS = [
   { chave: "matematica", rotulo: "Matemática" },
@@ -113,8 +125,11 @@ function Slider({ area, valor, aoMudar }) {
 
 export default function BemVindo() {
   const nav = useNavigate();
-  const { user } = useAuth();
+  const { user, refresh } = useAuth();
+  // `null` enquanto não se sabe se o aluno já respondeu alguma questão.
+  const [etapas, setEtapas] = useState(null);
   const [etapa, setEtapa] = useState(0);
+  const [whatsapp, setWhatsapp] = useState("");
   const [dificuldades, setDificuldades] = useState({});
   const [objetivo, setObjetivo] = useState("");
   const [minutos, setMinutos] = useState(null);
@@ -128,14 +143,30 @@ export default function BemVindo() {
     api.get("/engajamento/me").then(({ data }) => setPlus(data?.plus || null)).catch(() => {});
   }, []);
 
-  const primeiroNome = (user?.name || "").split(" ")[0] || "";
+  // As etapas condicionais, decididas uma vez: sem resposta nenhuma, o
+  // diagnóstico vem antes; falha de rede conta como "já respondeu" — o plano
+  // nunca fica preso atrás de uma leitura.
+  useEffect(() => {
+    if (etapas) return;
+    const semWhatsapp = !user?.whatsapp;
+    api.get("/firestore/students/me/respondidas")
+      .then(({ data }) => setEtapas(etapasDoPlano({ semRespostas: !(data?.item_ids || []).length, semWhatsapp })))
+      .catch(() => setEtapas(etapasDoPlano({ semWhatsapp })));
+  }, [etapas, user]);
+  const ETAPAS = etapas || [];
 
   // Quem já concluiu não é perguntado de novo — chegar aqui pelo link direto
   // simplesmente volta para o Painel.
   useEffect(() => {
     api.get("/onboarding")
       .then(({ data }) => {
-        if (data?.concluido) nav("/hoje", { replace: true });
+        // A marca da sessão vai junto: se a escrita de `flags.onboarded` no
+        // Firestore tiver falhado, o Hoje mandaria de volta para cá — e esta
+        // linha para lá — em laço.
+        if (data?.concluido) {
+          try { sessionStorage.setItem("sapiens:onboarding-visto", "1"); } catch { /* sem storage, segue */ }
+          nav("/hoje", { replace: true });
+        }
         const doServidor = data?.opcoes?.metas;
         if (Array.isArray(doServidor) && doServidor.length) setMetas(doServidor);
       })
@@ -167,9 +198,9 @@ export default function BemVindo() {
       concluido: true,
     })
       .catch(() => {})
-      // `guia=1`: o Painel abre e a Mentis começa o tour por cima dele. É a
-      // continuação da mesma conversa, não um segundo onboarding.
-      .finally(() => nav("/hoje?guia=1", { replace: true }));
+      // Sem `?guia=1` desde 2026-10-22: o tour de cinco balões não abre mais
+      // sozinho. Quem quiser rever tem "Rever o guia" no Menu.
+      .finally(() => nav("/hoje", { replace: true }));
   }, [dificuldades, objetivo, minutos, meta, nav, marcarVisto]);
 
   const pularTudo = useCallback(() => {
@@ -190,11 +221,36 @@ export default function BemVindo() {
 
   const nome = ETAPAS[etapa];
 
+  /** O número é opcional: vazio, segue; preenchido, só segue gravado — um
+   *  número recusado em silêncio seria o aluno achando que deu o contato. */
+  const salvarWhatsapp = async () => {
+    const numero = whatsapp.trim();
+    if (!numero) return avancar();
+    setSalvando(true);
+    try {
+      await api.post("/auth/whatsapp", { whatsapp: numero });
+      await refresh?.();
+      avancar();
+    } catch (e) {
+      toast.error(errMsg(e, "Não consegui gravar esse número. Confira e tente de novo."));
+    } finally {
+      setSalvando(false);
+    }
+  };
+
   const podeAvancar = useMemo(() => {
     if (nome === "objetivo") return Boolean(minutos);
     if (nome === "meta") return Boolean(meta);
     return true;
   }, [nome, minutos, meta]);
+
+  if (!etapas) {
+    return (
+      <div className="flex min-h-screen items-center justify-center" data-testid="onb-carregando">
+        <Loader2 className="h-6 w-6 animate-spin text-white/40" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">
@@ -211,7 +267,7 @@ export default function BemVindo() {
           </button>
         </div>
 
-        {/* Quatro traços: o aluno vê de saída que isto acaba rápido.
+        {/* Um traço por etapa: o aluno vê de saída que isto acaba rápido.
             Três estados, não dois: o PASSADO é uma linha acesa cheia, o ATUAL
             também acende mas com halo (é onde ele está), e o futuro é trilho.
             Com dois estados, "onde estou" e "o que já fiz" eram a mesma cor e
@@ -233,42 +289,35 @@ export default function BemVindo() {
         </div>
 
         <div className="flex flex-1 flex-col justify-center py-8">
-          {/* ---------------- Vídeo ---------------- */}
-          {nome === "video" && (
-            <section className="reveal" data-testid="onb-video">
-              <h1 className="titulo-heroi">
-                {primeiroNome ? `Bem-vindo, ${primeiroNome}.` : "Bem-vindo ao Sapiens."}
-              </h1>
-              <p className="mt-3 text-white/55">
-                Você está a três passos de saber exatamente o que estudar. Antes
-                do primeiro, conheça quem desenhou o plano: {MENTOR.nome},{" "}
-                {MENTOR.titulo.toLowerCase()}.
-              </p>
-
-              <VideoDoMentor className="mt-6" testid="onb-video-mentor" />
-
-              <div className="mt-6 flex flex-wrap items-center gap-3">
+          {/* ---------------- Diagnóstico (só sem nenhuma resposta) ---------------- */}
+          {nome === "diagnostico" && (
+            <section className="reveal" data-testid="onb-diagnostico">
+              <FalaDaMentis
+                texto={`Primeiro, ${TOTAL_DO_DIAGNOSTICO} questões curtas.`}
+                subtexto="É com elas que eu vejo como você pensa — e o seu plano sai delas."
+              />
+              <div className="mt-7 flex flex-wrap items-center gap-3">
                 <button
                   type="button"
-                  onClick={avancar}
-                  className="pill btn-sapiens inline-flex items-center gap-2 rounded-full px-6 py-3.5 text-sm font-medium"
-                  data-testid="onb-video-continuar"
+                  onClick={() => nav(ROTA_DO_DIAGNOSTICO)}
+                  className="pill btn-sapiens btn-grande inline-flex items-center gap-2"
+                  data-testid="onb-comecar-diagnostico"
                 >
-                  Continuar <ArrowRight className="h-4 w-4" />
+                  Começar as {TOTAL_DO_DIAGNOSTICO} questões <ArrowRight className="h-5 w-5" />
                 </button>
                 <button
                   type="button"
                   onClick={avancar}
                   className="pill btn-vidro inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm"
-                  data-testid="onb-pular-video"
+                  data-testid="onb-pular-diagnostico"
                 >
-                  <SkipForward className="h-4 w-4" /> Pular introdução
+                  Montar o plano sem elas
                 </button>
               </div>
             </section>
           )}
 
-          {/* ---------------- Etapa 1: dificuldades ---------------- */}
+          {/* ---------------- Dificuldades ---------------- */}
           {nome === "dificuldades" && (
             <section className="reveal" data-testid="onb-dificuldades">
               <FalaDaMentis
@@ -293,7 +342,7 @@ export default function BemVindo() {
             </section>
           )}
 
-          {/* ---------------- Etapa 2: objetivo + tempo ---------------- */}
+          {/* ---------------- Objetivo + tempo ---------------- */}
           {nome === "objetivo" && (
             <section className="reveal" data-testid="onb-objetivo">
               <FalaDaMentis texto="Qual é o seu principal objetivo com o Sapiens?" voz="onb-objetivo" />
@@ -347,7 +396,7 @@ export default function BemVindo() {
             </section>
           )}
 
-          {/* ---------------- Etapa 3: meta ENEM 2026 ---------------- */}
+          {/* ---------------- Meta ENEM 2026 ---------------- */}
           {nome === "meta" && (
             <section className="reveal" data-testid="onb-meta">
               <FalaDaMentis
@@ -392,7 +441,26 @@ export default function BemVindo() {
             </section>
           )}
 
-          {/* ---------------- Etapa 4: o desafio dos 5 dias ---------------- */}
+          {/* ---------------- WhatsApp (só sem número na conta) ---------------- */}
+          {nome === "whatsapp" && (
+            <section className="reveal" data-testid="onb-whatsapp">
+              <FalaDaMentis
+                texto="Por onde a equipe fala com você?"
+                subtexto="É por ele que chegam o link da aula ao vivo, o aviso de turma e o suporte. Se preferir, deixe para depois."
+              />
+              <input
+                type="tel"
+                inputMode="tel"
+                value={whatsapp}
+                onChange={(e) => setWhatsapp(e.target.value)}
+                placeholder="(11) 91234-5678"
+                className="mt-6 w-full rounded-xl border border-white/12 bg-white/5 px-4 py-3.5 text-sm text-white outline-none placeholder:text-white/25 focus:border-[#4FD9FF]/60"
+                data-testid="onb-whatsapp-input"
+              />
+            </section>
+          )}
+
+          {/* ---------------- O desafio dos 5 dias ---------------- */}
           {nome === "desafio" && (
             <section className="reveal text-center" data-testid="onb-desafio">
               <div className="relative mx-auto inline-flex">
@@ -430,7 +498,7 @@ export default function BemVindo() {
           )}
         </div>
 
-        {nome !== "video" && (
+        {nome !== "diagnostico" && (
           <div className="flex items-center justify-between gap-3 pb-2">
             <button
               type="button"
@@ -443,6 +511,7 @@ export default function BemVindo() {
             <button
               type="button"
               onClick={() => {
+                if (nome === "whatsapp") return salvarWhatsapp();
                 // Cada etapa grava o que produziu antes de sair dela.
                 if (nome === "dificuldades") salvarParcial({ dificuldades });
                 if (nome === "objetivo") {
@@ -458,7 +527,7 @@ export default function BemVindo() {
               data-testid="onb-avancar"
             >
               {salvando ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-              {nome === "desafio" ? "Aceitar o desafio" : "Continuar"}
+              {nome === "desafio" ? "Aceitar o desafio" : nome === "whatsapp" && !whatsapp.trim() ? "Agora não" : "Continuar"}
               <ArrowRight className="h-4 w-4" />
             </button>
           </div>

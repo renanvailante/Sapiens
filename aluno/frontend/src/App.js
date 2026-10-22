@@ -204,8 +204,10 @@ function AppRouter() {
       <Route path={ROTAS.TERMOS} element={<Pagina titulo="Termos de Uso"><Termos /></Pagina>} />
       <Route path={ROTAS.PRIVACIDADE} element={<Pagina titulo="Política de Privacidade"><Privacidade /></Pagina>} />
 
-      {/* Os dois portões de conta. `/completar-cadastro` é ela mesma protegida
-          (precisa da sessão) — ver a guarda contra laço em `ProtectedRoute`. */}
+      {/* O plano do primeiro acesso e a tela de completar o cadastro. Desde
+          2026-10-22 nenhuma das duas é portão: o cadastro abre no diagnóstico
+          (`lib/diagnostico.js`) e ninguém é empurrado para completar o número
+          (ver `ProtectedRoute`). */}
       <Route path={ROTAS.BEM_VINDO} element={<Aluno titulo="Bem-vindo ao Sapiens"><BemVindo /></Aluno>} />
       <Route path={ROTAS.COMPLETAR_CADASTRO} element={<Aluno titulo="Completar cadastro"><CompletarCadastro /></Aluno>} />
 

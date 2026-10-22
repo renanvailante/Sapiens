@@ -9,6 +9,7 @@ import { googleDisponivel, mensagemDeErroGoogle } from "../lib/firebase";
 import { salvarAtribuicao, lerAtribuicao, modoInicialDoLogin } from "../lib/atribuicao";
 import { navegadorEmbutido, esperaAteAvisarDoPopup } from "../lib/navegador";
 import { origemParaEnvio } from "../lib/campanha";
+import { destinoDepoisDeEntrar } from "../lib/diagnostico";
 import { toast } from "sonner";
 import { Brain, Compass, Radio, Loader2, Gift } from "lucide-react";
 import Logo from "../components/Logo";
@@ -37,9 +38,16 @@ import ContagemEnem from "../components/ContagemEnem";
  *    do ENEM e as três coisas que o produto faz — quem chega aqui por um link
  *    de WhatsApp, sem ter passado pela landing, não tinha como saber o que
  *    está do outro lado do cadastro.
- * 3. **A ordem dos campos não mudou.** WhatsApp e cupom continuam ACIMA do
- *    botão do Google, pelo motivo documentado abaixo: eles valem para os dois
- *    caminhos de cadastro.
+ * 3. **A ordem dos campos não mudou.** O cupom (e o "tenho menos de 18")
+ *    continua ACIMA do botão do Google, pelo motivo documentado abaixo: vale
+ *    para os dois caminhos de cadastro.
+ *
+ * **O WhatsApp saiu daqui em 2026-10-22.** Era o primeiro campo da tela e
+ * obrigatório no cadastro por e-mail — o pedido mais caro do produto, feito
+ * antes de qualquer valor entregue, e 28 de 43 contas nunca chegavam à
+ * primeira questão. Ele é pedido no fim do plano (`/bem-vindo`) e na compra da
+ * aula ao vivo, onde o motivo está na frente do aluno. E a conta nova não vai
+ * mais ao `/bem-vindo`: vai direto ao diagnóstico (`lib/diagnostico.js`).
  */
 
 const PROVAS = [
@@ -98,7 +106,6 @@ export default function Login() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [whatsapp, setWhatsapp] = useState("");
   // Menor de idade e o responsável. Autodeclarado, e revelado só quando a
   // caixa é marcada: um adolescente vê dois campos a mais, e um adulto não vê
   // nenhum. Ver `backend/models.User` para por que o dado é guardado.
@@ -150,7 +157,7 @@ export default function Login() {
       }
       const { contaCriada } = await loginGoogle(
         criando ? promoCode : undefined,
-        criando ? whatsapp : undefined,
+        undefined,
         criando ? { menorDeIdade, responsavelNome, responsavelWhatsapp, origem } : undefined,
       );
       // `contaCriada` vem do BACKEND, e não do modo em que o formulário
@@ -159,7 +166,7 @@ export default function Login() {
       // `lib/rastreio.cadastroConcluido` — nada que identifique a pessoa sai
       // junto. Antes do `nav`, porque navegar desmonta esta tela.
       if (contaCriada) cadastroConcluido("google");
-      nav("/hoje");
+      nav(destinoDepoisDeEntrar({ contaCriada }));
     } catch (e) {
       // Fechar o popup NÃO é erro quando foi rápido: é cancelamento
       // deliberado, e um toast ali seria ruído sobre uma decisão da pessoa.
@@ -190,10 +197,6 @@ export default function Login() {
 
   const submit = async (e) => {
     e.preventDefault();
-    if (criando && !whatsapp.trim()) {
-      toast.error("Informe seu WhatsApp — é por ele que a gente fala com você.");
-      return;
-    }
     if (criando && menorDeIdade && !(responsavelNome.trim() && responsavelWhatsapp.trim())) {
       toast.error("Informe o nome e o WhatsApp do seu responsável.");
       return;
@@ -202,13 +205,13 @@ export default function Login() {
     try {
       if (!criando) await login(email, password);
       else {
-        await signup(name, email, password, whatsapp, promoCode, {
+        await signup(name, email, password, undefined, promoCode, {
           menorDeIdade, responsavelNome, responsavelWhatsapp, origem,
         });
       }
       if (criando) cadastroConcluido("email");
       toast.success("Bem-vindo ao Sapiens.");
-      nav("/hoje", { replace: true });
+      nav(destinoDepoisDeEntrar({ contaCriada: criando }), { replace: true });
     } catch (err) {
       // A tela se corrige sozinha em vez de acusar a pessoa: vira "Entrar",
       // guarda o e-mail que ela já digitou e diz o que fez. Um clique, e não
@@ -335,38 +338,15 @@ export default function Login() {
             </div>
           )}
 
-          {/* O cupom e o WhatsApp ficam ACIMA do botão do Google, e não no meio
-              do formulário de e-mail: eles valem para os DOIS caminhos de
-              cadastro (o backend aceita `promo_code` e `whatsapp` no signup por
-              e-mail e no primeiro login pelo Google), mas embaixo do botão
+          {/* O cupom e o "menor de idade" ficam ACIMA do botão do Google, e não
+              no meio do formulário de e-mail: valem para os DOIS caminhos de
+              cadastro (o backend aceita `promo_code` e o responsável no signup
+              por e-mail e no primeiro login pelo Google), mas embaixo do botão
               ninguém que entra pelo Google chegava a vê-los — e o código
               trocaria o bônus padrão de 100 Sparks pelo valor programado.
-              O WhatsApp é o único canal em que a equipe alcança o aluno de
-              verdade, e é por ele que o link da aula ao vivo de quinta chega a
-              quem pagou. A obrigatoriedade é checada à mão em `submit` (o campo
-              mora fora do `<form>`, então o `required` do HTML não o alcança) e
-              o backend recusa o cadastro por e-mail sem número de qualquer
-              forma. Pelo Google ele é opcional: o botão também cria conta a
-              partir da aba de LOGIN, onde não há formulário nenhum. */}
+              O WhatsApp do aluno NÃO está mais aqui (ver o cabeçalho). */}
           {criando && (
             <div className="mt-6 space-y-4">
-              <Campo
-                id="login-whatsapp"
-                rotulo="Seu WhatsApp"
-                dica="É o canal por onde a equipe fala com você: link de aula, aviso de turma e suporte."
-              >
-                <input
-                  id="login-whatsapp"
-                  type="tel"
-                  inputMode="tel"
-                  value={whatsapp}
-                  onChange={(e) => setWhatsapp(e.target.value)}
-                  placeholder="(11) 91234-5678"
-                  className={CAMPO}
-                  data-testid="login-whatsapp"
-                />
-              </Campo>
-
               {/* MENOR DE IDADE. A caixa é uma linha; os dois campos só
                   existem para quem a marca. A LGPD (art. 14) trata dado de
                   adolescente à parte e pede um responsável identificável —

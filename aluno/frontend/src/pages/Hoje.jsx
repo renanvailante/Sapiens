@@ -246,11 +246,9 @@ function ChamadaDaMentoria() {
   );
 }
 
-// Marca LOCAL de "este aluno já viu o guia". Ver `abrirGuiaSeNunca`.
-//
-// A fonte da verdade é o servidor (`flags.guia_visto`); isto aqui é só o
-// atalho que evita o guia piscar meio segundo enquanto a resposta vem, e que
-// faz o comportamento certo sobreviver a uma falha de rede.
+// Marca LOCAL de "este aluno já passou pelo primeiro acesso" (até
+// 2026-10-22, "já viu o guia" — a chave não mudou). Ver o efeito do
+// primeiro acesso no componente.
 //
 // **Por aluno, e não por navegador**: sem o `user_id` na chave, dois irmãos
 // no mesmo computador dividiriam a marca, e o segundo nunca veria o guia.
@@ -362,39 +360,32 @@ export default function Hoje() {
     api.get("/engajamento/me").then(({ data }) => setEngajamento(data)).catch(() => {});
   }, []);
 
-  // UMA VEZ NA VIDA — revisto em 2026-09-17.
+  // O GUIA (o tour de cinco balões) NÃO ABRE MAIS SOZINHO — 2026-10-22.
   //
-  // Era uma vez por sessão do navegador: quem entrava na plataforma via o
-  // guia de novo, todo dia, vinte e um balões. Um tutorial que reaparece a
-  // cada entrada deixa de ser ajuda e vira pedágio, e a única coisa que ele
-  // ensina a partir da segunda vez é onde fica o "Pular".
+  // Abria uma vez na vida, logo depois do `/bem-vindo`: cinco balões entre o
+  // cadastro e a primeira questão, numa fila que já tinha formulário e quatro
+  // perguntas — e 28 de 43 contas nunca chegaram a responder nada. Hoje o
+  // cadastro abre no diagnóstico (`lib/diagnostico.js`), e o que o tour
+  // ensinava as dicas da Mentis já dizem na primeira visita a cada área
+  // (`lib/dicasDaMentis.js`), no momento em que importam.
   //
-  // Agora a marca é PERMANENTE e mora em dois lugares, de propósito:
+  // As portas explícitas continuam: o botão "Guia" e o "Rever o guia" do
+  // Menu (`?guia=1`, efeito abaixo). `flags.guia_visto` continua sendo
+  // gravado por quem o percorre, e não decide mais nada.
   //
-  // · `flags.guia_visto` no servidor é a fonte da verdade. É ela que faz o
-  //   guia não voltar depois de um logout, de uma troca de aparelho ou de uma
-  //   janela anônima — que é exatamente o que o `sessionStorage` anterior não
-  //   conseguia, porque morria junto com a aba.
-  // · `localStorage`, por aluno, é o atalho: evita o balão piscar enquanto a
-  //   resposta do servidor não chega, e mantém o comportamento certo se a
-  //   rede falhar.
-  //
-  // Quem quiser rever tem duas portas explícitas, e as duas continuam de pé:
-  // o botão "Guia" no topo do Painel e o "Rever o guia" no menu.
-  const marcarGuiaVisto = useCallback(() => {
+  // A marca local, por aluno, agora quer dizer "já passou pelo primeiro
+  // acesso": evita perguntar ao servidor a cada visita ao Hoje. A chave é a
+  // mesma de antes, de propósito — quem já tinha visto o guia já tinha
+  // passado pelo `/bem-vindo`.
+  const marcarPrimeiroAcessoFeito = useCallback(() => {
     try { localStorage.setItem(chaveDoGuia(user?.user_id), "1"); } catch { /* bloqueado */ }
   }, [user]);
 
-  const jaViuOGuia = useCallback(() => {
+  const jaPassouPeloPrimeiroAcesso = useCallback(() => {
     try { return Boolean(localStorage.getItem(chaveDoGuia(user?.user_id))); }
     catch { return false; }
   }, [user]);
 
-  // O guia da Mentis. Três portas: `?guia=1` (com que `/bem-vindo` termina),
-  // os botões "Guia" / "Rever o guia", e a ABERTURA AUTOMÁTICA a cada entrada
-  // na plataforma. A porta antiga (`flags.onboarded === false` no Firestore)
-  // continua mandando o aluno para `/bem-vindo` — o tour é a segunda metade
-  // daquela conversa, não um onboarding paralelo.
   // `?guia=1` num efeito próprio, que OUVE a URL: quem clica em "Rever o guia"
   // no lançador já estando no Painel só muda a query — não há remontagem, e um
   // efeito de montagem não veria esse clique nunca.
@@ -408,9 +399,12 @@ export default function Hoje() {
     setParams(limpo, { replace: true });
   }, [params, setParams]);
 
+  // Quem ainda não montou o plano (`flags.onboarded === false`) vai ao
+  // `/bem-vindo` — que, sem nenhuma resposta, convida primeiro às dez do
+  // diagnóstico.
   useEffect(() => {
-    if (params.get("guia")) return; // tratado no efeito acima
-    if (jaViuOGuia()) return;       // atalho local: nem chega a perguntar
+    if (params.get("guia")) return;
+    if (jaPassouPeloPrimeiroAcesso()) return;
 
     // `sessionStorage`: a marca que `/bem-vindo` deixa ao ser pulado ou
     // concluído. Sem ela, um PUT que falhou (rede oscilando) deixava
@@ -424,25 +418,15 @@ export default function Hoje() {
     api.get("/firestore/students/me/behavior")
       .then(({ data }) => {
         const flags = data?.flags || {};
-        // Já viu em outro aparelho ou antes de um logout: alinha a marca
-        // local e não mostra nada.
-        if (flags.guia_visto === true) {
-          marcarGuiaVisto();
-          return;
-        }
-        // Primeiro acesso de todos: `/bem-vindo` vem antes, e ele termina
-        // mandando para cá com `?guia=1`. Abrir o tour aqui só faria o balão
-        // piscar meio segundo antes do redirecionamento.
         if (flags.onboarded === false && !jaPassouPeloBemVindo) {
           nav("/bem-vindo", { replace: true });
           return;
         }
-        setShowTour(true);
+        marcarPrimeiroAcessoFeito();
       })
-      // Falha de rede não pode custar o PRIMEIRO guia: ele não depende de
-      // nada do servidor para ser exibido, e quem já o viu está protegido
-      // pela marca local lida lá em cima.
-      .catch(() => setShowTour(true));
+      // Falha de rede: fica no Hoje. Mandar ao plano sem saber se ele existe
+      // seria pior que não mandar.
+      .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -891,7 +875,7 @@ export default function Hoje() {
 
       {loaded && showTour && (
         <OnboardingTour
-          onDone={() => { setShowTour(false); marcarGuiaVisto(); }}
+          onDone={() => setShowTour(false)}
         />
       )}
     </div>

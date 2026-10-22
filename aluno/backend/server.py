@@ -31,6 +31,7 @@ settings.exigir_config_valida()
 import auth as auth_module
 from auth import require_user
 from models import User
+import diagnostico_inicial
 import exam_routes as exam_module
 import exam_images_routes as exam_images_module
 import feed_routes as feed_module
@@ -228,6 +229,49 @@ async def list_questoes_publico(
         filtro, PROJECAO_SEM_GABARITO
     ).sort("fonte.numero", 1).limit(limit)
     items = await cursor.to_list(length=limit)
+    return {"items": items, "count": len(items)}
+
+
+# O diagnóstico do primeiro acesso: as 10 questões que o cadastro abre — a
+# regra e o porquê estão em `diagnostico_inicial.py`. A ESCOLHA lê só o que a
+# regra mede (texto, figura, fonte) de `questoes_public` — Mongo, nunca
+# Firestore — e fica guardada por processo pelo intervalo do sync, que é
+# quando o acervo muda. O que sai para o aluno é a leitura de 10 documentos.
+_PROJECAO_DA_ESCOLHA = {
+    "_id": 0,
+    "item_id": 1,
+    "fonte": 1,
+    "questao.enunciado": 1,
+    "questao.alternativas.letra": 1,
+    "questao.alternativas.texto": 1,
+    "questao.visual_assets.asset_id": 1,
+    "questao.recursos.imagens": 1,
+}
+_DIAGNOSTICO_ESCOLHIDO: dict[str, Any] = {"ids": [], "em": 0.0}
+_DIAGNOSTICO_VALIDADE_S = 6 * 3600
+
+
+@api_router.get("/questoes/diagnostico")
+async def questoes_do_diagnostico(_: User = Depends(require_user)):
+    """As questões do diagnóstico, na ordem em que o aluno as responde, sem
+    gabarito (mesma projeção de `/questoes`)."""
+    agora = asyncio.get_running_loop().time()
+    ids = _DIAGNOSTICO_ESCOLHIDO["ids"]
+    if not ids or agora - _DIAGNOSTICO_ESCOLHIDO["em"] > _DIAGNOSTICO_VALIDADE_S:
+        candidatos = await db.questoes_public.find({}, _PROJECAO_DA_ESCOLHA).to_list(length=None)
+        ids = diagnostico_inicial.escolher(candidatos, _area_enem)
+        # Uma leitura que caiu na janela em que o sync esvazia a coleção (ver
+        # `admin_routes.run_firestore_sync`) devolve nada — e nada não fica
+        # guardado por seis horas.
+        if ids:
+            _DIAGNOSTICO_ESCOLHIDO.update(ids=ids, em=agora)
+        else:
+            logger.warning("diagnóstico: nenhuma questão elegível em questoes_public")
+    docs = await db.questoes_public.find(
+        {"item_id": {"$in": ids}}, PROJECAO_SEM_GABARITO
+    ).to_list(length=len(ids) or 1)
+    por_id = {d.get("item_id"): d for d in docs}
+    items = [por_id[i] for i in ids if i in por_id]
     return {"items": items, "count": len(items)}
 
 

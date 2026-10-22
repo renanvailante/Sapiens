@@ -2,20 +2,16 @@ import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 
 /**
- * O portão de toda tela que exige sessão. Ele responde a duas perguntas, nesta
- * ordem: **quem é você** e **dá para falar com você**.
+ * O portão de toda tela que exige sessão: **quem é você**.
  *
- * A segunda entrou em 2026-09-17. O botão "Continuar com Google" cria conta a
- * partir da aba de LOGIN, onde não existe formulário — o Google devolve nome e
- * e-mail e mais nada, e essas contas nasciam sem telefone. Enquanto havia um
- * cartão no Painel pedindo o número, dava para ignorá-lo para sempre; quando
- * esse cartão saiu, o telefone simplesmente deixou de ser coletado nesse
- * caminho. Agora quem não tem telefone passa por `/completar-cadastro` antes
- * de qualquer outra tela.
- *
- * Vale também para as contas anteriores a 2026-09-15, quando o campo não
- * existia — são justamente os alunos mais antigos, e os que a equipe mais
- * precisa conseguir alcançar.
+ * De 2026-09-17 a 2026-10-22 ele respondia uma segunda pergunta — "dá para
+ * falar com você?" — e mandava todo aluno sem WhatsApp para
+ * `/completar-cadastro` antes de qualquer tela. Com o número fora do cadastro
+ * (ver o cabeçalho de `pages/Login.jsx`), esse portão seria o mesmo pedido de
+ * antes, só que uma tela depois. O número agora é pedido onde o motivo está à
+ * vista: no fim do plano (`/bem-vindo`) e na compra da aula ao vivo.
+ * `/completar-cadastro` continua existindo como tela, sem ninguém empurrado
+ * para ela.
  */
 export default function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -28,10 +24,5 @@ export default function ProtectedRoute({ children }) {
     );
   }
   if (!user) return <Navigate to="/login" state={{ from: location }} replace />;
-  // A própria tela de completar é `ProtectedRoute` (ela precisa da sessão),
-  // então sem esta guarda o redirecionamento cairia em laço sobre si mesmo.
-  if (!user.whatsapp && location.pathname !== "/completar-cadastro") {
-    return <Navigate to="/completar-cadastro" replace />;
-  }
   return children;
 }

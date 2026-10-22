@@ -12,8 +12,9 @@ import { ROTAS } from "./rotas";
  * Regras:
  *   · uma frase, no máximo duas — dica não é tutorial;
  *   · aparece UMA vez por área, por aparelho (`localStorage`), e some sozinha;
- *   · nunca por cima de questão: com `item_ids`/`area` na URL o aluno já está
- *     respondendo, e uma dica ali seria a guia atrapalhando;
+ *   · nunca por cima de questão: com `item_ids`/`area`/`diagnostico` na URL o
+ *     aluno já está respondendo, e uma dica ali seria a guia atrapalhando —
+ *     no diagnóstico, cobrindo as alternativas da PRIMEIRA questão;
  *   · o Hoje não tem dica: lá a Mentis já está NO conteúdo, falando.
  */
 export const DICAS = {
@@ -36,7 +37,7 @@ export function dicaPara(pathname, search = "") {
   const texto = DICAS[rota];
   if (!texto) return null;
   const q = new URLSearchParams(search || "");
-  if (q.get("item_ids") || q.get("area") || q.get("hab")) return null;
+  if (q.get("item_ids") || q.get("area") || q.get("hab") || q.get("diagnostico")) return null;
   try {
     if (localStorage.getItem(chave(rota))) return null;
   } catch {

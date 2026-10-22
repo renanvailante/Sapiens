@@ -18,6 +18,11 @@ Cenários (GET /__cenario/<nome>, também zera os contadores):
   novo      — conta sem resposta nenhuma
   dia_cheio — o "padrao" + 2 revisões vencidas e um bloco de hoje no cronograma
               (a trilha do dia com todos os tipos de nó)
+  primeiro_acesso — conta recém-criada: sem WhatsApp, sem plano, sem resposta.
+              Abra /estudar/provas?diagnostico=1 (para onde o cadastro leva):
+              as dez do diagnóstico → "Montar o meu plano" → /bem-vindo →
+              Hoje. Responder, gravar o número e concluir o plano mudam o
+              estado como o servidor mudaria.
 
 Rota sem mock aparece no stderr como "SEM MOCK GET ..." — é o primeiro lugar
 para olhar quando uma tela quebra aqui e não em produção (o dado falso
@@ -238,8 +243,9 @@ def rota_get(path, q):
     if path.startswith("/api/sparks/purchases/") and path != "/api/sparks/purchases/me":
         return {"purchase_id": path.rsplit("/", 1)[-1], "status": "pending", "credited": False}
     if path == "/api/auth/me":
+        numero = ESTADO.get("whatsapp") if c == "primeiro_acesso" else "+5511900000000"
         return {"user_id": "aluno-teste", "name": "Aluno Teste", "email": "aluno.teste@sapiens.test",
-                "whatsapp": "+5511900000000", "role": "student"}
+                "whatsapp": numero, "role": "student"}
     if path == "/api/firestore/students/me/sparks":
         return {"sparks_balance": 120, "direitos": {}}
     if path == "/api/firestore/students/me/activity":
@@ -247,7 +253,7 @@ def rota_get(path, q):
     if path == "/api/skills-map":
         return {"hubs": []}
     if path == "/api/firestore/students/me/respondidas":
-        n = 0 if c == "novo" else 40
+        n = 0 if c == "novo" else ESTADO["respostas"] if c == "primeiro_acesso" else 40
         return {"item_ids": [f"X-{i}" for i in range(n)]}
     if path == "/api/firestore/students/me/rounds":
         return {"rounds": []}
@@ -288,6 +294,11 @@ def rota_get(path, q):
                     "total_blocos": 1, "total_concluidos": 1 if ESTADO.get("bloco_feito") else 0}
         return {"dias": []}
     if path == "/api/onboarding":
+        if c == "primeiro_acesso":
+            return {"concluido": bool(ESTADO.get("onboarded")), "opcoes": {"metas": [
+                {"nivel": "basico", "rotulo": "Básico", "acertos_min": 70, "acertos_max": 100},
+                {"nivel": "medio", "rotulo": "Médio", "acertos_min": 100, "acertos_max": 130},
+                {"nivel": "avancado", "rotulo": "Avançado", "acertos_min": 130, "acertos_max": 160}]}}
         return {}
     if path == "/api/engajamento/me":
         return {
@@ -368,6 +379,8 @@ def rota_get(path, q):
                                             {"tipo": "reteste_ok", "quando": agora(1), "rotulo": "revisão em dia"}]}],
                 "nexo_causal": False, "provisorio": True, "instrumentacao": {"retestes": {"total": 1, "acertos": 1, "taxa": 100}}}
     if path == "/api/firestore/students/me/behavior":
+        if c == "primeiro_acesso":
+            return {"flags": {"guia_visto": False, "onboarded": bool(ESTADO.get("onboarded"))}}
         return {"flags": {"guia_visto": True, "onboarded": True}}
     if path.startswith("/api/motor/habilidade/"):
         return {
@@ -386,6 +399,9 @@ def rota_get(path, q):
                 "praticar": {"itens": [{"item_id": i} for i in ITENS], "total_disponivel": 9},
             },
         }
+    if path == "/api/questoes/diagnostico":
+        # A forma de `server.questoes_do_diagnostico`: dez, na ordem, sem gabarito.
+        return {"items": [questao(f"DIAG-{k}", 20 + k) for k in range(10)], "count": 10}
     if path == "/api/questoes":
         ids = (q.get("item_ids") or [""])[0].split(",")
         ids = [i for i in ids if i] or ITENS[:5]
@@ -419,6 +435,12 @@ def rota_get(path, q):
 
 
 def rota_post(path, corpo):
+    if path == "/api/auth/whatsapp":
+        ESTADO["whatsapp"] = corpo.get("whatsapp")
+        return {"ok": True, "whatsapp": corpo.get("whatsapp")}
+    if path == "/api/onboarding" and corpo.get("concluido"):
+        ESTADO["onboarded"] = True
+        return {"ok": True}
     # Um Pix de mentira, só para a loja abrir o painel de pagamento.
     if path == "/api/sparks/purchases" and corpo.get("payment_method_id") == "pix":
         return {"purchase_id": "compra-teste", "status": "pending", "status_detail": "pending_waiting_transfer",
@@ -511,6 +533,8 @@ class H(BaseHTTPRequestHandler):
             ESTADO["revisou"] = False
             ESTADO["revisadas"] = set()
             ESTADO["bloco_feito"] = False
+            ESTADO["whatsapp"] = None
+            ESTADO["onboarded"] = False
             return self._json({"cenario": ESTADO["cenario"]})
         if u.path.startswith("/api/"):
             r = rota_get(u.path, parse_qs(u.query))

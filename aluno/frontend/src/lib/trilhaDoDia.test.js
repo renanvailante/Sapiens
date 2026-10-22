@@ -233,6 +233,8 @@ describe("dicas da Mentis", () => {
     expect(dicaPara("/agenda")).toBeNull();
     expect(dicaPara("/estudar/provas", "?item_ids=A,B")).toBeNull();
     expect(dicaPara("/estudar/provas", "?area=Matem%C3%A1tica")).toBeNull();
+    // A primeira questão da vida do aluno: a dica cobria as alternativas.
+    expect(dicaPara("/estudar/provas", "?diagnostico=1")).toBeNull();
     expect(dicaPara("/estudar/provas")).toMatchObject({ rota: "/estudar/provas" });
   });
 

@@ -310,11 +310,14 @@ async def signup(
         raise HTTPException(status_code=400, detail="Email already registered")
     # O número é validado ANTES de a conta existir: um cadastro que cria a
     # conta e só depois recusa o telefone deixaria o aluno com uma conta que
-    # ele acha que não criou e um erro na tela.
-    try:
-        whatsapp_digitado, whatsapp_e164 = wa.normalizar(payload.whatsapp)
-    except wa.WhatsAppInvalido as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    # ele acha que não criou e um erro na tela. Sem número, a conta nasce sem
+    # ele (opcional desde 2026-10-22, ver `models.SignupRequest`).
+    whatsapp_digitado = whatsapp_e164 = None
+    if (payload.whatsapp or "").strip():
+        try:
+            whatsapp_digitado, whatsapp_e164 = wa.normalizar(payload.whatsapp)
+        except wa.WhatsAppInvalido as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
     responsavel = _campos_do_responsavel(
         payload.menor_de_idade,
         payload.responsavel_nome,

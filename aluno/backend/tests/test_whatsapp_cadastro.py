@@ -128,9 +128,18 @@ class TestCadastro:
             _cadastrar(db, email="meio@x.com", whatsapp="12345678")
         assert _run(db.users.find_one({"email": "meio@x.com"})) is None
 
-    def test_o_campo_e_obrigatorio_no_cadastro_por_email(self):
-        with pytest.raises(Exception):  # ValidationError do Pydantic
-            SignupRequest(email="a@x.com", name="A", password="senha-forte-1")
+    def test_o_campo_e_opcional_no_cadastro_por_email(self):
+        """Desde 2026-10-22 o número é pedido depois do primeiro valor
+        entregue (fim do plano, compra da live), não antes da primeira
+        questão. Sem ele a conta nasce — e sem campo inventado."""
+        assert SignupRequest(email="a@x.com", name="A", password="senha-forte-1").whatsapp is None
+
+    @pytest.mark.parametrize("vazio", [None, "", "   "])
+    def test_cadastro_sem_numero_cria_conta_sem_os_campos(self, db, vazio):
+        conta = _cadastrar(db, email="sem@x.com", whatsapp=vazio)
+        assert conta is not None
+        assert conta.get("whatsapp") is None
+        assert conta.get("whatsapp_e164") is None
 
 
 class TestContaSemNumero:

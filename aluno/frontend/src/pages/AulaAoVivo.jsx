@@ -8,6 +8,7 @@ import {
   GraduationCap, ArrowRight,
 } from "lucide-react";
 import { api, errMsg } from "../lib/api";
+import { useAuth } from "../lib/auth";
 import { formatBRL } from "../lib/utils";
 import { argumentoDaLive } from "../lib/venda";
 import { avisarSparksMudou } from "../components/Navegacao";
@@ -134,6 +135,15 @@ const O_QUE_ACONTECE = [
 ];
 
 export default function AulaAoVivo() {
+  const { user, refresh } = useAuth();
+  // Quem não tem WhatsApp na conta (o número saiu do cadastro em 2026-10-22)
+  // pode deixá-lo aqui: é o pedido mais natural do produto — o aluno está
+  // comprando justamente a aula sobre a qual quer ser lembrado. Opcional: o
+  // link também aparece nesta tela. O servidor grava antes de cobrar
+  // (`cursos_routes.comprar_acesso_live`), e um número inválido para a
+  // compra com a mensagem certa.
+  const semWhatsapp = !user?.whatsapp;
+  const [numero, setNumero] = useState("");
   const [dados, setDados] = useState(null);
   const [erro, setErro] = useState(null);
   const [comprando, setComprando] = useState(false);
@@ -196,7 +206,8 @@ export default function AulaAoVivo() {
   const comprar = async () => {
     setComprando(true);
     try {
-      const { data } = await api.post("/cursos/live/acesso", {});
+      const { data } = await api.post("/cursos/live/acesso", numero.trim() ? { whatsapp: numero.trim() } : {});
+      if (numero.trim()) refresh?.();
       avisarSparksMudou();
       toast.success(
         data.cobrado
@@ -429,13 +440,29 @@ export default function AulaAoVivo() {
                       </>
                     ) : (
                       <p className="mt-1 text-sm text-emerald-100/70" data-testid="aula-sem-link">
-                        O link da sala é criado na véspera e aparece aqui automaticamente —
-                        e também chega no seu WhatsApp. Você não precisa pagar de novo.
+                        O link da sala é criado na véspera e aparece aqui automaticamente
+                        {semWhatsapp ? "" : " — e também chega no seu WhatsApp"}. Você não precisa pagar de novo.
                       </p>
                     )}
                   </div>
                 ) : (
                   <div className="flex flex-wrap items-center gap-3">
+                    {semWhatsapp && (
+                      <label className="w-full" data-testid="aula-whatsapp">
+                        <span className="mb-1.5 block text-xs font-semibold text-white/55">
+                          Seu WhatsApp, para o lembrete e o link da aula (opcional)
+                        </span>
+                        <input
+                          type="tel"
+                          inputMode="tel"
+                          value={numero}
+                          onChange={(e) => setNumero(e.target.value)}
+                          placeholder="(11) 91234-5678"
+                          className="w-full max-w-xs rounded-xl border border-white/12 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none placeholder:text-white/30 focus:border-[#4FD9FF]/55"
+                          data-testid="aula-whatsapp-input"
+                        />
+                      </label>
+                    )}
                     <button
                       onClick={comprar}
                       disabled={comprando || !podePagar}

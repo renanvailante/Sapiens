@@ -22,6 +22,7 @@ import { chuvaDeConfete } from "../lib/confete";
 import ReportarQuestao from "../components/ReportarQuestao";
 import { ROTAS, ANCORAS, com } from "../lib/rotas";
 import { useDeclararContextoMentis } from "../lib/mentisContexto";
+import { saidaDoDiagnostico, TOTAL_DO_DIAGNOSTICO } from "../lib/diagnostico";
 import { MISSOES } from "../components/mapa3d/missoes";
 import {
   abrirPraticaDirigida, resumoDaSerie, fraseDoFechamento, pontoRepetido, TETO_QUESTOES, recompensaDaSerie,
@@ -72,12 +73,12 @@ function rodadaNaPosicao(posicao, total) {
  *  As duas chamadas vivem sobre superfície ESCURA (a tela da prova e o card de
  *  conclusão), então não há variante clara; `tone` fica só porque a chamada de
  *  conclusão ainda o passa. */
-function ProgressoProva({ respondidas, total, pulso, combo = false }) {
+function ProgressoProva({ respondidas, total, pulso, combo = false, rotulo = "Progresso da prova" }) {
   const pct = total > 0 ? Math.min(100, Math.round((respondidas / total) * 100)) : 0;
   return (
     <div className="mb-5" data-testid="progresso-prova">
       <div className="mb-2 flex items-center justify-between">
-        <span className="secao-olho">Progresso da prova</span>
+        <span className="secao-olho">{rotulo}</span>
         <span className="font-mono-alt text-xs font-bold tabular-nums text-white" data-testid="progresso-contador">
           {respondidas}/{total}
         </span>
@@ -289,6 +290,17 @@ function FechamentoDaSerie({ respostas, filtro, onExit, abrindo, aoPraticar, xpI
     return () => { ativo = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  // O diagnóstico do primeiro acesso termina no PLANO enquanto ele não existe
+  // (`lib/diagnostico.js`). Quem já tem plano e refez as dez volta à trilha.
+  const diagnostico = Boolean(filtro?.diagnostico);
+  const [planoFeito, setPlanoFeito] = useState(false);
+  useEffect(() => {
+    if (!diagnostico) return undefined;
+    let ativo = true;
+    api.get("/onboarding").then(({ data }) => { if (ativo) setPlanoFeito(Boolean(data?.concluido)); }).catch(() => {});
+    return () => { ativo = false; };
+  }, [diagnostico]);
+  const saida = diagnostico ? saidaDoDiagnostico({ planoFeito }) : { rota: ROTAS.HOJE, rotulo: "Continuar a trilha" };
   const xpGanho = recompensaDaSerie(estado, xpInicial, melhorSequencia).xp;
   // O tempo congela no instante em que a série acabou; sem isto ele andaria a
   // cada nova renderização do fechamento.
@@ -304,7 +316,9 @@ function FechamentoDaSerie({ respostas, filtro, onExit, abrindo, aoPraticar, xpI
 
   const titulo = dirigida
     ? "Série concluída"
-    : filtro?.origem === "revisao"
+    : diagnostico
+      ? "Diagnóstico concluído"
+      : filtro?.origem === "revisao"
       ? "Revisão concluída"
       : filtro?.banca
         ? "Caderno concluído"
@@ -313,6 +327,7 @@ function FechamentoDaSerie({ respostas, filtro, onExit, abrindo, aoPraticar, xpI
   // O olho diz DE QUÊ era a série; o título já diz que ela acabou.
   const olho =
     dirigida?.foco ||
+    (diagnostico ? "Seu diagnóstico" : null) ||
     (filtro?.origem === "revisao"
       ? "Revisão espaçada"
       : [filtro?.banca, filtro?.ano].filter(Boolean).join(" ") || filtro?.area || "Prática");
@@ -341,6 +356,25 @@ function FechamentoDaSerie({ respostas, filtro, onExit, abrindo, aoPraticar, xpI
           : frase || "Cada resposta desta série já entrou no seu histórico — é com elas que o próximo passo é escolhido."}
       </p>
 
+      {/* No diagnóstico o padrão é o ACHADO — a promessa do anúncio ("o
+          Sapiens encontra esse padrão") — e sobe para logo abaixo do placar
+          de acertos, antes do XP e da missão. */}
+      {repetido && diagnostico && (
+        <p className="mt-3 max-w-lg text-sm leading-relaxed text-zinc-600" data-testid="serie-fechamento-repetido">
+          <span className="font-semibold text-zinc-800">
+            {repetido.vezes} dos seus erros começaram no mesmo ponto.
+          </span>{" "}
+          Não é falta de estudo: é um padrão — e dá para treinar só ele.
+        </p>
+      )}
+
+      {diagnostico && !planoFeito && resumo.total > 0 && (
+        <p className="mt-3 max-w-lg text-sm leading-relaxed text-zinc-600" data-testid="diagnostico-proximo">
+          <span className="font-semibold text-zinc-800">Agora, o seu plano da semana.</span>{" "}
+          Três perguntas — o seu tempo, a sua meta e o que pesa mais para você — e a semana sai montada a partir delas e do que você acabou de responder.
+        </p>
+      )}
+
       {dirigida?.sinal && resumo.total > 0 && (
         <p className="mt-3 max-w-lg text-sm leading-relaxed text-zinc-600" data-testid="serie-fechamento-sinal">
           <span className="font-semibold text-zinc-800">O que observar daqui para a frente:</span> {dirigida.sinal}
@@ -355,7 +389,7 @@ function FechamentoDaSerie({ respostas, filtro, onExit, abrindo, aoPraticar, xpI
           a pergunta fala do que o aluno acabou de fazer (`lib/push.js`). */}
       <PedidoDeNotificacao respondeuNaSerie={resumo.total > 0} />
 
-      {repetido && (
+      {repetido && !diagnostico && (
         <p className="mt-3 max-w-lg text-sm leading-relaxed text-zinc-600" data-testid="serie-fechamento-repetido">
           <span className="font-semibold text-zinc-800">{repetido.vezes} erros desta série começaram no mesmo ponto.</span>{" "}
           Vale praticar só ele agora, com questões que você ainda não viu.
@@ -370,11 +404,11 @@ function FechamentoDaSerie({ respostas, filtro, onExit, abrindo, aoPraticar, xpI
           entre eles logo depois de terminar. As outras continuam, menores,
           embaixo: são escolha, não o caminho. */}
       <Link
-        to={ROTAS.HOJE}
+        to={saida.rota}
         className="pill btn-sapiens btn-grande mt-7 inline-flex w-full items-center justify-center gap-2.5 sm:w-auto sm:min-w-[18rem]"
         data-testid="serie-proximo-passo"
       >
-        Continuar a trilha <ArrowRight className="h-5 w-5" />
+        {saida.rotulo} <ArrowRight className="h-5 w-5" />
       </Link>
 
       <div className="mt-4 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap">
@@ -415,7 +449,7 @@ function FechamentoDaSerie({ respostas, filtro, onExit, abrindo, aoPraticar, xpI
           <Link to={com(ROTAS.AGENDA, ANCORAS.AGENDA_REVISOES)} className={botaoSecundario} data-testid="serie-voltar-revisoes">
             Voltar às revisões
           </Link>
-        ) : !dirigida ? (
+        ) : !dirigida && !diagnostico ? (
           <button onClick={onExit} className={botaoSecundario} data-testid="serie-voltar">
             {filtro?.banca ? "Escolher outro caderno" : "Voltar"}
           </button>
@@ -537,7 +571,7 @@ function QuestionRunner({ filtro, onExit }) {
     if (filtro?.item_ids?.length) params.set("item_ids", filtro.item_ids.join(","));
 
     Promise.all([
-      api.get(`/questoes?${params.toString()}`),
+      api.get(filtro?.diagnostico ? "/questoes/diagnostico" : `/questoes?${params.toString()}`),
       api.get("/firestore/students/me/respondidas").catch(() => ({ data: { item_ids: [] } })),
     ])
       .then(([{ data }, { data: prog }]) => {
@@ -858,7 +892,13 @@ function QuestionRunner({ filtro, onExit }) {
         </div>
       </div>
 
-      <ProgressoProva respondidas={Math.min(answered, itens.length)} total={itens.length} pulso={pulso} combo={seguidas >= 3} />
+      <ProgressoProva
+        respondidas={Math.min(answered, itens.length)}
+        total={itens.length}
+        pulso={pulso}
+        combo={seguidas >= 3}
+        rotulo={filtro?.diagnostico ? "Seu diagnóstico" : undefined}
+      />
 
       {retomado > 0 && idx === retomado && (
         <div className="mb-4 rounded-xl bg-white/10 border border-white/20 px-4 py-2.5 text-sm text-white">
@@ -1596,6 +1636,9 @@ export default function Provas({ embutido = false, onModo = null }) {
   const [params] = useSearchParams();
   const areaParam = params.get("area");
   const itemIdsParam = params.get("item_ids");
+  // `?diagnostico=1`: as dez do primeiro acesso, para onde o cadastro leva
+  // (`lib/diagnostico.js`). O servidor escolhe quais; esta tela só responde.
+  const diagnosticoParam = params.get("diagnostico") === "1";
   const nav = useNavigate();
   const location = useLocation();
   const dirigidaDaNavegacao = location.state?.dirigida || null;
@@ -1608,14 +1651,16 @@ export default function Provas({ embutido = false, onModo = null }) {
   // A opção secundária (provas oficiais por edição do ENEM) não sumiu: ela
   // agora mora ao pé da própria grade de cadernos, que é onde alguém
   // procurando "o ENEM 2019 inteiro" já está olhando.
-  const [mode, setMode] = useState(areaParam || itemIdsParam ? "practice" : "provas"); // 'provas' | 'practice'
+  const [mode, setMode] = useState(areaParam || itemIdsParam || diagnosticoParam ? "practice" : "provas"); // 'provas' | 'practice'
   const [filtro, setFiltro] = useState(
     itemIdsParam
       ? filtroPorIds(itemIdsParam, dirigidaDaNavegacao)
-      : areaParam
-        ? { area: areaParam }
-        : null,
-  ); // { banca, ano, prova, disciplinas, count } | { area } | { item_ids, origem, dirigida }
+      : diagnosticoParam
+        ? { diagnostico: true }
+        : areaParam
+          ? { area: areaParam }
+          : null,
+  ); // { banca, ano, prova, disciplinas, count } | { area } | { item_ids, origem, dirigida } | { diagnostico }
 
   // "Mais deste ponto" e "Praticar esse ponto" navegam para ESTA MESMA rota
   // com outros ids. O React Router não remonta a página nesse caso, então o
@@ -1645,6 +1690,15 @@ export default function Provas({ embutido = false, onModo = null }) {
             </h1>
           </div>
         )}
+        {mode === "practice" && filtro?.diagnostico && (
+          <div className="mb-6" data-testid="practice-diagnostico-header">
+            <div className="secao-olho">Primeiro passo</div>
+            <h1 className="titulo-tela">{TOTAL_DO_DIAGNOSTICO} questões curtas, de todas as áreas.</h1>
+            <p className="mt-2 max-w-lg text-sm leading-relaxed text-white/60">
+              Cada resposta mostra à Mentis como você pensa — não quanto você sabe. É com elas que o seu plano é montado.
+            </p>
+          </div>
+        )}
         {mode === "practice" && filtro?.origem === "revisao" && (
           <div className="mb-6" data-testid="practice-revisao-header">
             <div className="secao-olho">Revisão espaçada</div>
@@ -1663,7 +1717,7 @@ export default function Provas({ embutido = false, onModo = null }) {
             key={location.key}
             filtro={filtro}
             onExit={() => (
-              filtro?.area || filtro?.origem === "padrao"
+              filtro?.area || filtro?.diagnostico || filtro?.origem === "padrao"
                 ? nav(ROTAS.HOJE)
                 : filtro?.origem === "revisao"
                   ? nav(com(ROTAS.AGENDA, ANCORAS.AGENDA_REVISOES))

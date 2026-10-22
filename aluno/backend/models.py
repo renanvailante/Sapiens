@@ -240,12 +240,14 @@ class SignupRequest(BaseModel):
     email: EmailStr
     name: str = Field(..., min_length=1, max_length=120)
     password: str = Field(..., min_length=8, max_length=200)
-    # WhatsApp: OBRIGATÓRIO no cadastro por e-mail. É o canal de contato do
-    # produto (link da aula ao vivo, aviso de turma, suporte) e pedi-lo depois
-    # significa não ter o número de quem mais precisa dele. O formato é
-    # validado em `whatsapp.normalizar`, não aqui — o `min_length` abaixo só
-    # impede o campo vazio; a mensagem que o aluno lê vem de lá.
-    whatsapp: str = Field(..., min_length=8, max_length=30)
+    # WhatsApp: OPCIONAL desde 2026-10-22. Foi obrigatório de 15/09 a 22/10, e
+    # 28 de 43 alunos se cadastravam e nunca respondiam uma questão: o número
+    # (e o do responsável) era o pedido mais caro do produto, feito antes de
+    # qualquer valor entregue. Agora ele é pedido onde há motivo — no fim do
+    # plano do primeiro acesso (`/bem-vindo`) e na compra da aula ao vivo. Se
+    # vier, o formato é validado em `whatsapp.normalizar` e um número inválido
+    # continua sendo 422: a pessoa digitou, e gravar outro número seria pior.
+    whatsapp: str | None = Field(default=None, max_length=30)
     # Menor de idade: se `True`, `responsavel_nome` e `responsavel_whatsapp`
     # passam a ser OBRIGATÓRIOS — a checagem é na rota, e não aqui, porque a
     # mensagem que o adolescente lê ("Quem é seu responsável?") é melhor que
