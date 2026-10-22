@@ -1,6 +1,6 @@
 ---
 tags: [operacao, deploy, runbook]
-atualizado: 2026-09-18
+atualizado: 2026-10-22
 ---
 
 # Deploy — runbook
@@ -86,6 +86,11 @@ Hash de bundle **não basta** — outra sessão pode ter republicado no meio
 ([[sessoes-concorrentes]]). Prove funcionalmente:
 
 - Rota nova responde **401 e não 404** (existe, só exige auth).
+- **Mudança no contrato do cadastro, sem criar conta:** mande um
+  `POST /api/auth/signup` que falha na validação (senha de 1 caractere). O 422
+  do Pydantic lista **todos** os campos inválidos ou faltando, então o campo
+  que deixou de ser obrigatório some da lista — e nenhuma conta nasce. Foi como
+  o WhatsApp opcional foi provado em 2026-10-22.
 - `flyctl status` (versão) + `printenv` via `fly ssh console` (env) + `md5sum` dos
   arquivos em `/app` contra `git show HEAD:...`.
 - Frontend com `React.lazy`: a string pode estar num `*.chunk.js`, não no
