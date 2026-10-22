@@ -82,9 +82,10 @@ que existe é outra:
 
 Como rodar: script só de leitura (`find`/`count`, sem nome/e-mail/telefone na
 saída) enviado por `flyctl ssh console -a sapiens-aluno -C "sh -c 'echo <base64> |
-base64 -d > /tmp/m.py && cd /app && python3 /tmp/m.py'"` — o `MONGO_URL` de
-produção já está no ambiente da máquina, e `cd /app` deixa importar
-`firestore_service`.
+base64 -d > /tmp/m.py && cd /app && PYTHONPATH=/app python3 /tmp/m.py'"` — o
+`MONGO_URL` de produção já está no ambiente da máquina, e é o `PYTHONPATH=/app`
+que deixa importar `firestore_service` (o Python põe no caminho a pasta do
+script, `/tmp`, não a atual; sem ele, `ModuleNotFoundError` em 2026-10-22).
 
 Relacionado: [[afiliados]] · [[aquisicao]] · [[custo-de-leitura]] ·
 [[engajamento]]

@@ -162,8 +162,9 @@ dia 1. **O pedido e os três itens são dele.**
 
 **O que é meu e foi declarado como meu**, portanto o mais barato de mudar: o
 diagnóstico ser de **10** questões (o número da landing), só texto, as mais
-curtas de cada área, sem língua estrangeira e intercaladas abrindo por
-Linguagens (`backend/diagnostico_inicial.py`); a ordem do plano (objetivo e
+curtas de cada área, sem língua estrangeira e apresentadas da leitura mais
+curta para a mais longa (`backend/diagnostico_inicial.py` — a primeira versão
+intercalava por área e abriu, em produção, por química orgânica); a ordem do plano (objetivo e
 tempo → meta → dificuldades → WhatsApp → desafio do Plus); o **vídeo do mentor
 fora** do primeiro acesso (segue na landing, na aula ao vivo e na mentoria); o
 WhatsApp pedido no fim do plano e na compra da live, sempre **opcional**; e o

@@ -19,9 +19,18 @@ escolher "as fáceis". Ela escolhe o que dá para medir de verdade:
   disciplina de inglês/espanhol): metade da turma não fez a mesma opção;
 - **as mais curtas** de cada área (enunciado + alternativas): é a carga de
   leitura, e é ela que decide quanto tempo leva a primeira resposta;
-- **intercaladas** (Linguagens, Humanas, Natureza, Matemática, ...): o
-  diagnóstico vê as quatro áreas, e a de menor acerto no ENEM (Matemática) não
-  abre a sequência.
+- **de cada área do acervo**, na proporção de `ORDEM` — uma área que falta
+  cede a vaga às outras;
+- **em ordem crescente de leitura**: a primeira questão é a mais curta das
+  dez, e a leitura cresce aos poucos.
+
+**A ordem foi corrigida no mesmo dia, olhando as dez reais.** A primeira
+versão apresentava as dez intercaladas por área, abrindo por Linguagens para
+Matemática não abrir. Em produção o acervo tinha só Natureza e Matemática
+(268 questões, ENEM 2022-2024, segundo dia), e a abertura virou a Natureza
+mais curta: oxidação de cetonas, química orgânica — enquanto a Matemática mais
+curta era tirar uma média. A área não diz o quanto custa responder; a leitura
+diz.
 
 A lista é a MESMA para todo mundo enquanto o acervo não muda: é ela que deixa
 retomar no meio (o runner começa na primeira não respondida) e comparar alunos.
@@ -38,8 +47,8 @@ HUMANAS = "Ciências Humanas"
 NATUREZA = "Ciências da Natureza"
 MATEMATICA = "Matemática"
 
-# A ordem é a do aluno: a primeira questão é a que mais pesa, e é a que tem de
-# ser respondida em menos de um minuto depois do cadastro.
+# Quantas vagas cada área tem (e quem cobre a vaga de uma que falta): a ordem
+# em que o aluno RESPONDE é outra — a de leitura crescente, em `escolher`.
 ORDEM: tuple[str, ...] = (
     LINGUAGENS, HUMANAS, NATUREZA, MATEMATICA,
     LINGUAGENS, HUMANAS, NATUREZA, MATEMATICA,
@@ -148,7 +157,8 @@ def elegivel(item: dict, area: str | None, *, estrito: bool = True) -> bool:
 
 
 def escolher(itens: Iterable[dict], area_de: Callable[[str | None], str | None]) -> list[str]:
-    """Os `item_id` do diagnóstico, na ordem em que o aluno os responde.
+    """Os `item_id` do diagnóstico, na ordem em que o aluno os responde: da
+    leitura mais curta para a mais longa.
 
     Desempate estável (carga, edição mais recente, id): a mesma entrada dá a
     mesma lista em qualquer máquina. Uma área sem questão suficiente cede a
@@ -201,4 +211,5 @@ def escolher(itens: Iterable[dict], area_de: Callable[[str | None], str | None])
             andou = pegar(por_area[a]) or andou
     while len(escolhidos) < TOTAL and pegar(reserva):
         pass
-    return escolhidos[:TOTAL]
+    por_id = {it["item_id"]: it for it in itens}
+    return sorted(escolhidos[:TOTAL], key=lambda i: chave(por_id[i]))

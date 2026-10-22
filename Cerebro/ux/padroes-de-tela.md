@@ -264,9 +264,18 @@ Decisão em [[decisoes-do-dono]]. As peças:
 - **As dez questões são escolhidas no servidor** (`GET /questoes/diagnostico`,
   regra pura em `backend/diagnostico_inicial.py`, testada). O acervo **não tem
   dificuldade por questão** — a regra não promete "fáceis", escolhe o que
-  mede: só texto, as mais curtas, sem língua estrangeira, intercaladas. A
-  lista é a mesma para todos (é o que deixa retomar no meio) e fica guardada
-  por processo pelo intervalo do sync.
+  mede: só texto, as mais curtas de cada área, sem língua estrangeira, e
+  apresenta da leitura mais curta para a mais longa. A lista é a mesma para
+  todos (é o que deixa retomar no meio) e fica guardada por processo pelo
+  intervalo do sync.
+- **O acervo de produção tinha só Natureza e Matemática** em 2026-10-22 (268
+  questões, ENEM 2022-2024, segundo dia). Por isso a tela diz "10 questões
+  curtas do ENEM" e nunca "de todas as áreas"; e a primeira versão da regra,
+  que intercalava por área para Matemática não abrir, abriu por química
+  orgânica. Para ver as dez reais: `flyctl ssh console` com um script que
+  chama `diagnostico_inicial.escolher` sobre `questoes_public` (só acervo,
+  nenhum dado de aluno), rodado com `PYTHONPATH=/app` — `cd /app` sozinho não
+  põe o diretório no caminho de import de um script em `/tmp`.
 - **Na tela**, é o `QuestionRunner` de sempre com `filtro.diagnostico`:
   cabeçalho próprio, barra "Seu diagnóstico N/10", sem devolutiva de rodada
   (lista sem bloco termina no fechamento). O fechamento põe o **padrão de

@@ -9,7 +9,8 @@
  *
  * Quem escolhe as questões é o servidor (`GET /questoes/diagnostico`,
  * `backend/diagnostico_inicial.py`): só texto, curtas, sem língua
- * estrangeira, intercalando as quatro áreas.
+ * estrangeira, de cada área que o acervo tem, da leitura mais curta para a
+ * mais longa. A tela não promete "todas as áreas": o acervo pode não ter.
  */
 import { ROTAS } from "./rotas";
 

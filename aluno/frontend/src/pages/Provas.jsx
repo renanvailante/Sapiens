@@ -1693,7 +1693,7 @@ export default function Provas({ embutido = false, onModo = null }) {
         {mode === "practice" && filtro?.diagnostico && (
           <div className="mb-6" data-testid="practice-diagnostico-header">
             <div className="secao-olho">Primeiro passo</div>
-            <h1 className="titulo-tela">{TOTAL_DO_DIAGNOSTICO} questões curtas, de todas as áreas.</h1>
+            <h1 className="titulo-tela">{TOTAL_DO_DIAGNOSTICO} questões curtas do ENEM.</h1>
             <p className="mt-2 max-w-lg text-sm leading-relaxed text-white/60">
               Cada resposta mostra à Mentis como você pensa — não quanto você sabe. É com elas que o seu plano é montado.
             </p>

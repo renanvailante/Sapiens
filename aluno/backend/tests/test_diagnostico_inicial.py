@@ -9,6 +9,7 @@ from __future__ import annotations
 import asyncio
 import random
 import sys
+from collections import Counter
 from pathlib import Path
 
 import pytest
@@ -58,12 +59,26 @@ def _area_do(item_id, acervo):
 
 
 class TestOrdem:
-    def test_dez_questoes_intercaladas_sem_abrir_por_matematica(self):
+    def test_dez_questoes_com_as_vagas_de_cada_area(self):
         acervo = _acervo()
         escolhidos = di.escolher(acervo, _area_enem)
         assert len(escolhidos) == di.TOTAL
-        assert [_area_do(i, acervo) for i in escolhidos] == list(di.ORDEM)
-        assert _area_do(escolhidos[0], acervo) != di.MATEMATICA
+        assert Counter(_area_do(i, acervo) for i in escolhidos) == Counter(di.ORDEM)
+
+    def test_a_leitura_cresce_aos_poucos(self):
+        acervo = _acervo()
+        por_id = {it["item_id"]: it for it in acervo}
+        cargas = [di.carga(por_id[i]) for i in di.escolher(acervo, _area_enem)]
+        assert cargas == sorted(cargas)
+
+    def test_abre_pela_leitura_mais_curta_seja_qual_for_a_area(self):
+        """O caso real de 2026-10-22: acervo só de Natureza e Matemática, e a
+        Natureza mais curta (química orgânica) abrindo enquanto havia uma
+        Matemática bem mais curta (uma média)."""
+        acervo = [it for it in _acervo() if _area_do(it["item_id"], _acervo()) in (di.NATUREZA, di.MATEMATICA)]
+        acervo.append(_q("Mat-curta", di.MATEMATICA, 120, numero=170))
+        escolhidos = di.escolher(acervo, _area_enem)
+        assert escolhidos[0] == "Mat-curta"
 
     def test_dentro_da_area_a_mais_curta_vem_primeiro(self):
         acervo = _acervo()
