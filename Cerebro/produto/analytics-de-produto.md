@@ -1,6 +1,6 @@
 ---
 tags: [produto, analytics, growth]
-atualizado: 2026-10-20
+atualizado: 2026-10-22
 ---
 
 # Analytics de produto — activation, TTFV, cohort
@@ -70,6 +70,12 @@ que existe é outra:
   `dias_ativos`, `ultima_atividade` por aluno, 1 leitura por aluno (a mesma
   varredura de `/admin/users`). Nunca reconstrói agregado, então não fere
   [[custo-de-leitura]].
+- **A linha de base da ativação** (medida em 2026-10-20, antes de o cadastro
+  passar a abrir no diagnóstico em 2026-10-22): **28 de 43** alunos nunca
+  tinham respondido uma questão. Para saber se a mudança funcionou, compare
+  as contas criadas depois de 22/10 nas mesmas duas réguas — respondeu ≥ 1 e
+  respondeu ≥ 10 (o diagnóstico inteiro) — com
+  `resumo_dos_alunos()[uid].questoes_respondidas` contra `users.created_at`.
 - **Contas de equipe e de teste não têm marca.** O `is_admin` separa um admin só;
   as contas de 22/08 e os pagamentos `spark_test_15` são da equipe e inflam
   "voltou" e "pagou". Separe à mão antes de concluir qualquer coisa.

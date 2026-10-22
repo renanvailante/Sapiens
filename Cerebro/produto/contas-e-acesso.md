@@ -1,6 +1,6 @@
 ---
 tags: [produto, auth, cadastro]
-atualizado: 2026-10-20
+atualizado: 2026-10-22
 ---
 
 # Contas, cadastro e acesso
@@ -15,22 +15,33 @@ atualizado: 2026-10-20
 
 DDI 55 é implícito para 10–11 dígitos; 12–15 passam como internacional.
 
-### Onde é obrigatório, e a pegadinha
+### Onde é pedido (desde 2026-10-22, nunca obrigatório)
 
-- **Cadastro por e-mail:** obrigatório, validado **antes** do `insert_one` para não
-  deixar conta pela metade.
-- **Login com Google:** opcional, e um número inválido é **ignorado** em vez de
-  barrar a entrada — o botão do Google também cria conta a partir da tela de
-  **login**, onde não existe formulário. Recusar ali trocaria um dado que falta por
-  uma pessoa que não consegue entrar.
-- **Contas anteriores a 2026-09-15** entram sem número.
+De 15/09 a 22/10 o número era **obrigatório** no cadastro por e-mail e
+`ProtectedRoute` mandava todo aluno sem ele para `/completar-cadastro` antes de
+qualquer tela. Era o pedido mais caro do produto feito antes de qualquer valor
+— e 28 de 43 contas nunca chegaram à primeira questão. Decisão em
+[[decisoes-do-dono]] ("O cadastro abre no diagnóstico"). Hoje:
 
-Quem tem sessão e **não** tem `whatsapp` é mandado para `/completar-cadastro` antes
-de qualquer tela (guarda em `ProtectedRoute`). É o único jeito de o telefone entrar
-pelo caminho do Google.
+- **Cadastro (e-mail e Google):** não aparece. `SignupRequest.whatsapp` é
+  opcional; se vier, um número inválido continua sendo 422 **antes** do
+  `insert_one` — a pessoa digitou, e gravar outro número seria pior.
+- **Fim do plano (`/bem-vindo`):** etapa `whatsapp` só para quem não tem
+  número, com o motivo à vista e "Agora não". Grava por `POST /auth/whatsapp`
+  (que, com `menor_de_idade` ausente, não mexe no responsável).
+- **Compra da aula ao vivo:** campo opcional para quem não tem número;
+  `POST /cursos/live/acesso` já gravava o `whatsapp` do corpo **antes** de
+  cobrar. O link da sala aparece na própria tela, então o número é lembrete,
+  não condição.
+- **Lista de espera da mentoria:** já pedia e conferia o número antes de
+  cobrar.
 
-> **`/completar-cadastro` é ela mesma protegida** — a guarda precisa do
-> `pathname !== "/completar-cadastro"` ou o redirecionamento entra em laço.
+`/completar-cadastro` continua existindo como tela, sem ninguém empurrado para
+ela. **Não reponha a guarda em `ProtectedRoute`** sem decisão do dono: é o
+mesmo pedágio, uma tela depois.
+
+O **responsável** de quem se declara menor **continua no cadastro** — é outra
+regra, de [[inviolaveis]].
 
 A fonte da verdade de "já tem" é `user.whatsapp`, **nunca** um "dispensei" no
 `localStorage`.

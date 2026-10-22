@@ -1,6 +1,6 @@
 ---
 tags: [regra, produto]
-atualizado: 2026-10-20
+atualizado: 2026-10-22
 ---
 
 # Decisões que são do dono, não minhas
@@ -49,11 +49,15 @@ o build se inverter. O pedido original ("1.500 = só as lives, 4.000 = os cursos
 invertia a escada; o dono escolheu herdar as lives no de cima quando isso foi
 apontado. Ver [[catalogo]].
 
-## O guia abre só no primeiro acesso
+## O guia não abre sozinho (2026-10-22)
 
-Revisto em 2026-09-17. Entre 15 e 17/09 abria uma vez por sessão do navegador — na
-prática todo dia, 21 balões na cara de quem só queria estudar. Um tutorial que
-reaparece deixa de ser ajuda e vira pedágio.
+Duas revisões. Em 2026-09-17: de "uma vez por sessão do navegador" (na prática
+todo dia, 21 balões na cara de quem só queria estudar) para "só no primeiro
+acesso" — um tutorial que reaparece deixa de ser ajuda e vira pedágio. Em
+2026-10-22, aprovado pelo dono junto com a ativação (abaixo): **nem no primeiro
+acesso**. Os cinco balões ficavam entre o cadastro e a primeira questão; o que
+eles ensinavam as dicas da Mentis por área já dizem na hora em que importam.
+O guia só abre pedido ("Guia" no Hoje, "Rever o guia" no Menu).
 
 ## O mentor é sempre "Vitor Lara", nunca "o Vitor"
 
@@ -147,6 +151,30 @@ para todos), o Treino como reserva da 3ª missão, e as faixas de meta — 70–
 5 balões depois do `/bem-vindo` **ficou**, porque "o guia abre só no primeiro
 acesso" é decisão dele (acima); é o próximo candidato a sair do dia 1, se ele
 quiser.
+
+## O cadastro abre no diagnóstico (2026-10-22)
+
+Pedido, depois da análise de UX e retenção (28 de 43 contas nunca tinham
+respondido uma questão): *"comece pela ativação: primeira questão em menos de 1
+minuto depois do cadastro"*, aprovando três itens — o plano (`/bem-vindo`)
+depois das primeiras questões, o WhatsApp fora do cadastro e o tour fora do
+dia 1. **O pedido e os três itens são dele.**
+
+**O que é meu e foi declarado como meu**, portanto o mais barato de mudar: o
+diagnóstico ser de **10** questões (o número da landing), só texto, as mais
+curtas de cada área, sem língua estrangeira e intercaladas abrindo por
+Linguagens (`backend/diagnostico_inicial.py`); a ordem do plano (objetivo e
+tempo → meta → dificuldades → WhatsApp → desafio do Plus); o **vídeo do mentor
+fora** do primeiro acesso (segue na landing, na aula ao vivo e na mentoria); o
+WhatsApp pedido no fim do plano e na compra da live, sempre **opcional**; e o
+padrão de erro subir para logo abaixo do placar no fim do diagnóstico. O
+desafio do Plus continua sendo a última etapa do plano e o card do Hoje
+continua desde a conta nova — o "desde o início" de 2026-10-08 está de pé.
+
+**O que NÃO mudou, de propósito:** o responsável de quem se declara menor
+continua no cadastro. É regra de [[inviolaveis]] (LGPD art. 14); levá-lo para a
+primeira compra foi sugerido na análise e depende de decisão do dono com
+parecer jurídico.
 
 ## O pipeline está CONGELADO
 

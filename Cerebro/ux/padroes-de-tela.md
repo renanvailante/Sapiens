@@ -1,6 +1,6 @@
 ---
 tags: [ux, padroes, componentes]
-atualizado: 2026-10-20
+atualizado: 2026-10-22
 ---
 
 # Padrões de tela
@@ -254,17 +254,47 @@ Hoje ambos saem de `rodadaNaPosicao(posicao, itens.length)`, disparado de
 Prática por área (`filtro.area`, sem `banca`) não dá Sparks — por desenho, área não
 tem identidade de bloco e uma chave de rodada ingênua colidiria entre sessões.
 
+## O primeiro acesso: diagnóstico → plano → Hoje (2026-10-22)
+
+    cadastro → /estudar/provas?diagnostico=1 (10 questões) → fechamento
+    "Montar o meu plano" → /bem-vindo → /hoje (sem tour)
+
+Decisão em [[decisoes-do-dono]]. As peças:
+
+- **As dez questões são escolhidas no servidor** (`GET /questoes/diagnostico`,
+  regra pura em `backend/diagnostico_inicial.py`, testada). O acervo **não tem
+  dificuldade por questão** — a regra não promete "fáceis", escolhe o que
+  mede: só texto, as mais curtas, sem língua estrangeira, intercaladas. A
+  lista é a mesma para todos (é o que deixa retomar no meio) e fica guardada
+  por processo pelo intervalo do sync.
+- **Na tela**, é o `QuestionRunner` de sempre com `filtro.diagnostico`:
+  cabeçalho próprio, barra "Seu diagnóstico N/10", sem devolutiva de rodada
+  (lista sem bloco termina no fechamento). O fechamento põe o **padrão de
+  erro logo abaixo do placar** (é a promessa do anúncio) e troca a saída
+  grande por "Montar o meu plano" enquanto `GET /onboarding` não diz
+  `concluido`.
+- **A dica da Mentis por área não abre com `?diagnostico=`** — abria por cima
+  das alternativas da primeira questão da vida do aluno, dizendo "toque num
+  caderno".
+- **`/bem-vindo` é o plano.** Etapas por `lib/diagnostico.etapasDoPlano`,
+  decididas uma vez por visita: `diagnostico` só para quem chega sem nenhuma
+  resposta (fechou a aba antes da primeira e voltou pelo Hoje), `whatsapp` só
+  para quem não tem número.
+- **Sem laço Hoje ↔ `/bem-vindo`:** o Hoje manda ao plano só com
+  `flags.onboarded === false` e sem a marca de sessão; o `/bem-vindo` que
+  devolve ao Hoje (plano já concluído) deixa a marca de sessão também, para o
+  caso de a escrita de `flags.onboarded` no Firestore ter falhado.
+
 ## O guia (`OnboardingTour`)
 
-Abre **só no primeiro acesso**. A marca é permanente e mora no **servidor**:
-`flags.guia_visto`. O `localStorage` é só atalho para não piscar o balão enquanto a
-resposta não chega; o `sessionStorage` anterior morria com a aba.
+**Só abre pedido** desde 2026-10-22 (antes: uma vez, no primeiro acesso, logo
+depois do `/bem-vindo`). Duas portas, as duas com `?guia=1`: o botão "Guia" do
+Hoje e o "Rever o guia" do Menu. O efeito de `?guia=1` **ouve a URL** em vez de
+rodar só na montagem. Terminar ou pular ainda grava `flags.guia_visto` (e
+`onboarded`), que não decide mais nada sobre abrir.
 
-Gravada tanto no "Começar" quanto no "Pular tour" — quem pulou decidiu não ver, e
-reapresentar amanhã o que a pessoa dispensou hoje ignora a resposta dela.
-
-Duas portas para rever, as duas com `?guia=1`, e **nenhuma mexe na marca**. O efeito
-de `?guia=1` **ouve a URL** em vez de rodar só na montagem.
+A marca local `sapiens:guia-visto:{uid}` passou a significar "já passou pelo
+primeiro acesso" — a chave não mudou para quem já a tinha.
 
 Cada passo aponta um elemento real por `data-tour="..."`. **Alvo ausente não quebra a
 sequência: o balão centraliza.** `dash-agora` mora no nó aceso da trilha do dia

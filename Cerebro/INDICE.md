@@ -1,6 +1,6 @@
 ---
 tags: [indice, entrada]
-atualizado: 2026-10-20
+atualizado: 2026-10-22
 ---
 
 # Índice — o que ler antes de cada tarefa
@@ -38,6 +38,7 @@ Se nada aqui casar, vá direto ao código (`graft ask "<tarefa>"`) — o Cerebro
 | mexer em **landing de anúncio, `/ads/*`, criativo pago** | [[landings-de-anuncio]] |
 | mexer em **Meta Pixel, `fbq`, evento de conversão, `Lead`, rastreio de anúncio** | [[meta-pixel]] |
 | mexer em **cadastro, login, WhatsApp** | [[contas-e-acesso]] |
+| mexer no **primeiro acesso** (diagnóstico de 10, `/bem-vindo`, tour, "primeira questão") | [[padroes-de-tela]] · [[decisoes-do-dono]] · [[contas-e-acesso]] |
 | mexer em **influencer, afiliado, comissão, tracking/atribuição, campanha, UTM** | [[afiliados]] |
 | mexer no **Pesquisador IA de Aquisição, lead de Instagram/YouTube/TikTok, busca web pública, "0 leads encontrados", grounding do Gemini dando 429** | [[aquisicao]] |
 | fazer a **IA pesquisar a web** (grounding, custo de chamada de IA) | [[custo-de-ia]] |
