@@ -40,9 +40,10 @@
  * exatamente o comportamento de antes. Nenhum dos dois quebra o cadastro.
  *
  * A cura de verdade é servir o handler no próprio domínio (`public/_worker.js`
- * reencaminhando `/__/auth/*`), que muda a autenticação de todo mundo e está
- * registrada em [[contas-e-acesso]] como pendente de aprovação. Enquanto ela
- * não vem, isto evita que a pessoa fique olhando um anel girar.
+ * reencaminhando `/__/auth/*`). O worker já existe, mas o Google só aceita
+ * esse handler depois que o URI dele for somado no OAuth Client — até lá o
+ * `authDomain` é o do Firebase e vale tudo o que está acima ([[contas-e-acesso]]).
+ * Enquanto ela não vem, isto evita que a pessoa fique olhando um anel girar.
  */
 
 /** As marcas que os aplicativos deixam no `userAgent`. `FBAN`/`FBAV`/`FB_IAB`

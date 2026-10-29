@@ -1,6 +1,6 @@
 ---
 tags: [produto, auth, cadastro]
-atualizado: 2026-10-22
+atualizado: 2026-10-28
 ---
 
 # Contas, cadastro e acesso
@@ -70,16 +70,27 @@ origem**. O `signInWithPopup` abre o handler lá e ele precisa devolver o result
 para a aba de origem; com o particionamento de armazenamento de terceiros do Chrome,
 esse retorno trava.
 
-**A cura foi APLICADA em 2026-09-22** (`ed87b44`), com aprovação do dono, porque o
-tráfego pago do Instagram tornou o defeito caro: o caminho de menor fricção do
-cadastro morria em silêncio justamente para 100% dos cliques comprados.
+### A cura está montada e DESLIGADA: o handler na mesma origem
 
 `public/_worker.js` reencaminha `/__/auth/*` e `/__/firebase/*` para
-`sapiens-dataset.firebaseapp.com`, e `REACT_APP_FIREBASE_AUTH_DOMAIN` passou a ser
-`sapiens-aluno.pages.dev`. O handler virou mesma origem e a partição de
+`sapiens-dataset.firebaseapp.com`. Com `REACT_APP_FIREBASE_AUTH_DOMAIN` valendo
+`sapiens-aluno.pages.dev`, o handler vira mesma origem e a partição de
 armazenamento do navegador não tem mais o que bloquear. O `_worker.js` mora em
 `public/` de propósito: o CRA copia tudo de lá para `build/`, então ele sobrevive a
 todo rebuild.
+
+**Hoje o `authDomain` é `sapiens-dataset.firebaseapp.com`, e o worker não é chamado
+por ninguém.** A cura foi ligada em 2026-09-22 (`ed87b44`, com aprovação do dono) e
+desligada em 2026-10-28, quando o dono relatou que não conseguia entrar com o
+Google: o Google recusa o handler novo com `redirect_uri_mismatch` (seção abaixo),
+e nesses 36 dias **todo** login com Google morreu num Erro 400. O preço, medido no
+Mongo: antes, 17 de 30 cadastros vinham pelo Google; durante, zero. A tela branca
+do popup cross-origin pega uma parte das pessoas — sobretudo no navegador embutido
+do Instagram, por onde chega o tráfego de [[landings-de-anuncio]]; o Erro 400
+pegava todas.
+
+**Não religue trocando só o `.env`.** A ordem para religar está no fim da seção
+seguinte.
 
 > [!danger] Um `_worker.js` na raiz do build põe o Pages em MODO AVANÇADO
 > A partir dele o Cloudflare para de servir arquivo estático sozinho e passa
@@ -98,13 +109,14 @@ todo rebuild.
 
 > [!warning] O `.env` NÃO é versionado, e é ele que carrega o `authDomain`
 > `REACT_APP_FIREBASE_AUTH_DOMAIN` vive no `.env` local, que o deploy copia à mão
-> para o worktree ([[deploy]]). Quem buildar de uma máquina com o `.env` antigo
-> publica o domínio antigo de volta — e o defeito volta **sem nada acusar**, porque
-> o `_worker.js` continua lá funcionando e servindo um handler que ninguém usa.
-> O valor correto está documentado em `.env.example`.
+> para o worktree ([[deploy]]). Um `.env` que não acompanhe o `.env.example`
+> publica o outro domínio **sem nada acusar**: o build compila, o worker continua
+> lá, e o defeito só aparece no clique. O valor correto está em `.env.example`.
 >
-> O grep que detecta: `grep -c "sapiens-dataset.firebaseapp.com" build/static/js/main.*.js`
-> tem de dar **0**.
+> O grep que detecta, enquanto o URI não estiver no OAuth Client:
+> `grep -c "sapiens-dataset.firebaseapp.com" build/static/js/main.*.js` tem de dar
+> **1 ou mais**. Contar `sapiens-aluno.pages.dev` não prova nada: o bundle cita
+> esse domínio por outros motivos.
 
 **O que isto NÃO foi verificado:** o login com Google de ponta a ponta. Isso exige
 entrar numa conta Google real, que é do dono. O que foi verificado é a encanação —
@@ -151,17 +163,17 @@ curl -s -L "$A" | grep -io "redirect_uri_mismatch\|Error 400"
 `redirect_uri` visíveis na query — é a forma de ver **qual** URI está sendo pedido
 antes de sair mexendo em console. O último comando calando é o sinal de curado.
 
-**Isto não é corrigível pelo repositório.** O código e o `.env` já estão certos; a
-pendência mora no Google Cloud Console e exige a conta do dono.
+**O que falta não é corrigível pelo repositório.** O código e o worker estão
+prontos; a pendência mora no Google Cloud Console e exige a conta do dono.
 
-> [!danger] Em 2026-10-20 continuava quebrado — e o preço já é medido
-> O diagnóstico acima ainda devolvia `redirect_uri_mismatch` para o
-> `authDomain` do bundle no ar (o controle com `sapiens-dataset.firebaseapp.com`
-> passava). No Mongo, o último cadastro `provider: "google"` é de 2026-09-21:
-> **antes da troca, 17 de 30 cadastros vinham pelo Google; depois, zero.** O
-> botão continua sendo o primeiro da tela de cadastro e leva a um Erro 400 do
-> Google. Enquanto o URI não for somado no OAuth Client, a cada dia este é o
-> defeito mais caro do funil.
+**Para religar a cura, nesta ordem:**
+
+1. Somar `https://sapiens-aluno.pages.dev/__/auth/handler` em *Authorized redirect
+   URIs* do client acima (sem apagar nenhum dos que já estão).
+2. Rodar o diagnóstico até o último comando calar para `sapiens-aluno.pages.dev`.
+   O Google pode levar alguns minutos para propagar.
+3. Só então trocar `REACT_APP_FIREBASE_AUTH_DOMAIN` para `sapiens-aluno.pages.dev`
+   no `.env` **e** no `.env.example`, publicar, e inverter o grep do aviso acima.
 
 ## Menor de idade
 

@@ -21,6 +21,12 @@
  * de depender de terceiro, e a partição do navegador não tem o que bloquear.
  * `REACT_APP_FIREBASE_AUTH_DOMAIN` acompanha (ver `.env.example`).
  *
+ * DORMENTE desde 2026-10-28: o `authDomain` voltou a ser o do Firebase porque
+ * o Google recusa `https://sapiens-aluno.pages.dev/__/auth/handler` com
+ * `redirect_uri_mismatch` — o URI nunca foi somado no OAuth Client. Ninguém
+ * chama estes caminhos até o `.env` voltar para o domínio do app. O arquivo
+ * fica para que essa volta seja só trocar a variável e publicar.
+ *
  * ---------------------------------------------------------------------------
  * ESTE ARQUIVO PASSA A ATENDER **TODO** O TRÁFEGO DO SITE
  * ---------------------------------------------------------------------------
