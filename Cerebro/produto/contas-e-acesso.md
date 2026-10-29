@@ -114,13 +114,16 @@ seguinte.
 > lá, e o defeito só aparece no clique. O valor correto está em `.env.example`.
 >
 > O grep que detecta, enquanto o URI não estiver no OAuth Client:
-> `grep -c "sapiens-dataset.firebaseapp.com" build/static/js/main.*.js` tem de dar
-> **1 ou mais**. Contar `sapiens-aluno.pages.dev` não prova nada: o bundle cita
-> esse domínio por outros motivos.
+> `grep -c "sapiens-dataset.firebaseapp.com" build/static/js/main.*.js` **não** pode
+> dar 0, e o mesmo grep com `sapiens-aluno.pages.dev` **tem** de dar 0 — o bundle só
+> cita esse domínio pelo `authDomain`.
 
-**O que isto NÃO foi verificado:** o login com Google de ponta a ponta. Isso exige
-entrar numa conta Google real, que é do dono. O que foi verificado é a encanação —
-o handler responde na origem certa, com o conteúdo certo, e o site não caiu.
+**Até onde dá para verificar sem conta:** o diagnóstico abaixo, apontado para o
+handler do `authDomain` no ar, tem de chegar à tela de login do Google
+(`accounts.google.com/v3/signin/identifier`) e não a um Erro 400. Escolher a conta e
+voltar logado exige uma conta Google real, que é do dono — e o painel de navegador
+do Claude bloqueia popup aberto por clique de agente, então nem o popup abre ali
+(o bloqueio ao menos diz para qual domínio ele ia).
 
 **O que foi aplicado:** em `Login.jsx`, fechar a janela travada deixou de ser
 silêncio — abaixo de 25s continua sendo cancelamento deliberado (sem toast), acima
