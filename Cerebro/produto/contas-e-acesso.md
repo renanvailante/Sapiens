@@ -125,6 +125,10 @@ voltar logado exige uma conta Google real, que é do dono — e o painel de nave
 do Claude bloqueia popup aberto por clique de agente, então nem o popup abre ali
 (o bloqueio ao menos diz para qual domínio ele ia).
 
+**Confirmado de ponta a ponta pelo dono em 2026-10-28:** com o `authDomain` do
+Firebase, ele escolheu a conta no popup e voltou logado no app. O caminho no ar
+funciona; o que continua sem prova é o navegador embutido do Instagram.
+
 **O que foi aplicado:** em `Login.jsx`, fechar a janela travada deixou de ser
 silêncio — abaixo de 25s continua sendo cancelamento deliberado (sem toast), acima
 disso vira aviso com a saída.
